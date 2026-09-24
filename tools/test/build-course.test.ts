@@ -41,6 +41,13 @@ describe("build-course (real content)", () => {
     expect(v.rephrase?.text).toBe("水。四杯。");
   });
 
+  it("ships only the words the course uses", () => {
+    const ids = Object.keys(course!.words);
+    expect(ids.length).toBeLessThan(40);
+    expect(ids).toContain("w0133");
+    expect(course!.words.w0001).toBeUndefined();
+  });
+
   it("resolves concepts, glosses and bonus words", () => {
     expect(course!.concepts.tea.map((id) => course!.words[id].w)).toEqual(["茶"]);
     expect(course!.words.x0001).toMatchObject({ w: "杯", bonus: true, gloss: "cup; glass (measure word for drinks)" });

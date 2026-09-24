@@ -194,6 +194,18 @@ export function buildCourse(root: string, courseId: string): BuildResult {
   const learnerIds = attempt("learner text", () => new Set(messageIds(learnerFtl, "learner files"))) ?? new Set<string>();
   errors.push(...checkCourse({ course, stages: meta.stages, checks: cfg.checks, learnerIds, requiredUi: [] }));
   errors.push(...uiTextProblems(learnerFtl, cfg.learner));
+  // Ship only the words the course uses: rank is the share of these that are known, and
+  // the pack has far more words than one course needs. (The checks above see the whole pack.)
+  const used = new Set<string>([
+    ...Object.values(concepts).flat(),
+    ...Object.values(reactions).flatMap((l) => l.tokens.map((t) => t.word)),
+    ...scenes.flatMap((s) =>
+      s.exchanges.flatMap((ex) =>
+        Object.values(ex.variants).flatMap((v) => [v.npc, v.reply, v.rephrase].flatMap((l) => l?.tokens.map((t) => t.word) ?? [])),
+      ),
+    ),
+  ]);
+  course.words = Object.fromEntries(Object.entries(words).filter(([id]) => used.has(id)));
   return { course, errors };
 }
 

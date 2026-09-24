@@ -57,7 +57,7 @@ export function renderScreen(m: ScreenModel, cols: number, rows: number): Styled
   const bodyRows = Math.max(1, rows - 2);
   const prompt = m.prompt.slice(-bodyRows);
   const logRows = Math.max(0, bodyRows - prompt.length - (prompt.length ? 1 : 0));
-  const log = m.log.slice(-logRows);
+  const log = logRows > 0 ? m.log.slice(-logRows) : []; // slice(-0) would be the whole log
   const body: StyledLine[] = [...Array(logRows - log.length).fill([]), ...log];
   if (prompt.length) body.push([]);
   body.push(...prompt);

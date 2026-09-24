@@ -138,6 +138,14 @@ describe("tui app", () => {
     expect(term.screen().join("\n")).toContain("Done. You earned");
   });
 
+  it("keeps working on a very short screen", () => {
+    const { term } = setup();
+    term.resize(30, 8);
+    term.press("1");
+    expect(term.frames.at(-1)!.length).toBe(8);
+    for (const line of term.frames.at(-1)!) expect(lineWidth(line)).toBe(30);
+  });
+
   it("wraps tiles and help words on a narrow screen", () => {
     const { term } = setup();
     term.resize(16, 20);
