@@ -976,6 +976,7 @@ git commit -m "feat(core): add life rules (wallet, trust, days) and test fixture
 ```ts
 import { describe, expect, it } from "vitest";
 import { comboKey } from "../src/combo";
+import { describeRun } from "../src/dialogue";
 import { createCore, newGame, type Core } from "../src/core";
 import { recordRight } from "../src/learner";
 import { mulberry32 } from "../src/rng";
@@ -1099,6 +1100,21 @@ describe("core", () => {
     expect(stale.send({ type: "reply", choice: 0 })).toEqual([{ type: "inputRejected", reason: "stale-run" }]);
   });
 
+  it("describes the scene in progress for a front end resuming a save, without changing it", () => {
+    const core = setup();
+    expect(describeRun(course, core.state)).toEqual([]);
+    core.send({ type: "goTo", place: "noodle_shop" });
+    core.send({ type: "startScene", scene: "intro" });
+    const next = answerRight(core);
+    const before = core.state;
+    expect(describeRun(course, core.state)).toEqual([
+      { type: "sceneStarted", scene: "intro", npc: "cook" },
+      find(next, "lineSpoken"),
+      find(next, "replyOptions"),
+    ]);
+    expect(core.state).toBe(before);
+  });
+
   it("a help lookup makes a word shaky", () => {
     const core = setup();
     playIntro(core);
@@ -1155,7 +1171,7 @@ import {
   wordState,
 } from "./learner";
 import { shuffle } from "./rng";
-import type { Course, Exchange, GameEvent, GameState, RenderedLine, Scene, WordId, WordRecord } from "./types";
+import type { Course, Exchange, GameEvent, GameState, RenderedLine, Scene, SceneRun, WordId, WordRecord } from "./types";
 
 export interface Ctx {
   course: Course;
@@ -1239,13 +1255,31 @@ function buildTiles(ctx: Ctx, ex: Exchange, combo: Combo): string[] {
   return shuffle([...pieces, ...[...extra].slice(0, 2)], ctx.rng);
 }
 
+function optionsEvent(ex: Exchange, run: SceneRun): GameEvent {
+  return run.mode === "pick"
+    ? { type: "replyOptions", mode: "pick", options: run.options.map((k) => ex.variants[k].reply) }
+    : { type: "replyOptions", mode: "tiles", tiles: run.tiles };
+}
+
 function emitOptions(ctx: Ctx, ex: Exchange): void {
-  const run = ctx.state.run!;
-  if (run.mode === "pick") {
-    ctx.ev.push({ type: "replyOptions", mode: "pick", options: run.options.map((k) => ex.variants[k].reply) });
-  } else {
-    ctx.ev.push({ type: "replyOptions", mode: "tiles", tiles: run.tiles });
-  }
+  ctx.ev.push(optionsEvent(ex, ctx.state.run!));
+}
+
+/**
+ * The events that draw the scene in progress, for a front end that starts from a save made
+ * mid-scene. Changes nothing. Empty when there is no scene, or it no longer fits the course.
+ */
+export function describeRun(course: Course, state: GameState): GameEvent[] {
+  const run = state.run;
+  const scene = run && course.scenes.find((s) => s.id === run.scene);
+  const ex = scene?.exchanges[run!.exchange];
+  const v = ex?.variants[comboKey(run!.combo)];
+  if (!run || !scene || !ex || !v) return [];
+  return [
+    { type: "sceneStarted", scene: scene.id, npc: scene.npc },
+    { type: "lineSpoken", npc: scene.npc, line: v.npc },
+    optionsEvent(ex, run),
+  ];
 }
 
 function beginExchange(ctx: Ctx, scene: Scene, index: number): void {
@@ -1431,7 +1465,7 @@ export function createCore(course: Course, initial: GameState, deps: CoreDeps): 
 
 Run: `npx vitest run packages/core/test/core.test.ts`
 
-Expected: PASS (9 tests).
+Expected: PASS (10 tests).
 
 - [ ] **Step 5: Commit**
 
@@ -1619,20 +1653,20 @@ export * from "./life";
 export * from "./rng";
 export * from "./save";
 export { createCore, type Core, type CoreDeps } from "./core";
-export { tilePieces } from "./dialogue";
+export { describeRun, tilePieces } from "./dialogue";
 ```
 
 - [ ] **Step 4: Run the tests and make sure they pass**
 
 Run: `npx vitest run packages/core/test/save.test.ts`
 
-Expected: PASS (2 tests).
+Expected: PASS (6 tests).
 
 - [ ] **Step 5: Run the whole core suite and the typecheck**
 
 Run: `npx vitest run packages/core && npx tsc`
 
-Expected: 30 tests pass in 5 files; `tsc` prints nothing.
+Expected: 31 tests pass in 5 files; `tsc` prints nothing.
 
 - [ ] **Step 6: Commit**
 
@@ -2073,7 +2107,7 @@ export function segment(text: string, lex: Lexicon): { tokens: Token[]; unknown:
 
 Run: `npx vitest run tools/test/segment.test.ts`
 
-Expected: PASS (2 tests).
+Expected: PASS (5 tests).
 
 - [ ] **Step 5: Commit**
 
@@ -2447,6 +2481,15 @@ describe("checkCourse", () => {
     d.scenes[1].repeatable = false;
     expect(checkCourse(input({ course: d }))).toContain('shift: needs trust 3 with "cook", but earlier scenes give at most 2');
   });
+
+  it("keeps every tile and help word on keys 1-9", () => {
+    const c = fixtureCourse();
+    const long = line(...Array.from({ length: 10 }, () => ["好", "w_hao"] as [string, string]));
+    c.scenes[0].exchanges[0].variants[""] = { npc: long, reply: line(...long.tokens.slice(0, 8).map(() => ["好", "w_hao"] as [string, string])) };
+    const errors = checkCourse(input({ course: c }));
+    expect(errors).toContain("intro/greet: the reply has 8 words; at most 7");
+    expect(errors).toContain("intro/greet: the npc line has 10 words; at most 9");
+  });
 });
 ```
 
@@ -2484,6 +2527,10 @@ export interface CheckInput {
 
 export const MAX_NEW_PER_EXCHANGE = 2;
 export const MIN_SCENES_PER_WORD = 3;
+/** Every choice is one key, 1-9: a reply's tiles are its words plus up to 2 extra. */
+export const MAX_REPLY_WORDS = 7;
+/** Word help offers each word of the NPC's line on keys 1-9. */
+export const MAX_LINE_WORDS = 9;
 
 /** Scenes in `after` order; ties keep file order. */
 export function orderScenes(scenes: Scene[]): { ordered: Scene[]; errors: string[] } {
@@ -2610,6 +2657,14 @@ export function checkCourse(input: CheckInput): string[] {
           errors.push(`${where}: ${fresh.length} new words (${shown}); at most ${MAX_NEW_PER_EXCHANGE}`);
         }
         checkLevels(where, words, s.stage);
+        if (v.reply.tokens.length > MAX_REPLY_WORDS) {
+          errors.push(`${where}: the reply has ${v.reply.tokens.length} words; at most ${MAX_REPLY_WORDS}`);
+        }
+        for (const [name, l] of [["npc", v.npc], ["rephrase", v.rephrase]] as const) {
+          if (l && l.tokens.length > MAX_LINE_WORDS) {
+            errors.push(`${where}: the ${name} line has ${l.tokens.length} words; at most ${MAX_LINE_WORDS}`);
+          }
+        }
         if (checks.audio) {
           for (const [name, l] of Object.entries(v)) if (l && !l.audio) errors.push(`${where}: ${name} line has no audio`);
         }
@@ -3133,9 +3188,11 @@ import { FakeTerminal, fixtureWithText } from "./fake-terminal";
 
 const T0 = 1_000_000;
 
-function setup() {
+function setup(patch: (s: GameState) => void = () => {}) {
   const course = fixtureWithText();
-  const core = createCore(course, newGame(course), { now: () => T0, rng: mulberry32(1) });
+  const state = newGame(course);
+  patch(state);
+  const core = createCore(course, state, { now: () => T0, rng: mulberry32(1) });
   const term = new FakeTerminal();
   const saves: GameState[] = [];
   let quit = false;
@@ -3197,6 +3254,80 @@ describe("tui app", () => {
     term.press("q");
     expect(quitted()).toBe(true);
   });
+
+  it("builds a reply from tiles: add, undo, a wrong answer clears the input, then the right one", () => {
+    const shaky = { right: 0, wrong: 1, streak: 0, helps: 0, lapsed: true, firstSeen: 0, lastSeen: 0 };
+    const { term, core } = setup((s) => {
+      s.words.w_cha = { ...shaky };
+      s.words.w_shui = { ...shaky };
+    });
+    term.press("1", "1");
+    term.press(rightKey(core));
+    expect(core.state.run!.mode).toBe("tiles");
+    const tiles = core.state.run!.tiles;
+    const want = core.state.run!.combo.item === "tea" ? "茶" : "水";
+    const right = String(tiles.indexOf(want) + 1);
+    const wrong = String(tiles.findIndex((x) => x !== want) + 1);
+    term.press(wrong);
+    expect(term.screen().join("\n")).toContain(`You say: ${tiles[Number(wrong) - 1]}`);
+    term.press("backspace", wrong, "return");
+    expect(term.screen().join("\n")).toContain("That's not what they asked for.");
+    expect(term.screen().at(-2)).toMatch(/You say: +│$/);
+    term.press(right, "return");
+    expect(term.screen().join("\n")).toContain("Done. You earned");
+  });
+
+  it("a wrong pick shows the reaction, and word help still offers the request", () => {
+    const { term, core } = setup();
+    term.press("1", "1");
+    term.press(rightKey(core));
+    const wrong = String(core.state.run!.options.findIndex((k) => k !== comboKey(core.state.run!.combo)) + 1);
+    term.press(wrong);
+    const s = term.screen().join("\n");
+    expect(s).toContain("That's not what they asked for.");
+    expect(s).toContain("Cook: 不是这个。");
+    term.press("w");
+    expect(term.screen().join("\n")).toMatch(/1\) (茶|水)/);
+  });
+
+  it("a refused input is explained and not saved", () => {
+    const { term, saves } = setup((s) => {
+      s.slot = 4;
+    });
+    term.press("1", "1");
+    expect(term.screen().join("\n")).toContain("You're out of time today. Sleep first.");
+    expect(saves.length).toBe(1);
+  });
+
+  it("sleeping ends the day", () => {
+    const { term } = setup();
+    term.press("2");
+    const s = term.screen().join("\n");
+    expect(s).toContain("Day 1 is over. You sleep.");
+    expect(s).toContain("Day 2 · slot 0/4");
+  });
+
+  it("a save made mid-scene resumes in the scene", () => {
+    const first = setup();
+    first.term.press("1", "1");
+    first.term.press(rightKey(first.core));
+    const course = fixtureWithText();
+    const core = createCore(course, first.core.state, { now: () => T0, rng: mulberry32(2) });
+    const term = new FakeTerminal();
+    startApp({ course, core, term, now: () => T0, save: () => {}, quit: () => {} });
+    expect(term.screen().join("\n")).toMatch(/Cook: (茶|水)。/);
+    term.press(rightKey(core));
+    expect(term.screen().join("\n")).toContain("Done. You earned");
+  });
+
+  it("wraps tiles and help words on a narrow screen", () => {
+    const { term } = setup();
+    term.resize(16, 20);
+    term.press("1", "1", "w");
+    const s = term.screen();
+    expect(s.some((l) => l.includes("1) 你"))).toBe(true);
+    expect(s.some((l) => l.includes("2) 好"))).toBe(true);
+  });
 });
 ```
 
@@ -3241,6 +3372,17 @@ export function lineSpans(line: RenderedLine, fresh: Set<WordId>): StyledLine {
   return out;
 }
 
+/** Lays out short items (tiles, words) left to right, starting a new line when one would not fit. */
+export function wrapItems(items: string[], width: number, gap = "  "): StyledLine[] {
+  const lines: string[] = [];
+  for (const item of items) {
+    const last = lines.at(-1);
+    if (last !== undefined && strWidth(last) + strWidth(gap) + strWidth(item) <= width) lines[lines.length - 1] = last + gap + item;
+    else lines.push(item);
+  }
+  return lines.map((text) => [{ text }]);
+}
+
 function border(left: string, label: string, right: string, fill: string, cols: number, rightLabel = ""): StyledLine {
   const inner = cols - 2;
   const l = label ? ` ${label} ` : "";
@@ -3281,6 +3423,7 @@ export function renderScreen(m: ScreenModel, cols: number, rows: number): Styled
 ```ts
 import {
   availableSceneIds,
+  describeRun,
   rankFor,
   type Core,
   type Course,
@@ -3290,7 +3433,7 @@ import {
   type RenderedLine,
   type WordId,
 } from "@silver-tongue/core";
-import { lineSpans, renderScreen } from "./screen";
+import { lineSpans, renderScreen, wrapItems } from "./screen";
 import type { Key, StyledLine, Terminal } from "./terminal";
 import { makeText, type Text } from "./text";
 
@@ -3368,7 +3511,7 @@ export function startApp(opts: AppOptions): App {
           if (!e.matched) push([{ text: t("mismatch"), color: "yellow" }]);
           break;
         case "npcReacted":
-          lastLine = e.line;
+          // Word help keeps offering the request the player got wrong, not the reaction.
           push(say(e.npc, e.line, fresh));
           break;
         case "lineRephrased":
@@ -3441,17 +3584,22 @@ export function startApp(opts: AppOptions): App {
     return line.tokens.map((tk) => ({ text: line.text.slice(tk.start, tk.end), word: tk.word }));
   }
 
-  function prompt(): StyledLine[] {
+  /** `width` is the room inside the frame, for wrapping tiles and help words. */
+  function prompt(width: number): StyledLine[] {
     if (mode === "explore") {
       return [[{ text: t("menu-title"), dim: true }], ...menu().map((m, i) => [{ text: `${i + 1}) ${m.label}` }])];
     }
     if (mode === "help") {
-      const words = helpWords().map((w, i) => `${i + 1}) ${w.text}`).join("  ");
-      return [[{ text: t("help-title"), dim: true }], [{ text: words }]];
+      const words = helpWords().map((w, i) => `${i + 1}) ${w.text}`);
+      return [[{ text: t("help-title"), dim: true }], ...wrapItems(words, width)];
     }
     if (replyMode === "pick") return pickOptions.map((o, i) => [{ text: `${i + 1}) ` }, ...lineSpans(o, new Set())]);
     return [
-      [{ text: tiles.map((x, i) => `[${i + 1}]${x}`).join(" ") }],
+      ...wrapItems(
+        tiles.map((x, i) => `[${i + 1}]${x}`),
+        width,
+        " ",
+      ),
       [{ text: `${t("tiles-answer")} `, dim: true }, { text: tileInput.map((i) => tiles[i]).join(""), bold: true }],
     ];
   }
@@ -3468,7 +3616,7 @@ export function startApp(opts: AppOptions): App {
       rank: t(`rank-${rankFor(s.words, wordIds, opts.now())}`),
     });
     const footer = t(mode === "explore" ? "keys-explore" : mode === "help" ? "keys-help" : replyMode === "pick" ? "keys-pick" : "keys-tiles");
-    term.write(renderScreen({ title: t(`place-${s.place}`), hud, log, prompt: prompt(), footer }, cols, rows));
+    term.write(renderScreen({ title: t(`place-${s.place}`), hud, log, prompt: prompt(cols - 4), footer }, cols, rows));
   }
 
   function press(key: Key) {
@@ -3506,6 +3654,7 @@ export function startApp(opts: AppOptions): App {
 
   if (opts.notice) push([{ text: t(opts.notice), color: "yellow" }]);
   enterPlace(core.state.place);
+  apply(describeRun(course, core.state)); // a save made mid-scene resumes in the scene
   term.onKey(press);
   term.onResize(render);
   render();
@@ -3527,7 +3676,7 @@ export { startApp, type App, type AppOptions } from "./app";
 
 Run: `npx vitest run packages/tui`
 
-Expected: PASS (13 tests in 3 files).
+Expected: PASS (19 tests in 3 files).
 
 - [ ] **Step 5: Commit**
 
@@ -4022,7 +4171,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) main();
 
 Run: `npx vitest run tools`
 
-Expected: PASS (31 tests in 5 files).
+Expected: PASS (32 tests in 5 files).
 
 - [ ] **Step 6: Build the course from the command line**
 
@@ -4394,7 +4543,7 @@ npm run bundle -w silver-tongue   # build packages/tui-node/dist for npm/npx
 
 Run: `npm run typecheck && npm run build:course && npm test`
 
-Expected: `tsc` prints nothing, the course builds, and **76 tests pass in 14 files**.
+Expected: `tsc` prints nothing, the course builds, and **84 tests pass in 14 files**.
 
 - [ ] **Step 5: Commit and push**
 
