@@ -2701,6 +2701,16 @@ describe("width", () => {
     expect(plain(fitted)).toBe("ab三 ");
     expect(plain(fitLine([{ text: "hi" }], 4))).toBe("hi  ");
   });
+
+  it("counts emoji as wide and invisible characters as nothing", () => {
+    expect(strWidth("👍")).toBe(2);
+    expect(strWidth("a\u200db")).toBe(2);
+    expect(strWidth("e\u0301")).toBe(1);
+  });
+
+  it("turns control characters into spaces so text can't break the layout", () => {
+    expect(plain(fitLine([{ text: "a\tb\x1b[2J" }], 8))).toBe("a b [2J ");
+  });
 });
 ```
 
@@ -2727,7 +2737,7 @@ export interface Span {
 
 export type StyledLine = Span[];
 
-/** Key names: "0"-"9", letters, "return", "escape", "backspace", "ctrl-c". */
+/** Key names: "0"-"9", letters, "return", "escape", "backspace", "up", "down", "left", "right", "ctrl-c". */
 export interface Key {
   name: string;
 }
@@ -2736,6 +2746,8 @@ export interface Key {
 export interface Terminal {
   write(lines: StyledLine[]): void;
   onKey(handler: (key: Key) => void): void;
+  /** Called after the terminal changes size (window resize, phone rotation). */
+  onResize(handler: () => void): void;
   size(): { cols: number; rows: number };
   close(): void;
 }
@@ -2748,10 +2760,16 @@ export const plain = (line: StyledLine): string => line.map((s) => s.text).join(
 ```ts
 import type { StyledLine } from "./terminal";
 
-/** Terminal cells a code point takes: 2 for East Asian wide characters, 0 for combining marks. */
+const isControl = (cp: number) => cp < 32 || (cp >= 0x7f && cp < 0xa0);
+
+/**
+ * Terminal cells a code point takes: 2 for East Asian wide characters and emoji,
+ * 0 for combining marks and invisible format characters (zero-width joiner and space).
+ * Emoji widths differ between terminals, so UI text should not rely on them.
+ */
 export function charWidth(cp: number): number {
-  if (cp < 32 || (cp >= 0x7f && cp < 0xa0)) return 0;
-  if (/\p{Mn}/u.test(String.fromCodePoint(cp))) return 0;
+  if (isControl(cp)) return 0;
+  if (/[\p{Mn}\p{Cf}]/u.test(String.fromCodePoint(cp))) return 0;
   if (
     (cp >= 0x1100 && cp <= 0x115f) ||
     (cp >= 0x2e80 && cp <= 0xa4cf) ||
@@ -2760,6 +2778,8 @@ export function charWidth(cp: number): number {
     (cp >= 0xfe30 && cp <= 0xfe4f) ||
     (cp >= 0xff00 && cp <= 0xff60) ||
     (cp >= 0xffe0 && cp <= 0xffe6) ||
+    cp === 0x1f004 ||
+    (cp >= 0x1f300 && cp <= 0x1faff) ||
     (cp >= 0x20000 && cp <= 0x3fffd)
   ) {
     return 2;
@@ -2777,13 +2797,18 @@ export function lineWidth(line: StyledLine): number {
   return line.reduce((n, s) => n + strWidth(s.text), 0);
 }
 
-/** Cuts or pads a line to exactly `cols` cells. A wide character that would straddle the edge becomes a space. */
+/**
+ * Cuts or pads a line to exactly `cols` cells. A wide character that would straddle the edge
+ * becomes a space. Control characters (tabs, newlines, escapes) become spaces too, so text
+ * can never break the layout or send terminal commands.
+ */
 export function fitLine(line: StyledLine, cols: number): StyledLine {
   const out: StyledLine = [];
   let used = 0;
   for (const span of line) {
     let text = "";
-    for (const ch of span.text) {
+    for (const raw of span.text) {
+      const ch = isControl(raw.codePointAt(0)!) ? " " : raw;
       const w = charWidth(ch.codePointAt(0)!);
       if (used + w > cols) break;
       text += ch;
@@ -2801,7 +2826,7 @@ export function fitLine(line: StyledLine, cols: number): StyledLine {
 
 Run: `npx vitest run packages/tui/test/width.test.ts`
 
-Expected: PASS (2 tests).
+Expected: PASS (4 tests).
 
 - [ ] **Step 5: Commit**
 
@@ -2988,6 +3013,7 @@ export class FakeTerminal implements Terminal {
   frames: StyledLine[][] = [];
   closed = false;
   private handler: (k: Key) => void = () => {};
+  private resized: () => void = () => {};
 
   constructor(
     public cols = 64,
@@ -2999,6 +3025,15 @@ export class FakeTerminal implements Terminal {
   }
   onKey(handler: (k: Key) => void): void {
     this.handler = handler;
+  }
+  onResize(handler: () => void): void {
+    this.resized = handler;
+  }
+  /** Changes the size and tells the app, like a window resize. */
+  resize(cols: number, rows: number): void {
+    this.cols = cols;
+    this.rows = rows;
+    this.resized();
   }
   size() {
     return { cols: this.cols, rows: this.rows };
@@ -3063,6 +3098,9 @@ describe("tui app", () => {
     term.press("1");
     for (const line of term.frames.at(-1)!) expect(lineWidth(line)).toBe(64);
     expect(term.frames.at(-1)!.length).toBe(20);
+    term.resize(40, 12);
+    for (const line of term.frames.at(-1)!) expect(lineWidth(line)).toBe(40);
+    expect(term.frames.at(-1)!.length).toBe(12);
   });
 
   it("starts on the street with a menu and a HUD", () => {
@@ -3414,6 +3452,7 @@ export function startApp(opts: AppOptions): App {
   if (opts.notice) push([{ text: t(opts.notice), color: "yellow" }]);
   enterPlace(core.state.place);
   term.onKey(press);
+  term.onResize(render);
   render();
   return { press, render };
 }
@@ -3433,7 +3472,7 @@ export { startApp, type App, type AppOptions } from "./app";
 
 Run: `npx vitest run packages/tui`
 
-Expected: PASS (10 tests in 3 files).
+Expected: PASS (12 tests in 3 files).
 
 - [ ] **Step 5: Commit**
 
@@ -4069,6 +4108,9 @@ export function createNodeTerminal(input = process.stdin, output = process.stdou
     onKey(handler) {
       handlers.push(handler);
     },
+    onResize(handler) {
+      output.on("resize", handler);
+    },
     size() {
       return { cols: output.columns ?? 80, rows: output.rows ?? 24 };
     },
@@ -4296,7 +4338,7 @@ npm run bundle -w silver-tongue   # build packages/tui-node/dist for npm/npx
 
 Run: `npm run typecheck && npm run build:course && npm test`
 
-Expected: `tsc` prints nothing, the course builds, and **73 tests pass in 14 files**.
+Expected: `tsc` prints nothing, the course builds, and **75 tests pass in 14 files**.
 
 - [ ] **Step 5: Commit and push**
 
