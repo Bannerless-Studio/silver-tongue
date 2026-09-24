@@ -1510,6 +1510,13 @@ describe("save", () => {
     const res = parseSave(serialize(stale), course);
     expect(res).toEqual({ ok: true, state: { ...stale, run: null } });
   });
+
+  it("drops a tiles run whose reply the saved tiles can no longer build", () => {
+    const core = inScene();
+    const run = { ...core.state.run!, mode: "tiles" as const, options: [], tiles: ["x"] };
+    const stale: GameState = { ...core.state, run };
+    expect(parseSave(serialize(stale), course)).toEqual({ ok: true, state: { ...stale, run: null } });
+  });
 });
 ```
 
@@ -1525,6 +1532,7 @@ Expected: FAIL. `../src/save` doesn't exist yet.
 
 ```ts
 import { comboKey } from "./combo";
+import { tilePieces } from "./dialogue";
 import type { Course, GameState, SceneRun } from "./types";
 
 export const SAVE_VERSION = 1;
@@ -1552,10 +1560,22 @@ function isRunShape(x: unknown): x is SceneRun {
   return ["exchange", "misses", "earned", "mixups"].every((k) => isCount(x[k]));
 }
 
-/** A run fits the course if its scene, exchange and slot combination still exist. */
+/** Every piece of the reply is among the tiles, repeats counted. */
+function tilesCover(tiles: string[], pieces: string[]): boolean {
+  const left = [...tiles];
+  return pieces.every((p) => {
+    const i = left.indexOf(p);
+    return i >= 0 && left.splice(i, 1).length === 1;
+  });
+}
+
+/** A run fits the course if its scene, exchange and slot combination still exist and its reply can still be given. */
 function runFits(run: SceneRun, course: Course): boolean {
   const ex = course.scenes.find((s) => s.id === run.scene)?.exchanges[run.exchange];
-  return !!ex && !!ex.variants[comboKey(run.combo)] && run.options.every((k) => !!ex.variants[k]);
+  const v = ex?.variants[comboKey(run.combo)];
+  if (!ex || !v) return false;
+  if (run.mode === "pick") return run.options.every((k) => !!ex.variants[k]);
+  return tilesCover(run.tiles, tilePieces(v.reply));
 }
 
 /**
@@ -1612,7 +1632,7 @@ Expected: PASS (2 tests).
 
 Run: `npx vitest run packages/core && npx tsc`
 
-Expected: 29 tests pass in 5 files; `tsc` prints nothing.
+Expected: 30 tests pass in 5 files; `tsc` prints nothing.
 
 - [ ] **Step 6: Commit**
 
@@ -3953,7 +3973,7 @@ npm run bundle -w silver-tongue   # build packages/tui-node/dist for npm/npx
 
 Run: `npm run typecheck && npm run build:course && npm test`
 
-Expected: `tsc` prints nothing, the course builds, and **60 tests pass in 14 files**.
+Expected: `tsc` prints nothing, the course builds, and **61 tests pass in 14 files**.
 
 - [ ] **Step 5: Commit and push**
 
