@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { makeText, UI_KEYS } from "../src/text";
+import { makeText, uiTextProblems } from "../src/text";
 
 describe("text", () => {
   const t = makeText("hello = Hello, { $name }!\n");
@@ -14,8 +14,15 @@ describe("text", () => {
     expect(t("hello")).toBe("Hello, {$name}!");
   });
 
-  it("the English UI file defines every UI key", () => {
-    const en = makeText(readFileSync(new URL("../../../content/learner/en/ui.ftl", import.meta.url), "utf8"));
-    for (const k of UI_KEYS) expect(en(k), k).not.toBe(k);
+  it("the English UI file defines every UI message with the variables the TUI passes", () => {
+    const en = readFileSync(new URL("../../../content/learner/en/ui.ftl", import.meta.url), "utf8");
+    expect(uiTextProblems(en, "en")).toEqual([]);
+  });
+
+  it("reports missing messages and unknown variables", () => {
+    const broken = "hud = Day { $dya }\n";
+    const problems = uiTextProblems(broken, "en");
+    expect(problems).toContain('learner text "hud": Unknown variable: $dya');
+    expect(problems).toContain('learner text: missing "menu-title"');
   });
 });
