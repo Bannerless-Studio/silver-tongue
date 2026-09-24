@@ -168,12 +168,14 @@ content/
   languages/zh/
     pack.json            levels, stages, script, typing, TTS locale      (import)
     words.json           [{id, w, alt, pron, lv, pos}]                    (import)
+    extra-words.json     bonus words not on the level list, e.g. 杯       (ours, never overwritten)
     terms.ftl            concepts as Fluent terms ($form variants, attributes)
     lines/<scene>.ftl    lines for each scene skeleton
     reactions.ftl        reusable reactions: wrong-count, wrong-item, …
   learner/en/
     ui.ftl               UI text, rank labels
     glosses-zh.ftl       glosses for zh word ids                           (import seeds it for en)
+    glosses-zh-extra.ftl glosses for the bonus words
     mentor-zh.ftl        usage notes for zh
     narration-china-city.ftl
   settings/china-city/
@@ -254,7 +256,7 @@ order = { $count ->
 The build fails if:
 
 - a Fluent file fails to parse, or a message referenced by a skeleton is missing for the course's language;
-- a rendered line uses a word above the scene's stage that isn't new in that exchange;
+- a rendered line uses a word above the scene's stage that isn't a bonus word (new words are defined by first appearance, so the only exception needed is an explicit bonus list);
 - an exchange introduces more than 2 new words;
 - a word on the stage list appears in fewer than 3 scenes;
 - a line has no audio;
