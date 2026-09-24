@@ -2094,7 +2094,7 @@ git commit -m "feat(tools): add longest-match word tagging"
 
 ```ts
 import { describe, expect, it } from "vitest";
-import { bindSlots, messageIds, parseFtl, Renderer, termNames } from "../src/fluent";
+import { bindSlots, messageIds, parseFtl, Renderer, termNames, type FtlSource } from "../src/fluent";
 
 const zhTerms = `-tea = { $form ->
     [measure] 杯
@@ -2118,6 +2118,9 @@ const esLines = `order = { $count ->
 }
 `;
 
+const zh = (slots: string): FtlSource[] => [["t", zhTerms], ["slots", slots], ["l", zhLines]];
+const es = (slots: string): FtlSource[] => [["t", esTerms], ["slots", slots], ["l", esLines]];
+
 describe("fluent", () => {
   it("lists terms and messages, and rejects syntax errors", () => {
     expect(termNames(zhTerms, "t")).toEqual(["tea", "three"]);
@@ -2126,20 +2129,34 @@ describe("fluent", () => {
   });
 
   it("binds slots to concept terms (zh measure words)", () => {
-    const r = new Renderer("zh", [zhTerms, bindSlots(zhTerms, { item: "tea", count: "three" }), zhLines]);
+    const r = new Renderer("zh", zh(bindSlots(zhTerms, { item: "tea", count: "three" }, zhLines, "l")));
     expect(r.render("order", { count: 3 })).toBe("三杯茶。");
   });
 
   it("lets each language choose its own grammar (es plurals)", () => {
-    const three = new Renderer("es", [esTerms, bindSlots(esTerms, { item: "tea", count: "three" }), esLines]);
+    const three = new Renderer("es", es(bindSlots(esTerms, { item: "tea", count: "three" }, esLines, "l")));
     expect(three.render("order", { count: 3 })).toBe("tres tés, por favor.");
-    const one = new Renderer("es", [esTerms, bindSlots(esTerms, { item: "tea", count: "one" }), esLines]);
+    const one = new Renderer("es", es(bindSlots(esTerms, { item: "tea", count: "one" }, esLines, "l")));
     expect(one.render("order", { count: 1 })).toBe("Un té, por favor.");
   });
 
   it("fails loudly on unknown concepts and missing messages", () => {
-    expect(() => bindSlots(zhTerms, { item: "coffee" })).toThrow(/no term -coffee/);
-    expect(() => new Renderer("zh", [zhTerms]).render("nope")).toThrow(/missing message "nope"/);
+    expect(() => bindSlots(zhTerms, { item: "coffee" }, zhLines, "l")).toThrow(/no term -coffee/);
+    expect(() => new Renderer("zh", [["t", zhTerms]]).render("nope")).toThrow(/missing message "nope"/);
+  });
+
+  it("rejects broken entries and duplicate names instead of dropping them", () => {
+    expect(() => new Renderer("zh", [["l", "ok = fine\nbroken = { -tea\nnext = x\n"]])).toThrow(/l: Fluent syntax error/);
+    expect(() => new Renderer("zh", [["l", "a = 1\na = 2\n"]])).toThrow(/l: .*a/);
+    expect(() => new Renderer("zh", [["t", zhTerms], ["t2", "-tea = 水\n"]])).toThrow(/t2: .*tea/);
+  });
+
+  it("refuses a slot named like a term, and forms a term doesn't have", () => {
+    expect(() => bindSlots(zhTerms, { tea: "three" }, zhLines, "l")).toThrow(/slot "tea" has the same name as the term -tea/);
+    const typo = `order = { -item(form: "measur") }\n`;
+    expect(() => bindSlots(zhTerms, { item: "tea" }, typo, "l")).toThrow(/l: -item \(-tea\) has no form "measur"/);
+    const noForms = `order = { -three(form: "measure") }\n`;
+    expect(() => bindSlots(zhTerms, {}, noForms, "l")).toThrow(/l: -three has no form "measure"/);
   });
 });
 ```
@@ -2158,7 +2175,20 @@ Fluent allows term attributes only inside selectors. Word forms a line displays 
 
 ```ts
 import { FluentBundle, FluentResource, type FluentVariable } from "@fluent/bundle";
-import { FluentParser, FluentSerializer, Identifier, Message, Resource, Term } from "@fluent/syntax";
+import {
+  FluentParser,
+  FluentSerializer,
+  Identifier,
+  Message,
+  Resource,
+  SelectExpression,
+  StringLiteral,
+  Term,
+  TermReference,
+  VariableReference,
+  Visitor,
+  type Placeable,
+} from "@fluent/syntax";
 
 const parser = new FluentParser({ withSpans: false });
 
@@ -2178,17 +2208,42 @@ export function messageIds(src: string, name: string): string[] {
   return parseFtl(src, name).body.filter((e): e is Message => e instanceof Message).map((m) => m.id.name);
 }
 
+/** The variant keys a term chooses between with `$form`; empty when it has no forms. */
+function formsOf(term: Term): string[] {
+  const select = term.value.elements
+    .map((e) => (e as Placeable).expression)
+    .find((x): x is SelectExpression => x instanceof SelectExpression && x.selector instanceof VariableReference && x.selector.id.name === "form");
+  return select ? select.variants.map((v) => (v.key instanceof Identifier ? v.key.name : v.key.value)) : [];
+}
+
+/** Every `-term(form: "...")` in the source, with the term name and the form asked for. */
+function formRefs(src: string, name: string): { term: string; form: string }[] {
+  const refs: { term: string; form: string }[] = [];
+  class Collect extends Visitor {
+    visitTermReference(node: TermReference) {
+      const form = node.arguments?.named.find((a) => a.name.name === "form")?.value;
+      if (form instanceof StringLiteral) refs.push({ term: node.id.name, form: form.value });
+      this.genericVisit(node);
+    }
+  }
+  new Collect().visit(parseFtl(src, name));
+  return refs;
+}
+
 /**
  * Slot binding: for each slot, defines a term named after the slot as a copy
  * of the chosen concept's term, so lines can say { -item } or { -item(form: "measure") }.
+ * Throws if a slot name is already a term, or if the lines ask a term for a form it doesn't have
+ * (Fluent would quietly fall back to the default form).
  */
-export function bindSlots(termsSrc: string, combo: Record<string, string>): string {
+export function bindSlots(termsSrc: string, combo: Record<string, string>, linesSrc: string, linesName: string): string {
   const terms = new Map(
     parseFtl(termsSrc, "terms.ftl")
       .body.filter((e): e is Term => e instanceof Term)
       .map((t) => [t.id.name, t]),
   );
   const aliases = Object.entries(combo).map(([slot, concept]) => {
+    if (terms.has(slot)) throw new Error(`slot "${slot}" has the same name as the term -${slot}`);
     const term = terms.get(concept);
     if (!term) throw new Error(`terms.ftl has no term -${concept}`);
     const copy = term.clone();
@@ -2196,17 +2251,29 @@ export function bindSlots(termsSrc: string, combo: Record<string, string>): stri
     copy.comment = null;
     return copy;
   });
+  for (const { term, form } of formRefs(linesSrc, linesName)) {
+    const target = terms.get(combo[term] ?? term);
+    if (target && !formsOf(target).includes(form)) {
+      const shown = term in combo ? `-${term} (-${combo[term]})` : `-${term}`;
+      throw new Error(`${linesName}: ${shown} has no form "${form}"`);
+    }
+  }
   return new FluentSerializer().serialize(new Resource(aliases));
 }
+
+/** A Fluent source and the name its errors are reported under. */
+export type FtlSource = [name: string, src: string];
 
 export class Renderer {
   private bundle: FluentBundle;
 
-  constructor(locale: string, sources: string[]) {
+  /** Throws on a syntax error, or if two sources define the same message or term. */
+  constructor(locale: string, sources: FtlSource[]) {
     this.bundle = new FluentBundle(locale, { useIsolating: false });
-    for (const src of sources) {
-      const errors = this.bundle.addResource(new FluentResource(src), { allowOverrides: true });
-      if (errors.length) throw errors[0];
+    for (const [name, src] of sources) {
+      parseFtl(src, name);
+      const errors = this.bundle.addResource(new FluentResource(src));
+      if (errors.length) throw new Error(`${name}: ${errors[0].message}`);
     }
   }
 
@@ -2229,7 +2296,7 @@ export class Renderer {
 
 Run: `npx vitest run tools/test/fluent.test.ts`
 
-Expected: PASS (4 tests).
+Expected: PASS (6 tests).
 
 - [ ] **Step 5: Commit**
 
@@ -3570,7 +3637,7 @@ import {
 } from "@silver-tongue/core";
 import { UI_KEYS } from "@silver-tongue/tui";
 import { checkCourse } from "./check";
-import { bindSlots, messageIds, Renderer, termNames } from "./fluent";
+import { bindSlots, messageIds, Renderer, termNames, type FtlSource } from "./fluent";
 import type { PackMeta, PackWord } from "./pack";
 import { buildLexicon, segment, type Lexicon } from "./segment";
 
@@ -3618,10 +3685,10 @@ export function buildCourse(root: string, courseId: string): BuildResult {
     return { text, tokens };
   };
 
-  const glossSrc = [
-    readOptional(join(learnerDir, `glosses-${cfg.language}.ftl`)),
-    readOptional(join(learnerDir, `glosses-${cfg.language}-extra.ftl`)),
-  ];
+  const glossSrc: FtlSource[] = [`glosses-${cfg.language}.ftl`, `glosses-${cfg.language}-extra.ftl`].map((f) => [
+    f,
+    readOptional(join(learnerDir, f)),
+  ]);
   const glosses = new Renderer(cfg.learner, glossSrc);
   const words: Record<string, Word> = {};
   for (const w of packWords) {
@@ -3639,7 +3706,7 @@ export function buildCourse(root: string, courseId: string): BuildResult {
   const termsSrc = readFileSync(join(langDir, "terms.ftl"), "utf8");
   const concepts: Record<string, string[]> = {};
   for (const name of termNames(termsSrc, "terms.ftl")) {
-    const text = new Renderer(meta.locale, [termsSrc, `concept = { -${name} }`]).render("concept");
+    const text = new Renderer(meta.locale, [["terms.ftl", termsSrc], ["concept", `concept = { -${name} }`]]).render("concept");
     concepts[name] = toLine(text, `term -${name}`).tokens.map((t) => t.word);
   }
 
@@ -3656,6 +3723,7 @@ export function buildCourse(root: string, courseId: string): BuildResult {
       continue;
     }
     const linesSrc = readFileSync(linesPath, "utf8");
+    const linesName = `lines/${sk.id}.ftl`;
     const exchanges: Exchange[] = [];
     for (const ex of sk.exchanges) {
       const variants: Record<string, Variant> = {};
@@ -3664,7 +3732,11 @@ export function buildCourse(root: string, courseId: string): BuildResult {
         const args: Record<string, number> = {};
         for (const [slot, concept] of Object.entries(combo)) if (concept in numbers) args[slot] = numbers[concept];
         try {
-          const r = new Renderer(meta.locale, [termsSrc, bindSlots(termsSrc, combo), linesSrc]);
+          const r = new Renderer(meta.locale, [
+            ["terms.ftl", termsSrc],
+            ["slots", bindSlots(termsSrc, combo, linesSrc, linesName)],
+            [linesName, linesSrc],
+          ]);
           const variant: Variant = {
             npc: toLine(r.render(ex.id, args), where),
             reply: toLine(r.render(`${ex.id}-reply`, args), where),
@@ -3681,7 +3753,7 @@ export function buildCourse(root: string, courseId: string): BuildResult {
   }
 
   const reactionsSrc = readFileSync(join(langDir, "reactions.ftl"), "utf8");
-  const reactionRenderer = new Renderer(meta.locale, [termsSrc, reactionsSrc]);
+  const reactionRenderer = new Renderer(meta.locale, [["terms.ftl", termsSrc], ["reactions.ftl", reactionsSrc]]);
   const reactions: Record<string, RenderedLine> = {};
   for (const id of messageIds(reactionsSrc, "reactions.ftl")) {
     reactions[id] = toLine(reactionRenderer.render(id), `reaction ${id}`);
@@ -3727,7 +3799,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) main();
 
 Run: `npx vitest run tools`
 
-Expected: PASS (24 tests in 5 files).
+Expected: PASS (26 tests in 5 files).
 
 - [ ] **Step 6: Build the course from the command line**
 
@@ -4096,7 +4168,7 @@ npm run bundle -w silver-tongue   # build packages/tui-node/dist for npm/npx
 
 Run: `npm run typecheck && npm run build:course && npm test`
 
-Expected: `tsc` prints nothing, the course builds, and **66 tests pass in 14 files**.
+Expected: `tsc` prints nothing, the course builds, and **68 tests pass in 14 files**.
 
 - [ ] **Step 5: Commit and push**
 
