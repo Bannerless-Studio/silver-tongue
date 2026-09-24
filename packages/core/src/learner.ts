@@ -23,8 +23,10 @@ function base(rec: WordRecord | undefined, now: number): WordRecord {
     : { right: 0, wrong: 0, streak: 0, helps: 0, lapsed: false, firstSeen: now, lastSeen: now };
 }
 
+/** Seeing a word that has decayed doesn't revive it: it stays shaky until it is answered right. */
 export function recordSeen(rec: WordRecord | undefined, now: number): WordRecord {
   const r = base(rec, now);
+  if (wordState(rec, now) === "shaky") r.lapsed = true;
   r.lastSeen = now;
   return r;
 }
@@ -80,6 +82,7 @@ export function pickPreferred<T>(
         return s === "shaky" ? 0 : s === "met" ? 1 : 2;
       }),
     );
+  if (candidates.length === 0) throw new Error("pickPreferred: no candidates");
   const best = Math.min(...candidates.map(prio));
   const pool = candidates.filter((c) => prio(c) === best);
   return pool[Math.floor(rng() * pool.length)];

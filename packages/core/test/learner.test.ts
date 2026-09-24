@@ -41,6 +41,14 @@ describe("word state", () => {
     const r = rightTimes(3);
     expect(wordState(r, T0 + 2 * DAY_MS)).toBe("known");
     expect(wordState(r, T0 + 2 * DAY_MS + 1)).toBe("shaky");
+    expect(wordState(rightTimes(5), T0 + 8 * DAY_MS + 1)).toBe("shaky");
+  });
+
+  it("seeing a decayed word keeps it shaky until it is answered right", () => {
+    const later = T0 + 3 * DAY_MS;
+    const seenAgain = recordSeen(rightTimes(3), later);
+    expect(wordState(seenAgain, later)).toBe("shaky");
+    expect(wordState(recordRight(seenAgain, later), later)).toBe("known");
   });
 });
 
@@ -62,6 +70,11 @@ describe("pickPreferred", () => {
     expect(pickPreferred(["c", "b"], wordsOf, records, T0, () => 0.99)).toBe("b");
     expect(pickPreferred(["c", "d"], wordsOf, records, T0, () => 0.99)).toBe("d");
   });
+
+  it("judges a multi-word candidate by its weakest word, and refuses an empty list", () => {
+    expect(pickPreferred([["c"], ["b", "a"]], (c) => c, records, T0, () => 0)).toEqual(["b", "a"]);
+    expect(() => pickPreferred([], wordsOf, records, T0, () => 0)).toThrow(/no candidates/);
+  });
 });
 
 describe("rank", () => {
@@ -69,6 +82,7 @@ describe("rank", () => {
     const ids = ["a", "b", "c", "d", "e"];
     expect(rankFor({}, ids, T0)).toBe(0);
     expect(rankFor({ a: rightTimes(3) }, ids, T0)).toBe(1);
+    expect(rankFor(Object.fromEntries(ids.slice(0, 4).map((i) => [i, rightTimes(3)])), ids, T0)).toBe(3);
     expect(rankFor(Object.fromEntries(ids.map((i) => [i, rightTimes(3)])), ids, T0)).toBe(4);
   });
 });
