@@ -19,7 +19,8 @@
 - the browser TUI (B);
 - the ported vocab-engine distractor helper `wordOpts` (B, once groups grow past a few values; today wrong options vary one slot within a small group);
 - save export/import as a text string, and the play-test event log (B; `serialize`/`parseSave` already exist);
-- the tagger for languages that put spaces between words (D).
+- the tagger for languages that put spaces between words (D);
+- TUI polish from the spec, for B: narrating actions from the narration file ("She sets down four cups. You ordered three."), echoing the player's reply, marking menu items that cost a slot, a footer that counts the actual options, a notice when rent is late, and keeping older `.invalid-backup` saves instead of replacing them.
 
 The checker's coverage and audio rules exist and are tested, but are switched off for this two-scene pilot course in `content/courses/zh-china-en.json`.
 
@@ -47,7 +48,7 @@ The checker's coverage and audio rules exist and are tested, but are switched of
 | `packages/core/src/testing/fixture.ts` | Hand-built two-scene course used by tests in every package |
 | `tools/src/pack.ts` | Our pack format types and the vocab-engine input types |
 | `tools/src/import-vocab-pack.ts` | vocab-engine pack → our pack + generated gloss file |
-| `tools/src/segment.ts` | Longest-match word tagging for unspaced scripts |
+| `tools/src/segment.ts` | Word tagging for unspaced scripts (fewest unknowns, then fewest words) |
 | `tools/src/fluent.ts` | Fluent parsing, slot binding, rendering |
 | `tools/src/check.ts` | Content checker |
 | `tools/src/build-course.ts` | Content → `dist/courses/<id>/course.json` |
@@ -221,6 +222,12 @@ describe("combo", () => {
     expect(allCombos({}, {})).toEqual([{}]);
   });
 
+  it("every combination's key parses back to it", () => {
+    for (const c of allCombos({ item: "drinks", count: "nums" }, { drinks: ["tea", "hot_water"], nums: ["three", "4-ish"] })) {
+      expect(parseComboKey(comboKey(c))).toEqual(c);
+    }
+  });
+
   it("rejects unknown groups", () => {
     expect(() => allCombos({ item: "food" }, {})).toThrow(/unknown group "food"/);
   });
@@ -375,6 +382,28 @@ export interface GameState {
   run: SceneRun | null;
 }
 
+/** Why the core refused an input. Front ends show a translated message for each. */
+export const REJECT_REASONS = [
+  "unknown-scene",
+  "in-scene",
+  "wrong-place",
+  "locked",
+  "no-slots",
+  "stale-run",
+  "no-pick",
+  "bad-choice",
+  "no-tiles",
+  "bad-tile",
+  "not-linked",
+  "unknown-word",
+] as const;
+export type RejectReason = (typeof REJECT_REASONS)[number];
+
+/** Why the wallet changed. */
+export const WALLET_REASONS = ["wages", "mixup", "food", "rent"] as const;
+export type WalletReason = (typeof WALLET_REASONS)[number];
+
+/** Replies arrive as `reply` (pick mode) or `replyTiles` (tiles mode); typed replies will add `replyText`. */
 export type Input =
   | { type: "goTo"; place: string }
   | { type: "startScene"; scene: string }
@@ -389,17 +418,22 @@ export type GameEvent =
   | { type: "lineSpoken"; npc: string; line: RenderedLine }
   | { type: "replyOptions"; mode: "pick"; options: RenderedLine[] }
   | { type: "replyOptions"; mode: "tiles"; tiles: string[] }
-  | { type: "actionPerformed"; action: Record<string, string>; matched: boolean; diff: string[] }
+  /**
+   * diff: the slots the player got wrong (pick mode). tilesWrong: the tiles didn't make the reply
+   * (tiles mode, where the slots are always the expected ones).
+   */
+  | { type: "actionPerformed"; action: Record<string, string>; matched: boolean; diff: string[]; tilesWrong: boolean }
   | { type: "npcReacted"; npc: string; reaction: string; line: RenderedLine }
-  | { type: "lineRephrased"; npc: string; line: RenderedLine }
-  | { type: "walletChanged"; wallet: number; delta: number; reason: string }
+  /** slow: no rephrase was written, so this replays the original line (show it slowly, with pronunciation) */
+  | { type: "lineRephrased"; npc: string; line: RenderedLine; slow: boolean }
+  | { type: "walletChanged"; wallet: number; delta: number; reason: WalletReason }
   | { type: "trustChanged"; npc: string; trust: number }
   | { type: "wordStateChanged"; word: WordId; from: WordState; to: WordState }
   | { type: "sceneEnded"; scene: string; earned: number }
   | { type: "unlocked"; scene: string }
   | { type: "rankChanged"; rank: number }
   | { type: "dayEnded"; day: number }
-  | { type: "inputRejected"; reason: string };
+  | { type: "inputRejected"; reason: RejectReason };
 ```
 
 `packages/core/src/combo.ts`:
@@ -447,7 +481,7 @@ export function resolveParams(params: Record<string, string>, combo: Combo): Rec
 
 Run: `npx vitest run packages/core/test/combo.test.ts`
 
-Expected: PASS (4 tests).
+Expected: PASS (5 tests).
 
 - [ ] **Step 5: Commit**
 
@@ -510,6 +544,14 @@ describe("word state", () => {
     const r = rightTimes(3);
     expect(wordState(r, T0 + 2 * DAY_MS)).toBe("known");
     expect(wordState(r, T0 + 2 * DAY_MS + 1)).toBe("shaky");
+    expect(wordState(rightTimes(5), T0 + 8 * DAY_MS + 1)).toBe("shaky");
+  });
+
+  it("seeing a decayed word keeps it shaky until it is answered right", () => {
+    const later = T0 + 3 * DAY_MS;
+    const seenAgain = recordSeen(rightTimes(3), later);
+    expect(wordState(seenAgain, later)).toBe("shaky");
+    expect(wordState(recordRight(seenAgain, later), later)).toBe("known");
   });
 });
 
@@ -531,6 +573,11 @@ describe("pickPreferred", () => {
     expect(pickPreferred(["c", "b"], wordsOf, records, T0, () => 0.99)).toBe("b");
     expect(pickPreferred(["c", "d"], wordsOf, records, T0, () => 0.99)).toBe("d");
   });
+
+  it("judges a multi-word candidate by its weakest word, and refuses an empty list", () => {
+    expect(pickPreferred([["c"], ["b", "a"]], (c) => c, records, T0, () => 0)).toEqual(["b", "a"]);
+    expect(() => pickPreferred([], wordsOf, records, T0, () => 0)).toThrow(/no candidates/);
+  });
 });
 
 describe("rank", () => {
@@ -538,6 +585,7 @@ describe("rank", () => {
     const ids = ["a", "b", "c", "d", "e"];
     expect(rankFor({}, ids, T0)).toBe(0);
     expect(rankFor({ a: rightTimes(3) }, ids, T0)).toBe(1);
+    expect(rankFor(Object.fromEntries(ids.slice(0, 4).map((i) => [i, rightTimes(3)])), ids, T0)).toBe(3);
     expect(rankFor(Object.fromEntries(ids.map((i) => [i, rightTimes(3)])), ids, T0)).toBe(4);
   });
 });
@@ -579,8 +627,10 @@ function base(rec: WordRecord | undefined, now: number): WordRecord {
     : { right: 0, wrong: 0, streak: 0, helps: 0, lapsed: false, firstSeen: now, lastSeen: now };
 }
 
+/** Seeing a word that has decayed doesn't revive it: it stays shaky until it is answered right. */
 export function recordSeen(rec: WordRecord | undefined, now: number): WordRecord {
   const r = base(rec, now);
+  if (wordState(rec, now) === "shaky") r.lapsed = true;
   r.lastSeen = now;
   return r;
 }
@@ -636,6 +686,7 @@ export function pickPreferred<T>(
         return s === "shaky" ? 0 : s === "met" ? 1 : 2;
       }),
     );
+  if (candidates.length === 0) throw new Error("pickPreferred: no candidates");
   const best = Math.min(...candidates.map(prio));
   const pool = candidates.filter((c) => prio(c) === best);
   return pool[Math.floor(rng() * pool.length)];
@@ -657,7 +708,7 @@ export function rankFor(records: Record<WordId, WordRecord>, wordIds: WordId[], 
 
 Run: `npx vitest run packages/core/test/learner.test.ts`
 
-Expected: PASS (6 tests).
+Expected: PASS (8 tests).
 
 - [ ] **Step 5: Commit**
 
@@ -762,7 +813,7 @@ export function shuffle<T>(xs: readonly T[], rng: () => number): T[] {
 `packages/core/src/life.ts`:
 
 ```ts
-import type { Course, GameEvent, GameState, Scene } from "./types";
+import type { Course, GameEvent, GameState, Scene, WalletReason } from "./types";
 
 export function isAvailable(scene: Scene, state: GameState): boolean {
   if (!scene.repeatable && (state.scenesDone[scene.id] ?? 0) > 0) return false;
@@ -776,7 +827,7 @@ export function availableSceneIds(course: Course, state: GameState): string[] {
 }
 
 /** The wallet never goes below zero: there is no debt. */
-export function changeWallet(state: GameState, delta: number, reason: string): GameEvent[] {
+export function changeWallet(state: GameState, delta: number, reason: WalletReason): GameEvent[] {
   const next = Math.max(0, state.wallet + delta);
   const actual = next - state.wallet;
   state.wallet = next;
@@ -789,7 +840,11 @@ export function addTrust(state: GameState, npc: string, amount: number): GameEve
   return [{ type: "trustChanged", npc, trust: state.trust[npc] }];
 }
 
-/** Food daily; rent every 7th day. Short on rent: the landlord waits and tries again next night. */
+/**
+ * Food daily; rent every 7th day. Short on rent: the landlord waits and tries again next night.
+ * Late rent never stacks: paying once clears it, however many weeks passed. There is no debt
+ * by design (spec: "rent pressure is soft").
+ */
 export function endDay(course: Course, state: GameState): GameEvent[] {
   const { foodPerDay, rentPerWeek } = course.world;
   const events: GameEvent[] = [{ type: "dayEnded", day: state.day }];
@@ -958,6 +1013,7 @@ git commit -m "feat(core): add life rules (wallet, trust, days) and test fixture
 ```ts
 import { describe, expect, it } from "vitest";
 import { comboKey } from "../src/combo";
+import { describeRun } from "../src/dialogue";
 import { createCore, newGame, type Core } from "../src/core";
 import { recordRight } from "../src/learner";
 import { mulberry32 } from "../src/rng";
@@ -1030,7 +1086,7 @@ describe("core", () => {
     expect(types(miss1)).not.toContain("lineRephrased");
 
     const miss2 = core.send({ type: "reply", choice: wrong });
-    expect(types(miss2)).toContain("lineRephrased");
+    expect(find(miss2, "lineRephrased")).toMatchObject({ npc: "cook", slow: false });
 
     const ok = core.send({ type: "reply", choice: right });
     expect(find(ok, "sceneEnded")).toEqual({ type: "sceneEnded", scene: "shift", earned: 3 });
@@ -1058,6 +1114,42 @@ describe("core", () => {
     const bad = createCore(course, { ...core.state, words }, { now: () => T0, rng: mulberry32(2) });
     bad.send({ type: "startScene", scene: "shift" });
     expect(find(bad.send({ type: "replyTiles", tiles: [0] }), "actionPerformed").matched).toBe(false);
+  });
+
+  it("only slots that change the action count as a mix-up", () => {
+    const c = fixtureCourse();
+    c.scenes[1].exchanges[0].expect = { action: "serve", item: "$item" };
+    c.scenes[1].exchanges[0].hinges = ["$item"];
+    const core = createCore(c, newGame(c), { now: () => T0, rng: mulberry32(1) });
+    playIntro(core);
+    core.send({ type: "startScene", scene: "shift" });
+    const run = core.state.run!;
+    const sameItem = run.options.findIndex((k) => k !== comboKey(run.combo) && k.endsWith(`item=${run.combo.item}`));
+    expect(sameItem).toBeGreaterThanOrEqual(0);
+    expect(find(core.send({ type: "reply", choice: sameItem }), "actionPerformed").matched).toBe(true);
+  });
+
+  it("rejects a resumed scene that no longer fits the course instead of throwing", () => {
+    const core = setup();
+    playIntro(core);
+    core.send({ type: "startScene", scene: "shift" });
+    const stale = createCore(course, { ...core.state, run: { ...core.state.run!, exchange: 5 } }, { now: () => T0, rng: mulberry32(1) });
+    expect(stale.send({ type: "reply", choice: 0 })).toEqual([{ type: "inputRejected", reason: "stale-run" }]);
+  });
+
+  it("describes the scene in progress for a front end resuming a save, without changing it", () => {
+    const core = setup();
+    expect(describeRun(course, core.state)).toEqual([]);
+    core.send({ type: "goTo", place: "noodle_shop" });
+    core.send({ type: "startScene", scene: "intro" });
+    const next = answerRight(core);
+    const before = core.state;
+    expect(describeRun(course, core.state)).toEqual([
+      { type: "sceneStarted", scene: "intro", npc: "cook" },
+      find(next, "lineSpoken"),
+      find(next, "replyOptions"),
+    ]);
+    expect(core.state).toBe(before);
   });
 
   it("a help lookup makes a word shaky", () => {
@@ -1116,7 +1208,18 @@ import {
   wordState,
 } from "./learner";
 import { shuffle } from "./rng";
-import type { Course, Exchange, GameEvent, GameState, RenderedLine, Scene, WordId, WordRecord } from "./types";
+import type {
+  Course,
+  Exchange,
+  GameEvent,
+  GameState,
+  RejectReason,
+  RenderedLine,
+  Scene,
+  SceneRun,
+  WordId,
+  WordRecord,
+} from "./types";
 
 export interface Ctx {
   course: Course;
@@ -1126,7 +1229,7 @@ export interface Ctx {
   ev: GameEvent[];
 }
 
-export function reject(ctx: Ctx, reason: string): void {
+export function reject(ctx: Ctx, reason: RejectReason): void {
   ctx.ev.push({ type: "inputRejected", reason });
 }
 
@@ -1200,13 +1303,31 @@ function buildTiles(ctx: Ctx, ex: Exchange, combo: Combo): string[] {
   return shuffle([...pieces, ...[...extra].slice(0, 2)], ctx.rng);
 }
 
+function optionsEvent(ex: Exchange, run: SceneRun): GameEvent {
+  return run.mode === "pick"
+    ? { type: "replyOptions", mode: "pick", options: run.options.map((k) => ex.variants[k].reply) }
+    : { type: "replyOptions", mode: "tiles", tiles: run.tiles };
+}
+
 function emitOptions(ctx: Ctx, ex: Exchange): void {
-  const run = ctx.state.run!;
-  if (run.mode === "pick") {
-    ctx.ev.push({ type: "replyOptions", mode: "pick", options: run.options.map((k) => ex.variants[k].reply) });
-  } else {
-    ctx.ev.push({ type: "replyOptions", mode: "tiles", tiles: run.tiles });
-  }
+  ctx.ev.push(optionsEvent(ex, ctx.state.run!));
+}
+
+/**
+ * The events that draw the scene in progress, for a front end that starts from a save made
+ * mid-scene. Changes nothing. Empty when there is no scene, or it no longer fits the course.
+ */
+export function describeRun(course: Course, state: GameState): GameEvent[] {
+  const run = state.run;
+  const scene = run && course.scenes.find((s) => s.id === run.scene);
+  const ex = scene?.exchanges[run!.exchange];
+  const v = ex?.variants[comboKey(run!.combo)];
+  if (!run || !scene || !ex || !v) return [];
+  return [
+    { type: "sceneStarted", scene: scene.id, npc: scene.npc },
+    { type: "lineSpoken", npc: scene.npc, line: v.npc },
+    optionsEvent(ex, run),
+  ];
 }
 
 function beginExchange(ctx: Ctx, scene: Scene, index: number): void {
@@ -1235,10 +1356,10 @@ function finishScene(ctx: Ctx, scene: Scene): void {
   ctx.ev.push(...addTrust(ctx.state, scene.npc, scene.trustGain + (run.mixups === 0 ? 1 : 0)));
 }
 
-function resolve(ctx: Ctx, scene: Scene, ex: Exchange, chosen: Combo, diff: string[]): void {
+function resolve(ctx: Ctx, scene: Scene, ex: Exchange, chosen: Combo, diff: string[], tilesWrong = false): void {
   const run = ctx.state.run!;
-  const matched = diff.length === 0;
-  ctx.ev.push({ type: "actionPerformed", action: resolveParams(ex.expect, chosen), matched, diff });
+  const matched = diff.length === 0 && !tilesWrong;
+  ctx.ev.push({ type: "actionPerformed", action: resolveParams(ex.expect, chosen), matched, diff, tilesWrong });
   const hinges = hingeWords(ctx, ex, run.combo);
   if (matched) {
     for (const w of hinges) setWord(ctx, w, recordRight);
@@ -1255,7 +1376,9 @@ function resolve(ctx: Ctx, scene: Scene, ex: Exchange, chosen: Combo, diff: stri
   ctx.ev.push({ type: "npcReacted", npc: scene.npc, reaction, line: ctx.course.reactions[reaction] });
   if (run.misses >= 2) {
     const v = ex.variants[comboKey(run.combo)];
-    ctx.ev.push({ type: "lineRephrased", npc: scene.npc, line: v.rephrase ?? v.npc });
+    const line = v.rephrase ?? v.npc;
+    ctx.ev.push({ type: "lineRephrased", npc: scene.npc, line, slow: !v.rephrase });
+    for (const t of line.tokens) setWord(ctx, t.word, recordSeen);
   }
   emitOptions(ctx, ex);
 }
@@ -1275,31 +1398,43 @@ export function startScene(ctx: Ctx, id: string): void {
   beginExchange(ctx, scene, 0);
 }
 
+/** The running scene and exchange, or undefined if there is none or the save no longer fits the course. */
 function current(ctx: Ctx): { scene: Scene; ex: Exchange } | undefined {
   const run = ctx.state.run;
   if (!run) return undefined;
-  const scene = sceneById(ctx, run.scene)!;
-  return { scene, ex: scene.exchanges[run.exchange] };
+  const scene = sceneById(ctx, run.scene);
+  const ex = scene?.exchanges[run.exchange];
+  if (!scene || !ex || !ex.variants[comboKey(run.combo)]) return undefined;
+  return { scene, ex };
+}
+
+/** Slots that change the action. A slot the action doesn't use is never a mix-up. */
+function actionDiff(ex: Exchange, chosen: Combo, expected: Combo): string[] {
+  const got = resolveParams(ex.expect, chosen);
+  const want = resolveParams(ex.expect, expected);
+  return Object.keys(want).filter((k) => got[k] !== want[k]);
 }
 
 export function reply(ctx: Ctx, choice: number): void {
+  const run = ctx.state.run;
+  if (run && !current(ctx)) return reject(ctx, "stale-run");
   const cur = current(ctx);
-  if (!cur || ctx.state.run!.mode !== "pick") return reject(ctx, "no-pick");
-  const key = ctx.state.run!.options[choice];
+  if (!cur || !run || run.mode !== "pick") return reject(ctx, "no-pick");
+  const key = run.options[choice];
   if (key === undefined) return reject(ctx, "bad-choice");
   const chosen = parseComboKey(key);
-  const diff = Object.keys(ctx.state.run!.combo).filter((s) => chosen[s] !== ctx.state.run!.combo[s]);
-  resolve(ctx, cur.scene, cur.ex, chosen, diff);
+  resolve(ctx, cur.scene, cur.ex, chosen, actionDiff(cur.ex, chosen, run.combo));
 }
 
 export function replyTiles(ctx: Ctx, tiles: number[]): void {
-  const cur = current(ctx);
   const run = ctx.state.run;
+  if (run && !current(ctx)) return reject(ctx, "stale-run");
+  const cur = current(ctx);
   if (!cur || !run || run.mode !== "tiles") return reject(ctx, "no-tiles");
   if (tiles.some((i) => run.tiles[i] === undefined)) return reject(ctx, "bad-tile");
   const answer = tiles.map((i) => run.tiles[i]).join("");
   const target = tilePieces(cur.ex.variants[comboKey(run.combo)].reply).join("");
-  resolve(ctx, cur.scene, cur.ex, run.combo, answer === target ? [] : ["tiles"]);
+  resolve(ctx, cur.scene, cur.ex, run.combo, [], answer !== target);
 }
 ```
 
@@ -1378,7 +1513,7 @@ export function createCore(course: Course, initial: GameState, deps: CoreDeps): 
 
 Run: `npx vitest run packages/core/test/core.test.ts`
 
-Expected: PASS (7 tests).
+Expected: PASS (10 tests).
 
 - [ ] **Step 5: Commit**
 
@@ -1400,26 +1535,69 @@ git commit -m "feat(core): add dialogue runner and core.send entry point"
 
 ```ts
 import { describe, expect, it } from "vitest";
-import { newGame } from "../src/core";
+import { createCore, newGame } from "../src/core";
 import { parseSave, serialize } from "../src/save";
 import { fixtureCourse } from "../src/testing/fixture";
+import type { GameState } from "../src/types";
 
 describe("save", () => {
   const course = fixtureCourse();
+  const bad = (state: unknown) => parseSave(JSON.stringify(state), course);
+  const inScene = () => {
+    const core = createCore(course, newGame(course), { now: () => 0, rng: () => 0 });
+    core.send({ type: "goTo", place: "noodle_shop" });
+    core.send({ type: "startScene", scene: "intro" });
+    return core;
+  };
 
   it("round-trips a game", () => {
     const s = newGame(course);
     expect(parseSave(serialize(s), course)).toEqual({ ok: true, state: s });
   });
 
+  it("round-trips a game in the middle of a scene", () => {
+    const core = inScene();
+    expect(core.state.run).not.toBeNull();
+    expect(parseSave(serialize(core.state), course)).toEqual({ ok: true, state: core.state });
+  });
+
   it("rejects broken or foreign saves with a reason", () => {
     expect(parseSave("{", course)).toEqual({ ok: false, reason: "not-json" });
     expect(parseSave("[]", course)).toEqual({ ok: false, reason: "not-object" });
     const s = newGame(course);
-    expect(parseSave(serialize({ ...s, v: 2 as 1 }), course)).toEqual({ ok: false, reason: "version" });
-    expect(parseSave(serialize({ ...s, course: "other" }), course)).toEqual({ ok: false, reason: "other-course" });
-    expect(parseSave(serialize({ ...s, place: "moon" }), course)).toEqual({ ok: false, reason: "bad-place" });
-    expect(parseSave(serialize({ ...s, words: [] as never }), course)).toEqual({ ok: false, reason: "bad-words" });
+    expect(bad({ ...s, v: 2 })).toEqual({ ok: false, reason: "newer-version" });
+    expect(bad({ ...s, v: "1" })).toEqual({ ok: false, reason: "version" });
+    expect(bad({ ...s, course: "other" })).toEqual({ ok: false, reason: "other-course" });
+    expect(bad({ ...s, place: "moon" })).toEqual({ ok: false, reason: "bad-place" });
+    expect(bad({ ...s, words: [] })).toEqual({ ok: false, reason: "bad-words" });
+  });
+
+  it("rejects bad values inside the save", () => {
+    const s = newGame(course);
+    const rec = { right: 1, wrong: 0, streak: 1, helps: 0, lapsed: false, firstSeen: 0, lastSeen: 0 };
+    expect(bad({ ...s, day: -1 })).toEqual({ ok: false, reason: "bad-day" });
+    expect(bad({ ...s, slot: course.world.slotsPerDay + 1 })).toEqual({ ok: false, reason: "bad-slot" });
+    expect(bad({ ...s, wallet: 1.5 })).toEqual({ ok: false, reason: "bad-wallet" });
+    expect(bad({ ...s, rentLate: 0 })).toEqual({ ok: false, reason: "bad-rentLate" });
+    expect(bad({ ...s, trust: { a: "hi" } })).toEqual({ ok: false, reason: "bad-trust" });
+    expect(bad({ ...s, scenesDone: { a: null } })).toEqual({ ok: false, reason: "bad-scenesDone" });
+    expect(bad({ ...s, words: { x: 5 } })).toEqual({ ok: false, reason: "bad-words" });
+    expect(bad({ ...s, words: { x: { ...rec, lapsed: "no" } } })).toEqual({ ok: false, reason: "bad-words" });
+    expect(bad({ ...s, run: { scene: "x" } })).toEqual({ ok: false, reason: "bad-run" });
+  });
+
+  it("drops a scene in progress that the course no longer has", () => {
+    const core = inScene();
+    const stale: GameState = { ...core.state, run: { ...core.state.run!, scene: "gone" } };
+    const res = parseSave(serialize(stale), course);
+    expect(res).toEqual({ ok: true, state: { ...stale, run: null } });
+  });
+
+  it("drops a tiles run whose reply the saved tiles can no longer build", () => {
+    const core = inScene();
+    const run = { ...core.state.run!, mode: "tiles" as const, options: [], tiles: ["x"] };
+    const stale: GameState = { ...core.state, run };
+    expect(parseSave(serialize(stale), course)).toEqual({ ok: true, state: { ...stale, run: null } });
   });
 });
 ```
@@ -1435,7 +1613,9 @@ Expected: FAIL. `../src/save` doesn't exist yet.
 `packages/core/src/save.ts`:
 
 ```ts
-import type { Course, GameState } from "./types";
+import { comboKey } from "./combo";
+import { tilePieces } from "./dialogue";
+import type { Course, GameState, SceneRun } from "./types";
 
 export const SAVE_VERSION = 1;
 
@@ -1446,8 +1626,45 @@ export function serialize(state: GameState): string {
 }
 
 const isObj = (x: unknown): x is Record<string, unknown> => !!x && typeof x === "object" && !Array.isArray(x);
+const isCount = (x: unknown): x is number => Number.isInteger(x) && (x as number) >= 0;
+const isStrings = (x: unknown): x is string[] => Array.isArray(x) && x.every((s) => typeof s === "string");
+const allValues = (o: Record<string, unknown>, ok: (v: unknown) => boolean) => Object.values(o).every(ok);
 
-/** Strict: anything unexpected is rejected with a reason, never half-loaded. */
+function isWordRecord(x: unknown): boolean {
+  if (!isObj(x) || typeof x.lapsed !== "boolean") return false;
+  return ["right", "wrong", "streak", "helps", "firstSeen", "lastSeen"].every((k) => isCount(x[k]));
+}
+
+function isRunShape(x: unknown): x is SceneRun {
+  if (!isObj(x) || typeof x.scene !== "string" || !isObj(x.combo) || !allValues(x.combo, (v) => typeof v === "string"))
+    return false;
+  if (!["pick", "tiles", "type"].includes(x.mode as string) || !isStrings(x.options) || !isStrings(x.tiles)) return false;
+  return ["exchange", "misses", "earned", "mixups"].every((k) => isCount(x[k]));
+}
+
+/** Every piece of the reply is among the tiles, repeats counted. */
+function tilesCover(tiles: string[], pieces: string[]): boolean {
+  const left = [...tiles];
+  return pieces.every((p) => {
+    const i = left.indexOf(p);
+    return i >= 0 && left.splice(i, 1).length === 1;
+  });
+}
+
+/** A run fits the course if its scene, exchange and slot combination still exist and its reply can still be given. */
+function runFits(run: SceneRun, course: Course): boolean {
+  const ex = course.scenes.find((s) => s.id === run.scene)?.exchanges[run.exchange];
+  const v = ex?.variants[comboKey(run.combo)];
+  if (!ex || !v) return false;
+  if (run.mode === "pick") return run.options.every((k) => !!ex.variants[k]);
+  return tilesCover(run.tiles, tilePieces(v.reply));
+}
+
+/**
+ * Strict: anything malformed is rejected with a reason, never half-loaded.
+ * One exception: a scene in progress that the course no longer has (after a content update)
+ * is dropped, so the player lands outside the scene instead of being stuck in it.
+ */
 export function parseSave(raw: string, course: Course): ParseResult {
   let data: unknown;
   try {
@@ -1456,18 +1673,21 @@ export function parseSave(raw: string, course: Course): ParseResult {
     return { ok: false, reason: "not-json" };
   }
   if (!isObj(data)) return { ok: false, reason: "not-object" };
+  if (typeof data.v === "number" && data.v > SAVE_VERSION) return { ok: false, reason: "newer-version" };
   if (data.v !== SAVE_VERSION) return { ok: false, reason: "version" };
   if (data.course !== course.id) return { ok: false, reason: "other-course" };
-  for (const k of ["day", "slot", "wallet"]) {
-    if (typeof data[k] !== "number") return { ok: false, reason: `bad-${k}` };
-  }
+  if (!isCount(data.day)) return { ok: false, reason: "bad-day" };
+  if (!isCount(data.slot) || data.slot > course.world.slotsPerDay) return { ok: false, reason: "bad-slot" };
+  if (!isCount(data.wallet)) return { ok: false, reason: "bad-wallet" };
   if (typeof data.rentLate !== "boolean") return { ok: false, reason: "bad-rentLate" };
   if (typeof data.place !== "string" || !course.world.places[data.place]) return { ok: false, reason: "bad-place" };
-  for (const k of ["trust", "words", "scenesDone"]) {
-    if (!isObj(data[k])) return { ok: false, reason: `bad-${k}` };
-  }
-  if (data.run !== null && !isObj(data.run)) return { ok: false, reason: "bad-run" };
-  return { ok: true, state: data as unknown as GameState };
+  if (!isObj(data.trust) || !allValues(data.trust, isCount)) return { ok: false, reason: "bad-trust" };
+  if (!isObj(data.scenesDone) || !allValues(data.scenesDone, isCount)) return { ok: false, reason: "bad-scenesDone" };
+  if (!isObj(data.words) || !allValues(data.words, isWordRecord)) return { ok: false, reason: "bad-words" };
+  if (data.run !== null && !isRunShape(data.run)) return { ok: false, reason: "bad-run" };
+  const state = data as unknown as GameState;
+  if (state.run && !runFits(state.run, course)) state.run = null;
+  return { ok: true, state };
 }
 ```
 
@@ -1481,20 +1701,20 @@ export * from "./life";
 export * from "./rng";
 export * from "./save";
 export { createCore, type Core, type CoreDeps } from "./core";
-export { tilePieces } from "./dialogue";
+export { describeRun, tilePieces } from "./dialogue";
 ```
 
 - [ ] **Step 4: Run the tests and make sure they pass**
 
 Run: `npx vitest run packages/core/test/save.test.ts`
 
-Expected: PASS (2 tests).
+Expected: PASS (6 tests).
 
 - [ ] **Step 5: Run the whole core suite and the typecheck**
 
 Run: `npx vitest run packages/core && npx tsc`
 
-Expected: 22 tests pass in 5 files; `tsc` prints nothing.
+Expected: 32 tests pass in 5 files; `tsc` prints nothing.
 
 - [ ] **Step 6: Commit**
 
@@ -1516,9 +1736,9 @@ git commit -m "feat(core): add strict versioned saves and package entry"
 
 ```ts
 import { describe, expect, it } from "vitest";
-import { convertPack, ftlValue } from "../src/import-vocab-pack";
+import { convertPack, ftlValue, packProblems } from "../src/import-vocab-pack";
 
-const pack = { key: "zh", name: "Mandarin", tts: "zh-CN", levels: [{ id: "1", label: "HSK 1" }, { id: "2", label: "HSK 2" }], typing: null, spaced: false };
+const pack = { key: "zh", name: "Mandarin", tts: "zh-CN", ttsRate: 0.85, levels: [{ id: "1", label: "HSK 1" }, { id: "2", label: "HSK 2" }], typing: null, spaced: false };
 const words = [
   { id: "w0133", w: "茶", en: "tea; tea plant", lv: "1", pron: "chá" },
   { id: "w0900", w: "括号", en: "brackets {like these}", lv: "2" },
@@ -1537,9 +1757,11 @@ describe("import-vocab-pack", () => {
       key: "zh",
       name: "Mandarin",
       locale: "zh",
+      tts: "zh-CN",
+      ttsRate: 0.85,
       levels: ["1", "2"],
       stages: { "1": ["1"], "2": ["2"] },
-      typing: false,
+      typing: null,
       spaced: false,
     });
     expect(r.words).toEqual([
@@ -1554,6 +1776,34 @@ describe("import-vocab-pack", () => {
     const first = convertPack(pack, words);
     const again = convertPack(pack, words, { ...first.meta, stages: { "1": ["1", "2"] } });
     expect(again.meta.stages).toEqual({ "1": ["1", "2"] });
+  });
+
+  it("keeps alternatives, part of speech, typing rules and an explicit locale", () => {
+    const typing = { caseSensitive: false, accents: "lenient" };
+    const es = { key: "es", name: "Spanish", tts: "es-ES", langTag: "es-419", levels: [{ id: "A1", label: "A1" }], typing, spaced: true };
+    const r = convertPack(es, [{ id: "w1", w: "hola", en: "hello", lv: "A1", alt: ["buenas"], pos: "intj" }]);
+    expect(r.meta).toMatchObject({ locale: "es-419", tts: "es-ES", typing, spaced: true });
+    expect(r.meta).not.toHaveProperty("ttsRate");
+    expect(r.words).toEqual([{ id: "w1", w: "hola", lv: "A1", alt: ["buenas"], pos: "intj" }]);
+  });
+
+  it("reports every bad word and stale stage instead of writing a broken pack", () => {
+    const bad = [
+      { id: "w1", w: "茶", en: "tea", lv: "1" },
+      { id: "w1", w: "水", en: "water", lv: "1" },
+      { id: "1x", w: "一", en: "one", lv: "1" },
+      { id: "w2", w: "", en: "empty", lv: "1" },
+      { id: "w3", w: "山", lv: "9" },
+    ] as never[];
+    expect(packProblems(pack, bad, { ...convertPack(pack, words).meta, stages: { "1": ["1", "5"] } })).toEqual([
+      "word 1 (w1): duplicate id",
+      "word 2 (1x): id must match /^[a-zA-Z][a-zA-Z0-9_-]*$/",
+      "word 3 (w2): missing w",
+      "word 4 (w3): missing en",
+      'word 4 (w3): level "9" is not in the pack\'s levels',
+      'stage 1: level "5" is not in the pack\'s levels',
+    ]);
+    expect(() => convertPack(pack, bad)).toThrow(/can't be imported/);
   });
 });
 ```
@@ -1575,10 +1825,14 @@ export interface PackMeta {
   name: string;
   /** Intl locale used for Fluent plural rules, e.g. "zh", "es" */
   locale: string;
+  /** speech-synthesis locale for audio, e.g. "zh-CN" */
+  tts: string;
+  ttsRate?: number;
   levels: string[];
   /** stage number -> the pack levels it covers */
   stages: Record<string, string[]>;
-  typing: boolean;
+  /** typed-reply rules as vocab-engine writes them; null when the script can't be typed */
+  typing: Record<string, unknown> | null;
   /** true when the script separates words with spaces */
   spaced: boolean;
 }
@@ -1598,9 +1852,10 @@ export interface VocabPackJson {
   key: string;
   name: string;
   tts: string;
+  ttsRate?: number;
   langTag?: string;
   levels: { id: string; label: string }[];
-  typing?: object | null;
+  typing?: Record<string, unknown> | null;
   spaced?: boolean;
 }
 
@@ -1636,19 +1891,46 @@ export interface ImportResult {
   glossesFtl: string;
 }
 
+/** Word ids become Fluent message ids, so they must be valid ones. */
+const FTL_ID = /^[a-zA-Z][a-zA-Z0-9_-]*$/;
+
+/** Every problem in the input, so one run reports them all. */
+export function packProblems(pack: VocabPackJson, words: VocabWordJson[], existing?: PackMeta): string[] {
+  const levels = new Set(pack.levels.map((l) => String(l.id)));
+  const problems: string[] = [];
+  const seen = new Set<string>();
+  for (const [i, v] of words.entries()) {
+    const at = `word ${i} (${v.id ?? "no id"})`;
+    if (typeof v.id !== "string" || !FTL_ID.test(v.id)) problems.push(`${at}: id must match ${FTL_ID}`);
+    else if (seen.has(v.id)) problems.push(`${at}: duplicate id`);
+    else seen.add(v.id);
+    if (typeof v.w !== "string" || !v.w) problems.push(`${at}: missing w`);
+    if (typeof v.en !== "string") problems.push(`${at}: missing en`);
+    if (!levels.has(String(v.lv))) problems.push(`${at}: level "${v.lv}" is not in the pack's levels`);
+  }
+  for (const [stage, lvs] of Object.entries(existing?.stages ?? {})) {
+    for (const lv of lvs) if (!levels.has(lv)) problems.push(`stage ${stage}: level "${lv}" is not in the pack's levels`);
+  }
+  return problems;
+}
+
 /**
  * Converts a vocab-engine pack. `existing` is our current pack.json, whose
- * hand-set fields (stages) survive a re-import.
+ * hand-set fields (stages) survive a re-import. Throws on bad input, listing every problem.
  */
 export function convertPack(pack: VocabPackJson, words: VocabWordJson[], existing?: PackMeta): ImportResult {
+  const problems = packProblems(pack, words, existing);
+  if (problems.length) throw new Error(`vocab-engine pack "${pack.key}" can't be imported:\n  ${problems.join("\n  ")}`);
   const levels = pack.levels.map((l) => String(l.id));
   const meta: PackMeta = {
     key: pack.key,
     name: pack.name,
     locale: pack.langTag ?? pack.tts.split("-")[0],
+    tts: pack.tts,
+    ...(pack.ttsRate !== undefined && { ttsRate: pack.ttsRate }),
     levels,
     stages: existing?.stages ?? Object.fromEntries(levels.map((lv, i) => [String(i + 1), [lv]])),
-    typing: pack.typing != null,
+    typing: pack.typing ?? null,
     spaced: pack.spaced !== false,
   };
   const out: PackWord[] = words.map((v) => {
@@ -1691,7 +1973,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) main();
 
 Run: `npx vitest run tools/test/import.test.ts`
 
-Expected: PASS (3 tests).
+Expected: PASS (5 tests).
 
 - [ ] **Step 5: Commit**
 
@@ -1720,10 +2002,11 @@ const lex = buildLexicon([
   { id: "w_cha", w: "茶", lv: "1" },
   { id: "w_san", w: "三", lv: "1" },
   { id: "w_hao", w: "好", lv: "1" },
+  { id: "w_ta", w: "他", lv: "1", alt: ["她"] },
 ]);
 
 describe("segment", () => {
-  it("takes the longest match and skips punctuation", () => {
+  it("tags words and skips punctuation", () => {
     expect(segment("好，三杯茶。", lex)).toEqual({
       tokens: [
         { start: 0, end: 1, word: "w_hao" },
@@ -1736,8 +2019,38 @@ describe("segment", () => {
     expect(segment("杯子", lex).tokens).toEqual([{ start: 0, end: 2, word: "w_beizi" }]);
   });
 
-  it("reports characters outside the word list", () => {
-    expect(segment("三碗茶", lex).unknown).toEqual(["碗"]);
+  it("tags alternative forms with the word's id and skips digits", () => {
+    expect(segment("她3杯", lex)).toEqual({
+      tokens: [
+        { start: 0, end: 1, word: "w_ta" },
+        { start: 2, end: 3, word: "w_bei" },
+      ],
+      unknown: [],
+    });
+  });
+
+  it("prefers the split with fewer words over the greedy one", () => {
+    const l = buildLexicon([
+      { id: "yanjiu", w: "研究", lv: "1" },
+      { id: "yanjiusheng", w: "研究生", lv: "1" },
+      { id: "shengming", w: "生命", lv: "1" },
+    ]);
+    expect(segment("研究生命", l).tokens.map((t) => t.word)).toEqual(["yanjiu", "shengming"]);
+  });
+
+  it("reports characters outside the word list with their offsets, as whole code points", () => {
+    expect(segment("三碗茶", lex).unknown).toEqual([{ start: 1, end: 2, char: "碗" }]);
+    expect(segment("𠀀茶", lex)).toEqual({
+      tokens: [{ start: 2, end: 3, word: "w_cha" }],
+      unknown: [{ start: 0, end: 2, char: "𠀀" }],
+    });
+    expect(segment("tea茶", lex).unknown.map((u) => u.char)).toEqual(["t", "e", "a"]);
+  });
+
+  it("refuses two words with the same form", () => {
+    expect(() => buildLexicon([{ id: "a", w: "行", lv: "1" }, { id: "b", w: "走", lv: "1", alt: ["行"] }])).toThrow(
+      /"行" \(a, b\)/,
+    );
   });
 });
 ```
@@ -1761,50 +2074,80 @@ export interface Lexicon {
   maxLen: number;
 }
 
+/** Throws if two words share a form: the tagger couldn't tell them apart. */
 export function buildLexicon(words: PackWord[]): Lexicon {
   const byForm = new Map<string, string>();
+  const clashes: string[] = [];
   let maxLen = 1;
   for (const w of words) {
-    for (const form of [w.w, ...(w.alt ?? [])]) {
-      if (!byForm.has(form)) byForm.set(form, w.id);
+    for (const form of new Set([w.w, ...(w.alt ?? [])])) {
+      const other = byForm.get(form);
+      if (other !== undefined && other !== w.id) clashes.push(`"${form}" (${other}, ${w.id})`);
+      else byForm.set(form, w.id);
       maxLen = Math.max(maxLen, form.length);
     }
   }
+  if (clashes.length) throw new Error(`words share a form, so lines can't be tagged: ${clashes.join(", ")}`);
   return { byForm, maxLen };
 }
 
-const SKIP = /[\p{P}\p{S}\p{Z}\s]/u;
+/** Punctuation, symbols, spaces and digits are not words. */
+const SKIP = /^[\p{P}\p{S}\p{Z}\s\p{Nd}]$/u;
+
+export interface Unknown {
+  start: number;
+  end: number;
+  char: string;
+}
+
+interface Best {
+  unknown: number;
+  words: number;
+  from: number;
+  word?: string;
+}
+
+const better = (a: Best, b: Best | undefined) =>
+  !b || a.unknown < b.unknown || (a.unknown === b.unknown && a.words < b.words);
 
 /**
- * Longest-match segmentation for unspaced scripts (Chinese, Japanese).
- * Every non-punctuation character must belong to a pack word; the rest are reported.
+ * Word tagging for unspaced scripts (Chinese, Japanese). Picks the split with the fewest
+ * characters outside the word list, then the fewest words, so 研究生命 is 研究 + 生命 when
+ * both are words, not 研究生 + 命. On a tie the split whose last word is longer wins.
+ * Offsets are UTF-16 indices; unknown characters are whole code points.
  */
-export function segment(text: string, lex: Lexicon): { tokens: Token[]; unknown: string[] } {
-  const tokens: Token[] = [];
-  const unknown: string[] = [];
-  let i = 0;
-  while (i < text.length) {
-    if (SKIP.test(text[i])) {
-      i += 1;
+export function segment(text: string, lex: Lexicon): { tokens: Token[]; unknown: Unknown[] } {
+  const n = text.length;
+  const best: (Best | undefined)[] = new Array(n + 1);
+  best[0] = { unknown: 0, words: 0, from: -1 };
+  const offer = (j: number, b: Best) => {
+    if (better(b, best[j])) best[j] = b;
+  };
+  for (let i = 0; i < n; i++) {
+    const cur = best[i];
+    if (!cur) continue;
+    const char = String.fromCodePoint(text.codePointAt(i)!);
+    const next = i + char.length;
+    if (SKIP.test(char)) {
+      offer(next, { unknown: cur.unknown, words: cur.words, from: i });
       continue;
     }
-    let matched = 0;
-    for (let len = Math.min(lex.maxLen, text.length - i); len > 0; len--) {
+    for (let len = 1; len <= Math.min(lex.maxLen, n - i); len++) {
       const id = lex.byForm.get(text.slice(i, i + len));
-      if (id) {
-        tokens.push({ start: i, end: i + len, word: id });
-        matched = len;
-        break;
-      }
+      if (id) offer(i + len, { unknown: cur.unknown, words: cur.words + 1, from: i, word: id });
     }
-    if (matched) {
-      i += matched;
-    } else {
-      unknown.push(text[i]);
-      i += 1;
-    }
+    offer(next, { unknown: cur.unknown + 1, words: cur.words, from: i });
   }
-  return { tokens, unknown };
+  const tokens: Token[] = [];
+  const unknown: Unknown[] = [];
+  for (let j = n; j > 0; ) {
+    const b = best[j]!;
+    const piece = text.slice(b.from, j);
+    if (b.word) tokens.push({ start: b.from, end: j, word: b.word });
+    else if (!SKIP.test(piece)) unknown.push({ start: b.from, end: j, char: piece });
+    j = b.from;
+  }
+  return { tokens: tokens.reverse(), unknown: unknown.reverse() };
 }
 ```
 
@@ -1812,7 +2155,7 @@ export function segment(text: string, lex: Lexicon): { tokens: Token[]; unknown:
 
 Run: `npx vitest run tools/test/segment.test.ts`
 
-Expected: PASS (2 tests).
+Expected: PASS (5 tests).
 
 - [ ] **Step 5: Commit**
 
@@ -1833,7 +2176,7 @@ git commit -m "feat(tools): add longest-match word tagging"
 
 ```ts
 import { describe, expect, it } from "vitest";
-import { bindSlots, messageIds, parseFtl, Renderer, termNames } from "../src/fluent";
+import { bindSlots, messageIds, parseFtl, Renderer, termNames, type FtlSource } from "../src/fluent";
 
 const zhTerms = `-tea = { $form ->
     [measure] 杯
@@ -1857,6 +2200,9 @@ const esLines = `order = { $count ->
 }
 `;
 
+const zh = (slots: string): FtlSource[] => [["t", zhTerms], ["slots", slots], ["l", zhLines]];
+const es = (slots: string): FtlSource[] => [["t", esTerms], ["slots", slots], ["l", esLines]];
+
 describe("fluent", () => {
   it("lists terms and messages, and rejects syntax errors", () => {
     expect(termNames(zhTerms, "t")).toEqual(["tea", "three"]);
@@ -1865,20 +2211,45 @@ describe("fluent", () => {
   });
 
   it("binds slots to concept terms (zh measure words)", () => {
-    const r = new Renderer("zh", [zhTerms, bindSlots(zhTerms, { item: "tea", count: "three" }), zhLines]);
+    const r = new Renderer("zh", zh(bindSlots(zhTerms, { item: "tea", count: "three" }, zhLines, "l")));
     expect(r.render("order", { count: 3 })).toBe("三杯茶。");
   });
 
   it("lets each language choose its own grammar (es plurals)", () => {
-    const three = new Renderer("es", [esTerms, bindSlots(esTerms, { item: "tea", count: "three" }), esLines]);
+    const three = new Renderer("es", es(bindSlots(esTerms, { item: "tea", count: "three" }, esLines, "l")));
     expect(three.render("order", { count: 3 })).toBe("tres tés, por favor.");
-    const one = new Renderer("es", [esTerms, bindSlots(esTerms, { item: "tea", count: "one" }), esLines]);
+    const one = new Renderer("es", es(bindSlots(esTerms, { item: "tea", count: "one" }, esLines, "l")));
     expect(one.render("order", { count: 1 })).toBe("Un té, por favor.");
   });
 
   it("fails loudly on unknown concepts and missing messages", () => {
-    expect(() => bindSlots(zhTerms, { item: "coffee" })).toThrow(/no term -coffee/);
-    expect(() => new Renderer("zh", [zhTerms]).render("nope")).toThrow(/missing message "nope"/);
+    expect(() => bindSlots(zhTerms, { item: "coffee" }, zhLines, "l")).toThrow(/no term -coffee/);
+    expect(() => new Renderer("zh", [["t", zhTerms]]).render("nope")).toThrow(/missing message "nope"/);
+  });
+
+  it("rejects broken entries and duplicate names instead of dropping them", () => {
+    expect(() => new Renderer("zh", [["l", "ok = fine\nbroken = { -tea\nnext = x\n"]])).toThrow(/l: Fluent syntax error/);
+    expect(() => new Renderer("zh", [["l", "a = 1\na = 2\n"]])).toThrow(/l: .*a/);
+    expect(() => new Renderer("zh", [["t", zhTerms], ["t2", "-tea = 水\n"]])).toThrow(/t2: .*tea/);
+  });
+
+  it("refuses a slot named like a term, and forms a term doesn't have", () => {
+    expect(() => bindSlots(zhTerms, { tea: "three" }, zhLines, "l")).toThrow(/slot "tea" has the same name as the term -tea/);
+    const typo = `order = { -item(form: "measur") }\n`;
+    expect(() => bindSlots(zhTerms, { item: "tea" }, typo, "l")).toThrow(/l: -item \(-tea\) has no form "measur"/);
+    const noForms = `order = { -three(form: "measure") }\n`;
+    expect(() => bindSlots(zhTerms, {}, noForms, "l")).toThrow(/l: -three has no form "measure"/);
+    const inTerms = `${zhTerms}-cup = { -tea(form: "measur") }\n`;
+    expect(() => bindSlots(inTerms, {}, zhLines, "l")).toThrow(/terms.ftl: -tea has no form "measur"/);
+    expect(() => bindSlots(zhTerms, {}, `order = { -tea(form: 1) }\n`, "l")).toThrow(/l: -tea has no form 1/);
+  });
+
+  it("checks forms on term attributes against the attribute's own forms", () => {
+    const terms = `-tea = 茶\n    .word = { $form ->\n        [measure] 杯\n       *[base] 茶\n    }\n`;
+    const ok = `order = { -item.word(form: "measure") ->\n   *[other] 杯\n}\n`;
+    expect(() => bindSlots(terms, { item: "tea" }, ok, "l")).not.toThrow();
+    const bad = `order = { -item.word(form: "plural") ->\n   *[x] x\n}\n`;
+    expect(() => bindSlots(terms, { item: "tea" }, bad, "l")).toThrow(/l: -item.word \(-tea\) has no form "plural"/);
   });
 });
 ```
@@ -1897,7 +2268,20 @@ Fluent allows term attributes only inside selectors. Word forms a line displays 
 
 ```ts
 import { FluentBundle, FluentResource, type FluentVariable } from "@fluent/bundle";
-import { FluentParser, FluentSerializer, Identifier, Message, Resource, Term } from "@fluent/syntax";
+import {
+  FluentParser,
+  FluentSerializer,
+  Identifier,
+  Message,
+  Resource,
+  SelectExpression,
+  StringLiteral,
+  Term,
+  TermReference,
+  VariableReference,
+  Visitor,
+  type Placeable,
+} from "@fluent/syntax";
 
 const parser = new FluentParser({ withSpans: false });
 
@@ -1918,16 +2302,55 @@ export function messageIds(src: string, name: string): string[] {
 }
 
 /**
+ * The forms a term (or one of its attributes) chooses between with `$form`; empty when it has none.
+ * Only named keys count: a number key like `[1]` is a plural category, not a form.
+ */
+function formsOf(term: Term, attribute?: string): string[] {
+  const pattern = attribute ? term.attributes.find((a) => a.id.name === attribute)?.value : term.value;
+  const select = pattern?.elements
+    .map((e) => (e as Placeable).expression)
+    .find((x): x is SelectExpression => x instanceof SelectExpression && x.selector instanceof VariableReference && x.selector.id.name === "form");
+  return select ? select.variants.flatMap((v) => (v.key instanceof Identifier ? [v.key.name] : [])) : [];
+}
+
+interface FormRef {
+  term: string;
+  attribute?: string;
+  /** a number means the line wrote `form: 1`, which never picks a named form */
+  form: string | number;
+}
+
+/** Every `-term(form: ...)` in the source. */
+function formRefs(src: string, name: string): FormRef[] {
+  const refs: FormRef[] = [];
+  class Collect extends Visitor {
+    visitTermReference(node: TermReference) {
+      const form = node.arguments?.named.find((a) => a.name.name === "form")?.value;
+      if (form) {
+        const value = form instanceof StringLiteral ? form.value : Number(form.value);
+        refs.push({ term: node.id.name, ...(node.attribute && { attribute: node.attribute.name }), form: value });
+      }
+      this.genericVisit(node);
+    }
+  }
+  new Collect().visit(parseFtl(src, name));
+  return refs;
+}
+
+/**
  * Slot binding: for each slot, defines a term named after the slot as a copy
  * of the chosen concept's term, so lines can say { -item } or { -item(form: "measure") }.
+ * Throws if a slot name is already a term, or if the lines or terms ask a term for a form it doesn't have
+ * (Fluent would quietly fall back to the default form).
  */
-export function bindSlots(termsSrc: string, combo: Record<string, string>): string {
+export function bindSlots(termsSrc: string, combo: Record<string, string>, linesSrc: string, linesName: string): string {
   const terms = new Map(
     parseFtl(termsSrc, "terms.ftl")
       .body.filter((e): e is Term => e instanceof Term)
       .map((t) => [t.id.name, t]),
   );
   const aliases = Object.entries(combo).map(([slot, concept]) => {
+    if (terms.has(slot)) throw new Error(`slot "${slot}" has the same name as the term -${slot}`);
     const term = terms.get(concept);
     if (!term) throw new Error(`terms.ftl has no term -${concept}`);
     const copy = term.clone();
@@ -1935,17 +2358,36 @@ export function bindSlots(termsSrc: string, combo: Record<string, string>): stri
     copy.comment = null;
     return copy;
   });
+  const sources: [string, string][] = [
+    ["terms.ftl", termsSrc],
+    [linesName, linesSrc],
+  ];
+  for (const [name, src] of sources) {
+    for (const { term, attribute, form } of formRefs(src, name)) {
+      const target = terms.get(combo[term] ?? term);
+      if (target && !(typeof form === "string" && formsOf(target, attribute).includes(form))) {
+        const ref = `-${term}${attribute ? `.${attribute}` : ""}`;
+        const shown = term in combo ? `${ref} (-${combo[term]})` : ref;
+        throw new Error(`${name}: ${shown} has no form ${JSON.stringify(form)}`);
+      }
+    }
+  }
   return new FluentSerializer().serialize(new Resource(aliases));
 }
+
+/** A Fluent source and the name its errors are reported under. */
+export type FtlSource = [name: string, src: string];
 
 export class Renderer {
   private bundle: FluentBundle;
 
-  constructor(locale: string, sources: string[]) {
+  /** Throws on a syntax error, or if two sources define the same message or term. */
+  constructor(locale: string, sources: FtlSource[]) {
     this.bundle = new FluentBundle(locale, { useIsolating: false });
-    for (const src of sources) {
-      const errors = this.bundle.addResource(new FluentResource(src), { allowOverrides: true });
-      if (errors.length) throw errors[0];
+    for (const [name, src] of sources) {
+      parseFtl(src, name);
+      const errors = this.bundle.addResource(new FluentResource(src));
+      if (errors.length) throw new Error(`${name}: ${errors[0].message}`);
     }
   }
 
@@ -1968,7 +2410,7 @@ export class Renderer {
 
 Run: `npx vitest run tools/test/fluent.test.ts`
 
-Expected: PASS (4 tests).
+Expected: PASS (7 tests).
 
 - [ ] **Step 5: Commit**
 
@@ -2047,6 +2489,79 @@ describe("checkCourse", () => {
     expect(errors).toContain('coverage: "你" (stage 1) is in 1 scenes; needs 3');
     expect(errors).toContain("intro/greet: npc line has no audio");
   });
+
+  it("doesn't count words from scenes that can be played in another order", () => {
+    const c = fixtureCourse();
+    // shift no longer comes after intro, so intro's words are new in shift.
+    c.scenes[1].after = [];
+    c.scenes[1].requires = {};
+    expect(checkCourse(input({ course: c })).some((e) => /^shift\/order\[.*new words/.test(e))).toBe(true);
+  });
+
+  it("checks reactions against the earliest stage", () => {
+    const c = fixtureCourse();
+    c.scenes[1].stage = 2;
+    c.words.w_cha.lv = "2";
+    c.reactions["wrong-generic"] = line(["茶", "w_cha"]);
+    const errors = checkCourse(input({ course: c, stages: { "1": ["1"], "2": ["2"] } }));
+    expect(errors).toContain('reaction wrong-generic: "茶" is level 2, above stage 1');
+  });
+
+  it("keeps checking scenes stuck in a cycle", () => {
+    const c = fixtureCourse();
+    c.scenes[0].after = ["shift"];
+    c.scenes[0].exchanges[0].variants[""].npc = line(["你", "w_ni"], ["好", "w_hao"], ["茶", "w_cha"]);
+    const errors = checkCourse(input({ course: c }));
+    expect(errors.some((e) => /cycle/.test(e))).toBe(true);
+    expect(errors).toContain("intro/greet: 3 new words (你 好 茶); at most 2");
+  });
+
+  it("rejects duplicate ids and trust no earlier scene can give", () => {
+    const c = fixtureCourse();
+    c.scenes.push({ ...c.scenes[1] });
+    c.scenes[0].exchanges.push(c.scenes[0].exchanges[0]);
+    const errors = checkCourse(input({ course: c }));
+    expect(errors).toContain('scenes: id "shift" is used twice');
+    expect(errors).toContain('intro: exchange id "greet" is used twice');
+
+    const d = fixtureCourse();
+    d.scenes[1].requires = { trust: { cook: 3 } };
+    d.scenes[1].repeatable = false;
+    expect(checkCourse(input({ course: d }))).toContain('shift: needs trust 3 with "cook", but earlier scenes give at most 2');
+  });
+
+  it("keeps every tile and help word on keys 1-9", () => {
+    const c = fixtureCourse();
+    const long = line(...Array.from({ length: 10 }, () => ["好", "w_hao"] as [string, string]));
+    c.scenes[0].exchanges[0].variants[""] = { npc: long, reply: line(...long.tokens.slice(0, 8).map(() => ["好", "w_hao"] as [string, string])) };
+    const errors = checkCourse(input({ course: c }));
+    expect(errors).toContain("intro/greet: the reply has 8 words; at most 7");
+    expect(errors).toContain("intro/greet: the npc line has 10 words; at most 9");
+  });
+
+  it("keeps each place's menu on keys 1-7, before sleep and quit", () => {
+    const c = fixtureCourse();
+    c.world.places.noodle_shop.links = ["street", "a", "b", "c", "d", "e"];
+    for (const l of ["a", "b", "c", "d", "e"]) c.world.places[l] = { links: [] };
+    expect(checkCourse(input({ course: c }))).toContain('world: place "noodle_shop" has 8 scenes and exits; at most 7');
+  });
+
+  it("keeps names simple, groups sound, slot references real and amounts whole", () => {
+    const c = fixtureCourse();
+    c.groups.drinks = ["tea", "tea", "coffee"];
+    c.groups["bad name"] = [];
+    c.world.foodPerDay = 2.5;
+    c.scenes[1].exchanges[0].pay = -1;
+    c.scenes[1].exchanges[0].expect = { action: "serve", item: "$itme" };
+    const errors = checkCourse(input({ course: c }));
+    expect(errors).toContain('groups: "drinks" lists "tea" twice');
+    expect(errors).toContain('groups: "drinks" has unknown concept "coffee"');
+    expect(errors).toContain('groups: "bad name" may only use letters, digits, _ and -');
+    expect(errors).toContain('groups: "bad name" is empty');
+    expect(errors).toContain("world: foodPerDay must be a whole number of 0 or more");
+    expect(errors).toContain("shift/order: pay must be a whole number of 0 or more");
+    expect(errors).toContain('shift/order: expect uses unknown slot "$itme"');
+  });
 });
 ```
 
@@ -2084,6 +2599,12 @@ export interface CheckInput {
 
 export const MAX_NEW_PER_EXCHANGE = 2;
 export const MIN_SCENES_PER_WORD = 3;
+/** Every choice is one key, 1-9: a reply's tiles are its words plus up to 2 extra. */
+export const MAX_REPLY_WORDS = 7;
+/** Word help offers each word of the NPC's line on keys 1-9. */
+export const MAX_LINE_WORDS = 9;
+/** A place's menu: its scenes and exits on keys 1-7, then sleep and quit. */
+export const MAX_PLACE_ITEMS = 7;
 
 /** Scenes in `after` order; ties keep file order. */
 export function orderScenes(scenes: Scene[]): { ordered: Scene[]; errors: string[] } {
@@ -2092,7 +2613,10 @@ export function orderScenes(scenes: Scene[]): { ordered: Scene[]; errors: string
   const pending = [...scenes];
   while (pending.length) {
     const i = pending.findIndex((s) => s.after.every((a) => done.has(a)));
-    if (i < 0) return { ordered, errors: [`scene order has a cycle or a missing scene: ${pending.map((s) => s.id).join(", ")}`] };
+    if (i < 0) {
+      // Keep checking the stuck scenes too, so one cycle doesn't hide their other errors.
+      return { ordered: [...ordered, ...pending], errors: [`scene order has a cycle or a missing scene: ${pending.map((s) => s.id).join(", ")}`] };
+    }
     const [s] = pending.splice(i, 1);
     ordered.push(s);
     done.add(s.id);
@@ -2102,28 +2626,96 @@ export function orderScenes(scenes: Scene[]): { ordered: Scene[]; errors: string
 
 const lineWords = (l: RenderedLine | undefined): WordId[] => (l ? l.tokens.map((t) => t.word) : []);
 
+/** Every scene each scene comes after, directly or not. */
+function ancestors(scenes: Scene[]): Map<string, Set<string>> {
+  const byId = new Map(scenes.map((s) => [s.id, s]));
+  const memo = new Map<string, Set<string>>();
+  const visit = (id: string, path: Set<string>): Set<string> => {
+    const known = memo.get(id);
+    if (known) return known;
+    const out = new Set<string>();
+    if (path.has(id)) return out; // a cycle, reported by orderScenes
+    path.add(id);
+    for (const a of byId.get(id)?.after ?? []) {
+      out.add(a);
+      for (const x of visit(a, path)) out.add(x);
+    }
+    path.delete(id);
+    memo.set(id, out);
+    return out;
+  };
+  for (const s of scenes) visit(s.id, new Set());
+  return memo;
+}
+
+/** Slot, group and concept names end up in combo keys ("count=three|item=tea"), so they stay simple. */
+const NAME = /^[A-Za-z0-9_-]+$/;
+const isCount = (n: unknown) => Number.isInteger(n) && (n as number) >= 0;
+
+/** Duplicates in a list, each named once. */
+const dupes = (xs: string[]) => [...new Set(xs.filter((x, i) => xs.indexOf(x) !== i))];
+
 export function checkCourse(input: CheckInput): string[] {
   const { course, stages, checks, learnerIds } = input;
   const errors: string[] = [];
   const { world } = course;
 
   if (!world.places[world.start]) errors.push(`world: start place "${world.start}" does not exist`);
+  // Saves hold whole numbers only, so money, time and trust amounts must be whole numbers too.
+  for (const k of ["startWallet", "foodPerDay", "rentPerWeek"] as const) {
+    if (!isCount(world[k])) errors.push(`world: ${k} must be a whole number of 0 or more`);
+  }
+  if (!isCount(world.slotsPerDay) || world.slotsPerDay < 1) errors.push("world: slotsPerDay must be a whole number of 1 or more");
+  for (const name of Object.keys(course.concepts)) {
+    if (!NAME.test(name)) errors.push(`concepts: "${name}" may only use letters, digits, _ and -`);
+  }
+  for (const [name, members] of Object.entries(course.groups)) {
+    if (!NAME.test(name)) errors.push(`groups: "${name}" may only use letters, digits, _ and -`);
+    if (members.length === 0) errors.push(`groups: "${name}" is empty`);
+    for (const d of dupes(members)) errors.push(`groups: "${name}" lists "${d}" twice`);
+    for (const m of members) if (!(m in course.concepts)) errors.push(`groups: "${name}" has unknown concept "${m}"`);
+  }
   for (const [id, p] of Object.entries(world.places)) {
     for (const l of p.links) if (!world.places[l]) errors.push(`world: place "${id}" links to unknown place "${l}"`);
+  }
+  for (const [id, p] of Object.entries(world.places)) {
+    const items = p.links.length + course.scenes.filter((s) => s.place === id).length;
+    if (items > MAX_PLACE_ITEMS) errors.push(`world: place "${id}" has ${items} scenes and exits; at most ${MAX_PLACE_ITEMS}`);
   }
   for (const [id, n] of Object.entries(world.npcs)) {
     if (!world.places[n.place]) errors.push(`world: npc "${id}" is at unknown place "${n.place}"`);
   }
 
   const sceneIds = new Set(course.scenes.map((s) => s.id));
+  for (const d of dupes(course.scenes.map((s) => s.id))) errors.push(`scenes: id "${d}" is used twice`);
+  const before = ancestors(course.scenes);
   for (const s of course.scenes) {
+    for (const d of dupes(s.exchanges.map((e) => e.id))) errors.push(`${s.id}: exchange id "${d}" is used twice`);
     if (!world.places[s.place]) errors.push(`${s.id}: unknown place "${s.place}"`);
     if (!world.npcs[s.npc]) errors.push(`${s.id}: unknown npc "${s.npc}"`);
     for (const a of s.after) if (!sceneIds.has(a)) errors.push(`${s.id}: after unknown scene "${a}"`);
-    for (const npc of Object.keys(s.requires.trust ?? {})) {
-      if (!world.npcs[npc]) errors.push(`${s.id}: requires trust with unknown npc "${npc}"`);
+    for (const [npc, need] of Object.entries(s.requires.trust ?? {})) {
+      if (!world.npcs[npc]) {
+        errors.push(`${s.id}: requires trust with unknown npc "${npc}"`);
+        continue;
+      }
+      // Trust comes from finishing scenes with that npc (trustGain, +1 without mix-ups).
+      // Only scenes that can be played before this one count.
+      const sources = course.scenes.filter((x) => x.npc === npc && x.id !== s.id && !before.get(x.id)?.has(s.id));
+      const most = sources.some((x) => x.repeatable) ? Infinity : sources.reduce((n, x) => n + x.trustGain + 1, 0);
+      if (most < need) errors.push(`${s.id}: needs trust ${need} with "${npc}", but earlier scenes give at most ${most}`);
     }
+    if (!isCount(s.trustGain)) errors.push(`${s.id}: trustGain must be a whole number of 0 or more`);
     for (const ex of s.exchanges) {
+      for (const k of ["pay", "missCost"] as const) {
+        if (!isCount(ex[k])) errors.push(`${s.id}/${ex.id}: ${k} must be a whole number of 0 or more`);
+      }
+      for (const slot of Object.keys(ex.slots)) {
+        if (!NAME.test(slot)) errors.push(`${s.id}/${ex.id}: slot "${slot}" may only use letters, digits, _ and -`);
+      }
+      for (const v of Object.values(ex.expect)) {
+        if (v.startsWith("$") && !(v.slice(1) in ex.slots)) errors.push(`${s.id}/${ex.id}: expect uses unknown slot "${v}"`);
+      }
       for (const h of ex.hinges) {
         const ok = h.startsWith("$") ? h.slice(1) in ex.slots : h in course.concepts;
         if (!ok) errors.push(`${s.id}/${ex.id}: unknown hinge "${h}"`);
@@ -2147,9 +2739,19 @@ export function checkCourse(input: CheckInput): string[] {
 
   const { ordered, errors: orderErrors } = orderScenes(course.scenes);
   errors.push(...orderErrors);
-  const seen = new Set<WordId>();
+  // Words met before an exchange: those of the scenes it comes after (directly or not), then
+  // its own earlier exchanges. Scenes that don't depend on each other can be played in either
+  // order, so they don't count for each other.
+  // A slot word counts as met once any variant has used it: slot values rotate, favouring
+  // words the player is still learning, so every value is met within a few plays.
+  // New words are counted per variant (NPC line, reply, rephrase). Words that only appear in
+  // other variants' replies (the wrong options in pick and tiles mode) don't count: the player
+  // isn't asked to understand them, and the learner model doesn't mark them met.
+  const metAfter = new Map<string, Set<WordId>>();
   const scenesUsing = new Map<WordId, Set<string>>();
   for (const s of ordered) {
+    const seen = new Set<WordId>();
+    for (const a of before.get(s.id) ?? []) for (const w of metAfter.get(a) ?? []) seen.add(w);
     for (const ex of s.exchanges) {
       const exWords = new Set<WordId>();
       for (const [key, v] of Object.entries(ex.variants)) {
@@ -2161,6 +2763,14 @@ export function checkCourse(input: CheckInput): string[] {
           errors.push(`${where}: ${fresh.length} new words (${shown}); at most ${MAX_NEW_PER_EXCHANGE}`);
         }
         checkLevels(where, words, s.stage);
+        if (v.reply.tokens.length > MAX_REPLY_WORDS) {
+          errors.push(`${where}: the reply has ${v.reply.tokens.length} words; at most ${MAX_REPLY_WORDS}`);
+        }
+        for (const [name, l] of [["npc", v.npc], ["rephrase", v.rephrase]] as const) {
+          if (l && l.tokens.length > MAX_LINE_WORDS) {
+            errors.push(`${where}: the ${name} line has ${l.tokens.length} words; at most ${MAX_LINE_WORDS}`);
+          }
+        }
         if (checks.audio) {
           for (const [name, l] of Object.entries(v)) if (l && !l.audio) errors.push(`${where}: ${name} line has no audio`);
         }
@@ -2172,11 +2782,13 @@ export function checkCourse(input: CheckInput): string[] {
       }
       for (const w of exWords) seen.add(w);
     }
+    metAfter.set(s.id, seen);
   }
 
-  const maxStage = Math.max(1, ...course.scenes.map((s) => s.stage));
+  // Reactions can play in any scene, so they must fit the earliest stage.
+  const minStage = Math.min(...course.scenes.map((s) => s.stage), Infinity);
   for (const [id, l] of Object.entries(course.reactions)) {
-    checkLevels(`reaction ${id}`, lineWords(l), maxStage);
+    checkLevels(`reaction ${id}`, lineWords(l), Number.isFinite(minStage) ? minStage : 1);
     if (checks.audio && !l.audio) errors.push(`reaction ${id}: no audio`);
   }
   if (!course.reactions["wrong-generic"]) errors.push(`reactions: "wrong-generic" is required`);
@@ -2210,7 +2822,7 @@ export function checkCourse(input: CheckInput): string[] {
 
 Run: `npx vitest run tools/test/check.test.ts`
 
-Expected: PASS (6 tests).
+Expected: PASS (13 tests).
 
 - [ ] **Step 5: Commit**
 
@@ -2250,6 +2862,16 @@ describe("width", () => {
     expect(plain(fitted)).toBe("ab三 ");
     expect(plain(fitLine([{ text: "hi" }], 4))).toBe("hi  ");
   });
+
+  it("counts emoji as wide and invisible characters as nothing", () => {
+    expect(strWidth("👍")).toBe(2);
+    expect(strWidth("a\u200db")).toBe(2);
+    expect(strWidth("e\u0301")).toBe(1);
+  });
+
+  it("turns control characters into spaces so text can't break the layout", () => {
+    expect(plain(fitLine([{ text: "a\tb\x1b[2J" }], 8))).toBe("a b [2J ");
+  });
 });
 ```
 
@@ -2276,7 +2898,7 @@ export interface Span {
 
 export type StyledLine = Span[];
 
-/** Key names: "0"-"9", letters, "return", "escape", "backspace", "ctrl-c". */
+/** Key names: "0"-"9", letters, "return", "escape", "backspace", "up", "down", "left", "right", "ctrl-c". */
 export interface Key {
   name: string;
 }
@@ -2285,6 +2907,8 @@ export interface Key {
 export interface Terminal {
   write(lines: StyledLine[]): void;
   onKey(handler: (key: Key) => void): void;
+  /** Called after the terminal changes size (window resize, phone rotation). */
+  onResize(handler: () => void): void;
   size(): { cols: number; rows: number };
   close(): void;
 }
@@ -2297,10 +2921,16 @@ export const plain = (line: StyledLine): string => line.map((s) => s.text).join(
 ```ts
 import type { StyledLine } from "./terminal";
 
-/** Terminal cells a code point takes: 2 for East Asian wide characters, 0 for combining marks. */
+const isControl = (cp: number) => cp < 32 || (cp >= 0x7f && cp < 0xa0);
+
+/**
+ * Terminal cells a code point takes: 2 for East Asian wide characters and emoji,
+ * 0 for combining marks and invisible format characters (zero-width joiner and space).
+ * Emoji widths differ between terminals, so UI text should not rely on them.
+ */
 export function charWidth(cp: number): number {
-  if (cp < 32 || (cp >= 0x7f && cp < 0xa0)) return 0;
-  if (/\p{Mn}/u.test(String.fromCodePoint(cp))) return 0;
+  if (isControl(cp)) return 0;
+  if (/[\p{Mn}\p{Cf}]/u.test(String.fromCodePoint(cp))) return 0;
   if (
     (cp >= 0x1100 && cp <= 0x115f) ||
     (cp >= 0x2e80 && cp <= 0xa4cf) ||
@@ -2309,6 +2939,8 @@ export function charWidth(cp: number): number {
     (cp >= 0xfe30 && cp <= 0xfe4f) ||
     (cp >= 0xff00 && cp <= 0xff60) ||
     (cp >= 0xffe0 && cp <= 0xffe6) ||
+    cp === 0x1f004 ||
+    (cp >= 0x1f300 && cp <= 0x1faff) ||
     (cp >= 0x20000 && cp <= 0x3fffd)
   ) {
     return 2;
@@ -2326,13 +2958,18 @@ export function lineWidth(line: StyledLine): number {
   return line.reduce((n, s) => n + strWidth(s.text), 0);
 }
 
-/** Cuts or pads a line to exactly `cols` cells. A wide character that would straddle the edge becomes a space. */
+/**
+ * Cuts or pads a line to exactly `cols` cells. A wide character that would straddle the edge
+ * becomes a space. Control characters (tabs, newlines, escapes) become spaces too, so text
+ * can never break the layout or send terminal commands.
+ */
 export function fitLine(line: StyledLine, cols: number): StyledLine {
   const out: StyledLine = [];
   let used = 0;
   for (const span of line) {
     let text = "";
-    for (const ch of span.text) {
+    for (const raw of span.text) {
+      const ch = isControl(raw.codePointAt(0)!) ? " " : raw;
       const w = charWidth(ch.codePointAt(0)!);
       if (used + w > cols) break;
       text += ch;
@@ -2350,7 +2987,7 @@ export function fitLine(line: StyledLine, cols: number): StyledLine {
 
 Run: `npx vitest run packages/tui/test/width.test.ts`
 
-Expected: PASS (2 tests).
+Expected: PASS (4 tests).
 
 - [ ] **Step 5: Commit**
 
@@ -2373,7 +3010,7 @@ git commit -m "feat(tui): add Terminal interface and CJK-aware width"
 ```ts
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { makeText, UI_KEYS } from "../src/text";
+import { makeText, uiTextProblems } from "../src/text";
 
 describe("text", () => {
   const t = makeText("hello = Hello, { $name }!\n");
@@ -2387,9 +3024,16 @@ describe("text", () => {
     expect(t("hello")).toBe("Hello, {$name}!");
   });
 
-  it("the English UI file defines every UI key", () => {
-    const en = makeText(readFileSync(new URL("../../../content/learner/en/ui.ftl", import.meta.url), "utf8"));
-    for (const k of UI_KEYS) expect(en(k), k).not.toBe(k);
+  it("the English UI file defines every UI message with the variables the TUI passes", () => {
+    const en = readFileSync(new URL("../../../content/learner/en/ui.ftl", import.meta.url), "utf8");
+    expect(uiTextProblems(en, "en")).toEqual([]);
+  });
+
+  it("reports missing messages and unknown variables", () => {
+    const broken = "hud = Day { $dya }\n";
+    const problems = uiTextProblems(broken, "en");
+    expect(problems).toContain('learner text "hud": Unknown variable: $dya');
+    expect(problems).toContain('learner text: missing "menu-title"');
   });
 });
 ```
@@ -2408,6 +3052,7 @@ Expected: FAIL. `../src/text` doesn't exist yet.
 
 ```ts
 import { FluentBundle, FluentResource, type FluentVariable } from "@fluent/bundle";
+import { REJECT_REASONS, WALLET_REASONS } from "@silver-tongue/core";
 
 export type Text = (id: string, args?: Record<string, FluentVariable>) => string;
 
@@ -2422,40 +3067,59 @@ export function makeText(ftl: string, locale = "en"): Text {
   };
 }
 
-/** Message ids the TUI uses. The content checker fails a course that lacks any of them. */
-export const UI_KEYS = [
-  "hud",
-  "rank-0",
-  "rank-1",
-  "rank-2",
-  "rank-3",
-  "rank-4",
-  "menu-title",
-  "menu-talk",
-  "menu-go",
-  "menu-sleep",
-  "menu-quit",
-  "keys-explore",
-  "keys-pick",
-  "keys-tiles",
-  "keys-help",
-  "help-title",
-  "tiles-answer",
-  "mismatch",
-  "rephrased",
-  "wallet-change",
-  "reason-wages",
-  "reason-mixup",
-  "reason-food",
-  "reason-rent",
-  "trust-up",
-  "scene-done",
-  "unlocked",
-  "rank-up",
-  "day-ended",
-  "rejected",
-  "notice-bad-save",
-];
+/**
+ * Message ids the TUI uses, with the variables it passes to each.
+ * The course build fails a learner language that lacks any of them or uses other variables.
+ */
+export const UI_KEYS: Record<string, string[]> = {
+  hud: ["day", "slot", "slots", "currency", "wallet", "rank"],
+  "rank-0": [],
+  "rank-1": [],
+  "rank-2": [],
+  "rank-3": [],
+  "rank-4": [],
+  "menu-title": [],
+  "menu-talk": ["npc", "scene"],
+  "menu-go": ["place"],
+  "menu-sleep": [],
+  "menu-quit": [],
+  "keys-explore": [],
+  "keys-pick": [],
+  "keys-tiles": [],
+  "keys-help": [],
+  "help-title": [],
+  "tiles-answer": [],
+  mismatch: [],
+  rephrased: [],
+  "wallet-change": ["sign", "currency", "amount", "reason"],
+  ...Object.fromEntries(WALLET_REASONS.map((r) => [`reason-${r}`, []])),
+  "trust-up": ["npc", "trust"],
+  "scene-done": ["currency", "earned"],
+  unlocked: ["scene"],
+  "rank-up": ["rank"],
+  "day-ended": ["day"],
+  "notice-bad-save": [],
+  "notice-read-only": [],
+  ...Object.fromEntries(REJECT_REASONS.map((c) => [`reject-${c}`, []])),
+};
+
+/** Every UI message that is missing or can't be formatted with the variables the TUI passes. */
+export function uiTextProblems(ftl: string, locale: string): string[] {
+  const bundle = new FluentBundle(locale, { useIsolating: false });
+  bundle.addResource(new FluentResource(ftl));
+  const problems: string[] = [];
+  for (const [id, vars] of Object.entries(UI_KEYS)) {
+    const msg = bundle.getMessage(id);
+    if (!msg?.value) {
+      problems.push(`learner text: missing "${id}"`);
+      continue;
+    }
+    const errors: Error[] = [];
+    bundle.formatPattern(msg.value, Object.fromEntries(vars.map((v) => [v, 1])), errors);
+    for (const e of errors) problems.push(`learner text "${id}": ${e.message}`);
+  }
+  return problems;
+}
 ```
 
 `content/learner/en/ui.ftl`:
@@ -2497,7 +3161,19 @@ scene-done = Done. You earned { $currency }{ $earned }.
 unlocked = New: { $scene }
 rank-up = You're now: { $rank }
 day-ended = Day { $day } is over. You sleep.
-rejected = You can't do that now ({ $reason }).
+reject-unknown-scene = There's nobody here for that.
+reject-in-scene = Finish the conversation first.
+reject-wrong-place = They're not here.
+reject-locked = They're not ready to talk about that yet.
+reject-no-slots = You're out of time today. Sleep first.
+reject-stale-run = That conversation can't continue. Start it again.
+reject-no-pick = Choose a reply with the number keys.
+reject-bad-choice = There's no reply with that number.
+reject-no-tiles = Build your reply from the tiles.
+reject-bad-tile = There's no tile with that number.
+reject-not-linked = You can't get there from here.
+reject-unknown-word = That word isn't in the dictionary.
+notice-read-only = Your progress can't be saved on this computer, so this session won't be kept.
 notice-bad-save = Your save couldn't be read. It was kept as a backup and a new game started.
 ```
 
@@ -2505,7 +3181,7 @@ notice-bad-save = Your save couldn't be read. It was kept as a backup and a new 
 
 Run: `npx vitest run packages/tui/test/text.test.ts`
 
-Expected: PASS (3 tests).
+Expected: PASS (4 tests).
 
 - [ ] **Step 5: Commit**
 
@@ -2537,6 +3213,7 @@ export class FakeTerminal implements Terminal {
   frames: StyledLine[][] = [];
   closed = false;
   private handler: (k: Key) => void = () => {};
+  private resized: () => void = () => {};
 
   constructor(
     public cols = 64,
@@ -2548,6 +3225,15 @@ export class FakeTerminal implements Terminal {
   }
   onKey(handler: (k: Key) => void): void {
     this.handler = handler;
+  }
+  onResize(handler: () => void): void {
+    this.resized = handler;
+  }
+  /** Changes the size and tells the app, like a window resize. */
+  resize(cols: number, rows: number): void {
+    this.cols = cols;
+    this.rows = rows;
+    this.resized();
   }
   size() {
     return { cols: this.cols, rows: this.rows };
@@ -2592,13 +3278,15 @@ import { FakeTerminal, fixtureWithText } from "./fake-terminal";
 
 const T0 = 1_000_000;
 
-function setup() {
+function setup(patch: (s: GameState) => void = () => {}) {
   const course = fixtureWithText();
-  const core = createCore(course, newGame(course), { now: () => T0, rng: mulberry32(1) });
+  const state = newGame(course);
+  patch(state);
+  const core = createCore(course, state, { now: () => T0, rng: mulberry32(1) });
   const term = new FakeTerminal();
   const saves: GameState[] = [];
   let quit = false;
-  startApp({ course, core, term, now: () => T0, save: (s) => saves.push(s), quit: () => (quit = true) });
+  startApp({ course, core, term, now: () => T0, save: (s) => saves.push(s) > 0, quit: () => (quit = true) });
   return { course, core, term, saves, quitted: () => quit };
 }
 
@@ -2612,6 +3300,9 @@ describe("tui app", () => {
     term.press("1");
     for (const line of term.frames.at(-1)!) expect(lineWidth(line)).toBe(64);
     expect(term.frames.at(-1)!.length).toBe(20);
+    term.resize(40, 12);
+    for (const line of term.frames.at(-1)!) expect(lineWidth(line)).toBe(40);
+    expect(term.frames.at(-1)!.length).toBe(12);
   });
 
   it("starts on the street with a menu and a HUD", () => {
@@ -2652,6 +3343,100 @@ describe("tui app", () => {
     const { term, quitted } = setup();
     term.press("q");
     expect(quitted()).toBe(true);
+  });
+
+  it("builds a reply from tiles: add, undo, a wrong answer clears the input, then the right one", () => {
+    const shaky = { right: 0, wrong: 1, streak: 0, helps: 0, lapsed: true, firstSeen: 0, lastSeen: 0 };
+    const { term, core } = setup((s) => {
+      s.words.w_cha = { ...shaky };
+      s.words.w_shui = { ...shaky };
+    });
+    term.press("1", "1");
+    term.press(rightKey(core));
+    expect(core.state.run!.mode).toBe("tiles");
+    const tiles = core.state.run!.tiles;
+    const want = core.state.run!.combo.item === "tea" ? "茶" : "水";
+    const right = String(tiles.indexOf(want) + 1);
+    const wrong = String(tiles.findIndex((x) => x !== want) + 1);
+    term.press(wrong);
+    expect(term.screen().join("\n")).toContain(`You say: ${tiles[Number(wrong) - 1]}`);
+    term.press("backspace", wrong, "return");
+    expect(term.screen().join("\n")).toContain("That's not what they asked for.");
+    expect(term.screen().at(-2)).toMatch(/You say: +│$/);
+    term.press(right, "return");
+    expect(term.screen().join("\n")).toContain("Done. You earned");
+  });
+
+  it("a wrong pick shows the reaction, and word help still offers the request", () => {
+    const { term, core } = setup();
+    term.press("1", "1");
+    term.press(rightKey(core));
+    const wrong = String(core.state.run!.options.findIndex((k) => k !== comboKey(core.state.run!.combo)) + 1);
+    term.press(wrong);
+    const s = term.screen().join("\n");
+    expect(s).toContain("That's not what they asked for.");
+    expect(s).toContain("Cook: 不是这个。");
+    term.press("w");
+    expect(term.screen().join("\n")).toMatch(/1\) (茶|水)/);
+  });
+
+  it("a refused input is explained and not saved", () => {
+    const { term, saves } = setup((s) => {
+      s.slot = 4;
+    });
+    term.press("1", "1");
+    expect(term.screen().join("\n")).toContain("You're out of time today. Sleep first.");
+    expect(saves.length).toBe(1);
+  });
+
+  it("sleeping ends the day", () => {
+    const { term } = setup();
+    term.press("2");
+    const s = term.screen().join("\n");
+    expect(s).toContain("Day 1 is over. You sleep.");
+    expect(s).toContain("Day 2 · slot 0/4");
+  });
+
+  it("a save made mid-scene resumes in the scene", () => {
+    const first = setup();
+    first.term.press("1", "1");
+    first.term.press(rightKey(first.core));
+    const course = fixtureWithText();
+    const core = createCore(course, first.core.state, { now: () => T0, rng: mulberry32(2) });
+    const term = new FakeTerminal();
+    startApp({ course, core, term, now: () => T0, save: () => true, quit: () => {} });
+    expect(term.screen().join("\n")).toMatch(/Cook: (茶|水)。/);
+    term.press(rightKey(core));
+    expect(term.screen().join("\n")).toContain("Done. You earned");
+  });
+
+  it("keeps working on a very short screen", () => {
+    const { term } = setup();
+    term.resize(30, 8);
+    term.press("1");
+    expect(term.frames.at(-1)!.length).toBe(8);
+    for (const line of term.frames.at(-1)!) expect(lineWidth(line)).toBe(30);
+  });
+
+  it("wraps tiles and help words on a narrow screen", () => {
+    const { term } = setup();
+    term.resize(16, 20);
+    term.press("1", "1", "w");
+    const s = term.screen();
+    expect(s.some((l) => l.includes("1) 你"))).toBe(true);
+    expect(s.some((l) => l.includes("2) 好"))).toBe(true);
+  });
+
+  it("warns once and stops saving when a save fails", () => {
+    const course = fixtureWithText();
+    const core = createCore(course, newGame(course), { now: () => T0, rng: mulberry32(1) });
+    const term = new FakeTerminal();
+    let tries = 0;
+    startApp({ course, core, term, now: () => T0, save: () => (tries++, false), quit: () => {} });
+    term.press("1", "1");
+    const warnings = term.screen().filter((l) => l.includes("can't be saved"));
+    expect(warnings).toHaveLength(1);
+    expect(tries).toBe(1);
   });
 });
 ```
@@ -2697,6 +3482,17 @@ export function lineSpans(line: RenderedLine, fresh: Set<WordId>): StyledLine {
   return out;
 }
 
+/** Lays out short items (tiles, words) left to right, starting a new line when one would not fit. */
+export function wrapItems(items: string[], width: number, gap = "  "): StyledLine[] {
+  const lines: string[] = [];
+  for (const item of items) {
+    const last = lines.at(-1);
+    if (last !== undefined && strWidth(last) + strWidth(gap) + strWidth(item) <= width) lines[lines.length - 1] = last + gap + item;
+    else lines.push(item);
+  }
+  return lines.map((text) => [{ text }]);
+}
+
 function border(left: string, label: string, right: string, fill: string, cols: number, rightLabel = ""): StyledLine {
   const inner = cols - 2;
   const l = label ? ` ${label} ` : "";
@@ -2720,7 +3516,7 @@ export function renderScreen(m: ScreenModel, cols: number, rows: number): Styled
   const bodyRows = Math.max(1, rows - 2);
   const prompt = m.prompt.slice(-bodyRows);
   const logRows = Math.max(0, bodyRows - prompt.length - (prompt.length ? 1 : 0));
-  const log = m.log.slice(-logRows);
+  const log = logRows > 0 ? m.log.slice(-logRows) : []; // slice(-0) would be the whole log
   const body: StyledLine[] = [...Array(logRows - log.length).fill([]), ...log];
   if (prompt.length) body.push([]);
   body.push(...prompt);
@@ -2737,6 +3533,7 @@ export function renderScreen(m: ScreenModel, cols: number, rows: number): Styled
 ```ts
 import {
   availableSceneIds,
+  describeRun,
   rankFor,
   type Core,
   type Course,
@@ -2746,7 +3543,7 @@ import {
   type RenderedLine,
   type WordId,
 } from "@silver-tongue/core";
-import { lineSpans, renderScreen } from "./screen";
+import { lineSpans, renderScreen, wrapItems } from "./screen";
 import type { Key, StyledLine, Terminal } from "./terminal";
 import { makeText, type Text } from "./text";
 
@@ -2755,7 +3552,8 @@ export interface AppOptions {
   core: Core;
   term: Terminal;
   now: () => number;
-  save: (state: GameState) => void;
+  /** Saves after each accepted input; returns false if it couldn't. Leave out to play without saving. */
+  save?: (state: GameState) => boolean;
   quit: () => void;
   /** a message id shown once at start, e.g. "notice-bad-save" */
   notice?: string;
@@ -2824,7 +3622,7 @@ export function startApp(opts: AppOptions): App {
           if (!e.matched) push([{ text: t("mismatch"), color: "yellow" }]);
           break;
         case "npcReacted":
-          lastLine = e.line;
+          // Word help keeps offering the request the player got wrong, not the reaction.
           push(say(e.npc, e.line, fresh));
           break;
         case "lineRephrased":
@@ -2861,7 +3659,7 @@ export function startApp(opts: AppOptions): App {
           push([], [{ text: t("day-ended", { day: e.day }), dim: true }]);
           break;
         case "inputRejected":
-          push([{ text: t("rejected", { reason: e.reason }), color: "red" }]);
+          push([{ text: t(`reject-${e.reason}`), color: "red" }]);
           break;
         case "wordStateChanged":
           break;
@@ -2869,10 +3667,18 @@ export function startApp(opts: AppOptions): App {
     }
   }
 
+  let save = opts.save;
+  function persist() {
+    if (save && !save(core.state)) {
+      save = undefined; // stop trying; say so once
+      push([{ text: t("notice-read-only"), color: "yellow" }]);
+    }
+  }
+
   function send(input: Input) {
     const events = core.send(input);
     apply(events);
-    if (!events.some((e) => e.type === "inputRejected")) opts.save(core.state);
+    if (!events.some((e) => e.type === "inputRejected")) persist();
   }
 
   function menu(): MenuItem[] {
@@ -2886,9 +3692,8 @@ export function startApp(opts: AppOptions): App {
     for (const p of course.world.places[s.place].links) {
       items.push({ label: t("menu-go", { place: t(`place-${p}`) }), input: { type: "goTo", place: p } });
     }
-    items.push({ label: t("menu-sleep"), input: { type: "sleep" } });
-    items.push({ label: t("menu-quit"), quit: true });
-    return items.slice(0, 9);
+    // Sleep and quit always keep their keys; the content checker keeps places within 7 other items.
+    return [...items.slice(0, 7), { label: t("menu-sleep"), input: { type: "sleep" } }, { label: t("menu-quit"), quit: true }];
   }
 
   function helpWords(): { text: string; word: WordId }[] {
@@ -2897,17 +3702,22 @@ export function startApp(opts: AppOptions): App {
     return line.tokens.map((tk) => ({ text: line.text.slice(tk.start, tk.end), word: tk.word }));
   }
 
-  function prompt(): StyledLine[] {
+  /** `width` is the room inside the frame, for wrapping tiles and help words. */
+  function prompt(width: number): StyledLine[] {
     if (mode === "explore") {
       return [[{ text: t("menu-title"), dim: true }], ...menu().map((m, i) => [{ text: `${i + 1}) ${m.label}` }])];
     }
     if (mode === "help") {
-      const words = helpWords().map((w, i) => `${i + 1}) ${w.text}`).join("  ");
-      return [[{ text: t("help-title"), dim: true }], [{ text: words }]];
+      const words = helpWords().map((w, i) => `${i + 1}) ${w.text}`);
+      return [[{ text: t("help-title"), dim: true }], ...wrapItems(words, width)];
     }
     if (replyMode === "pick") return pickOptions.map((o, i) => [{ text: `${i + 1}) ` }, ...lineSpans(o, new Set())]);
     return [
-      [{ text: tiles.map((x, i) => `[${i + 1}]${x}`).join(" ") }],
+      ...wrapItems(
+        tiles.map((x, i) => `[${i + 1}]${x}`),
+        width,
+        " ",
+      ),
       [{ text: `${t("tiles-answer")} `, dim: true }, { text: tileInput.map((i) => tiles[i]).join(""), bold: true }],
     ];
   }
@@ -2924,7 +3734,7 @@ export function startApp(opts: AppOptions): App {
       rank: t(`rank-${rankFor(s.words, wordIds, opts.now())}`),
     });
     const footer = t(mode === "explore" ? "keys-explore" : mode === "help" ? "keys-help" : replyMode === "pick" ? "keys-pick" : "keys-tiles");
-    term.write(renderScreen({ title: t(`place-${s.place}`), hud, log, prompt: prompt(), footer }, cols, rows));
+    term.write(renderScreen({ title: t(`place-${s.place}`), hud, log, prompt: prompt(cols - 4), footer }, cols, rows));
   }
 
   function press(key: Key) {
@@ -2962,7 +3772,9 @@ export function startApp(opts: AppOptions): App {
 
   if (opts.notice) push([{ text: t(opts.notice), color: "yellow" }]);
   enterPlace(core.state.place);
+  apply(describeRun(course, core.state)); // a save made mid-scene resumes in the scene
   term.onKey(press);
+  term.onResize(render);
   render();
   return { press, render };
 }
@@ -2982,7 +3794,7 @@ export { startApp, type App, type AppOptions } from "./app";
 
 Run: `npx vitest run packages/tui`
 
-Expected: PASS (10 tests in 3 files).
+Expected: PASS (21 tests in 3 files).
 
 - [ ] **Step 5: Commit**
 
@@ -3011,7 +3823,7 @@ We have the author's consent to reuse anything from it. The submodule pins the e
 Run: `npm run import:zh`
 
 Expected: `imported 1193 words into content/languages/zh`. Also check:
-- `content/languages/zh/pack.json` has `"locale": "zh"`, `"typing": false`, `"spaced": false`, and one stage per HSK level.
+- `content/languages/zh/pack.json` has `"locale": "zh"`, `"tts": "zh-CN"`, `"typing": null`, `"spaced": false`, and one stage per HSK level.
 - `content/learner/en/glosses-zh.ftl` starts with the generated-file comment, then `w0001 = one; single`.
 
 - [ ] **Step 3: Add the bonus word the pilot needs**
@@ -3063,44 +3875,90 @@ It builds the real content, checks the rendered and tagged lines, and shows that
 `tools/test/build-course.test.ts`:
 
 ```ts
-import { cpSync, mkdtempSync, writeFileSync } from "node:fs";
+import { cpSync, mkdtempSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { fileURLToPath } from "node:url";
+import { afterAll, describe, expect, it } from "vitest";
 import { buildCourse } from "../src/build-course";
 
-const CONTENT = new URL("../../content", import.meta.url).pathname;
+const CONTENT = fileURLToPath(new URL("../../content", import.meta.url));
+
+const temps: string[] = [];
+afterAll(() => {
+  for (const dir of temps) rmSync(dir, { recursive: true, force: true });
+});
+
+/** Builds a copy of the real content after `change` edits it. */
+function buildChanged(change: (dir: string) => void) {
+  const dir = mkdtempSync(join(tmpdir(), "st-content-"));
+  temps.push(dir);
+  cpSync(CONTENT, dir, { recursive: true });
+  change(dir);
+  return buildCourse(dir, "zh-china-en");
+}
+
+const INTRO = "languages/zh/lines/noodle-intro.ftl";
 
 describe("build-course (real content)", () => {
   const { course, errors } = buildCourse(CONTENT, "zh-china-en");
 
   it("builds zh-china-en with no errors", () => {
     expect(errors).toEqual([]);
-    expect(course.scenes.map((s) => s.id)).toEqual(["noodle-intro", "noodle-shift"]);
+    expect(course!.scenes.map((s) => s.id)).toEqual(["noodle-intro", "noodle-shift"]);
   });
 
   it("renders every slot combination and tags its words", () => {
-    const order = course.scenes[1].exchanges[1];
+    const order = course!.scenes[1].exchanges[1];
     expect(Object.keys(order.variants)).toHaveLength(6);
     const v = order.variants["count=four|item=water"];
     expect(v.npc.text).toBe("四杯水。");
-    expect(v.npc.tokens.map((t) => course.words[t.word].w)).toEqual(["四", "杯", "水"]);
+    expect(v.npc.tokens.map((t) => course!.words[t.word].w)).toEqual(["四", "杯", "水"]);
     expect(v.reply.text).toBe("好，四杯水。");
     expect(v.rephrase?.text).toBe("水。四杯。");
   });
 
-  it("resolves concepts, glosses and bonus words", () => {
-    expect(course.concepts.tea.map((id) => course.words[id].w)).toEqual(["茶"]);
-    expect(course.words.x0001).toMatchObject({ w: "杯", bonus: true, gloss: "cup; glass (measure word for drinks)" });
-    expect(course.words.w0133.gloss).toBe("tea; tea plant");
+  it("ships only the words the course uses", () => {
+    const ids = Object.keys(course!.words);
+    expect(ids.length).toBeLessThan(40);
+    expect(ids).toContain("w0133");
+    expect(course!.words.w0001).toBeUndefined();
   });
 
+  it("resolves concepts, glosses and bonus words", () => {
+    expect(course!.concepts.tea.map((id) => course!.words[id].w)).toEqual(["茶"]);
+    expect(course!.words.x0001).toMatchObject({ w: "杯", bonus: true, gloss: "cup; glass (measure word for drinks)" });
+    expect(course!.words.w0133.gloss).toBe("tea; tea plant");
+  });
+});
+
+describe("build-course (broken content)", () => {
   it("reports characters that are not in the word list", () => {
-    const dir = mkdtempSync(join(tmpdir(), "st-content-"));
-    cpSync(CONTENT, dir, { recursive: true });
-    writeFileSync(join(dir, "languages/zh/lines/noodle-intro.ftl"), "greet = 你好！\ngreet-reply = 喵。\njob = 工作吗？\njob-reply = 好。\n");
-    const bad = buildCourse(dir, "zh-china-en");
+    const bad = buildChanged((d) => writeFileSync(join(d, INTRO), "greet = 你好！\ngreet-reply = 喵。\njob = 工作，好吗？\njob-reply = 好。\n"));
     expect(bad.errors).toContain('noodle-intro/greet: "喵。" has characters outside the word list: 喵');
+  });
+
+  it("reports a missing reply, a missing lines file and an unknown group", () => {
+    const bad = buildChanged((d) => {
+      writeFileSync(join(d, INTRO), "greet = 你好！\ngreet-reply = 你好！\njob = 工作，好吗？\n");
+      unlinkSync(join(d, "languages/zh/lines/noodle-shift.ftl"));
+    });
+    expect(bad.errors).toContain('noodle-intro/job: missing message "job-reply"');
+    expect(bad.errors.some((e) => e.startsWith("noodle-shift: no zh lines"))).toBe(true);
+
+    const groups = buildChanged((d) => writeFileSync(join(d, "settings/china-city/groups.json"), '{ "groups": {} }'));
+    expect(groups.errors.some((e) => /^noodle-shift\/\w+: unknown group/.test(e))).toBe(true);
+  });
+
+  it("reports a syntax error in a lines file once, not once per slot combination", () => {
+    const bad = buildChanged((d) => writeFileSync(join(d, "languages/zh/lines/noodle-shift.ftl"), "order = {\n"));
+    expect(bad.errors.filter((e) => e.includes("lines/noodle-shift.ftl"))).toHaveLength(1);
+  });
+
+  it("stops with an error, not a crash, when a file everything depends on is broken", () => {
+    const bad = buildChanged((d) => writeFileSync(join(d, "languages/zh/terms.ftl"), "-tea = {\n"));
+    expect(bad.course).toBeUndefined();
+    expect(bad.errors[0]).toMatch(/^terms.ftl: terms.ftl: Fluent syntax error/);
   });
 });
 ```
@@ -3144,7 +4002,7 @@ The course is two scenes at the noodle shop, and every exchange introduces at mo
 
 ```ftl
 # What an NPC says when a reply doesn't match. wrong-<slot> is used when that slot was wrong.
-wrong-generic = 不是这个。
+wrong-generic = 不是。
 wrong-count = 几杯？
 ```
 
@@ -3154,7 +4012,7 @@ wrong-count = 几杯？
 greet = 你好！
 greet-reply = 你好！
 
-job = 工作吗？
+job = 工作，好吗？
 job-reply = 好。
 ```
 
@@ -3263,7 +4121,7 @@ place-noodle_shop-desc = Steam everywhere. The cook waves you over.
 
 npc-cook = Cook
 
-scene-noodle-intro = Ask about work
+scene-noodle-intro = Get a job
 scene-noodle-shift = Work a shift
 ```
 
@@ -3307,9 +4165,9 @@ import {
   type Word,
   type World,
 } from "@silver-tongue/core";
-import { UI_KEYS } from "@silver-tongue/tui";
+import { uiTextProblems } from "@silver-tongue/tui";
 import { checkCourse } from "./check";
-import { bindSlots, messageIds, Renderer, termNames } from "./fluent";
+import { bindSlots, messageIds, parseFtl, Renderer, termNames, type FtlSource } from "./fluent";
 import type { PackMeta, PackWord } from "./pack";
 import { buildLexicon, segment, type Lexicon } from "./segment";
 
@@ -3330,117 +4188,177 @@ type ExchangeSkeleton = Omit<Exchange, "variants">;
 type SceneSkeleton = Omit<Scene, "exchanges"> & { exchanges: ExchangeSkeleton[] };
 
 export interface BuildResult {
-  course: Course;
+  /** undefined when a problem stopped the build before a course could be put together */
+  course: Course | undefined;
   errors: string[];
 }
 
 const readJson = <T>(path: string): T => JSON.parse(readFileSync(path, "utf8")) as T;
 const readOptional = (path: string): string => (existsSync(path) ? readFileSync(path, "utf8") : "");
 
+/** Builds a course from content/. Never throws: every problem becomes an error line. */
 export function buildCourse(root: string, courseId: string): BuildResult {
   const errors: string[] = [];
-  const cfg = readJson<CourseConfig>(join(root, "courses", `${courseId}.json`));
+  /** Runs one step; a throw becomes an error named after the step. */
+  const attempt = <T>(where: string, step: () => T): T | undefined => {
+    try {
+      return step();
+    } catch (e) {
+      errors.push(`${where}: ${(e as Error).message}`);
+      return undefined;
+    }
+  };
+  const stop = (): BuildResult => ({ course: undefined, errors });
+
+  const cfg = attempt(`courses/${courseId}.json`, () => readJson<CourseConfig>(join(root, "courses", `${courseId}.json`)));
+  if (!cfg) return stop();
   const langDir = join(root, "languages", cfg.language);
   const learnerDir = join(root, "learner", cfg.learner);
   const settingDir = join(root, "settings", cfg.setting);
 
-  const meta = readJson<PackMeta>(join(langDir, "pack.json"));
-  if (meta.spaced) throw new Error(`language "${meta.key}" separates words with spaces; its tagger is not built yet`);
-  const extraPath = join(langDir, "extra-words.json");
-  const extra = existsSync(extraPath) ? readJson<PackWord[]>(extraPath).map((w) => ({ ...w, bonus: true })) : [];
-  const packWords = [...readJson<PackWord[]>(join(langDir, "words.json")), ...extra];
-  const lex: Lexicon = buildLexicon(packWords);
+  const meta = attempt("pack.json", () => readJson<PackMeta>(join(langDir, "pack.json")));
+  if (!meta) return stop();
+  if (meta.spaced) {
+    errors.push(`language "${meta.key}" separates words with spaces; its tagger is not built yet`);
+    return stop();
+  }
+  const packWords = attempt("words", () => {
+    const extraPath = join(langDir, "extra-words.json");
+    const extra = existsSync(extraPath) ? readJson<PackWord[]>(extraPath).map((w) => ({ ...w, bonus: true })) : [];
+    return [...readJson<PackWord[]>(join(langDir, "words.json")), ...extra];
+  });
+  const lex: Lexicon | undefined = packWords && attempt("words", () => buildLexicon(packWords));
+  if (!packWords || !lex) return stop();
 
   const toLine = (text: string, where: string): RenderedLine => {
     const { tokens, unknown } = segment(text, lex);
-    if (unknown.length) errors.push(`${where}: "${text}" has characters outside the word list: ${unknown.join(" ")}`);
+    if (unknown.length) errors.push(`${where}: "${text}" has characters outside the word list: ${unknown.map((u) => u.char).join(" ")}`);
     return { text, tokens };
   };
 
-  const glossSrc = [
-    readOptional(join(learnerDir, `glosses-${cfg.language}.ftl`)),
-    readOptional(join(learnerDir, `glosses-${cfg.language}-extra.ftl`)),
-  ];
-  const glosses = new Renderer(cfg.learner, glossSrc);
+  const glossSrc: FtlSource[] = [`glosses-${cfg.language}.ftl`, `glosses-${cfg.language}-extra.ftl`].map((f) => [
+    f,
+    readOptional(join(learnerDir, f)),
+  ]);
+  const glosses = attempt("glosses", () => new Renderer(cfg.learner, glossSrc));
   const words: Record<string, Word> = {};
   for (const w of packWords) {
-    if (!glosses.has(w.id)) errors.push(`glosses: no ${cfg.learner} gloss for ${w.id} "${w.w}"`);
+    if (glosses && !glosses.has(w.id)) errors.push(`glosses: no ${cfg.learner} gloss for ${w.id} "${w.w}"`);
     words[w.id] = {
       id: w.id,
       w: w.w,
       lv: w.lv,
-      gloss: glosses.has(w.id) ? glosses.render(w.id) : "",
+      gloss: glosses?.has(w.id) ? glosses.render(w.id) : "",
       ...(w.pron ? { pron: w.pron } : {}),
       ...(w.bonus ? { bonus: true } : {}),
     };
   }
 
-  const termsSrc = readFileSync(join(langDir, "terms.ftl"), "utf8");
+  const termsSrc = attempt("terms.ftl", () => {
+    const src = readFileSync(join(langDir, "terms.ftl"), "utf8");
+    parseFtl(src, "terms.ftl");
+    return src;
+  });
+  if (termsSrc === undefined) return stop();
   const concepts: Record<string, string[]> = {};
   for (const name of termNames(termsSrc, "terms.ftl")) {
-    const text = new Renderer(meta.locale, [termsSrc, `concept = { -${name} }`]).render("concept");
-    concepts[name] = toLine(text, `term -${name}`).tokens.map((t) => t.word);
+    const text = attempt(`term -${name}`, () =>
+      new Renderer(meta.locale, [["terms.ftl", termsSrc], ["concept", `concept = { -${name} }`]]).render("concept"),
+    );
+    if (text !== undefined) concepts[name] = toLine(text, `term -${name}`).tokens.map((t) => t.word);
   }
 
-  const { groups, numbers = {} } = readJson<GroupsJson>(join(settingDir, "groups.json"));
-  const world = readJson<World>(join(settingDir, "world.json"));
+  const setting = attempt(`settings/${cfg.setting}`, () => ({
+    ...readJson<GroupsJson>(join(settingDir, "groups.json")),
+    world: readJson<World>(join(settingDir, "world.json")),
+  }));
+  if (!setting) return stop();
+  const { groups, numbers = {}, world } = setting;
 
   const scenesDir = join(settingDir, "scenes");
   const scenes: Scene[] = [];
-  for (const file of readdirSync(scenesDir).filter((f) => f.endsWith(".json")).sort()) {
-    const sk = readJson<SceneSkeleton>(join(scenesDir, file));
+  const sceneFiles = attempt("scenes", () => readdirSync(scenesDir).filter((f) => f.endsWith(".json")).sort()) ?? [];
+  for (const file of sceneFiles) {
+    const sk = attempt(`scenes/${file}`, () => readJson<SceneSkeleton>(join(scenesDir, file)));
+    if (!sk) continue;
     const linesPath = join(langDir, "lines", `${sk.id}.ftl`);
+    const linesName = `lines/${sk.id}.ftl`;
     if (!existsSync(linesPath)) {
       errors.push(`${sk.id}: no ${cfg.language} lines (${linesPath})`);
       continue;
     }
-    const linesSrc = readFileSync(linesPath, "utf8");
+    // A syntax error is reported once here, not once per slot combination.
+    const linesSrc = attempt(sk.id, () => {
+      const src = readFileSync(linesPath, "utf8");
+      parseFtl(src, linesName);
+      return src;
+    });
+    if (linesSrc === undefined) continue;
     const exchanges: Exchange[] = [];
     for (const ex of sk.exchanges) {
       const variants: Record<string, Variant> = {};
+      const unknownGroups = Object.values(ex.slots).filter((g) => !groups[g]);
+      if (unknownGroups.length) {
+        errors.push(`${sk.id}/${ex.id}: unknown group ${unknownGroups.map((g) => `"${g}"`).join(", ")}`);
+        continue;
+      }
       for (const combo of allCombos(ex.slots, groups)) {
         const where = `${sk.id}/${ex.id}${Object.keys(combo).length ? `[${comboKey(combo)}]` : ""}`;
         const args: Record<string, number> = {};
         for (const [slot, concept] of Object.entries(combo)) if (concept in numbers) args[slot] = numbers[concept];
-        try {
-          const r = new Renderer(meta.locale, [termsSrc, bindSlots(termsSrc, combo), linesSrc]);
+        attempt(where, () => {
+          const r = new Renderer(meta.locale, [
+            ["terms.ftl", termsSrc],
+            ["slots", bindSlots(termsSrc, combo, linesSrc, linesName)],
+            [linesName, linesSrc],
+          ]);
           const variant: Variant = {
             npc: toLine(r.render(ex.id, args), where),
             reply: toLine(r.render(`${ex.id}-reply`, args), where),
           };
           if (r.has(`${ex.id}-rephrase`)) variant.rephrase = toLine(r.render(`${ex.id}-rephrase`, args), where);
           variants[comboKey(combo)] = variant;
-        } catch (e) {
-          errors.push(`${where}: ${(e as Error).message}`);
-        }
+        });
       }
       exchanges.push({ ...ex, variants });
     }
     scenes.push({ ...sk, exchanges });
   }
 
-  const reactionsSrc = readFileSync(join(langDir, "reactions.ftl"), "utf8");
-  const reactionRenderer = new Renderer(meta.locale, [termsSrc, reactionsSrc]);
   const reactions: Record<string, RenderedLine> = {};
-  for (const id of messageIds(reactionsSrc, "reactions.ftl")) {
-    reactions[id] = toLine(reactionRenderer.render(id), `reaction ${id}`);
-  }
+  attempt("reactions.ftl", () => {
+    const src = readFileSync(join(langDir, "reactions.ftl"), "utf8");
+    const r = new Renderer(meta.locale, [["terms.ftl", termsSrc], ["reactions.ftl", src]]);
+    for (const id of messageIds(src, "reactions.ftl")) {
+      const text = attempt(`reaction ${id}`, () => r.render(id));
+      if (text !== undefined) reactions[id] = toLine(text, `reaction ${id}`);
+    }
+  });
 
-  const learnerFtl = [
-    readFileSync(join(learnerDir, "ui.ftl"), "utf8"),
-    readFileSync(join(learnerDir, `narration-${cfg.setting}.ftl`), "utf8"),
-  ].join("\n");
+  const learnerFtl =
+    attempt(`learner/${cfg.learner}`, () =>
+      [
+        readFileSync(join(learnerDir, "ui.ftl"), "utf8"),
+        readFileSync(join(learnerDir, `narration-${cfg.setting}.ftl`), "utf8"),
+      ].join("\n"),
+    ) ?? "";
 
-  const course: Course = { id: cfg.id, typing: meta.typing, words, concepts, groups, world, scenes, reactions, learnerFtl };
-  errors.push(
-    ...checkCourse({
-      course,
-      stages: meta.stages,
-      checks: cfg.checks,
-      learnerIds: new Set(messageIds(learnerFtl, "learner files")),
-      requiredUi: UI_KEYS,
-    }),
-  );
+  const course: Course = { id: cfg.id, typing: meta.typing !== null, words, concepts, groups, world, scenes, reactions, learnerFtl };
+  const learnerIds = attempt("learner text", () => new Set(messageIds(learnerFtl, "learner files"))) ?? new Set<string>();
+  errors.push(...checkCourse({ course, stages: meta.stages, checks: cfg.checks, learnerIds, requiredUi: [] }));
+  errors.push(...uiTextProblems(learnerFtl, cfg.learner));
+  // Ship only the words the course uses: rank is the share of these that are known, and
+  // the pack has far more words than one course needs. (The checks above see the whole pack.)
+  const used = new Set<string>([
+    ...Object.values(concepts).flat(),
+    ...Object.values(reactions).flatMap((l) => l.tokens.map((t) => t.word)),
+    ...scenes.flatMap((s) =>
+      s.exchanges.flatMap((ex) =>
+        Object.values(ex.variants).flatMap((v) => [v.npc, v.reply, v.rephrase].flatMap((l) => l?.tokens.map((t) => t.word) ?? [])),
+      ),
+    ),
+  ]);
+  course.words = Object.fromEntries(Object.entries(words).filter(([id]) => used.has(id)));
   return { course, errors };
 }
 
@@ -3448,7 +4366,7 @@ function main(): void {
   const courseId = process.argv[2] ?? "zh-china-en";
   const repo = resolve(fileURLToPath(new URL("../..", import.meta.url)));
   const { course, errors } = buildCourse(join(repo, "content"), courseId);
-  if (errors.length) {
+  if (!course || errors.length) {
     for (const e of errors) console.error(`✗ ${e}`);
     console.error(`${errors.length} error(s); course not written`);
     process.exit(1);
@@ -3466,7 +4384,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) main();
 
 Run: `npx vitest run tools`
 
-Expected: PASS (19 tests in 5 files).
+Expected: PASS (38 tests in 5 files).
 
 - [ ] **Step 6: Build the course from the command line**
 
@@ -3484,8 +4402,8 @@ git commit -m "feat(content): add noodle-shop pilot course and course build"
 ### Task 16: Node terminal and the `silver-tongue` CLI
 
 **Files:**
-- Create: `packages/tui-node/package.json`, `packages/tui-node/src/node-terminal.ts`, `packages/tui-node/src/main.ts`
-- Test: `packages/tui-node/test/node-terminal.test.ts`
+- Create: `packages/tui-node/package.json`, `packages/tui-node/src/node-terminal.ts`, `packages/tui-node/src/storage.ts`, `packages/tui-node/src/main.ts`
+- Test: `packages/tui-node/test/node-terminal.test.ts`, `packages/tui-node/test/storage.test.ts`
 
 - [ ] **Step 1: Write the package file and install**
 
@@ -3499,6 +4417,8 @@ This package is the one published to npm as `silver-tongue`. The name was free o
   "version": "0.1.0",
   "description": "Learn a language by living in it: a text game for the terminal.",
   "type": "module",
+  "repository": { "type": "git", "url": "git+https://github.com/jamil314/silver-tongue.git", "directory": "packages/tui-node" },
+  "license": "MIT",
   "engines": { "node": ">=22" },
   "bin": { "silver-tongue": "dist/silver-tongue.mjs" },
   "files": ["dist"],
@@ -3542,18 +4462,67 @@ describe("node terminal", () => {
 });
 ```
 
+`packages/tui-node/test/storage.test.ts`:
+
+```ts
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterAll, describe, expect, it } from "vitest";
+import { newGame, serialize } from "@silver-tongue/core";
+import { fixtureCourse } from "@silver-tongue/core/testing";
+import { configDir, loadSave, writeSave } from "../src/storage";
+
+const course = fixtureCourse();
+const root = mkdtempSync(join(tmpdir(), "st-save-"));
+afterAll(() => rmSync(root, { recursive: true, force: true }));
+
+describe("storage", () => {
+  it("follows XDG_CONFIG_HOME, and APPDATA on Windows", () => {
+    expect(configDir({}, "linux", "/home/a")).toBe("/home/a/.config");
+    expect(configDir({ XDG_CONFIG_HOME: "/x" }, "linux", "/home/a")).toBe("/x");
+    expect(configDir({ APPDATA: "C:\\Users\\a\\AppData\\Roaming" }, "win32", "C:\\Users\\a")).toBe("C:\\Users\\a\\AppData\\Roaming");
+  });
+
+  it("writes a save and loads it back, leaving no temp file", () => {
+    const path = join(root, "a", "game.json");
+    const state = newGame(course);
+    expect(writeSave(path, state)).toBe(true);
+    expect(loadSave(course, path)).toEqual({ state, readOnly: false });
+    expect(readdirSync(join(root, "a"))).toEqual(["game.json"]);
+  });
+
+  it("keeps a broken save as a backup and starts fresh", () => {
+    const path = join(root, "broken.json");
+    writeFileSync(path, "{");
+    expect(loadSave(course, path)).toMatchObject({ notice: "notice-bad-save", readOnly: false });
+    expect(readFileSync(`${path}.invalid-backup`, "utf8")).toBe("{");
+  });
+
+  it("goes read-only when the save can't be read, and reports a failed write", () => {
+    const dir = join(root, "is-a-directory.json");
+    mkdirSync(dir);
+    expect(loadSave(course, dir)).toMatchObject({ notice: "notice-read-only", readOnly: true });
+    const blocked = join(root, "file");
+    writeFileSync(blocked, serialize(newGame(course)));
+    expect(writeSave(join(blocked, "game.json"), newGame(course))).toBe(false);
+  });
+});
+```
+
 - [ ] **Step 3: Run it to make sure it fails**
 
 Run: `npx vitest run packages/tui-node`
 
-Expected: FAIL. `../src/node-terminal` doesn't exist yet.
+Expected: FAIL. `../src/node-terminal` and `../src/storage` don't exist yet.
 
 - [ ] **Step 4: Write the implementation**
 
 How the backend behaves:
-- **Terminal:** switches to the alternate screen and hides the cursor, and restores both on close.
+- **Terminal:** switches to the alternate screen and hides the cursor, and restores both on close, on exit, on a crash, and on SIGTERM or SIGHUP. A terminal that reports 0x0 is treated as 80x24.
 - **Piped input:** works too, which is handy for smoke tests. End of input quits cleanly.
-- **Saves (`main.ts`):** written atomically, through a temp file and a rename. An unreadable save is moved aside as `<file>.invalid-backup` before a fresh game starts with a notice.
+- **Saves (`storage.ts`):** in `$XDG_CONFIG_HOME/silver-tongue` (default `~/.config`), or `%APPDATA%` on Windows. Written through a temp file that is synced to disk before the rename, so a crash leaves the old save or the new one. A save that won't parse is moved aside as `<file>.invalid-backup` before a fresh game starts with a notice. If the save can't be read, or a write fails, the game says so once and plays on without saving.
+- **Node version:** an older Node gets a clear message instead of an obscure error.
 
 `packages/tui-node/src/node-terminal.ts`:
 
@@ -3599,6 +4568,15 @@ export function createNodeTerminal(input = process.stdin, output = process.stdou
   input.on("end", () => {
     for (const h of handlers) h({ name: "ctrl-c" });
   });
+  let closed = false;
+  const restore = () => {
+    if (closed) return;
+    closed = true;
+    if (input.isTTY) input.setRawMode(false);
+    input.pause();
+    output.write("\x1b[0m\x1b[?25h\x1b[?1049l");
+  };
+  process.on("exit", restore);
   return {
     write(lines) {
       output.write("\x1b[H\x1b[2J" + lines.map(toAnsi).join("\r\n"));
@@ -3606,28 +4584,87 @@ export function createNodeTerminal(input = process.stdin, output = process.stdou
     onKey(handler) {
       handlers.push(handler);
     },
+    onResize(handler) {
+      output.on("resize", handler);
+    },
     size() {
-      return { cols: output.columns ?? 80, rows: output.rows ?? 24 };
+      // Some terminals report 0x0 until they are sized.
+      return { cols: output.columns || 80, rows: output.rows || 24 };
     },
-    close() {
-      if (input.isTTY) input.setRawMode(false);
-      input.pause();
-      output.write("\x1b[0m\x1b[?25h\x1b[?1049l");
-    },
+    /** Restores the terminal. Safe to call more than once. */
+    close: restore,
   };
+}
+```
+
+`packages/tui-node/src/storage.ts`:
+
+```ts
+import { closeSync, existsSync, fsyncSync, mkdirSync, openSync, readFileSync, renameSync, writeSync } from "node:fs";
+import { homedir } from "node:os";
+import { dirname, join } from "node:path";
+import { newGame, parseSave, serialize, type Course, type GameState } from "@silver-tongue/core";
+
+/** Where saves live: $XDG_CONFIG_HOME or ~/.config, and %APPDATA% on Windows. */
+export function configDir(env: NodeJS.ProcessEnv = process.env, platform = process.platform, home = homedir()): string {
+  if (platform === "win32") return env.APPDATA || join(home, "AppData", "Roaming");
+  return env.XDG_CONFIG_HOME || join(home, ".config");
+}
+
+export interface Loaded {
+  state: GameState;
+  /** a message id to show once at start */
+  notice?: string;
+  /** true when the save couldn't be read or backed up: play on without saving, so it is never overwritten */
+  readOnly: boolean;
+}
+
+/** A save that won't parse is kept as a backup and the game starts fresh. */
+export function loadSave(course: Course, path: string): Loaded {
+  try {
+    if (!existsSync(path)) return { state: newGame(course), readOnly: false };
+    const parsed = parseSave(readFileSync(path, "utf8"), course);
+    if (parsed.ok) return { state: parsed.state, readOnly: false };
+    renameSync(path, `${path}.invalid-backup`);
+    return { state: newGame(course), notice: "notice-bad-save", readOnly: false };
+  } catch {
+    return { state: newGame(course), notice: "notice-read-only", readOnly: true };
+  }
+}
+
+/**
+ * Writes the save so that a crash or power loss leaves the old save or the new one, never
+ * half of one. Returns false if it couldn't be written.
+ */
+export function writeSave(path: string, state: GameState): boolean {
+  try {
+    mkdirSync(dirname(path), { recursive: true });
+    const tmp = `${path}.tmp`;
+    const fd = openSync(tmp, "w");
+    try {
+      writeSync(fd, serialize(state));
+      fsyncSync(fd);
+    } finally {
+      closeSync(fd);
+    }
+    renameSync(tmp, path);
+    return true;
+  } catch {
+    return false;
+  }
 }
 ```
 
 `packages/tui-node/src/main.ts`:
 
 ```ts
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
-import { homedir } from "node:os";
-import { dirname, join } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createCore, mulberry32, newGame, parseSave, serialize, type Course, type GameState } from "@silver-tongue/core";
+import { createCore, mulberry32, type Course } from "@silver-tongue/core";
 import { startApp } from "@silver-tongue/tui";
 import { createNodeTerminal } from "./node-terminal";
+import { configDir, loadSave, writeSave } from "./storage";
 
 const COURSE = "zh-china-en";
 
@@ -3646,36 +4683,37 @@ function coursePath(): string {
   return found;
 }
 
-function loadState(course: Course, path: string): { state: GameState; notice?: string } {
-  if (!existsSync(path)) return { state: newGame(course) };
-  const parsed = parseSave(readFileSync(path, "utf8"), course);
-  if (parsed.ok) return { state: parsed.state };
-  renameSync(path, `${path}.invalid-backup`);
-  return { state: newGame(course), notice: "notice-bad-save" };
-}
-
-function saveState(path: string, state: GameState): void {
-  mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(`${path}.tmp`, serialize(state));
-  renameSync(`${path}.tmp`, path);
+const [major] = process.versions.node.split(".").map(Number);
+if (major < 22) {
+  console.error(`silver-tongue needs Node 22 or newer; this is Node ${process.versions.node}.`);
+  process.exit(1);
 }
 
 const course = JSON.parse(readFileSync(coursePath(), "utf8")) as Course;
-const savePath = process.env.SILVER_TONGUE_SAVE ?? join(homedir(), ".config", "silver-tongue", `${course.id}.json`);
-const { state, notice } = loadState(course, savePath);
+const savePath = process.env.SILVER_TONGUE_SAVE ?? join(configDir(), "silver-tongue", `${course.id}.json`);
+const { state, notice, readOnly } = loadSave(course, savePath);
 const core = createCore(course, state, { now: Date.now, rng: mulberry32(Date.now() >>> 0) });
 const term = createNodeTerminal();
+
+// Whatever happens, give the player their terminal back.
+const bail = (code: number, error?: unknown) => {
+  term.close();
+  if (error) console.error(error);
+  process.exit(code);
+};
+process.on("uncaughtException", (e) => bail(1, e));
+process.on("unhandledRejection", (e) => bail(1, e));
+process.on("SIGTERM", () => bail(143));
+process.on("SIGHUP", () => bail(129));
+
 startApp({
   course,
   core,
   term,
   now: Date.now,
   notice,
-  save: (s) => saveState(savePath, s),
-  quit: () => {
-    term.close();
-    process.exit(0);
-  },
+  save: readOnly ? undefined : (s) => writeSave(savePath, s),
+  quit: () => bail(0),
 });
 ```
 
@@ -3683,13 +4721,13 @@ startApp({
 
 Run: `npx vitest run packages/tui-node && npx tsc`
 
-Expected: PASS (2 tests); `tsc` prints nothing.
+Expected: PASS (6 tests); `tsc` prints nothing.
 
 - [ ] **Step 6: Play it from source**
 
 Run: `npm run play`
 
-Expected: a framed screen titled *The street*, with `Day 1 · slot 0/4 · ¥20 · Pidgin` in the top border and a menu below. Press `1` (go to the noodle shop), then `1` (ask about work), and answer. From the menu, `q` quits and restores the terminal.
+Expected: a framed screen titled *The street*, with `Day 1 · slot 0/4 · ¥20 · Pidgin` in the top border and a menu below. Press `1` (go to the noodle shop), then `1` (get a job), and answer. From the menu, `q` quits and restores the terminal.
 
 - [ ] **Step 7: Bundle and smoke-test the npx path**
 
@@ -3711,7 +4749,7 @@ git commit -m "feat(cli): add Node terminal backend and silver-tongue CLI bundle
 ### Task 17: CI, README and CLAUDE.md
 
 **Files:**
-- Create: `.github/workflows/ci.yml`, `README.md`, `CLAUDE.md`
+- Create: `.github/workflows/ci.yml`, `README.md`, `CLAUDE.md`, `packages/tui-node/README.md`, `packages/tui-node/LICENSE`
 
 - [ ] **Step 1: Add CI**
 
@@ -3726,8 +4764,8 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -3764,7 +4802,7 @@ npx silver-tongue
 | `esc` | back |
 | `q` | save and quit (from the menu) |
 
-Progress saves automatically to `~/.config/silver-tongue/<course>.json`. If a save can't be read, it is kept next to it as `<course>.json.invalid-backup` and a new game starts.
+Progress saves automatically to `~/.config/silver-tongue/<course>.json` (or under `$XDG_CONFIG_HOME`, or `%APPDATA%` on Windows). If a save can't be read, it is kept next to it as `<course>.json.invalid-backup` and a new game starts. If saving fails, the game says so and plays on without saving.
 
 ## Play from source
 
@@ -3773,9 +4811,51 @@ npm install
 npm run build:course
 npm run play
 ```
+
+## License
+
+MIT. See `LICENSE`.
 ````
 
-- [ ] **Step 3: Add CLAUDE.md (for developers and agents)**
+- [ ] **Step 3: Add the npm page README and the license to the published package**
+
+npm shows the package's own README and ships its own LICENSE, so `packages/tui-node` needs both. Copy the license with `cp LICENSE packages/tui-node/LICENSE`.
+
+`packages/tui-node/README.md`:
+
+````markdown
+# Silver Tongue
+
+> You arrive speaking pidgin; you leave with a silver tongue.
+
+A language-learning life game. You arrive in a new city knowing a few words and earn your living by understanding people. Every job, purchase and conversation happens in the language you're learning.
+
+The first course is Mandarin (HSK 1), in a Chinese city, explained in English.
+
+## Play in the terminal
+
+```sh
+npx silver-tongue
+```
+
+| Key | Does |
+|---|---|
+| `1`–`9` | choose from the menu, or pick a reply |
+| `w` | word help: look up a word from the last line |
+| `enter` / `⌫` | say / undo, when building a reply from tiles |
+| `esc` | back |
+| `q` | save and quit (from the menu) |
+
+Progress saves automatically to `~/.config/silver-tongue/<course>.json` (or under `$XDG_CONFIG_HOME`, or `%APPDATA%` on Windows). If a save can't be read, it is kept next to it as `<course>.json.invalid-backup` and a new game starts. If saving fails, the game says so and plays on without saving.
+
+Needs Node 22 or newer. Source, issues and other ways to play: https://github.com/jamil314/silver-tongue
+
+## License
+
+MIT. See `LICENSE`.
+````
+
+- [ ] **Step 4: Add CLAUDE.md (for developers and agents)**
 
 `CLAUDE.md`:
 
@@ -3825,16 +4905,16 @@ npm run bundle -w silver-tongue   # build packages/tui-node/dist for npm/npx
 - Code ported from vocab-engine is used with its author's consent; note the origin in a comment.
 ````
 
-- [ ] **Step 4: Run everything the way CI does**
+- [ ] **Step 5: Run everything the way CI does**
 
 Run: `npm run typecheck && npm run build:course && npm test`
 
-Expected: `tsc` prints nothing, the course builds, and **53 tests pass in 14 files**.
+Expected: `tsc` prints nothing, the course builds, and **97 tests pass in 15 files**.
 
-- [ ] **Step 5: Commit and push**
+- [ ] **Step 6: Commit and push**
 
 ```bash
-git add .github README.md CLAUDE.md
+git add .github README.md CLAUDE.md packages/tui-node/README.md packages/tui-node/LICENSE
 git commit -m "docs: add README, CLAUDE.md and CI"
 git push
 ```
@@ -3843,7 +4923,7 @@ Expected: the `ci` workflow on GitHub goes green.
 
 ## After this plan
 
-- **Publishing** (`npm publish -w silver-tongue`) is the owner's call. Until then, the demo can be shared as the `npm pack` tarball.
+- **Publishing:** the `publish` workflow (branch `ci-npm-publish`) publishes `silver-tongue` from CI whenever a new version reaches `main`. It needs the `NPM_TOKEN` repository secret. Until it runs, the demo can be shared as the `npm pack` tarball.
 - **Milestone A is done** when a tester can run the demo, finish both scenes, and see:
   - word help;
   - tiles (after the words become known);

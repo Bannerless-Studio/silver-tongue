@@ -1,0 +1,7 @@
+{
+  "groups": {
+    "drinks": ["tea", "water"],
+    "numbers_3_5": ["three", "four", "five"]
+  },
+  "numbers": { "three": 3, "four": 4, "five": 5 }
+}

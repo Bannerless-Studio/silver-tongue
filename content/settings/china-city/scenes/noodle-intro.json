@@ -1,0 +1,14 @@
+{
+  "id": "noodle-intro",
+  "place": "noodle_shop",
+  "npc": "cook",
+  "stage": 1,
+  "after": [],
+  "requires": {},
+  "repeatable": false,
+  "trustGain": 1,
+  "exchanges": [
+    { "id": "greet", "slots": {}, "expect": { "action": "greet" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "job", "slots": {}, "expect": { "action": "accept" }, "hinges": [], "pay": 0, "missCost": 0 }
+  ]
+}

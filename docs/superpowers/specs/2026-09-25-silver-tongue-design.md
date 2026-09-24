@@ -56,7 +56,7 @@ The first course is Mandarin (HSK) in a Chinese city, with English as the learne
 | Spent on / opens | rent (weekly), food (daily), items that open jobs (e.g. a bike for deliveries) | that NPC's better jobs; introductions to new NPCs |
 | Lost by | mix-ups (1–5 units) | nothing (trust never goes down) |
 
-- **Rent pressure is soft.** If you're short, the landlord waits and you take extra shifts. There is no debt, no interest and no eviction.
+- **Rent pressure is soft.** If you're short, the landlord waits and you take extra shifts. There is no debt, no interest and no eviction. Late rent never stacks: paying once clears it, however many weeks have passed.
 - **Excluded by rule:** loans, interest, credit, investment returns, gambling or chance-based money, alcohol, romance, magic.
 - **The next district opens** when every word of the current stage is at least *met* **and** trust with the stage's key NPCs (listed in the setting) reaches a threshold. There is no savings target, so nobody has to grind for money.
 
@@ -64,7 +64,7 @@ The first course is Mandarin (HSK) in a Chinese city, with English as the learne
 
 The unit is a **dictionary word** with a stable id from the language pack (`w0321`). Inflected forms count toward their dictionary word.
 
-Each word has one record: `{ right, wrong, streak, helps, firstSeen, lastSeen }`. Its state is derived from that record:
+Each word has one record: `{ right, wrong, streak, helps, lapsed, firstSeen, lastSeen }`. `lapsed` means the word was missed, helped or found decayed since its last correct answer. Its state is derived from that record:
 
 | State | Rule (all thresholds tunable) |
 |---|---|
@@ -73,7 +73,7 @@ Each word has one record: `{ right, wrong, streak, helps, firstSeen, lastSeen }`
 | shaky | missed or helped since the last correct answer, **or** was known and has decayed |
 | known | streak ≥ 3 and not decayed |
 
-- **Decay** runs on **real time**, not game days. A known word decays to shaky once `now − lastSeen > interval(streak)`, where `interval = 2^(streak−2)` days, capped at 60. So a streak of 3 lasts 2 days, a streak of 4 lasts 4 days, and so on.
+- **Decay** runs on **real time**, not game days. A known word decays to shaky once `now − lastSeen > interval(streak)`, where `interval = 2^(streak−2)` days, capped at 60. So a streak of 3 lasts 2 days, a streak of 4 lasts 4 days, and so on. Decay sticks: seeing a decayed word again marks it `lapsed`, so it stays shaky until it is answered right. Otherwise just hearing it in a line would revive it before its review.
 - **Evidence from an exchange:**
   - Each skeleton exchange lists its **hinge** words, the 1–3 words the right reply depends on.
   - A correct reply counts as right for the hinge words (streak +1).
@@ -92,6 +92,8 @@ The mode is chosen **per exchange** from the weakest state among its hinge words
 | shaky | **tiles** | assemble the reply from word tiles plus 1–2 distractor tiles |
 | known | **type** | free text, only if the language pack enables typing; otherwise tiles |
 
+Each mode has its own input to the core: `reply` (the number of a pick option) and `replyTiles` (the tiles in order). Typed replies will add `replyText`, so no input ever has to guess which mode it belongs to.
+
 Wrong options and distractor tiles are produced from the exchange's action by **varying slot values** (serve 4 instead of 3, coffee instead of tea). Close distractors are chosen by the helper ported from vocab-engine's `wordOpts`: same part of speech, same level, same word class. Wrong options are always plausible, never silly.
 
 ### Scenes and unlocking
@@ -103,7 +105,7 @@ Wrong options and distractor tiles are produced from the exchange's action by **
 
 ### Rank ladder
 
-The player's status is shown as a rank based on the share of the course's words that are *known*:
+The player's status is shown as a rank based on the share of the course's words (the words its scenes use) that are *known*:
 
 | Share known | Rank (English labels) |
 |---|---|
@@ -136,8 +138,8 @@ tools/       vocab-engine import, content build and checker, audio generation
 ### Core
 
 - **One entry point:** `core.send(input) → Event[]`. The whole state is one plain JSON-serialisable object. The random number source and the clock are passed in, so every run can be replayed.
-- **Inputs:** `goTo(place)`, `talkTo(npc)`, `startScene(id)`, `reply(choice | tiles | text)`, `helpWord(wordId)`, `replayLine(slow?)`, `buy(item)`, `visitMentor`, `sleep`.
-- **Events:** `placeEntered`, `lineSpoken`, `replyOptions`, `actionPerformed`, `npcReacted`, `lineRephrased`, `walletChanged`, `trustChanged`, `wordStateChanged`, `unlocked`, `rankChanged`, `dayEnded`, `inputRejected`.
+- **Inputs:** `goTo(place)`, `startScene(id)`, `reply(choice)`, `replyTiles(tiles)`, `helpWord(wordId)`, `sleep` (milestone A). Later: `replyText(text)`, `talkTo(npc)`, `replayLine(slow?)`, `buy(item)`, `visitMentor`.
+- **Events:** `placeEntered`, `sceneStarted`, `lineSpoken`, `replyOptions`, `actionPerformed`, `npcReacted`, `lineRephrased`, `walletChanged`, `trustChanged`, `wordStateChanged`, `sceneEnded`, `unlocked`, `rankChanged`, `dayEnded`, `inputRejected`.
 - **Places** and the connections between them are core data. In 3D, walking into a trigger zone sends `goTo`. In the TUI, picking from the place menu sends it.
 
 | Module | Owns |
@@ -275,7 +277,9 @@ The TUI is written against a small interface:
 interface Terminal {
   write(lines: StyledLine[]): void;
   onKey(handler: (key: Key) => void): void;
+  onResize(handler: () => void): void;
   size(): { cols: number; rows: number };
+  close(): void;
 }
 ```
 
@@ -320,7 +324,7 @@ interface Terminal {
 
 ## Saves
 
-- **Web:** `localStorage` key `silver-tongue:<course>`. **Node:** `~/.config/silver-tongue/<course>.json`.
+- **Web:** `localStorage` key `silver-tongue:<course>`. **Node:** `~/.config/silver-tongue/<course>.json` (`$XDG_CONFIG_HOME` if set; `%APPDATA%` on Windows).
 - Saves are versioned JSON. Export/import works as a text string, so players can move between devices and between the TUI and 3D (same course, same save).
 - These rules follow vocab-engine:
   - A save that won't parse is kept as a backup and the game starts fresh with a visible notice.

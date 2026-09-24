@@ -1,0 +1,28 @@
+{
+  "id": "noodle-shift",
+  "place": "noodle_shop",
+  "npc": "cook",
+  "stage": 1,
+  "after": ["noodle-intro"],
+  "requires": { "trust": { "cook": 1 } },
+  "repeatable": true,
+  "trustGain": 1,
+  "exchanges": [
+    {
+      "id": "drink",
+      "slots": { "item": "drinks" },
+      "expect": { "action": "fetch", "item": "$item" },
+      "hinges": ["$item"],
+      "pay": 1,
+      "missCost": 1
+    },
+    {
+      "id": "order",
+      "slots": { "item": "drinks", "count": "numbers_3_5" },
+      "expect": { "action": "serve", "item": "$item", "count": "$count" },
+      "hinges": ["$item", "$count"],
+      "pay": 3,
+      "missCost": 2
+    }
+  ]
+}
