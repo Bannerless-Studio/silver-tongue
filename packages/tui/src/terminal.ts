@@ -10,7 +10,7 @@ export interface Span {
 
 export type StyledLine = Span[];
 
-/** Key names: "0"-"9", letters, "return", "escape", "backspace", "ctrl-c". */
+/** Key names: "0"-"9", letters, "return", "escape", "backspace", "up", "down", "left", "right", "ctrl-c". */
 export interface Key {
   name: string;
 }
@@ -19,6 +19,8 @@ export interface Key {
 export interface Terminal {
   write(lines: StyledLine[]): void;
   onKey(handler: (key: Key) => void): void;
+  /** Called after the terminal changes size (window resize, phone rotation). */
+  onResize(handler: () => void): void;
   size(): { cols: number; rows: number };
   close(): void;
 }

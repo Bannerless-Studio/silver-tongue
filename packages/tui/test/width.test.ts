@@ -17,4 +17,14 @@ describe("width", () => {
     expect(plain(fitted)).toBe("ab三 ");
     expect(plain(fitLine([{ text: "hi" }], 4))).toBe("hi  ");
   });
+
+  it("counts emoji as wide and invisible characters as nothing", () => {
+    expect(strWidth("👍")).toBe(2);
+    expect(strWidth("a\u200db")).toBe(2);
+    expect(strWidth("e\u0301")).toBe(1);
+  });
+
+  it("turns control characters into spaces so text can't break the layout", () => {
+    expect(plain(fitLine([{ text: "a\tb\x1b[2J" }], 8))).toBe("a b [2J ");
+  });
 });
