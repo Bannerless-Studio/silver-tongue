@@ -1,0 +1,15 @@
+{
+  "start": "street",
+  "currency": "¥",
+  "slotsPerDay": 4,
+  "startWallet": 20,
+  "foodPerDay": 5,
+  "rentPerWeek": 50,
+  "places": {
+    "street": { "links": ["noodle_shop"] },
+    "noodle_shop": { "links": ["street"] }
+  },
+  "npcs": {
+    "cook": { "place": "noodle_shop" }
+  }
+}
