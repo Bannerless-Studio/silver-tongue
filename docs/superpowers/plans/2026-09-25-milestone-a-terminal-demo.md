@@ -391,7 +391,8 @@ export type GameEvent =
   | { type: "replyOptions"; mode: "tiles"; tiles: string[] }
   | { type: "actionPerformed"; action: Record<string, string>; matched: boolean; diff: string[] }
   | { type: "npcReacted"; npc: string; reaction: string; line: RenderedLine }
-  | { type: "lineRephrased"; npc: string; line: RenderedLine }
+  /** slow: no rephrase was written, so this replays the original line (show it slowly, with pronunciation) */
+  | { type: "lineRephrased"; npc: string; line: RenderedLine; slow: boolean }
   | { type: "walletChanged"; wallet: number; delta: number; reason: string }
   | { type: "trustChanged"; npc: string; trust: number }
   | { type: "wordStateChanged"; word: WordId; from: WordState; to: WordState }
@@ -1047,7 +1048,7 @@ describe("core", () => {
     expect(types(miss1)).not.toContain("lineRephrased");
 
     const miss2 = core.send({ type: "reply", choice: wrong });
-    expect(types(miss2)).toContain("lineRephrased");
+    expect(find(miss2, "lineRephrased")).toMatchObject({ npc: "cook", slow: false });
 
     const ok = core.send({ type: "reply", choice: right });
     expect(find(ok, "sceneEnded")).toEqual({ type: "sceneEnded", scene: "shift", earned: 3 });
@@ -1075,6 +1076,27 @@ describe("core", () => {
     const bad = createCore(course, { ...core.state, words }, { now: () => T0, rng: mulberry32(2) });
     bad.send({ type: "startScene", scene: "shift" });
     expect(find(bad.send({ type: "replyTiles", tiles: [0] }), "actionPerformed").matched).toBe(false);
+  });
+
+  it("only slots that change the action count as a mix-up", () => {
+    const c = fixtureCourse();
+    c.scenes[1].exchanges[0].expect = { action: "serve", item: "$item" };
+    c.scenes[1].exchanges[0].hinges = ["$item"];
+    const core = createCore(c, newGame(c), { now: () => T0, rng: mulberry32(1) });
+    playIntro(core);
+    core.send({ type: "startScene", scene: "shift" });
+    const run = core.state.run!;
+    const sameItem = run.options.findIndex((k) => k !== comboKey(run.combo) && k.endsWith(`item=${run.combo.item}`));
+    expect(sameItem).toBeGreaterThanOrEqual(0);
+    expect(find(core.send({ type: "reply", choice: sameItem }), "actionPerformed").matched).toBe(true);
+  });
+
+  it("rejects a resumed scene that no longer fits the course instead of throwing", () => {
+    const core = setup();
+    playIntro(core);
+    core.send({ type: "startScene", scene: "shift" });
+    const stale = createCore(course, { ...core.state, run: { ...core.state.run!, exchange: 5 } }, { now: () => T0, rng: mulberry32(1) });
+    expect(stale.send({ type: "reply", choice: 0 })).toEqual([{ type: "inputRejected", reason: "stale-run" }]);
   });
 
   it("a help lookup makes a word shaky", () => {
@@ -1272,7 +1294,9 @@ function resolve(ctx: Ctx, scene: Scene, ex: Exchange, chosen: Combo, diff: stri
   ctx.ev.push({ type: "npcReacted", npc: scene.npc, reaction, line: ctx.course.reactions[reaction] });
   if (run.misses >= 2) {
     const v = ex.variants[comboKey(run.combo)];
-    ctx.ev.push({ type: "lineRephrased", npc: scene.npc, line: v.rephrase ?? v.npc });
+    const line = v.rephrase ?? v.npc;
+    ctx.ev.push({ type: "lineRephrased", npc: scene.npc, line, slow: !v.rephrase });
+    for (const t of line.tokens) setWord(ctx, t.word, recordSeen);
   }
   emitOptions(ctx, ex);
 }
@@ -1292,26 +1316,38 @@ export function startScene(ctx: Ctx, id: string): void {
   beginExchange(ctx, scene, 0);
 }
 
+/** The running scene and exchange, or undefined if there is none or the save no longer fits the course. */
 function current(ctx: Ctx): { scene: Scene; ex: Exchange } | undefined {
   const run = ctx.state.run;
   if (!run) return undefined;
-  const scene = sceneById(ctx, run.scene)!;
-  return { scene, ex: scene.exchanges[run.exchange] };
+  const scene = sceneById(ctx, run.scene);
+  const ex = scene?.exchanges[run.exchange];
+  if (!scene || !ex || !ex.variants[comboKey(run.combo)]) return undefined;
+  return { scene, ex };
+}
+
+/** Slots that change the action. A slot the action doesn't use is never a mix-up. */
+function actionDiff(ex: Exchange, chosen: Combo, expected: Combo): string[] {
+  const got = resolveParams(ex.expect, chosen);
+  const want = resolveParams(ex.expect, expected);
+  return Object.keys(want).filter((k) => got[k] !== want[k]);
 }
 
 export function reply(ctx: Ctx, choice: number): void {
+  const run = ctx.state.run;
+  if (run && !current(ctx)) return reject(ctx, "stale-run");
   const cur = current(ctx);
-  if (!cur || ctx.state.run!.mode !== "pick") return reject(ctx, "no-pick");
-  const key = ctx.state.run!.options[choice];
+  if (!cur || !run || run.mode !== "pick") return reject(ctx, "no-pick");
+  const key = run.options[choice];
   if (key === undefined) return reject(ctx, "bad-choice");
   const chosen = parseComboKey(key);
-  const diff = Object.keys(ctx.state.run!.combo).filter((s) => chosen[s] !== ctx.state.run!.combo[s]);
-  resolve(ctx, cur.scene, cur.ex, chosen, diff);
+  resolve(ctx, cur.scene, cur.ex, chosen, actionDiff(cur.ex, chosen, run.combo));
 }
 
 export function replyTiles(ctx: Ctx, tiles: number[]): void {
-  const cur = current(ctx);
   const run = ctx.state.run;
+  if (run && !current(ctx)) return reject(ctx, "stale-run");
+  const cur = current(ctx);
   if (!cur || !run || run.mode !== "tiles") return reject(ctx, "no-tiles");
   if (tiles.some((i) => run.tiles[i] === undefined)) return reject(ctx, "bad-tile");
   const answer = tiles.map((i) => run.tiles[i]).join("");
@@ -1395,7 +1431,7 @@ export function createCore(course: Course, initial: GameState, deps: CoreDeps): 
 
 Run: `npx vitest run packages/core/test/core.test.ts`
 
-Expected: PASS (7 tests).
+Expected: PASS (9 tests).
 
 - [ ] **Step 5: Commit**
 
@@ -1511,7 +1547,7 @@ Expected: PASS (2 tests).
 
 Run: `npx vitest run packages/core && npx tsc`
 
-Expected: 24 tests pass in 5 files; `tsc` prints nothing.
+Expected: 26 tests pass in 5 files; `tsc` prints nothing.
 
 - [ ] **Step 6: Commit**
 
@@ -3852,7 +3888,7 @@ npm run bundle -w silver-tongue   # build packages/tui-node/dist for npm/npx
 
 Run: `npm run typecheck && npm run build:course && npm test`
 
-Expected: `tsc` prints nothing, the course builds, and **55 tests pass in 14 files**.
+Expected: `tsc` prints nothing, the course builds, and **57 tests pass in 14 files**.
 
 - [ ] **Step 5: Commit and push**
 
