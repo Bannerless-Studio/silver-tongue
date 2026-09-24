@@ -56,7 +56,7 @@ The first course is Mandarin (HSK) in a Chinese city, with English as the learne
 | Spent on / opens | rent (weekly), food (daily), items that open jobs (e.g. a bike for deliveries) | that NPC's better jobs; introductions to new NPCs |
 | Lost by | mix-ups (1–5 units) | nothing (trust never goes down) |
 
-- **Rent pressure is soft.** If you're short, the landlord waits and you take extra shifts. There is no debt, no interest and no eviction.
+- **Rent pressure is soft.** If you're short, the landlord waits and you take extra shifts. There is no debt, no interest and no eviction. Late rent never stacks: paying once clears it, however many weeks have passed.
 - **Excluded by rule:** loans, interest, credit, investment returns, gambling or chance-based money, alcohol, romance, magic.
 - **The next district opens** when every word of the current stage is at least *met* **and** trust with the stage's key NPCs (listed in the setting) reaches a threshold. There is no savings target, so nobody has to grind for money.
 
@@ -91,6 +91,8 @@ The mode is chosen **per exchange** from the weakest state among its hinge words
 | unseen / met | **pick** | 2–4 options |
 | shaky | **tiles** | assemble the reply from word tiles plus 1–2 distractor tiles |
 | known | **type** | free text, only if the language pack enables typing; otherwise tiles |
+
+Each mode has its own input to the core: `reply` (the number of a pick option) and `replyTiles` (the tiles in order). Typed replies will add `replyText`, so no input ever has to guess which mode it belongs to.
 
 Wrong options and distractor tiles are produced from the exchange's action by **varying slot values** (serve 4 instead of 3, coffee instead of tea). Close distractors are chosen by the helper ported from vocab-engine's `wordOpts`: same part of speech, same level, same word class. Wrong options are always plausible, never silly.
 

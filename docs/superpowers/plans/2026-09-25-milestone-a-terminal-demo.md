@@ -221,6 +221,12 @@ describe("combo", () => {
     expect(allCombos({}, {})).toEqual([{}]);
   });
 
+  it("every combination's key parses back to it", () => {
+    for (const c of allCombos({ item: "drinks", count: "nums" }, { drinks: ["tea", "hot_water"], nums: ["three", "4-ish"] })) {
+      expect(parseComboKey(comboKey(c))).toEqual(c);
+    }
+  });
+
   it("rejects unknown groups", () => {
     expect(() => allCombos({ item: "food" }, {})).toThrow(/unknown group "food"/);
   });
@@ -375,6 +381,28 @@ export interface GameState {
   run: SceneRun | null;
 }
 
+/** Why the core refused an input. Front ends show a translated message for each. */
+export const REJECT_REASONS = [
+  "unknown-scene",
+  "in-scene",
+  "wrong-place",
+  "locked",
+  "no-slots",
+  "stale-run",
+  "no-pick",
+  "bad-choice",
+  "no-tiles",
+  "bad-tile",
+  "not-linked",
+  "unknown-word",
+] as const;
+export type RejectReason = (typeof REJECT_REASONS)[number];
+
+/** Why the wallet changed. */
+export const WALLET_REASONS = ["wages", "mixup", "food", "rent"] as const;
+export type WalletReason = (typeof WALLET_REASONS)[number];
+
+/** Replies arrive as `reply` (pick mode) or `replyTiles` (tiles mode); typed replies will add `replyText`. */
 export type Input =
   | { type: "goTo"; place: string }
   | { type: "startScene"; scene: string }
@@ -389,18 +417,22 @@ export type GameEvent =
   | { type: "lineSpoken"; npc: string; line: RenderedLine }
   | { type: "replyOptions"; mode: "pick"; options: RenderedLine[] }
   | { type: "replyOptions"; mode: "tiles"; tiles: string[] }
-  | { type: "actionPerformed"; action: Record<string, string>; matched: boolean; diff: string[] }
+  /**
+   * diff: the slots the player got wrong (pick mode). tilesWrong: the tiles didn't make the reply
+   * (tiles mode, where the slots are always the expected ones).
+   */
+  | { type: "actionPerformed"; action: Record<string, string>; matched: boolean; diff: string[]; tilesWrong: boolean }
   | { type: "npcReacted"; npc: string; reaction: string; line: RenderedLine }
   /** slow: no rephrase was written, so this replays the original line (show it slowly, with pronunciation) */
   | { type: "lineRephrased"; npc: string; line: RenderedLine; slow: boolean }
-  | { type: "walletChanged"; wallet: number; delta: number; reason: string }
+  | { type: "walletChanged"; wallet: number; delta: number; reason: WalletReason }
   | { type: "trustChanged"; npc: string; trust: number }
   | { type: "wordStateChanged"; word: WordId; from: WordState; to: WordState }
   | { type: "sceneEnded"; scene: string; earned: number }
   | { type: "unlocked"; scene: string }
   | { type: "rankChanged"; rank: number }
   | { type: "dayEnded"; day: number }
-  | { type: "inputRejected"; reason: string };
+  | { type: "inputRejected"; reason: RejectReason };
 ```
 
 `packages/core/src/combo.ts`:
@@ -448,7 +480,7 @@ export function resolveParams(params: Record<string, string>, combo: Combo): Rec
 
 Run: `npx vitest run packages/core/test/combo.test.ts`
 
-Expected: PASS (4 tests).
+Expected: PASS (5 tests).
 
 - [ ] **Step 5: Commit**
 
@@ -780,7 +812,7 @@ export function shuffle<T>(xs: readonly T[], rng: () => number): T[] {
 `packages/core/src/life.ts`:
 
 ```ts
-import type { Course, GameEvent, GameState, Scene } from "./types";
+import type { Course, GameEvent, GameState, Scene, WalletReason } from "./types";
 
 export function isAvailable(scene: Scene, state: GameState): boolean {
   if (!scene.repeatable && (state.scenesDone[scene.id] ?? 0) > 0) return false;
@@ -794,7 +826,7 @@ export function availableSceneIds(course: Course, state: GameState): string[] {
 }
 
 /** The wallet never goes below zero: there is no debt. */
-export function changeWallet(state: GameState, delta: number, reason: string): GameEvent[] {
+export function changeWallet(state: GameState, delta: number, reason: WalletReason): GameEvent[] {
   const next = Math.max(0, state.wallet + delta);
   const actual = next - state.wallet;
   state.wallet = next;
@@ -807,7 +839,11 @@ export function addTrust(state: GameState, npc: string, amount: number): GameEve
   return [{ type: "trustChanged", npc, trust: state.trust[npc] }];
 }
 
-/** Food daily; rent every 7th day. Short on rent: the landlord waits and tries again next night. */
+/**
+ * Food daily; rent every 7th day. Short on rent: the landlord waits and tries again next night.
+ * Late rent never stacks: paying once clears it, however many weeks passed. There is no debt
+ * by design (spec: "rent pressure is soft").
+ */
 export function endDay(course: Course, state: GameState): GameEvent[] {
   const { foodPerDay, rentPerWeek } = course.world;
   const events: GameEvent[] = [{ type: "dayEnded", day: state.day }];
@@ -1171,7 +1207,18 @@ import {
   wordState,
 } from "./learner";
 import { shuffle } from "./rng";
-import type { Course, Exchange, GameEvent, GameState, RenderedLine, Scene, SceneRun, WordId, WordRecord } from "./types";
+import type {
+  Course,
+  Exchange,
+  GameEvent,
+  GameState,
+  RejectReason,
+  RenderedLine,
+  Scene,
+  SceneRun,
+  WordId,
+  WordRecord,
+} from "./types";
 
 export interface Ctx {
   course: Course;
@@ -1181,7 +1228,7 @@ export interface Ctx {
   ev: GameEvent[];
 }
 
-export function reject(ctx: Ctx, reason: string): void {
+export function reject(ctx: Ctx, reason: RejectReason): void {
   ctx.ev.push({ type: "inputRejected", reason });
 }
 
@@ -1308,10 +1355,10 @@ function finishScene(ctx: Ctx, scene: Scene): void {
   ctx.ev.push(...addTrust(ctx.state, scene.npc, scene.trustGain + (run.mixups === 0 ? 1 : 0)));
 }
 
-function resolve(ctx: Ctx, scene: Scene, ex: Exchange, chosen: Combo, diff: string[]): void {
+function resolve(ctx: Ctx, scene: Scene, ex: Exchange, chosen: Combo, diff: string[], tilesWrong = false): void {
   const run = ctx.state.run!;
-  const matched = diff.length === 0;
-  ctx.ev.push({ type: "actionPerformed", action: resolveParams(ex.expect, chosen), matched, diff });
+  const matched = diff.length === 0 && !tilesWrong;
+  ctx.ev.push({ type: "actionPerformed", action: resolveParams(ex.expect, chosen), matched, diff, tilesWrong });
   const hinges = hingeWords(ctx, ex, run.combo);
   if (matched) {
     for (const w of hinges) setWord(ctx, w, recordRight);
@@ -1386,7 +1433,7 @@ export function replyTiles(ctx: Ctx, tiles: number[]): void {
   if (tiles.some((i) => run.tiles[i] === undefined)) return reject(ctx, "bad-tile");
   const answer = tiles.map((i) => run.tiles[i]).join("");
   const target = tilePieces(cur.ex.variants[comboKey(run.combo)].reply).join("");
-  resolve(ctx, cur.scene, cur.ex, run.combo, answer === target ? [] : ["tiles"]);
+  resolve(ctx, cur.scene, cur.ex, run.combo, [], answer !== target);
 }
 ```
 
@@ -1666,7 +1713,7 @@ Expected: PASS (6 tests).
 
 Run: `npx vitest run packages/core && npx tsc`
 
-Expected: 31 tests pass in 5 files; `tsc` prints nothing.
+Expected: 32 tests pass in 5 files; `tsc` prints nothing.
 
 - [ ] **Step 6: Commit**
 
@@ -2497,6 +2544,23 @@ describe("checkCourse", () => {
     for (const l of ["a", "b", "c", "d", "e"]) c.world.places[l] = { links: [] };
     expect(checkCourse(input({ course: c }))).toContain('world: place "noodle_shop" has 8 scenes and exits; at most 7');
   });
+
+  it("keeps names simple, groups sound, slot references real and amounts whole", () => {
+    const c = fixtureCourse();
+    c.groups.drinks = ["tea", "tea", "coffee"];
+    c.groups["bad name"] = [];
+    c.world.foodPerDay = 2.5;
+    c.scenes[1].exchanges[0].pay = -1;
+    c.scenes[1].exchanges[0].expect = { action: "serve", item: "$itme" };
+    const errors = checkCourse(input({ course: c }));
+    expect(errors).toContain('groups: "drinks" lists "tea" twice');
+    expect(errors).toContain('groups: "drinks" has unknown concept "coffee"');
+    expect(errors).toContain('groups: "bad name" may only use letters, digits, _ and -');
+    expect(errors).toContain('groups: "bad name" is empty');
+    expect(errors).toContain("world: foodPerDay must be a whole number of 0 or more");
+    expect(errors).toContain("shift/order: pay must be a whole number of 0 or more");
+    expect(errors).toContain('shift/order: expect uses unknown slot "$itme"');
+  });
 });
 ```
 
@@ -2583,6 +2647,10 @@ function ancestors(scenes: Scene[]): Map<string, Set<string>> {
   return memo;
 }
 
+/** Slot, group and concept names end up in combo keys ("count=three|item=tea"), so they stay simple. */
+const NAME = /^[A-Za-z0-9_-]+$/;
+const isCount = (n: unknown) => Number.isInteger(n) && (n as number) >= 0;
+
 /** Duplicates in a list, each named once. */
 const dupes = (xs: string[]) => [...new Set(xs.filter((x, i) => xs.indexOf(x) !== i))];
 
@@ -2592,6 +2660,20 @@ export function checkCourse(input: CheckInput): string[] {
   const { world } = course;
 
   if (!world.places[world.start]) errors.push(`world: start place "${world.start}" does not exist`);
+  // Saves hold whole numbers only, so money, time and trust amounts must be whole numbers too.
+  for (const k of ["startWallet", "foodPerDay", "rentPerWeek"] as const) {
+    if (!isCount(world[k])) errors.push(`world: ${k} must be a whole number of 0 or more`);
+  }
+  if (!isCount(world.slotsPerDay) || world.slotsPerDay < 1) errors.push("world: slotsPerDay must be a whole number of 1 or more");
+  for (const name of Object.keys(course.concepts)) {
+    if (!NAME.test(name)) errors.push(`concepts: "${name}" may only use letters, digits, _ and -`);
+  }
+  for (const [name, members] of Object.entries(course.groups)) {
+    if (!NAME.test(name)) errors.push(`groups: "${name}" may only use letters, digits, _ and -`);
+    if (members.length === 0) errors.push(`groups: "${name}" is empty`);
+    for (const d of dupes(members)) errors.push(`groups: "${name}" lists "${d}" twice`);
+    for (const m of members) if (!(m in course.concepts)) errors.push(`groups: "${name}" has unknown concept "${m}"`);
+  }
   for (const [id, p] of Object.entries(world.places)) {
     for (const l of p.links) if (!world.places[l]) errors.push(`world: place "${id}" links to unknown place "${l}"`);
   }
@@ -2622,7 +2704,17 @@ export function checkCourse(input: CheckInput): string[] {
       const most = sources.some((x) => x.repeatable) ? Infinity : sources.reduce((n, x) => n + x.trustGain + 1, 0);
       if (most < need) errors.push(`${s.id}: needs trust ${need} with "${npc}", but earlier scenes give at most ${most}`);
     }
+    if (!isCount(s.trustGain)) errors.push(`${s.id}: trustGain must be a whole number of 0 or more`);
     for (const ex of s.exchanges) {
+      for (const k of ["pay", "missCost"] as const) {
+        if (!isCount(ex[k])) errors.push(`${s.id}/${ex.id}: ${k} must be a whole number of 0 or more`);
+      }
+      for (const slot of Object.keys(ex.slots)) {
+        if (!NAME.test(slot)) errors.push(`${s.id}/${ex.id}: slot "${slot}" may only use letters, digits, _ and -`);
+      }
+      for (const v of Object.values(ex.expect)) {
+        if (v.startsWith("$") && !(v.slice(1) in ex.slots)) errors.push(`${s.id}/${ex.id}: expect uses unknown slot "${v}"`);
+      }
       for (const h of ex.hinges) {
         const ok = h.startsWith("$") ? h.slice(1) in ex.slots : h in course.concepts;
         if (!ok) errors.push(`${s.id}/${ex.id}: unknown hinge "${h}"`);
@@ -2729,7 +2821,7 @@ export function checkCourse(input: CheckInput): string[] {
 
 Run: `npx vitest run tools/test/check.test.ts`
 
-Expected: PASS (12 tests).
+Expected: PASS (13 tests).
 
 - [ ] **Step 5: Commit**
 
@@ -2959,6 +3051,7 @@ Expected: FAIL. `../src/text` doesn't exist yet.
 
 ```ts
 import { FluentBundle, FluentResource, type FluentVariable } from "@fluent/bundle";
+import { REJECT_REASONS, WALLET_REASONS } from "@silver-tongue/core";
 
 export type Text = (id: string, args?: Record<string, FluentVariable>) => string;
 
@@ -2972,22 +3065,6 @@ export function makeText(ftl: string, locale = "en"): Text {
     return msg?.value ? bundle.formatPattern(msg.value, args ?? {}, []) : id;
   };
 }
-
-/** Why the core refused an input (inputRejected.reason); each has a `reject-<code>` message. */
-export const REJECT_CODES = [
-  "unknown-scene",
-  "in-scene",
-  "wrong-place",
-  "locked",
-  "no-slots",
-  "stale-run",
-  "no-pick",
-  "bad-choice",
-  "no-tiles",
-  "bad-tile",
-  "not-linked",
-  "unknown-word",
-];
 
 /**
  * Message ids the TUI uses, with the variables it passes to each.
@@ -3014,10 +3091,7 @@ export const UI_KEYS: Record<string, string[]> = {
   mismatch: [],
   rephrased: [],
   "wallet-change": ["sign", "currency", "amount", "reason"],
-  "reason-wages": [],
-  "reason-mixup": [],
-  "reason-food": [],
-  "reason-rent": [],
+  ...Object.fromEntries(WALLET_REASONS.map((r) => [`reason-${r}`, []])),
   "trust-up": ["npc", "trust"],
   "scene-done": ["currency", "earned"],
   unlocked: ["scene"],
@@ -3025,7 +3099,7 @@ export const UI_KEYS: Record<string, string[]> = {
   "day-ended": ["day"],
   "notice-bad-save": [],
   "notice-read-only": [],
-  ...Object.fromEntries(REJECT_CODES.map((c) => [`reject-${c}`, []])),
+  ...Object.fromEntries(REJECT_REASONS.map((c) => [`reject-${c}`, []])),
 };
 
 /** Every UI message that is missing or can't be formatted with the variables the TUI passes. */
@@ -4282,7 +4356,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) main();
 
 Run: `npx vitest run tools`
 
-Expected: PASS (36 tests in 5 files).
+Expected: PASS (37 tests in 5 files).
 
 - [ ] **Step 6: Build the course from the command line**
 
@@ -4662,8 +4736,8 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -4769,7 +4843,7 @@ npm run bundle -w silver-tongue   # build packages/tui-node/dist for npm/npx
 
 Run: `npm run typecheck && npm run build:course && npm test`
 
-Expected: `tsc` prints nothing, the course builds, and **93 tests pass in 15 files**.
+Expected: `tsc` prints nothing, the course builds, and **95 tests pass in 15 files**.
 
 - [ ] **Step 5: Commit and push**
 
