@@ -5,5 +5,5 @@ place-noodle_shop-desc = Steam everywhere. The cook waves you over.
 
 npc-cook = Cook
 
-scene-noodle-intro = Ask about work
+scene-noodle-intro = Get a job
 scene-noodle-shift = Work a shift
