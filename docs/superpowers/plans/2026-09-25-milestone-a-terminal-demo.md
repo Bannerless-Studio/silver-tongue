@@ -19,7 +19,8 @@
 - the browser TUI (B);
 - the ported vocab-engine distractor helper `wordOpts` (B, once groups grow past a few values; today wrong options vary one slot within a small group);
 - save export/import as a text string, and the play-test event log (B; `serialize`/`parseSave` already exist);
-- the tagger for languages that put spaces between words (D).
+- the tagger for languages that put spaces between words (D);
+- TUI polish from the spec, for B: narrating actions from the narration file ("She sets down four cups. You ordered three."), echoing the player's reply, marking menu items that cost a slot, a footer that counts the actual options, a notice when rent is late, and keeping older `.invalid-backup` saves instead of replacing them.
 
 The checker's coverage and audio rules exist and are tested, but are switched off for this two-scene pilot course in `content/courses/zh-china-en.json`.
 
@@ -3409,6 +3410,14 @@ describe("tui app", () => {
     expect(term.screen().join("\n")).toContain("Done. You earned");
   });
 
+  it("keeps working on a very short screen", () => {
+    const { term } = setup();
+    term.resize(30, 8);
+    term.press("1");
+    expect(term.frames.at(-1)!.length).toBe(8);
+    for (const line of term.frames.at(-1)!) expect(lineWidth(line)).toBe(30);
+  });
+
   it("wraps tiles and help words on a narrow screen", () => {
     const { term } = setup();
     term.resize(16, 20);
@@ -3507,7 +3516,7 @@ export function renderScreen(m: ScreenModel, cols: number, rows: number): Styled
   const bodyRows = Math.max(1, rows - 2);
   const prompt = m.prompt.slice(-bodyRows);
   const logRows = Math.max(0, bodyRows - prompt.length - (prompt.length ? 1 : 0));
-  const log = m.log.slice(-logRows);
+  const log = logRows > 0 ? m.log.slice(-logRows) : []; // slice(-0) would be the whole log
   const body: StyledLine[] = [...Array(logRows - log.length).fill([]), ...log];
   if (prompt.length) body.push([]);
   body.push(...prompt);
@@ -3785,7 +3794,7 @@ export { startApp, type App, type AppOptions } from "./app";
 
 Run: `npx vitest run packages/tui`
 
-Expected: PASS (20 tests in 3 files).
+Expected: PASS (21 tests in 3 files).
 
 - [ ] **Step 5: Commit**
 
@@ -3907,6 +3916,13 @@ describe("build-course (real content)", () => {
     expect(v.npc.tokens.map((t) => course!.words[t.word].w)).toEqual(["四", "杯", "水"]);
     expect(v.reply.text).toBe("好，四杯水。");
     expect(v.rephrase?.text).toBe("水。四杯。");
+  });
+
+  it("ships only the words the course uses", () => {
+    const ids = Object.keys(course!.words);
+    expect(ids.length).toBeLessThan(40);
+    expect(ids).toContain("w0133");
+    expect(course!.words.w0001).toBeUndefined();
   });
 
   it("resolves concepts, glosses and bonus words", () => {
@@ -4331,6 +4347,18 @@ export function buildCourse(root: string, courseId: string): BuildResult {
   const learnerIds = attempt("learner text", () => new Set(messageIds(learnerFtl, "learner files"))) ?? new Set<string>();
   errors.push(...checkCourse({ course, stages: meta.stages, checks: cfg.checks, learnerIds, requiredUi: [] }));
   errors.push(...uiTextProblems(learnerFtl, cfg.learner));
+  // Ship only the words the course uses: rank is the share of these that are known, and
+  // the pack has far more words than one course needs. (The checks above see the whole pack.)
+  const used = new Set<string>([
+    ...Object.values(concepts).flat(),
+    ...Object.values(reactions).flatMap((l) => l.tokens.map((t) => t.word)),
+    ...scenes.flatMap((s) =>
+      s.exchanges.flatMap((ex) =>
+        Object.values(ex.variants).flatMap((v) => [v.npc, v.reply, v.rephrase].flatMap((l) => l?.tokens.map((t) => t.word) ?? [])),
+      ),
+    ),
+  ]);
+  course.words = Object.fromEntries(Object.entries(words).filter(([id]) => used.has(id)));
   return { course, errors };
 }
 
@@ -4356,7 +4384,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) main();
 
 Run: `npx vitest run tools`
 
-Expected: PASS (37 tests in 5 files).
+Expected: PASS (38 tests in 5 files).
 
 - [ ] **Step 6: Build the course from the command line**
 
@@ -4721,7 +4749,7 @@ git commit -m "feat(cli): add Node terminal backend and silver-tongue CLI bundle
 ### Task 17: CI, README and CLAUDE.md
 
 **Files:**
-- Create: `.github/workflows/ci.yml`, `README.md`, `CLAUDE.md`
+- Create: `.github/workflows/ci.yml`, `README.md`, `CLAUDE.md`, `packages/tui-node/README.md`, `packages/tui-node/LICENSE`
 
 - [ ] **Step 1: Add CI**
 
@@ -4789,7 +4817,45 @@ npm run play
 MIT. See `LICENSE`.
 ````
 
-- [ ] **Step 3: Add CLAUDE.md (for developers and agents)**
+- [ ] **Step 3: Add the npm page README and the license to the published package**
+
+npm shows the package's own README and ships its own LICENSE, so `packages/tui-node` needs both. Copy the license with `cp LICENSE packages/tui-node/LICENSE`.
+
+`packages/tui-node/README.md`:
+
+````markdown
+# Silver Tongue
+
+> You arrive speaking pidgin; you leave with a silver tongue.
+
+A language-learning life game. You arrive in a new city knowing a few words and earn your living by understanding people. Every job, purchase and conversation happens in the language you're learning.
+
+The first course is Mandarin (HSK 1), in a Chinese city, explained in English.
+
+## Play in the terminal
+
+```sh
+npx silver-tongue
+```
+
+| Key | Does |
+|---|---|
+| `1`–`9` | choose from the menu, or pick a reply |
+| `w` | word help: look up a word from the last line |
+| `enter` / `⌫` | say / undo, when building a reply from tiles |
+| `esc` | back |
+| `q` | save and quit (from the menu) |
+
+Progress saves automatically to `~/.config/silver-tongue/<course>.json` (or under `$XDG_CONFIG_HOME`, or `%APPDATA%` on Windows). If a save can't be read, it is kept next to it as `<course>.json.invalid-backup` and a new game starts. If saving fails, the game says so and plays on without saving.
+
+Needs Node 22 or newer. Source, issues and other ways to play: https://github.com/jamil314/silver-tongue
+
+## License
+
+MIT. See `LICENSE`.
+````
+
+- [ ] **Step 4: Add CLAUDE.md (for developers and agents)**
 
 `CLAUDE.md`:
 
@@ -4839,16 +4905,16 @@ npm run bundle -w silver-tongue   # build packages/tui-node/dist for npm/npx
 - Code ported from vocab-engine is used with its author's consent; note the origin in a comment.
 ````
 
-- [ ] **Step 4: Run everything the way CI does**
+- [ ] **Step 5: Run everything the way CI does**
 
 Run: `npm run typecheck && npm run build:course && npm test`
 
-Expected: `tsc` prints nothing, the course builds, and **95 tests pass in 15 files**.
+Expected: `tsc` prints nothing, the course builds, and **97 tests pass in 15 files**.
 
-- [ ] **Step 5: Commit and push**
+- [ ] **Step 6: Commit and push**
 
 ```bash
-git add .github README.md CLAUDE.md
+git add .github README.md CLAUDE.md packages/tui-node/README.md packages/tui-node/LICENSE
 git commit -m "docs: add README, CLAUDE.md and CI"
 git push
 ```
@@ -4857,7 +4923,7 @@ Expected: the `ci` workflow on GitHub goes green.
 
 ## After this plan
 
-- **Publishing** (`npm publish -w silver-tongue`) is the owner's call. Until then, the demo can be shared as the `npm pack` tarball.
+- **Publishing:** the `publish` workflow (branch `ci-npm-publish`) publishes `silver-tongue` from CI whenever a new version reaches `main`. It needs the `NPM_TOKEN` repository secret. Until it runs, the demo can be shared as the `npm pack` tarball.
 - **Milestone A is done** when a tester can run the demo, finish both scenes, and see:
   - word help;
   - tiles (after the words become known);

@@ -105,7 +105,7 @@ Wrong options and distractor tiles are produced from the exchange's action by **
 
 ### Rank ladder
 
-The player's status is shown as a rank based on the share of the course's words that are *known*:
+The player's status is shown as a rank based on the share of the course's words (the words its scenes use) that are *known*:
 
 | Share known | Rank (English labels) |
 |---|---|
@@ -138,8 +138,8 @@ tools/       vocab-engine import, content build and checker, audio generation
 ### Core
 
 - **One entry point:** `core.send(input) → Event[]`. The whole state is one plain JSON-serialisable object. The random number source and the clock are passed in, so every run can be replayed.
-- **Inputs:** `goTo(place)`, `talkTo(npc)`, `startScene(id)`, `reply(choice | tiles | text)`, `helpWord(wordId)`, `replayLine(slow?)`, `buy(item)`, `visitMentor`, `sleep`.
-- **Events:** `placeEntered`, `lineSpoken`, `replyOptions`, `actionPerformed`, `npcReacted`, `lineRephrased`, `walletChanged`, `trustChanged`, `wordStateChanged`, `unlocked`, `rankChanged`, `dayEnded`, `inputRejected`.
+- **Inputs:** `goTo(place)`, `startScene(id)`, `reply(choice)`, `replyTiles(tiles)`, `helpWord(wordId)`, `sleep` (milestone A). Later: `replyText(text)`, `talkTo(npc)`, `replayLine(slow?)`, `buy(item)`, `visitMentor`.
+- **Events:** `placeEntered`, `sceneStarted`, `lineSpoken`, `replyOptions`, `actionPerformed`, `npcReacted`, `lineRephrased`, `walletChanged`, `trustChanged`, `wordStateChanged`, `sceneEnded`, `unlocked`, `rankChanged`, `dayEnded`, `inputRejected`.
 - **Places** and the connections between them are core data. In 3D, walking into a trigger zone sends `goTo`. In the TUI, picking from the place menu sends it.
 
 | Module | Owns |
@@ -277,7 +277,9 @@ The TUI is written against a small interface:
 interface Terminal {
   write(lines: StyledLine[]): void;
   onKey(handler: (key: Key) => void): void;
+  onResize(handler: () => void): void;
   size(): { cols: number; rows: number };
+  close(): void;
 }
 ```
 
