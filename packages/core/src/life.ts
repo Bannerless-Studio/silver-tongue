@@ -1,4 +1,4 @@
-import type { Course, GameEvent, GameState, Scene } from "./types";
+import type { Course, GameEvent, GameState, Scene, WalletReason } from "./types";
 
 export function isAvailable(scene: Scene, state: GameState): boolean {
   if (!scene.repeatable && (state.scenesDone[scene.id] ?? 0) > 0) return false;
@@ -12,7 +12,7 @@ export function availableSceneIds(course: Course, state: GameState): string[] {
 }
 
 /** The wallet never goes below zero: there is no debt. */
-export function changeWallet(state: GameState, delta: number, reason: string): GameEvent[] {
+export function changeWallet(state: GameState, delta: number, reason: WalletReason): GameEvent[] {
   const next = Math.max(0, state.wallet + delta);
   const actual = next - state.wallet;
   state.wallet = next;
@@ -25,7 +25,11 @@ export function addTrust(state: GameState, npc: string, amount: number): GameEve
   return [{ type: "trustChanged", npc, trust: state.trust[npc] }];
 }
 
-/** Food daily; rent every 7th day. Short on rent: the landlord waits and tries again next night. */
+/**
+ * Food daily; rent every 7th day. Short on rent: the landlord waits and tries again next night.
+ * Late rent never stacks: paying once clears it, however many weeks passed. There is no debt
+ * by design (spec: "rent pressure is soft").
+ */
 export function endDay(course: Course, state: GameState): GameEvent[] {
   const { foodPerDay, rentPerWeek } = course.world;
   const events: GameEvent[] = [{ type: "dayEnded", day: state.day }];

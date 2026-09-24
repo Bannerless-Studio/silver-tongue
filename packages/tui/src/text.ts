@@ -1,4 +1,5 @@
 import { FluentBundle, FluentResource, type FluentVariable } from "@fluent/bundle";
+import { REJECT_REASONS, WALLET_REASONS } from "@silver-tongue/core";
 
 export type Text = (id: string, args?: Record<string, FluentVariable>) => string;
 
@@ -12,22 +13,6 @@ export function makeText(ftl: string, locale = "en"): Text {
     return msg?.value ? bundle.formatPattern(msg.value, args ?? {}, []) : id;
   };
 }
-
-/** Why the core refused an input (inputRejected.reason); each has a `reject-<code>` message. */
-export const REJECT_CODES = [
-  "unknown-scene",
-  "in-scene",
-  "wrong-place",
-  "locked",
-  "no-slots",
-  "stale-run",
-  "no-pick",
-  "bad-choice",
-  "no-tiles",
-  "bad-tile",
-  "not-linked",
-  "unknown-word",
-];
 
 /**
  * Message ids the TUI uses, with the variables it passes to each.
@@ -54,10 +39,7 @@ export const UI_KEYS: Record<string, string[]> = {
   mismatch: [],
   rephrased: [],
   "wallet-change": ["sign", "currency", "amount", "reason"],
-  "reason-wages": [],
-  "reason-mixup": [],
-  "reason-food": [],
-  "reason-rent": [],
+  ...Object.fromEntries(WALLET_REASONS.map((r) => [`reason-${r}`, []])),
   "trust-up": ["npc", "trust"],
   "scene-done": ["currency", "earned"],
   unlocked: ["scene"],
@@ -65,7 +47,7 @@ export const UI_KEYS: Record<string, string[]> = {
   "day-ended": ["day"],
   "notice-bad-save": [],
   "notice-read-only": [],
-  ...Object.fromEntries(REJECT_CODES.map((c) => [`reject-${c}`, []])),
+  ...Object.fromEntries(REJECT_REASONS.map((c) => [`reject-${c}`, []])),
 };
 
 /** Every UI message that is missing or can't be formatted with the variables the TUI passes. */

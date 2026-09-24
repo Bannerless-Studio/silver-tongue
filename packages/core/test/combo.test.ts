@@ -20,6 +20,12 @@ describe("combo", () => {
     expect(allCombos({}, {})).toEqual([{}]);
   });
 
+  it("every combination's key parses back to it", () => {
+    for (const c of allCombos({ item: "drinks", count: "nums" }, { drinks: ["tea", "hot_water"], nums: ["three", "4-ish"] })) {
+      expect(parseComboKey(comboKey(c))).toEqual(c);
+    }
+  });
+
   it("rejects unknown groups", () => {
     expect(() => allCombos({ item: "food" }, {})).toThrow(/unknown group "food"/);
   });

@@ -131,6 +131,28 @@ export interface GameState {
   run: SceneRun | null;
 }
 
+/** Why the core refused an input. Front ends show a translated message for each. */
+export const REJECT_REASONS = [
+  "unknown-scene",
+  "in-scene",
+  "wrong-place",
+  "locked",
+  "no-slots",
+  "stale-run",
+  "no-pick",
+  "bad-choice",
+  "no-tiles",
+  "bad-tile",
+  "not-linked",
+  "unknown-word",
+] as const;
+export type RejectReason = (typeof REJECT_REASONS)[number];
+
+/** Why the wallet changed. */
+export const WALLET_REASONS = ["wages", "mixup", "food", "rent"] as const;
+export type WalletReason = (typeof WALLET_REASONS)[number];
+
+/** Replies arrive as `reply` (pick mode) or `replyTiles` (tiles mode); typed replies will add `replyText`. */
 export type Input =
   | { type: "goTo"; place: string }
   | { type: "startScene"; scene: string }
@@ -145,15 +167,19 @@ export type GameEvent =
   | { type: "lineSpoken"; npc: string; line: RenderedLine }
   | { type: "replyOptions"; mode: "pick"; options: RenderedLine[] }
   | { type: "replyOptions"; mode: "tiles"; tiles: string[] }
-  | { type: "actionPerformed"; action: Record<string, string>; matched: boolean; diff: string[] }
+  /**
+   * diff: the slots the player got wrong (pick mode). tilesWrong: the tiles didn't make the reply
+   * (tiles mode, where the slots are always the expected ones).
+   */
+  | { type: "actionPerformed"; action: Record<string, string>; matched: boolean; diff: string[]; tilesWrong: boolean }
   | { type: "npcReacted"; npc: string; reaction: string; line: RenderedLine }
   /** slow: no rephrase was written, so this replays the original line (show it slowly, with pronunciation) */
   | { type: "lineRephrased"; npc: string; line: RenderedLine; slow: boolean }
-  | { type: "walletChanged"; wallet: number; delta: number; reason: string }
+  | { type: "walletChanged"; wallet: number; delta: number; reason: WalletReason }
   | { type: "trustChanged"; npc: string; trust: number }
   | { type: "wordStateChanged"; word: WordId; from: WordState; to: WordState }
   | { type: "sceneEnded"; scene: string; earned: number }
   | { type: "unlocked"; scene: string }
   | { type: "rankChanged"; rank: number }
   | { type: "dayEnded"; day: number }
-  | { type: "inputRejected"; reason: string };
+  | { type: "inputRejected"; reason: RejectReason };

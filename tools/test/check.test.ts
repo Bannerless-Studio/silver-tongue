@@ -113,4 +113,21 @@ describe("checkCourse", () => {
     for (const l of ["a", "b", "c", "d", "e"]) c.world.places[l] = { links: [] };
     expect(checkCourse(input({ course: c }))).toContain('world: place "noodle_shop" has 8 scenes and exits; at most 7');
   });
+
+  it("keeps names simple, groups sound, slot references real and amounts whole", () => {
+    const c = fixtureCourse();
+    c.groups.drinks = ["tea", "tea", "coffee"];
+    c.groups["bad name"] = [];
+    c.world.foodPerDay = 2.5;
+    c.scenes[1].exchanges[0].pay = -1;
+    c.scenes[1].exchanges[0].expect = { action: "serve", item: "$itme" };
+    const errors = checkCourse(input({ course: c }));
+    expect(errors).toContain('groups: "drinks" lists "tea" twice');
+    expect(errors).toContain('groups: "drinks" has unknown concept "coffee"');
+    expect(errors).toContain('groups: "bad name" may only use letters, digits, _ and -');
+    expect(errors).toContain('groups: "bad name" is empty');
+    expect(errors).toContain("world: foodPerDay must be a whole number of 0 or more");
+    expect(errors).toContain("shift/order: pay must be a whole number of 0 or more");
+    expect(errors).toContain('shift/order: expect uses unknown slot "$itme"');
+  });
 });

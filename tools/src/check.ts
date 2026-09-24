@@ -62,6 +62,10 @@ function ancestors(scenes: Scene[]): Map<string, Set<string>> {
   return memo;
 }
 
+/** Slot, group and concept names end up in combo keys ("count=three|item=tea"), so they stay simple. */
+const NAME = /^[A-Za-z0-9_-]+$/;
+const isCount = (n: unknown) => Number.isInteger(n) && (n as number) >= 0;
+
 /** Duplicates in a list, each named once. */
 const dupes = (xs: string[]) => [...new Set(xs.filter((x, i) => xs.indexOf(x) !== i))];
 
@@ -71,6 +75,20 @@ export function checkCourse(input: CheckInput): string[] {
   const { world } = course;
 
   if (!world.places[world.start]) errors.push(`world: start place "${world.start}" does not exist`);
+  // Saves hold whole numbers only, so money, time and trust amounts must be whole numbers too.
+  for (const k of ["startWallet", "foodPerDay", "rentPerWeek"] as const) {
+    if (!isCount(world[k])) errors.push(`world: ${k} must be a whole number of 0 or more`);
+  }
+  if (!isCount(world.slotsPerDay) || world.slotsPerDay < 1) errors.push("world: slotsPerDay must be a whole number of 1 or more");
+  for (const name of Object.keys(course.concepts)) {
+    if (!NAME.test(name)) errors.push(`concepts: "${name}" may only use letters, digits, _ and -`);
+  }
+  for (const [name, members] of Object.entries(course.groups)) {
+    if (!NAME.test(name)) errors.push(`groups: "${name}" may only use letters, digits, _ and -`);
+    if (members.length === 0) errors.push(`groups: "${name}" is empty`);
+    for (const d of dupes(members)) errors.push(`groups: "${name}" lists "${d}" twice`);
+    for (const m of members) if (!(m in course.concepts)) errors.push(`groups: "${name}" has unknown concept "${m}"`);
+  }
   for (const [id, p] of Object.entries(world.places)) {
     for (const l of p.links) if (!world.places[l]) errors.push(`world: place "${id}" links to unknown place "${l}"`);
   }
@@ -101,7 +119,17 @@ export function checkCourse(input: CheckInput): string[] {
       const most = sources.some((x) => x.repeatable) ? Infinity : sources.reduce((n, x) => n + x.trustGain + 1, 0);
       if (most < need) errors.push(`${s.id}: needs trust ${need} with "${npc}", but earlier scenes give at most ${most}`);
     }
+    if (!isCount(s.trustGain)) errors.push(`${s.id}: trustGain must be a whole number of 0 or more`);
     for (const ex of s.exchanges) {
+      for (const k of ["pay", "missCost"] as const) {
+        if (!isCount(ex[k])) errors.push(`${s.id}/${ex.id}: ${k} must be a whole number of 0 or more`);
+      }
+      for (const slot of Object.keys(ex.slots)) {
+        if (!NAME.test(slot)) errors.push(`${s.id}/${ex.id}: slot "${slot}" may only use letters, digits, _ and -`);
+      }
+      for (const v of Object.values(ex.expect)) {
+        if (v.startsWith("$") && !(v.slice(1) in ex.slots)) errors.push(`${s.id}/${ex.id}: expect uses unknown slot "${v}"`);
+      }
       for (const h of ex.hinges) {
         const ok = h.startsWith("$") ? h.slice(1) in ex.slots : h in course.concepts;
         if (!ok) errors.push(`${s.id}/${ex.id}: unknown hinge "${h}"`);

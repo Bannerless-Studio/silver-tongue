@@ -9,7 +9,18 @@ import {
   wordState,
 } from "./learner";
 import { shuffle } from "./rng";
-import type { Course, Exchange, GameEvent, GameState, RenderedLine, Scene, SceneRun, WordId, WordRecord } from "./types";
+import type {
+  Course,
+  Exchange,
+  GameEvent,
+  GameState,
+  RejectReason,
+  RenderedLine,
+  Scene,
+  SceneRun,
+  WordId,
+  WordRecord,
+} from "./types";
 
 export interface Ctx {
   course: Course;
@@ -19,7 +30,7 @@ export interface Ctx {
   ev: GameEvent[];
 }
 
-export function reject(ctx: Ctx, reason: string): void {
+export function reject(ctx: Ctx, reason: RejectReason): void {
   ctx.ev.push({ type: "inputRejected", reason });
 }
 
@@ -146,10 +157,10 @@ function finishScene(ctx: Ctx, scene: Scene): void {
   ctx.ev.push(...addTrust(ctx.state, scene.npc, scene.trustGain + (run.mixups === 0 ? 1 : 0)));
 }
 
-function resolve(ctx: Ctx, scene: Scene, ex: Exchange, chosen: Combo, diff: string[]): void {
+function resolve(ctx: Ctx, scene: Scene, ex: Exchange, chosen: Combo, diff: string[], tilesWrong = false): void {
   const run = ctx.state.run!;
-  const matched = diff.length === 0;
-  ctx.ev.push({ type: "actionPerformed", action: resolveParams(ex.expect, chosen), matched, diff });
+  const matched = diff.length === 0 && !tilesWrong;
+  ctx.ev.push({ type: "actionPerformed", action: resolveParams(ex.expect, chosen), matched, diff, tilesWrong });
   const hinges = hingeWords(ctx, ex, run.combo);
   if (matched) {
     for (const w of hinges) setWord(ctx, w, recordRight);
@@ -224,5 +235,5 @@ export function replyTiles(ctx: Ctx, tiles: number[]): void {
   if (tiles.some((i) => run.tiles[i] === undefined)) return reject(ctx, "bad-tile");
   const answer = tiles.map((i) => run.tiles[i]).join("");
   const target = tilePieces(cur.ex.variants[comboKey(run.combo)].reply).join("");
-  resolve(ctx, cur.scene, cur.ex, run.combo, answer === target ? [] : ["tiles"]);
+  resolve(ctx, cur.scene, cur.ex, run.combo, [], answer !== target);
 }
