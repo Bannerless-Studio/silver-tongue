@@ -47,7 +47,7 @@ The checker's coverage and audio rules exist and are tested, but are switched of
 | `packages/core/src/testing/fixture.ts` | Hand-built two-scene course used by tests in every package |
 | `tools/src/pack.ts` | Our pack format types and the vocab-engine input types |
 | `tools/src/import-vocab-pack.ts` | vocab-engine pack → our pack + generated gloss file |
-| `tools/src/segment.ts` | Longest-match word tagging for unspaced scripts |
+| `tools/src/segment.ts` | Word tagging for unspaced scripts (fewest unknowns, then fewest words) |
 | `tools/src/fluent.ts` | Fluent parsing, slot binding, rendering |
 | `tools/src/check.ts` | Content checker |
 | `tools/src/build-course.ts` | Content → `dist/courses/<id>/course.json` |
@@ -1920,10 +1920,11 @@ const lex = buildLexicon([
   { id: "w_cha", w: "茶", lv: "1" },
   { id: "w_san", w: "三", lv: "1" },
   { id: "w_hao", w: "好", lv: "1" },
+  { id: "w_ta", w: "他", lv: "1", alt: ["她"] },
 ]);
 
 describe("segment", () => {
-  it("takes the longest match and skips punctuation", () => {
+  it("tags words and skips punctuation", () => {
     expect(segment("好，三杯茶。", lex)).toEqual({
       tokens: [
         { start: 0, end: 1, word: "w_hao" },
@@ -1936,8 +1937,38 @@ describe("segment", () => {
     expect(segment("杯子", lex).tokens).toEqual([{ start: 0, end: 2, word: "w_beizi" }]);
   });
 
-  it("reports characters outside the word list", () => {
-    expect(segment("三碗茶", lex).unknown).toEqual(["碗"]);
+  it("tags alternative forms with the word's id and skips digits", () => {
+    expect(segment("她3杯", lex)).toEqual({
+      tokens: [
+        { start: 0, end: 1, word: "w_ta" },
+        { start: 2, end: 3, word: "w_bei" },
+      ],
+      unknown: [],
+    });
+  });
+
+  it("prefers the split with fewer words over the greedy one", () => {
+    const l = buildLexicon([
+      { id: "yanjiu", w: "研究", lv: "1" },
+      { id: "yanjiusheng", w: "研究生", lv: "1" },
+      { id: "shengming", w: "生命", lv: "1" },
+    ]);
+    expect(segment("研究生命", l).tokens.map((t) => t.word)).toEqual(["yanjiu", "shengming"]);
+  });
+
+  it("reports characters outside the word list with their offsets, as whole code points", () => {
+    expect(segment("三碗茶", lex).unknown).toEqual([{ start: 1, end: 2, char: "碗" }]);
+    expect(segment("𠀀茶", lex)).toEqual({
+      tokens: [{ start: 2, end: 3, word: "w_cha" }],
+      unknown: [{ start: 0, end: 2, char: "𠀀" }],
+    });
+    expect(segment("tea茶", lex).unknown.map((u) => u.char)).toEqual(["t", "e", "a"]);
+  });
+
+  it("refuses two words with the same form", () => {
+    expect(() => buildLexicon([{ id: "a", w: "行", lv: "1" }, { id: "b", w: "走", lv: "1", alt: ["行"] }])).toThrow(
+      /"行" \(a, b\)/,
+    );
   });
 });
 ```
@@ -1961,50 +1992,80 @@ export interface Lexicon {
   maxLen: number;
 }
 
+/** Throws if two words share a form: the tagger couldn't tell them apart. */
 export function buildLexicon(words: PackWord[]): Lexicon {
   const byForm = new Map<string, string>();
+  const clashes: string[] = [];
   let maxLen = 1;
   for (const w of words) {
-    for (const form of [w.w, ...(w.alt ?? [])]) {
-      if (!byForm.has(form)) byForm.set(form, w.id);
+    for (const form of new Set([w.w, ...(w.alt ?? [])])) {
+      const other = byForm.get(form);
+      if (other !== undefined && other !== w.id) clashes.push(`"${form}" (${other}, ${w.id})`);
+      else byForm.set(form, w.id);
       maxLen = Math.max(maxLen, form.length);
     }
   }
+  if (clashes.length) throw new Error(`words share a form, so lines can't be tagged: ${clashes.join(", ")}`);
   return { byForm, maxLen };
 }
 
-const SKIP = /[\p{P}\p{S}\p{Z}\s]/u;
+/** Punctuation, symbols, spaces and digits are not words. */
+const SKIP = /^[\p{P}\p{S}\p{Z}\s\p{Nd}]$/u;
+
+export interface Unknown {
+  start: number;
+  end: number;
+  char: string;
+}
+
+interface Best {
+  unknown: number;
+  words: number;
+  from: number;
+  word?: string;
+}
+
+const better = (a: Best, b: Best | undefined) =>
+  !b || a.unknown < b.unknown || (a.unknown === b.unknown && a.words < b.words);
 
 /**
- * Longest-match segmentation for unspaced scripts (Chinese, Japanese).
- * Every non-punctuation character must belong to a pack word; the rest are reported.
+ * Word tagging for unspaced scripts (Chinese, Japanese). Picks the split with the fewest
+ * characters outside the word list, then the fewest words, so 研究生命 is 研究 + 生命 when
+ * both are words, not 研究生 + 命. On a tie the split whose last word is longer wins.
+ * Offsets are UTF-16 indices; unknown characters are whole code points.
  */
-export function segment(text: string, lex: Lexicon): { tokens: Token[]; unknown: string[] } {
-  const tokens: Token[] = [];
-  const unknown: string[] = [];
-  let i = 0;
-  while (i < text.length) {
-    if (SKIP.test(text[i])) {
-      i += 1;
+export function segment(text: string, lex: Lexicon): { tokens: Token[]; unknown: Unknown[] } {
+  const n = text.length;
+  const best: (Best | undefined)[] = new Array(n + 1);
+  best[0] = { unknown: 0, words: 0, from: -1 };
+  const offer = (j: number, b: Best) => {
+    if (better(b, best[j])) best[j] = b;
+  };
+  for (let i = 0; i < n; i++) {
+    const cur = best[i];
+    if (!cur) continue;
+    const char = String.fromCodePoint(text.codePointAt(i)!);
+    const next = i + char.length;
+    if (SKIP.test(char)) {
+      offer(next, { unknown: cur.unknown, words: cur.words, from: i });
       continue;
     }
-    let matched = 0;
-    for (let len = Math.min(lex.maxLen, text.length - i); len > 0; len--) {
+    for (let len = 1; len <= Math.min(lex.maxLen, n - i); len++) {
       const id = lex.byForm.get(text.slice(i, i + len));
-      if (id) {
-        tokens.push({ start: i, end: i + len, word: id });
-        matched = len;
-        break;
-      }
+      if (id) offer(i + len, { unknown: cur.unknown, words: cur.words + 1, from: i, word: id });
     }
-    if (matched) {
-      i += matched;
-    } else {
-      unknown.push(text[i]);
-      i += 1;
-    }
+    offer(next, { unknown: cur.unknown + 1, words: cur.words, from: i });
   }
-  return { tokens, unknown };
+  const tokens: Token[] = [];
+  const unknown: Unknown[] = [];
+  for (let j = n; j > 0; ) {
+    const b = best[j]!;
+    const piece = text.slice(b.from, j);
+    if (b.word) tokens.push({ start: b.from, end: j, word: b.word });
+    else if (!SKIP.test(piece)) unknown.push({ start: b.from, end: j, char: piece });
+    j = b.from;
+  }
+  return { tokens: tokens.reverse(), unknown: unknown.reverse() };
 }
 ```
 
@@ -3553,7 +3614,7 @@ export function buildCourse(root: string, courseId: string): BuildResult {
 
   const toLine = (text: string, where: string): RenderedLine => {
     const { tokens, unknown } = segment(text, lex);
-    if (unknown.length) errors.push(`${where}: "${text}" has characters outside the word list: ${unknown.join(" ")}`);
+    if (unknown.length) errors.push(`${where}: "${text}" has characters outside the word list: ${unknown.map((u) => u.char).join(" ")}`);
     return { text, tokens };
   };
 
@@ -3666,7 +3727,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) main();
 
 Run: `npx vitest run tools`
 
-Expected: PASS (21 tests in 5 files).
+Expected: PASS (24 tests in 5 files).
 
 - [ ] **Step 6: Build the course from the command line**
 
@@ -4035,7 +4096,7 @@ npm run bundle -w silver-tongue   # build packages/tui-node/dist for npm/npx
 
 Run: `npm run typecheck && npm run build:course && npm test`
 
-Expected: `tsc` prints nothing, the course builds, and **63 tests pass in 14 files**.
+Expected: `tsc` prints nothing, the course builds, and **66 tests pass in 14 files**.
 
 - [ ] **Step 5: Commit and push**
 
