@@ -16,19 +16,46 @@ export interface ImportResult {
   glossesFtl: string;
 }
 
+/** Word ids become Fluent message ids, so they must be valid ones. */
+const FTL_ID = /^[a-zA-Z][a-zA-Z0-9_-]*$/;
+
+/** Every problem in the input, so one run reports them all. */
+export function packProblems(pack: VocabPackJson, words: VocabWordJson[], existing?: PackMeta): string[] {
+  const levels = new Set(pack.levels.map((l) => String(l.id)));
+  const problems: string[] = [];
+  const seen = new Set<string>();
+  for (const [i, v] of words.entries()) {
+    const at = `word ${i} (${v.id ?? "no id"})`;
+    if (typeof v.id !== "string" || !FTL_ID.test(v.id)) problems.push(`${at}: id must match ${FTL_ID}`);
+    else if (seen.has(v.id)) problems.push(`${at}: duplicate id`);
+    else seen.add(v.id);
+    if (typeof v.w !== "string" || !v.w) problems.push(`${at}: missing w`);
+    if (typeof v.en !== "string") problems.push(`${at}: missing en`);
+    if (!levels.has(String(v.lv))) problems.push(`${at}: level "${v.lv}" is not in the pack's levels`);
+  }
+  for (const [stage, lvs] of Object.entries(existing?.stages ?? {})) {
+    for (const lv of lvs) if (!levels.has(lv)) problems.push(`stage ${stage}: level "${lv}" is not in the pack's levels`);
+  }
+  return problems;
+}
+
 /**
  * Converts a vocab-engine pack. `existing` is our current pack.json, whose
- * hand-set fields (stages) survive a re-import.
+ * hand-set fields (stages) survive a re-import. Throws on bad input, listing every problem.
  */
 export function convertPack(pack: VocabPackJson, words: VocabWordJson[], existing?: PackMeta): ImportResult {
+  const problems = packProblems(pack, words, existing);
+  if (problems.length) throw new Error(`vocab-engine pack "${pack.key}" can't be imported:\n  ${problems.join("\n  ")}`);
   const levels = pack.levels.map((l) => String(l.id));
   const meta: PackMeta = {
     key: pack.key,
     name: pack.name,
     locale: pack.langTag ?? pack.tts.split("-")[0],
+    tts: pack.tts,
+    ...(pack.ttsRate !== undefined && { ttsRate: pack.ttsRate }),
     levels,
     stages: existing?.stages ?? Object.fromEntries(levels.map((lv, i) => [String(i + 1), [lv]])),
-    typing: pack.typing != null,
+    typing: pack.typing ?? null,
     spaced: pack.spaced !== false,
   };
   const out: PackWord[] = words.map((v) => {

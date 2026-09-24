@@ -4,10 +4,14 @@ export interface PackMeta {
   name: string;
   /** Intl locale used for Fluent plural rules, e.g. "zh", "es" */
   locale: string;
+  /** speech-synthesis locale for audio, e.g. "zh-CN" */
+  tts: string;
+  ttsRate?: number;
   levels: string[];
   /** stage number -> the pack levels it covers */
   stages: Record<string, string[]>;
-  typing: boolean;
+  /** typed-reply rules as vocab-engine writes them; null when the script can't be typed */
+  typing: Record<string, unknown> | null;
   /** true when the script separates words with spaces */
   spaced: boolean;
 }
@@ -27,9 +31,10 @@ export interface VocabPackJson {
   key: string;
   name: string;
   tts: string;
+  ttsRate?: number;
   langTag?: string;
   levels: { id: string; label: string }[];
-  typing?: object | null;
+  typing?: Record<string, unknown> | null;
   spaced?: boolean;
 }
 
