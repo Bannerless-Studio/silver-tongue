@@ -2407,6 +2407,46 @@ describe("checkCourse", () => {
     expect(errors).toContain('coverage: "你" (stage 1) is in 1 scenes; needs 3');
     expect(errors).toContain("intro/greet: npc line has no audio");
   });
+
+  it("doesn't count words from scenes that can be played in another order", () => {
+    const c = fixtureCourse();
+    // shift no longer comes after intro, so intro's words are new in shift.
+    c.scenes[1].after = [];
+    c.scenes[1].requires = {};
+    expect(checkCourse(input({ course: c })).some((e) => /^shift\/order\[.*new words/.test(e))).toBe(true);
+  });
+
+  it("checks reactions against the earliest stage", () => {
+    const c = fixtureCourse();
+    c.scenes[1].stage = 2;
+    c.words.w_cha.lv = "2";
+    c.reactions["wrong-generic"] = line(["茶", "w_cha"]);
+    const errors = checkCourse(input({ course: c, stages: { "1": ["1"], "2": ["2"] } }));
+    expect(errors).toContain('reaction wrong-generic: "茶" is level 2, above stage 1');
+  });
+
+  it("keeps checking scenes stuck in a cycle", () => {
+    const c = fixtureCourse();
+    c.scenes[0].after = ["shift"];
+    c.scenes[0].exchanges[0].variants[""].npc = line(["你", "w_ni"], ["好", "w_hao"], ["茶", "w_cha"]);
+    const errors = checkCourse(input({ course: c }));
+    expect(errors.some((e) => /cycle/.test(e))).toBe(true);
+    expect(errors).toContain("intro/greet: 3 new words (你 好 茶); at most 2");
+  });
+
+  it("rejects duplicate ids and trust no earlier scene can give", () => {
+    const c = fixtureCourse();
+    c.scenes.push({ ...c.scenes[1] });
+    c.scenes[0].exchanges.push(c.scenes[0].exchanges[0]);
+    const errors = checkCourse(input({ course: c }));
+    expect(errors).toContain('scenes: id "shift" is used twice');
+    expect(errors).toContain('intro: exchange id "greet" is used twice');
+
+    const d = fixtureCourse();
+    d.scenes[1].requires = { trust: { cook: 3 } };
+    d.scenes[1].repeatable = false;
+    expect(checkCourse(input({ course: d }))).toContain('shift: needs trust 3 with "cook", but earlier scenes give at most 2');
+  });
 });
 ```
 
@@ -2452,7 +2492,10 @@ export function orderScenes(scenes: Scene[]): { ordered: Scene[]; errors: string
   const pending = [...scenes];
   while (pending.length) {
     const i = pending.findIndex((s) => s.after.every((a) => done.has(a)));
-    if (i < 0) return { ordered, errors: [`scene order has a cycle or a missing scene: ${pending.map((s) => s.id).join(", ")}`] };
+    if (i < 0) {
+      // Keep checking the stuck scenes too, so one cycle doesn't hide their other errors.
+      return { ordered: [...ordered, ...pending], errors: [`scene order has a cycle or a missing scene: ${pending.map((s) => s.id).join(", ")}`] };
+    }
     const [s] = pending.splice(i, 1);
     ordered.push(s);
     done.add(s.id);
@@ -2461,6 +2504,31 @@ export function orderScenes(scenes: Scene[]): { ordered: Scene[]; errors: string
 }
 
 const lineWords = (l: RenderedLine | undefined): WordId[] => (l ? l.tokens.map((t) => t.word) : []);
+
+/** Every scene each scene comes after, directly or not. */
+function ancestors(scenes: Scene[]): Map<string, Set<string>> {
+  const byId = new Map(scenes.map((s) => [s.id, s]));
+  const memo = new Map<string, Set<string>>();
+  const visit = (id: string, path: Set<string>): Set<string> => {
+    const known = memo.get(id);
+    if (known) return known;
+    const out = new Set<string>();
+    if (path.has(id)) return out; // a cycle, reported by orderScenes
+    path.add(id);
+    for (const a of byId.get(id)?.after ?? []) {
+      out.add(a);
+      for (const x of visit(a, path)) out.add(x);
+    }
+    path.delete(id);
+    memo.set(id, out);
+    return out;
+  };
+  for (const s of scenes) visit(s.id, new Set());
+  return memo;
+}
+
+/** Duplicates in a list, each named once. */
+const dupes = (xs: string[]) => [...new Set(xs.filter((x, i) => xs.indexOf(x) !== i))];
 
 export function checkCourse(input: CheckInput): string[] {
   const { course, stages, checks, learnerIds } = input;
@@ -2476,12 +2544,23 @@ export function checkCourse(input: CheckInput): string[] {
   }
 
   const sceneIds = new Set(course.scenes.map((s) => s.id));
+  for (const d of dupes(course.scenes.map((s) => s.id))) errors.push(`scenes: id "${d}" is used twice`);
+  const before = ancestors(course.scenes);
   for (const s of course.scenes) {
+    for (const d of dupes(s.exchanges.map((e) => e.id))) errors.push(`${s.id}: exchange id "${d}" is used twice`);
     if (!world.places[s.place]) errors.push(`${s.id}: unknown place "${s.place}"`);
     if (!world.npcs[s.npc]) errors.push(`${s.id}: unknown npc "${s.npc}"`);
     for (const a of s.after) if (!sceneIds.has(a)) errors.push(`${s.id}: after unknown scene "${a}"`);
-    for (const npc of Object.keys(s.requires.trust ?? {})) {
-      if (!world.npcs[npc]) errors.push(`${s.id}: requires trust with unknown npc "${npc}"`);
+    for (const [npc, need] of Object.entries(s.requires.trust ?? {})) {
+      if (!world.npcs[npc]) {
+        errors.push(`${s.id}: requires trust with unknown npc "${npc}"`);
+        continue;
+      }
+      // Trust comes from finishing scenes with that npc (trustGain, +1 without mix-ups).
+      // Only scenes that can be played before this one count.
+      const sources = course.scenes.filter((x) => x.npc === npc && x.id !== s.id && !before.get(x.id)?.has(s.id));
+      const most = sources.some((x) => x.repeatable) ? Infinity : sources.reduce((n, x) => n + x.trustGain + 1, 0);
+      if (most < need) errors.push(`${s.id}: needs trust ${need} with "${npc}", but earlier scenes give at most ${most}`);
     }
     for (const ex of s.exchanges) {
       for (const h of ex.hinges) {
@@ -2507,9 +2586,19 @@ export function checkCourse(input: CheckInput): string[] {
 
   const { ordered, errors: orderErrors } = orderScenes(course.scenes);
   errors.push(...orderErrors);
-  const seen = new Set<WordId>();
+  // Words met before an exchange: those of the scenes it comes after (directly or not), then
+  // its own earlier exchanges. Scenes that don't depend on each other can be played in either
+  // order, so they don't count for each other.
+  // A slot word counts as met once any variant has used it: slot values rotate, favouring
+  // words the player is still learning, so every value is met within a few plays.
+  // New words are counted per variant (NPC line, reply, rephrase). Words that only appear in
+  // other variants' replies (the wrong options in pick and tiles mode) don't count: the player
+  // isn't asked to understand them, and the learner model doesn't mark them met.
+  const metAfter = new Map<string, Set<WordId>>();
   const scenesUsing = new Map<WordId, Set<string>>();
   for (const s of ordered) {
+    const seen = new Set<WordId>();
+    for (const a of before.get(s.id) ?? []) for (const w of metAfter.get(a) ?? []) seen.add(w);
     for (const ex of s.exchanges) {
       const exWords = new Set<WordId>();
       for (const [key, v] of Object.entries(ex.variants)) {
@@ -2532,11 +2621,13 @@ export function checkCourse(input: CheckInput): string[] {
       }
       for (const w of exWords) seen.add(w);
     }
+    metAfter.set(s.id, seen);
   }
 
-  const maxStage = Math.max(1, ...course.scenes.map((s) => s.stage));
+  // Reactions can play in any scene, so they must fit the earliest stage.
+  const minStage = Math.min(...course.scenes.map((s) => s.stage), Infinity);
   for (const [id, l] of Object.entries(course.reactions)) {
-    checkLevels(`reaction ${id}`, lineWords(l), maxStage);
+    checkLevels(`reaction ${id}`, lineWords(l), Number.isFinite(minStage) ? minStage : 1);
     if (checks.audio && !l.audio) errors.push(`reaction ${id}: no audio`);
   }
   if (!course.reactions["wrong-generic"]) errors.push(`reactions: "wrong-generic" is required`);
@@ -2570,7 +2661,7 @@ export function checkCourse(input: CheckInput): string[] {
 
 Run: `npx vitest run tools/test/check.test.ts`
 
-Expected: PASS (6 tests).
+Expected: PASS (10 tests).
 
 - [ ] **Step 5: Commit**
 
@@ -3759,6 +3850,11 @@ export function buildCourse(root: string, courseId: string): BuildResult {
     const exchanges: Exchange[] = [];
     for (const ex of sk.exchanges) {
       const variants: Record<string, Variant> = {};
+      const unknownGroups = Object.values(ex.slots).filter((g) => !groups[g]);
+      if (unknownGroups.length) {
+        errors.push(`${sk.id}/${ex.id}: unknown group ${unknownGroups.map((g) => `"${g}"`).join(", ")}`);
+        continue;
+      }
       for (const combo of allCombos(ex.slots, groups)) {
         const where = `${sk.id}/${ex.id}${Object.keys(combo).length ? `[${comboKey(combo)}]` : ""}`;
         const args: Record<string, number> = {};
@@ -3831,7 +3927,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) main();
 
 Run: `npx vitest run tools`
 
-Expected: PASS (27 tests in 5 files).
+Expected: PASS (31 tests in 5 files).
 
 - [ ] **Step 6: Build the course from the command line**
 
@@ -4200,7 +4296,7 @@ npm run bundle -w silver-tongue   # build packages/tui-node/dist for npm/npx
 
 Run: `npm run typecheck && npm run build:course && npm test`
 
-Expected: `tsc` prints nothing, the course builds, and **69 tests pass in 14 files**.
+Expected: `tsc` prints nothing, the course builds, and **73 tests pass in 14 files**.
 
 - [ ] **Step 5: Commit and push**
 
