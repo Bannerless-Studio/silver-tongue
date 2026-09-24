@@ -1,5 +1,6 @@
 import {
   availableSceneIds,
+  describeRun,
   rankFor,
   type Core,
   type Course,
@@ -9,7 +10,7 @@ import {
   type RenderedLine,
   type WordId,
 } from "@silver-tongue/core";
-import { lineSpans, renderScreen } from "./screen";
+import { lineSpans, renderScreen, wrapItems } from "./screen";
 import type { Key, StyledLine, Terminal } from "./terminal";
 import { makeText, type Text } from "./text";
 
@@ -87,7 +88,7 @@ export function startApp(opts: AppOptions): App {
           if (!e.matched) push([{ text: t("mismatch"), color: "yellow" }]);
           break;
         case "npcReacted":
-          lastLine = e.line;
+          // Word help keeps offering the request the player got wrong, not the reaction.
           push(say(e.npc, e.line, fresh));
           break;
         case "lineRephrased":
@@ -160,17 +161,22 @@ export function startApp(opts: AppOptions): App {
     return line.tokens.map((tk) => ({ text: line.text.slice(tk.start, tk.end), word: tk.word }));
   }
 
-  function prompt(): StyledLine[] {
+  /** `width` is the room inside the frame, for wrapping tiles and help words. */
+  function prompt(width: number): StyledLine[] {
     if (mode === "explore") {
       return [[{ text: t("menu-title"), dim: true }], ...menu().map((m, i) => [{ text: `${i + 1}) ${m.label}` }])];
     }
     if (mode === "help") {
-      const words = helpWords().map((w, i) => `${i + 1}) ${w.text}`).join("  ");
-      return [[{ text: t("help-title"), dim: true }], [{ text: words }]];
+      const words = helpWords().map((w, i) => `${i + 1}) ${w.text}`);
+      return [[{ text: t("help-title"), dim: true }], ...wrapItems(words, width)];
     }
     if (replyMode === "pick") return pickOptions.map((o, i) => [{ text: `${i + 1}) ` }, ...lineSpans(o, new Set())]);
     return [
-      [{ text: tiles.map((x, i) => `[${i + 1}]${x}`).join(" ") }],
+      ...wrapItems(
+        tiles.map((x, i) => `[${i + 1}]${x}`),
+        width,
+        " ",
+      ),
       [{ text: `${t("tiles-answer")} `, dim: true }, { text: tileInput.map((i) => tiles[i]).join(""), bold: true }],
     ];
   }
@@ -187,7 +193,7 @@ export function startApp(opts: AppOptions): App {
       rank: t(`rank-${rankFor(s.words, wordIds, opts.now())}`),
     });
     const footer = t(mode === "explore" ? "keys-explore" : mode === "help" ? "keys-help" : replyMode === "pick" ? "keys-pick" : "keys-tiles");
-    term.write(renderScreen({ title: t(`place-${s.place}`), hud, log, prompt: prompt(), footer }, cols, rows));
+    term.write(renderScreen({ title: t(`place-${s.place}`), hud, log, prompt: prompt(cols - 4), footer }, cols, rows));
   }
 
   function press(key: Key) {
@@ -225,6 +231,7 @@ export function startApp(opts: AppOptions): App {
 
   if (opts.notice) push([{ text: t(opts.notice), color: "yellow" }]);
   enterPlace(core.state.place);
+  apply(describeRun(course, core.state)); // a save made mid-scene resumes in the scene
   term.onKey(press);
   term.onResize(render);
   render();

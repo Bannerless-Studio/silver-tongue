@@ -23,6 +23,17 @@ export function lineSpans(line: RenderedLine, fresh: Set<WordId>): StyledLine {
   return out;
 }
 
+/** Lays out short items (tiles, words) left to right, starting a new line when one would not fit. */
+export function wrapItems(items: string[], width: number, gap = "  "): StyledLine[] {
+  const lines: string[] = [];
+  for (const item of items) {
+    const last = lines.at(-1);
+    if (last !== undefined && strWidth(last) + strWidth(gap) + strWidth(item) <= width) lines[lines.length - 1] = last + gap + item;
+    else lines.push(item);
+  }
+  return lines.map((text) => [{ text }]);
+}
+
 function border(left: string, label: string, right: string, fill: string, cols: number, rightLabel = ""): StyledLine {
   const inner = cols - 2;
   const l = label ? ` ${label} ` : "";

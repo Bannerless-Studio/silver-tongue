@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { comboKey } from "../src/combo";
+import { describeRun } from "../src/dialogue";
 import { createCore, newGame, type Core } from "../src/core";
 import { recordRight } from "../src/learner";
 import { mulberry32 } from "../src/rng";
@@ -121,6 +122,21 @@ describe("core", () => {
     core.send({ type: "startScene", scene: "shift" });
     const stale = createCore(course, { ...core.state, run: { ...core.state.run!, exchange: 5 } }, { now: () => T0, rng: mulberry32(1) });
     expect(stale.send({ type: "reply", choice: 0 })).toEqual([{ type: "inputRejected", reason: "stale-run" }]);
+  });
+
+  it("describes the scene in progress for a front end resuming a save, without changing it", () => {
+    const core = setup();
+    expect(describeRun(course, core.state)).toEqual([]);
+    core.send({ type: "goTo", place: "noodle_shop" });
+    core.send({ type: "startScene", scene: "intro" });
+    const next = answerRight(core);
+    const before = core.state;
+    expect(describeRun(course, core.state)).toEqual([
+      { type: "sceneStarted", scene: "intro", npc: "cook" },
+      find(next, "lineSpoken"),
+      find(next, "replyOptions"),
+    ]);
+    expect(core.state).toBe(before);
   });
 
   it("a help lookup makes a word shaky", () => {

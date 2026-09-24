@@ -5,4 +5,4 @@ export * from "./life";
 export * from "./rng";
 export * from "./save";
 export { createCore, type Core, type CoreDeps } from "./core";
-export { tilePieces } from "./dialogue";
+export { describeRun, tilePieces } from "./dialogue";

@@ -9,7 +9,7 @@ import {
   wordState,
 } from "./learner";
 import { shuffle } from "./rng";
-import type { Course, Exchange, GameEvent, GameState, RenderedLine, Scene, WordId, WordRecord } from "./types";
+import type { Course, Exchange, GameEvent, GameState, RenderedLine, Scene, SceneRun, WordId, WordRecord } from "./types";
 
 export interface Ctx {
   course: Course;
@@ -93,13 +93,31 @@ function buildTiles(ctx: Ctx, ex: Exchange, combo: Combo): string[] {
   return shuffle([...pieces, ...[...extra].slice(0, 2)], ctx.rng);
 }
 
+function optionsEvent(ex: Exchange, run: SceneRun): GameEvent {
+  return run.mode === "pick"
+    ? { type: "replyOptions", mode: "pick", options: run.options.map((k) => ex.variants[k].reply) }
+    : { type: "replyOptions", mode: "tiles", tiles: run.tiles };
+}
+
 function emitOptions(ctx: Ctx, ex: Exchange): void {
-  const run = ctx.state.run!;
-  if (run.mode === "pick") {
-    ctx.ev.push({ type: "replyOptions", mode: "pick", options: run.options.map((k) => ex.variants[k].reply) });
-  } else {
-    ctx.ev.push({ type: "replyOptions", mode: "tiles", tiles: run.tiles });
-  }
+  ctx.ev.push(optionsEvent(ex, ctx.state.run!));
+}
+
+/**
+ * The events that draw the scene in progress, for a front end that starts from a save made
+ * mid-scene. Changes nothing. Empty when there is no scene, or it no longer fits the course.
+ */
+export function describeRun(course: Course, state: GameState): GameEvent[] {
+  const run = state.run;
+  const scene = run && course.scenes.find((s) => s.id === run.scene);
+  const ex = scene?.exchanges[run!.exchange];
+  const v = ex?.variants[comboKey(run!.combo)];
+  if (!run || !scene || !ex || !v) return [];
+  return [
+    { type: "sceneStarted", scene: scene.id, npc: scene.npc },
+    { type: "lineSpoken", npc: scene.npc, line: v.npc },
+    optionsEvent(ex, run),
+  ];
 }
 
 function beginExchange(ctx: Ctx, scene: Scene, index: number): void {

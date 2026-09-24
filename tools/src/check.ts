@@ -13,6 +13,10 @@ export interface CheckInput {
 
 export const MAX_NEW_PER_EXCHANGE = 2;
 export const MIN_SCENES_PER_WORD = 3;
+/** Every choice is one key, 1-9: a reply's tiles are its words plus up to 2 extra. */
+export const MAX_REPLY_WORDS = 7;
+/** Word help offers each word of the NPC's line on keys 1-9. */
+export const MAX_LINE_WORDS = 9;
 
 /** Scenes in `after` order; ties keep file order. */
 export function orderScenes(scenes: Scene[]): { ordered: Scene[]; errors: string[] } {
@@ -139,6 +143,14 @@ export function checkCourse(input: CheckInput): string[] {
           errors.push(`${where}: ${fresh.length} new words (${shown}); at most ${MAX_NEW_PER_EXCHANGE}`);
         }
         checkLevels(where, words, s.stage);
+        if (v.reply.tokens.length > MAX_REPLY_WORDS) {
+          errors.push(`${where}: the reply has ${v.reply.tokens.length} words; at most ${MAX_REPLY_WORDS}`);
+        }
+        for (const [name, l] of [["npc", v.npc], ["rephrase", v.rephrase]] as const) {
+          if (l && l.tokens.length > MAX_LINE_WORDS) {
+            errors.push(`${where}: the ${name} line has ${l.tokens.length} words; at most ${MAX_LINE_WORDS}`);
+          }
+        }
         if (checks.audio) {
           for (const [name, l] of Object.entries(v)) if (l && !l.audio) errors.push(`${where}: ${name} line has no audio`);
         }

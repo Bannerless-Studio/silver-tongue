@@ -97,4 +97,13 @@ describe("checkCourse", () => {
     d.scenes[1].repeatable = false;
     expect(checkCourse(input({ course: d }))).toContain('shift: needs trust 3 with "cook", but earlier scenes give at most 2');
   });
+
+  it("keeps every tile and help word on keys 1-9", () => {
+    const c = fixtureCourse();
+    const long = line(...Array.from({ length: 10 }, () => ["好", "w_hao"] as [string, string]));
+    c.scenes[0].exchanges[0].variants[""] = { npc: long, reply: line(...long.tokens.slice(0, 8).map(() => ["好", "w_hao"] as [string, string])) };
+    const errors = checkCourse(input({ course: c }));
+    expect(errors).toContain("intro/greet: the reply has 8 words; at most 7");
+    expect(errors).toContain("intro/greet: the npc line has 10 words; at most 9");
+  });
 });
