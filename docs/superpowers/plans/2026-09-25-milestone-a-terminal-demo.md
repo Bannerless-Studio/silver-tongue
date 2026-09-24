@@ -1453,26 +1453,62 @@ git commit -m "feat(core): add dialogue runner and core.send entry point"
 
 ```ts
 import { describe, expect, it } from "vitest";
-import { newGame } from "../src/core";
+import { createCore, newGame } from "../src/core";
 import { parseSave, serialize } from "../src/save";
 import { fixtureCourse } from "../src/testing/fixture";
+import type { GameState } from "../src/types";
 
 describe("save", () => {
   const course = fixtureCourse();
+  const bad = (state: unknown) => parseSave(JSON.stringify(state), course);
+  const inScene = () => {
+    const core = createCore(course, newGame(course), { now: () => 0, rng: () => 0 });
+    core.send({ type: "goTo", place: "noodle_shop" });
+    core.send({ type: "startScene", scene: "intro" });
+    return core;
+  };
 
   it("round-trips a game", () => {
     const s = newGame(course);
     expect(parseSave(serialize(s), course)).toEqual({ ok: true, state: s });
   });
 
+  it("round-trips a game in the middle of a scene", () => {
+    const core = inScene();
+    expect(core.state.run).not.toBeNull();
+    expect(parseSave(serialize(core.state), course)).toEqual({ ok: true, state: core.state });
+  });
+
   it("rejects broken or foreign saves with a reason", () => {
     expect(parseSave("{", course)).toEqual({ ok: false, reason: "not-json" });
     expect(parseSave("[]", course)).toEqual({ ok: false, reason: "not-object" });
     const s = newGame(course);
-    expect(parseSave(serialize({ ...s, v: 2 as 1 }), course)).toEqual({ ok: false, reason: "version" });
-    expect(parseSave(serialize({ ...s, course: "other" }), course)).toEqual({ ok: false, reason: "other-course" });
-    expect(parseSave(serialize({ ...s, place: "moon" }), course)).toEqual({ ok: false, reason: "bad-place" });
-    expect(parseSave(serialize({ ...s, words: [] as never }), course)).toEqual({ ok: false, reason: "bad-words" });
+    expect(bad({ ...s, v: 2 })).toEqual({ ok: false, reason: "newer-version" });
+    expect(bad({ ...s, v: "1" })).toEqual({ ok: false, reason: "version" });
+    expect(bad({ ...s, course: "other" })).toEqual({ ok: false, reason: "other-course" });
+    expect(bad({ ...s, place: "moon" })).toEqual({ ok: false, reason: "bad-place" });
+    expect(bad({ ...s, words: [] })).toEqual({ ok: false, reason: "bad-words" });
+  });
+
+  it("rejects bad values inside the save", () => {
+    const s = newGame(course);
+    const rec = { right: 1, wrong: 0, streak: 1, helps: 0, lapsed: false, firstSeen: 0, lastSeen: 0 };
+    expect(bad({ ...s, day: -1 })).toEqual({ ok: false, reason: "bad-day" });
+    expect(bad({ ...s, slot: course.world.slotsPerDay + 1 })).toEqual({ ok: false, reason: "bad-slot" });
+    expect(bad({ ...s, wallet: 1.5 })).toEqual({ ok: false, reason: "bad-wallet" });
+    expect(bad({ ...s, rentLate: 0 })).toEqual({ ok: false, reason: "bad-rentLate" });
+    expect(bad({ ...s, trust: { a: "hi" } })).toEqual({ ok: false, reason: "bad-trust" });
+    expect(bad({ ...s, scenesDone: { a: null } })).toEqual({ ok: false, reason: "bad-scenesDone" });
+    expect(bad({ ...s, words: { x: 5 } })).toEqual({ ok: false, reason: "bad-words" });
+    expect(bad({ ...s, words: { x: { ...rec, lapsed: "no" } } })).toEqual({ ok: false, reason: "bad-words" });
+    expect(bad({ ...s, run: { scene: "x" } })).toEqual({ ok: false, reason: "bad-run" });
+  });
+
+  it("drops a scene in progress that the course no longer has", () => {
+    const core = inScene();
+    const stale: GameState = { ...core.state, run: { ...core.state.run!, scene: "gone" } };
+    const res = parseSave(serialize(stale), course);
+    expect(res).toEqual({ ok: true, state: { ...stale, run: null } });
   });
 });
 ```
@@ -1488,7 +1524,8 @@ Expected: FAIL. `../src/save` doesn't exist yet.
 `packages/core/src/save.ts`:
 
 ```ts
-import type { Course, GameState } from "./types";
+import { comboKey } from "./combo";
+import type { Course, GameState, SceneRun } from "./types";
 
 export const SAVE_VERSION = 1;
 
@@ -1499,8 +1536,33 @@ export function serialize(state: GameState): string {
 }
 
 const isObj = (x: unknown): x is Record<string, unknown> => !!x && typeof x === "object" && !Array.isArray(x);
+const isCount = (x: unknown): x is number => Number.isInteger(x) && (x as number) >= 0;
+const isStrings = (x: unknown): x is string[] => Array.isArray(x) && x.every((s) => typeof s === "string");
+const allValues = (o: Record<string, unknown>, ok: (v: unknown) => boolean) => Object.values(o).every(ok);
 
-/** Strict: anything unexpected is rejected with a reason, never half-loaded. */
+function isWordRecord(x: unknown): boolean {
+  if (!isObj(x) || typeof x.lapsed !== "boolean") return false;
+  return ["right", "wrong", "streak", "helps", "firstSeen", "lastSeen"].every((k) => isCount(x[k]));
+}
+
+function isRunShape(x: unknown): x is SceneRun {
+  if (!isObj(x) || typeof x.scene !== "string" || !isObj(x.combo) || !allValues(x.combo, (v) => typeof v === "string"))
+    return false;
+  if (!["pick", "tiles", "type"].includes(x.mode as string) || !isStrings(x.options) || !isStrings(x.tiles)) return false;
+  return ["exchange", "misses", "earned", "mixups"].every((k) => isCount(x[k]));
+}
+
+/** A run fits the course if its scene, exchange and slot combination still exist. */
+function runFits(run: SceneRun, course: Course): boolean {
+  const ex = course.scenes.find((s) => s.id === run.scene)?.exchanges[run.exchange];
+  return !!ex && !!ex.variants[comboKey(run.combo)] && run.options.every((k) => !!ex.variants[k]);
+}
+
+/**
+ * Strict: anything malformed is rejected with a reason, never half-loaded.
+ * One exception: a scene in progress that the course no longer has (after a content update)
+ * is dropped, so the player lands outside the scene instead of being stuck in it.
+ */
 export function parseSave(raw: string, course: Course): ParseResult {
   let data: unknown;
   try {
@@ -1509,18 +1571,21 @@ export function parseSave(raw: string, course: Course): ParseResult {
     return { ok: false, reason: "not-json" };
   }
   if (!isObj(data)) return { ok: false, reason: "not-object" };
+  if (typeof data.v === "number" && data.v > SAVE_VERSION) return { ok: false, reason: "newer-version" };
   if (data.v !== SAVE_VERSION) return { ok: false, reason: "version" };
   if (data.course !== course.id) return { ok: false, reason: "other-course" };
-  for (const k of ["day", "slot", "wallet"]) {
-    if (typeof data[k] !== "number") return { ok: false, reason: `bad-${k}` };
-  }
+  if (!isCount(data.day)) return { ok: false, reason: "bad-day" };
+  if (!isCount(data.slot) || data.slot > course.world.slotsPerDay) return { ok: false, reason: "bad-slot" };
+  if (!isCount(data.wallet)) return { ok: false, reason: "bad-wallet" };
   if (typeof data.rentLate !== "boolean") return { ok: false, reason: "bad-rentLate" };
   if (typeof data.place !== "string" || !course.world.places[data.place]) return { ok: false, reason: "bad-place" };
-  for (const k of ["trust", "words", "scenesDone"]) {
-    if (!isObj(data[k])) return { ok: false, reason: `bad-${k}` };
-  }
-  if (data.run !== null && !isObj(data.run)) return { ok: false, reason: "bad-run" };
-  return { ok: true, state: data as unknown as GameState };
+  if (!isObj(data.trust) || !allValues(data.trust, isCount)) return { ok: false, reason: "bad-trust" };
+  if (!isObj(data.scenesDone) || !allValues(data.scenesDone, isCount)) return { ok: false, reason: "bad-scenesDone" };
+  if (!isObj(data.words) || !allValues(data.words, isWordRecord)) return { ok: false, reason: "bad-words" };
+  if (data.run !== null && !isRunShape(data.run)) return { ok: false, reason: "bad-run" };
+  const state = data as unknown as GameState;
+  if (state.run && !runFits(state.run, course)) state.run = null;
+  return { ok: true, state };
 }
 ```
 
@@ -1547,7 +1612,7 @@ Expected: PASS (2 tests).
 
 Run: `npx vitest run packages/core && npx tsc`
 
-Expected: 26 tests pass in 5 files; `tsc` prints nothing.
+Expected: 29 tests pass in 5 files; `tsc` prints nothing.
 
 - [ ] **Step 6: Commit**
 
@@ -3888,7 +3953,7 @@ npm run bundle -w silver-tongue   # build packages/tui-node/dist for npm/npx
 
 Run: `npm run typecheck && npm run build:course && npm test`
 
-Expected: `tsc` prints nothing, the course builds, and **57 tests pass in 14 files**.
+Expected: `tsc` prints nothing, the course builds, and **60 tests pass in 14 files**.
 
 - [ ] **Step 5: Commit and push**
 
