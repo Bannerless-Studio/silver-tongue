@@ -3024,6 +3024,7 @@ export const UI_KEYS: Record<string, string[]> = {
   "rank-up": ["rank"],
   "day-ended": ["day"],
   "notice-bad-save": [],
+  "notice-read-only": [],
   ...Object.fromEntries(REJECT_CODES.map((c) => [`reject-${c}`, []])),
 };
 
@@ -3097,6 +3098,7 @@ reject-no-tiles = Build your reply from the tiles.
 reject-bad-tile = There's no tile with that number.
 reject-not-linked = You can't get there from here.
 reject-unknown-word = That word isn't in the dictionary.
+notice-read-only = Your progress can't be saved on this computer, so this session won't be kept.
 notice-bad-save = Your save couldn't be read. It was kept as a backup and a new game started.
 ```
 
@@ -3209,7 +3211,7 @@ function setup(patch: (s: GameState) => void = () => {}) {
   const term = new FakeTerminal();
   const saves: GameState[] = [];
   let quit = false;
-  startApp({ course, core, term, now: () => T0, save: (s) => saves.push(s), quit: () => (quit = true) });
+  startApp({ course, core, term, now: () => T0, save: (s) => saves.push(s) > 0, quit: () => (quit = true) });
   return { course, core, term, saves, quitted: () => quit };
 }
 
@@ -3327,7 +3329,7 @@ describe("tui app", () => {
     const course = fixtureWithText();
     const core = createCore(course, first.core.state, { now: () => T0, rng: mulberry32(2) });
     const term = new FakeTerminal();
-    startApp({ course, core, term, now: () => T0, save: () => {}, quit: () => {} });
+    startApp({ course, core, term, now: () => T0, save: () => true, quit: () => {} });
     expect(term.screen().join("\n")).toMatch(/Cook: (茶|水)。/);
     term.press(rightKey(core));
     expect(term.screen().join("\n")).toContain("Done. You earned");
@@ -3340,6 +3342,18 @@ describe("tui app", () => {
     const s = term.screen();
     expect(s.some((l) => l.includes("1) 你"))).toBe(true);
     expect(s.some((l) => l.includes("2) 好"))).toBe(true);
+  });
+
+  it("warns once and stops saving when a save fails", () => {
+    const course = fixtureWithText();
+    const core = createCore(course, newGame(course), { now: () => T0, rng: mulberry32(1) });
+    const term = new FakeTerminal();
+    let tries = 0;
+    startApp({ course, core, term, now: () => T0, save: () => (tries++, false), quit: () => {} });
+    term.press("1", "1");
+    const warnings = term.screen().filter((l) => l.includes("can't be saved"));
+    expect(warnings).toHaveLength(1);
+    expect(tries).toBe(1);
   });
 });
 ```
@@ -3455,7 +3469,8 @@ export interface AppOptions {
   core: Core;
   term: Terminal;
   now: () => number;
-  save: (state: GameState) => void;
+  /** Saves after each accepted input; returns false if it couldn't. Leave out to play without saving. */
+  save?: (state: GameState) => boolean;
   quit: () => void;
   /** a message id shown once at start, e.g. "notice-bad-save" */
   notice?: string;
@@ -3569,10 +3584,18 @@ export function startApp(opts: AppOptions): App {
     }
   }
 
+  let save = opts.save;
+  function persist() {
+    if (save && !save(core.state)) {
+      save = undefined; // stop trying; say so once
+      push([{ text: t("notice-read-only"), color: "yellow" }]);
+    }
+  }
+
   function send(input: Input) {
     const events = core.send(input);
     apply(events);
-    if (!events.some((e) => e.type === "inputRejected")) opts.save(core.state);
+    if (!events.some((e) => e.type === "inputRejected")) persist();
   }
 
   function menu(): MenuItem[] {
@@ -3688,7 +3711,7 @@ export { startApp, type App, type AppOptions } from "./app";
 
 Run: `npx vitest run packages/tui`
 
-Expected: PASS (19 tests in 3 files).
+Expected: PASS (20 tests in 3 files).
 
 - [ ] **Step 5: Commit**
 
@@ -4277,8 +4300,8 @@ git commit -m "feat(content): add noodle-shop pilot course and course build"
 ### Task 16: Node terminal and the `silver-tongue` CLI
 
 **Files:**
-- Create: `packages/tui-node/package.json`, `packages/tui-node/src/node-terminal.ts`, `packages/tui-node/src/main.ts`
-- Test: `packages/tui-node/test/node-terminal.test.ts`
+- Create: `packages/tui-node/package.json`, `packages/tui-node/src/node-terminal.ts`, `packages/tui-node/src/storage.ts`, `packages/tui-node/src/main.ts`
+- Test: `packages/tui-node/test/node-terminal.test.ts`, `packages/tui-node/test/storage.test.ts`
 
 - [ ] **Step 1: Write the package file and install**
 
@@ -4337,18 +4360,67 @@ describe("node terminal", () => {
 });
 ```
 
+`packages/tui-node/test/storage.test.ts`:
+
+```ts
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterAll, describe, expect, it } from "vitest";
+import { newGame, serialize } from "@silver-tongue/core";
+import { fixtureCourse } from "@silver-tongue/core/testing";
+import { configDir, loadSave, writeSave } from "../src/storage";
+
+const course = fixtureCourse();
+const root = mkdtempSync(join(tmpdir(), "st-save-"));
+afterAll(() => rmSync(root, { recursive: true, force: true }));
+
+describe("storage", () => {
+  it("follows XDG_CONFIG_HOME, and APPDATA on Windows", () => {
+    expect(configDir({}, "linux", "/home/a")).toBe("/home/a/.config");
+    expect(configDir({ XDG_CONFIG_HOME: "/x" }, "linux", "/home/a")).toBe("/x");
+    expect(configDir({ APPDATA: "C:\\Users\\a\\AppData\\Roaming" }, "win32", "C:\\Users\\a")).toBe("C:\\Users\\a\\AppData\\Roaming");
+  });
+
+  it("writes a save and loads it back, leaving no temp file", () => {
+    const path = join(root, "a", "game.json");
+    const state = newGame(course);
+    expect(writeSave(path, state)).toBe(true);
+    expect(loadSave(course, path)).toEqual({ state, readOnly: false });
+    expect(readdirSync(join(root, "a"))).toEqual(["game.json"]);
+  });
+
+  it("keeps a broken save as a backup and starts fresh", () => {
+    const path = join(root, "broken.json");
+    writeFileSync(path, "{");
+    expect(loadSave(course, path)).toMatchObject({ notice: "notice-bad-save", readOnly: false });
+    expect(readFileSync(`${path}.invalid-backup`, "utf8")).toBe("{");
+  });
+
+  it("goes read-only when the save can't be read, and reports a failed write", () => {
+    const dir = join(root, "is-a-directory.json");
+    mkdirSync(dir);
+    expect(loadSave(course, dir)).toMatchObject({ notice: "notice-read-only", readOnly: true });
+    const blocked = join(root, "file");
+    writeFileSync(blocked, serialize(newGame(course)));
+    expect(writeSave(join(blocked, "game.json"), newGame(course))).toBe(false);
+  });
+});
+```
+
 - [ ] **Step 3: Run it to make sure it fails**
 
 Run: `npx vitest run packages/tui-node`
 
-Expected: FAIL. `../src/node-terminal` doesn't exist yet.
+Expected: FAIL. `../src/node-terminal` and `../src/storage` don't exist yet.
 
 - [ ] **Step 4: Write the implementation**
 
 How the backend behaves:
-- **Terminal:** switches to the alternate screen and hides the cursor, and restores both on close.
+- **Terminal:** switches to the alternate screen and hides the cursor, and restores both on close, on exit, on a crash, and on SIGTERM or SIGHUP. A terminal that reports 0x0 is treated as 80x24.
 - **Piped input:** works too, which is handy for smoke tests. End of input quits cleanly.
-- **Saves (`main.ts`):** written atomically, through a temp file and a rename. An unreadable save is moved aside as `<file>.invalid-backup` before a fresh game starts with a notice.
+- **Saves (`storage.ts`):** in `$XDG_CONFIG_HOME/silver-tongue` (default `~/.config`), or `%APPDATA%` on Windows. Written through a temp file that is synced to disk before the rename, so a crash leaves the old save or the new one. A save that won't parse is moved aside as `<file>.invalid-backup` before a fresh game starts with a notice. If the save can't be read, or a write fails, the game says so once and plays on without saving.
+- **Node version:** an older Node gets a clear message instead of an obscure error.
 
 `packages/tui-node/src/node-terminal.ts`:
 
@@ -4394,6 +4466,15 @@ export function createNodeTerminal(input = process.stdin, output = process.stdou
   input.on("end", () => {
     for (const h of handlers) h({ name: "ctrl-c" });
   });
+  let closed = false;
+  const restore = () => {
+    if (closed) return;
+    closed = true;
+    if (input.isTTY) input.setRawMode(false);
+    input.pause();
+    output.write("\x1b[0m\x1b[?25h\x1b[?1049l");
+  };
+  process.on("exit", restore);
   return {
     write(lines) {
       output.write("\x1b[H\x1b[2J" + lines.map(toAnsi).join("\r\n"));
@@ -4405,27 +4486,83 @@ export function createNodeTerminal(input = process.stdin, output = process.stdou
       output.on("resize", handler);
     },
     size() {
-      return { cols: output.columns ?? 80, rows: output.rows ?? 24 };
+      // Some terminals report 0x0 until they are sized.
+      return { cols: output.columns || 80, rows: output.rows || 24 };
     },
-    close() {
-      if (input.isTTY) input.setRawMode(false);
-      input.pause();
-      output.write("\x1b[0m\x1b[?25h\x1b[?1049l");
-    },
+    /** Restores the terminal. Safe to call more than once. */
+    close: restore,
   };
+}
+```
+
+`packages/tui-node/src/storage.ts`:
+
+```ts
+import { closeSync, existsSync, fsyncSync, mkdirSync, openSync, readFileSync, renameSync, writeSync } from "node:fs";
+import { homedir } from "node:os";
+import { dirname, join } from "node:path";
+import { newGame, parseSave, serialize, type Course, type GameState } from "@silver-tongue/core";
+
+/** Where saves live: $XDG_CONFIG_HOME or ~/.config, and %APPDATA% on Windows. */
+export function configDir(env: NodeJS.ProcessEnv = process.env, platform = process.platform, home = homedir()): string {
+  if (platform === "win32") return env.APPDATA || join(home, "AppData", "Roaming");
+  return env.XDG_CONFIG_HOME || join(home, ".config");
+}
+
+export interface Loaded {
+  state: GameState;
+  /** a message id to show once at start */
+  notice?: string;
+  /** true when the save couldn't be read or backed up: play on without saving, so it is never overwritten */
+  readOnly: boolean;
+}
+
+/** A save that won't parse is kept as a backup and the game starts fresh. */
+export function loadSave(course: Course, path: string): Loaded {
+  try {
+    if (!existsSync(path)) return { state: newGame(course), readOnly: false };
+    const parsed = parseSave(readFileSync(path, "utf8"), course);
+    if (parsed.ok) return { state: parsed.state, readOnly: false };
+    renameSync(path, `${path}.invalid-backup`);
+    return { state: newGame(course), notice: "notice-bad-save", readOnly: false };
+  } catch {
+    return { state: newGame(course), notice: "notice-read-only", readOnly: true };
+  }
+}
+
+/**
+ * Writes the save so that a crash or power loss leaves the old save or the new one, never
+ * half of one. Returns false if it couldn't be written.
+ */
+export function writeSave(path: string, state: GameState): boolean {
+  try {
+    mkdirSync(dirname(path), { recursive: true });
+    const tmp = `${path}.tmp`;
+    const fd = openSync(tmp, "w");
+    try {
+      writeSync(fd, serialize(state));
+      fsyncSync(fd);
+    } finally {
+      closeSync(fd);
+    }
+    renameSync(tmp, path);
+    return true;
+  } catch {
+    return false;
+  }
 }
 ```
 
 `packages/tui-node/src/main.ts`:
 
 ```ts
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
-import { homedir } from "node:os";
-import { dirname, join } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createCore, mulberry32, newGame, parseSave, serialize, type Course, type GameState } from "@silver-tongue/core";
+import { createCore, mulberry32, type Course } from "@silver-tongue/core";
 import { startApp } from "@silver-tongue/tui";
 import { createNodeTerminal } from "./node-terminal";
+import { configDir, loadSave, writeSave } from "./storage";
 
 const COURSE = "zh-china-en";
 
@@ -4444,36 +4581,37 @@ function coursePath(): string {
   return found;
 }
 
-function loadState(course: Course, path: string): { state: GameState; notice?: string } {
-  if (!existsSync(path)) return { state: newGame(course) };
-  const parsed = parseSave(readFileSync(path, "utf8"), course);
-  if (parsed.ok) return { state: parsed.state };
-  renameSync(path, `${path}.invalid-backup`);
-  return { state: newGame(course), notice: "notice-bad-save" };
-}
-
-function saveState(path: string, state: GameState): void {
-  mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(`${path}.tmp`, serialize(state));
-  renameSync(`${path}.tmp`, path);
+const [major] = process.versions.node.split(".").map(Number);
+if (major < 22) {
+  console.error(`silver-tongue needs Node 22 or newer; this is Node ${process.versions.node}.`);
+  process.exit(1);
 }
 
 const course = JSON.parse(readFileSync(coursePath(), "utf8")) as Course;
-const savePath = process.env.SILVER_TONGUE_SAVE ?? join(homedir(), ".config", "silver-tongue", `${course.id}.json`);
-const { state, notice } = loadState(course, savePath);
+const savePath = process.env.SILVER_TONGUE_SAVE ?? join(configDir(), "silver-tongue", `${course.id}.json`);
+const { state, notice, readOnly } = loadSave(course, savePath);
 const core = createCore(course, state, { now: Date.now, rng: mulberry32(Date.now() >>> 0) });
 const term = createNodeTerminal();
+
+// Whatever happens, give the player their terminal back.
+const bail = (code: number, error?: unknown) => {
+  term.close();
+  if (error) console.error(error);
+  process.exit(code);
+};
+process.on("uncaughtException", (e) => bail(1, e));
+process.on("unhandledRejection", (e) => bail(1, e));
+process.on("SIGTERM", () => bail(143));
+process.on("SIGHUP", () => bail(129));
+
 startApp({
   course,
   core,
   term,
   now: Date.now,
   notice,
-  save: (s) => saveState(savePath, s),
-  quit: () => {
-    term.close();
-    process.exit(0);
-  },
+  save: readOnly ? undefined : (s) => writeSave(savePath, s),
+  quit: () => bail(0),
 });
 ```
 
@@ -4481,13 +4619,13 @@ startApp({
 
 Run: `npx vitest run packages/tui-node && npx tsc`
 
-Expected: PASS (2 tests); `tsc` prints nothing.
+Expected: PASS (6 tests); `tsc` prints nothing.
 
 - [ ] **Step 6: Play it from source**
 
 Run: `npm run play`
 
-Expected: a framed screen titled *The street*, with `Day 1 · slot 0/4 · ¥20 · Pidgin` in the top border and a menu below. Press `1` (go to the noodle shop), then `1` (ask about work), and answer. From the menu, `q` quits and restores the terminal.
+Expected: a framed screen titled *The street*, with `Day 1 · slot 0/4 · ¥20 · Pidgin` in the top border and a menu below. Press `1` (go to the noodle shop), then `1` (get a job), and answer. From the menu, `q` quits and restores the terminal.
 
 - [ ] **Step 7: Bundle and smoke-test the npx path**
 
@@ -4562,7 +4700,7 @@ npx silver-tongue
 | `esc` | back |
 | `q` | save and quit (from the menu) |
 
-Progress saves automatically to `~/.config/silver-tongue/<course>.json`. If a save can't be read, it is kept next to it as `<course>.json.invalid-backup` and a new game starts.
+Progress saves automatically to `~/.config/silver-tongue/<course>.json` (or under `$XDG_CONFIG_HOME`, or `%APPDATA%` on Windows). If a save can't be read, it is kept next to it as `<course>.json.invalid-backup` and a new game starts. If saving fails, the game says so and plays on without saving.
 
 ## Play from source
 
@@ -4631,7 +4769,7 @@ npm run bundle -w silver-tongue   # build packages/tui-node/dist for npm/npx
 
 Run: `npm run typecheck && npm run build:course && npm test`
 
-Expected: `tsc` prints nothing, the course builds, and **88 tests pass in 14 files**.
+Expected: `tsc` prints nothing, the course builds, and **93 tests pass in 15 files**.
 
 - [ ] **Step 5: Commit and push**
 

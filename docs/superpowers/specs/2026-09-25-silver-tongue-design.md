@@ -320,7 +320,7 @@ interface Terminal {
 
 ## Saves
 
-- **Web:** `localStorage` key `silver-tongue:<course>`. **Node:** `~/.config/silver-tongue/<course>.json`.
+- **Web:** `localStorage` key `silver-tongue:<course>`. **Node:** `~/.config/silver-tongue/<course>.json` (`$XDG_CONFIG_HOME` if set; `%APPDATA%` on Windows).
 - Saves are versioned JSON. Export/import works as a text string, so players can move between devices and between the TUI and 3D (same course, same save).
 - These rules follow vocab-engine:
   - A save that won't parse is kept as a backup and the game starts fresh with a visible notice.
