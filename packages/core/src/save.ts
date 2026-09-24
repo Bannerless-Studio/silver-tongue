@@ -1,4 +1,5 @@
 import { comboKey } from "./combo";
+import { tilePieces } from "./dialogue";
 import type { Course, GameState, SceneRun } from "./types";
 
 export const SAVE_VERSION = 1;
@@ -26,10 +27,22 @@ function isRunShape(x: unknown): x is SceneRun {
   return ["exchange", "misses", "earned", "mixups"].every((k) => isCount(x[k]));
 }
 
-/** A run fits the course if its scene, exchange and slot combination still exist. */
+/** Every piece of the reply is among the tiles, repeats counted. */
+function tilesCover(tiles: string[], pieces: string[]): boolean {
+  const left = [...tiles];
+  return pieces.every((p) => {
+    const i = left.indexOf(p);
+    return i >= 0 && left.splice(i, 1).length === 1;
+  });
+}
+
+/** A run fits the course if its scene, exchange and slot combination still exist and its reply can still be given. */
 function runFits(run: SceneRun, course: Course): boolean {
   const ex = course.scenes.find((s) => s.id === run.scene)?.exchanges[run.exchange];
-  return !!ex && !!ex.variants[comboKey(run.combo)] && run.options.every((k) => !!ex.variants[k]);
+  const v = ex?.variants[comboKey(run.combo)];
+  if (!ex || !v) return false;
+  if (run.mode === "pick") return run.options.every((k) => !!ex.variants[k]);
+  return tilesCover(run.tiles, tilePieces(v.reply));
 }
 
 /**

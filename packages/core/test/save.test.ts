@@ -56,4 +56,11 @@ describe("save", () => {
     const res = parseSave(serialize(stale), course);
     expect(res).toEqual({ ok: true, state: { ...stale, run: null } });
   });
+
+  it("drops a tiles run whose reply the saved tiles can no longer build", () => {
+    const core = inScene();
+    const run = { ...core.state.run!, mode: "tiles" as const, options: [], tiles: ["x"] };
+    const stale: GameState = { ...core.state, run };
+    expect(parseSave(serialize(stale), course)).toEqual({ ok: true, state: { ...stale, run: null } });
+  });
 });
