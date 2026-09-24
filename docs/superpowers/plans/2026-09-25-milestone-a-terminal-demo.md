@@ -3517,6 +3517,7 @@ This package is the one published to npm as `silver-tongue`. The name was free o
   "description": "Learn a language by living in it: a text game for the terminal.",
   "type": "module",
   "repository": { "type": "git", "url": "git+https://github.com/jamil314/silver-tongue.git", "directory": "packages/tui-node" },
+  "license": "MIT",
   "engines": { "node": ">=22" },
   "bin": { "silver-tongue": "dist/silver-tongue.mjs" },
   "files": ["dist"],
@@ -3791,6 +3792,10 @@ npm install
 npm run build:course
 npm run play
 ```
+
+## License
+
+MIT. See `LICENSE`.
 ````
 
 - [ ] **Step 3: Add CLAUDE.md (for developers and agents)**
