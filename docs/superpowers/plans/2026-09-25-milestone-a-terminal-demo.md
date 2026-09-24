@@ -6,7 +6,7 @@
 
 **Architecture:** An npm-workspaces monorepo. `packages/core` holds every game rule as pure TypeScript behind `core.send(input) → events`. `tools/` imports the Chinese word pack from vocab-engine, renders Fluent scene lines for every slot combination, tags their words and runs the content checker, writing `dist/courses/zh-china-en/course.json`. `packages/tui` is the text front end, written against a small `Terminal` interface, and `packages/tui-node` is its Node backend plus the `npx` bundle.
 
-**Tech Stack:** TypeScript 5, Node 22+, npm workspaces, Vitest 3, tsx, `@fluent/bundle` + `@fluent/syntax`, esbuild. No framework, and the shipped bundle has no runtime dependencies.
+**Tech Stack:** TypeScript 5, Node 22+, npm workspaces, Vitest 5, tsx, `@fluent/bundle` + `@fluent/syntax`, esbuild. No framework, and the shipped bundle has no runtime dependencies.
 
 **Spec:** `docs/superpowers/specs/2026-09-25-silver-tongue-design.md`
 
@@ -72,9 +72,10 @@ The checker's coverage and audio rules exist and are tested, but are switched of
 
 ```json
 {
-  "name": "silver-tongue",
+  "name": "silver-tongue-monorepo",
   "private": true,
   "type": "module",
+  "engines": { "node": ">=22" },
   "workspaces": ["packages/*", "tools"],
   "scripts": {
     "test": "vitest run",
@@ -87,7 +88,7 @@ The checker's coverage and audio rules exist and are tested, but are switched of
     "@types/node": "^22.10.0",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0",
-    "vitest": "^3.0.0"
+    "vitest": "^5.0.1"
   }
 }
 ```
@@ -105,6 +106,7 @@ The checker's coverage and audio rules exist and are tested, but are switched of
     "strict": true,
     "noEmit": true,
     "skipLibCheck": true,
+    "isolatedModules": true,
     "resolveJsonModule": true
   },
   "include": ["packages/*/src", "packages/*/test", "tools/src", "tools/test"]
@@ -176,7 +178,7 @@ dist/
 
 Run: `npm install && npx vitest --version`
 
-Expected: the install finishes, `node_modules/@silver-tongue/` holds `core`, `tui` and `tools` links, and Vitest prints `vitest/3.x`.
+Expected: the install finishes, `node_modules/@silver-tongue/` holds `core`, `tui` and `tools` links, and Vitest prints `vitest/5.x`.
 
 - [ ] **Step 4: Commit**
 
@@ -3497,6 +3499,7 @@ This package is the one published to npm as `silver-tongue`. The name was free o
   "version": "0.1.0",
   "description": "Learn a language by living in it: a text game for the terminal.",
   "type": "module",
+  "engines": { "node": ">=22" },
   "bin": { "silver-tongue": "dist/silver-tongue.mjs" },
   "files": ["dist"],
   "scripts": {
@@ -3505,7 +3508,7 @@ This package is the one published to npm as `silver-tongue`. The name was free o
   "devDependencies": {
     "@silver-tongue/core": "*",
     "@silver-tongue/tui": "*",
-    "esbuild": "^0.24.0"
+    "esbuild": "^0.28.2"
   }
 }
 ```

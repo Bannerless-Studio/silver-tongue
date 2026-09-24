@@ -1,0 +1,7 @@
+{
+  "name": "@silver-tongue/tui",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": { "@fluent/bundle": "^0.18.0", "@silver-tongue/core": "*" }
+}

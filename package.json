@@ -1,0 +1,19 @@
+{
+  "name": "silver-tongue",
+  "private": true,
+  "type": "module",
+  "workspaces": ["packages/*", "tools"],
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc",
+    "import:zh": "tsx tools/src/import-vocab-pack.ts vendor/vocab-engine/packs/zh content/languages/zh content/learner/en/glosses-zh.ftl",
+    "build:course": "tsx tools/src/build-course.ts",
+    "play": "tsx packages/tui-node/src/main.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}
