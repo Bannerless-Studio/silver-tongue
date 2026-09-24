@@ -14,7 +14,7 @@ function setup(patch: (s: GameState) => void = () => {}) {
   const term = new FakeTerminal();
   const saves: GameState[] = [];
   let quit = false;
-  startApp({ course, core, term, now: () => T0, save: (s) => saves.push(s), quit: () => (quit = true) });
+  startApp({ course, core, term, now: () => T0, save: (s) => saves.push(s) > 0, quit: () => (quit = true) });
   return { course, core, term, saves, quitted: () => quit };
 }
 
@@ -132,7 +132,7 @@ describe("tui app", () => {
     const course = fixtureWithText();
     const core = createCore(course, first.core.state, { now: () => T0, rng: mulberry32(2) });
     const term = new FakeTerminal();
-    startApp({ course, core, term, now: () => T0, save: () => {}, quit: () => {} });
+    startApp({ course, core, term, now: () => T0, save: () => true, quit: () => {} });
     expect(term.screen().join("\n")).toMatch(/Cook: (茶|水)。/);
     term.press(rightKey(core));
     expect(term.screen().join("\n")).toContain("Done. You earned");
@@ -145,5 +145,17 @@ describe("tui app", () => {
     const s = term.screen();
     expect(s.some((l) => l.includes("1) 你"))).toBe(true);
     expect(s.some((l) => l.includes("2) 好"))).toBe(true);
+  });
+
+  it("warns once and stops saving when a save fails", () => {
+    const course = fixtureWithText();
+    const core = createCore(course, newGame(course), { now: () => T0, rng: mulberry32(1) });
+    const term = new FakeTerminal();
+    let tries = 0;
+    startApp({ course, core, term, now: () => T0, save: () => (tries++, false), quit: () => {} });
+    term.press("1", "1");
+    const warnings = term.screen().filter((l) => l.includes("can't be saved"));
+    expect(warnings).toHaveLength(1);
+    expect(tries).toBe(1);
   });
 });

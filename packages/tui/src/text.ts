@@ -64,6 +64,7 @@ export const UI_KEYS: Record<string, string[]> = {
   "rank-up": ["rank"],
   "day-ended": ["day"],
   "notice-bad-save": [],
+  "notice-read-only": [],
   ...Object.fromEntries(REJECT_CODES.map((c) => [`reject-${c}`, []])),
 };
 

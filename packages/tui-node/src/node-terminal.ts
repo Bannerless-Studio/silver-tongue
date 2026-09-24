@@ -39,6 +39,15 @@ export function createNodeTerminal(input = process.stdin, output = process.stdou
   input.on("end", () => {
     for (const h of handlers) h({ name: "ctrl-c" });
   });
+  let closed = false;
+  const restore = () => {
+    if (closed) return;
+    closed = true;
+    if (input.isTTY) input.setRawMode(false);
+    input.pause();
+    output.write("\x1b[0m\x1b[?25h\x1b[?1049l");
+  };
+  process.on("exit", restore);
   return {
     write(lines) {
       output.write("\x1b[H\x1b[2J" + lines.map(toAnsi).join("\r\n"));
@@ -50,12 +59,10 @@ export function createNodeTerminal(input = process.stdin, output = process.stdou
       output.on("resize", handler);
     },
     size() {
-      return { cols: output.columns ?? 80, rows: output.rows ?? 24 };
+      // Some terminals report 0x0 until they are sized.
+      return { cols: output.columns || 80, rows: output.rows || 24 };
     },
-    close() {
-      if (input.isTTY) input.setRawMode(false);
-      input.pause();
-      output.write("\x1b[0m\x1b[?25h\x1b[?1049l");
-    },
+    /** Restores the terminal. Safe to call more than once. */
+    close: restore,
   };
 }

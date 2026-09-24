@@ -19,7 +19,8 @@ export interface AppOptions {
   core: Core;
   term: Terminal;
   now: () => number;
-  save: (state: GameState) => void;
+  /** Saves after each accepted input; returns false if it couldn't. Leave out to play without saving. */
+  save?: (state: GameState) => boolean;
   quit: () => void;
   /** a message id shown once at start, e.g. "notice-bad-save" */
   notice?: string;
@@ -133,10 +134,18 @@ export function startApp(opts: AppOptions): App {
     }
   }
 
+  let save = opts.save;
+  function persist() {
+    if (save && !save(core.state)) {
+      save = undefined; // stop trying; say so once
+      push([{ text: t("notice-read-only"), color: "yellow" }]);
+    }
+  }
+
   function send(input: Input) {
     const events = core.send(input);
     apply(events);
-    if (!events.some((e) => e.type === "inputRejected")) opts.save(core.state);
+    if (!events.some((e) => e.type === "inputRejected")) persist();
   }
 
   function menu(): MenuItem[] {

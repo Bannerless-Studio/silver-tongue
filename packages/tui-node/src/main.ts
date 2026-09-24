@@ -1,10 +1,10 @@
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
-import { homedir } from "node:os";
-import { dirname, join } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createCore, mulberry32, newGame, parseSave, serialize, type Course, type GameState } from "@silver-tongue/core";
+import { createCore, mulberry32, type Course } from "@silver-tongue/core";
 import { startApp } from "@silver-tongue/tui";
 import { createNodeTerminal } from "./node-terminal";
+import { configDir, loadSave, writeSave } from "./storage";
 
 const COURSE = "zh-china-en";
 
@@ -23,34 +23,35 @@ function coursePath(): string {
   return found;
 }
 
-function loadState(course: Course, path: string): { state: GameState; notice?: string } {
-  if (!existsSync(path)) return { state: newGame(course) };
-  const parsed = parseSave(readFileSync(path, "utf8"), course);
-  if (parsed.ok) return { state: parsed.state };
-  renameSync(path, `${path}.invalid-backup`);
-  return { state: newGame(course), notice: "notice-bad-save" };
-}
-
-function saveState(path: string, state: GameState): void {
-  mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(`${path}.tmp`, serialize(state));
-  renameSync(`${path}.tmp`, path);
+const [major] = process.versions.node.split(".").map(Number);
+if (major < 22) {
+  console.error(`silver-tongue needs Node 22 or newer; this is Node ${process.versions.node}.`);
+  process.exit(1);
 }
 
 const course = JSON.parse(readFileSync(coursePath(), "utf8")) as Course;
-const savePath = process.env.SILVER_TONGUE_SAVE ?? join(homedir(), ".config", "silver-tongue", `${course.id}.json`);
-const { state, notice } = loadState(course, savePath);
+const savePath = process.env.SILVER_TONGUE_SAVE ?? join(configDir(), "silver-tongue", `${course.id}.json`);
+const { state, notice, readOnly } = loadSave(course, savePath);
 const core = createCore(course, state, { now: Date.now, rng: mulberry32(Date.now() >>> 0) });
 const term = createNodeTerminal();
+
+// Whatever happens, give the player their terminal back.
+const bail = (code: number, error?: unknown) => {
+  term.close();
+  if (error) console.error(error);
+  process.exit(code);
+};
+process.on("uncaughtException", (e) => bail(1, e));
+process.on("unhandledRejection", (e) => bail(1, e));
+process.on("SIGTERM", () => bail(143));
+process.on("SIGHUP", () => bail(129));
+
 startApp({
   course,
   core,
   term,
   now: Date.now,
   notice,
-  save: (s) => saveState(savePath, s),
-  quit: () => {
-    term.close();
-    process.exit(0);
-  },
+  save: readOnly ? undefined : (s) => writeSave(savePath, s),
+  quit: () => bail(0),
 });
