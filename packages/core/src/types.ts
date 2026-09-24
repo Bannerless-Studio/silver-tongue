@@ -147,7 +147,8 @@ export type GameEvent =
   | { type: "replyOptions"; mode: "tiles"; tiles: string[] }
   | { type: "actionPerformed"; action: Record<string, string>; matched: boolean; diff: string[] }
   | { type: "npcReacted"; npc: string; reaction: string; line: RenderedLine }
-  | { type: "lineRephrased"; npc: string; line: RenderedLine }
+  /** slow: no rephrase was written, so this replays the original line (show it slowly, with pronunciation) */
+  | { type: "lineRephrased"; npc: string; line: RenderedLine; slow: boolean }
   | { type: "walletChanged"; wallet: number; delta: number; reason: string }
   | { type: "trustChanged"; npc: string; trust: number }
   | { type: "wordStateChanged"; word: WordId; from: WordState; to: WordState }

@@ -148,7 +148,9 @@ function resolve(ctx: Ctx, scene: Scene, ex: Exchange, chosen: Combo, diff: stri
   ctx.ev.push({ type: "npcReacted", npc: scene.npc, reaction, line: ctx.course.reactions[reaction] });
   if (run.misses >= 2) {
     const v = ex.variants[comboKey(run.combo)];
-    ctx.ev.push({ type: "lineRephrased", npc: scene.npc, line: v.rephrase ?? v.npc });
+    const line = v.rephrase ?? v.npc;
+    ctx.ev.push({ type: "lineRephrased", npc: scene.npc, line, slow: !v.rephrase });
+    for (const t of line.tokens) setWord(ctx, t.word, recordSeen);
   }
   emitOptions(ctx, ex);
 }
@@ -168,26 +170,38 @@ export function startScene(ctx: Ctx, id: string): void {
   beginExchange(ctx, scene, 0);
 }
 
+/** The running scene and exchange, or undefined if there is none or the save no longer fits the course. */
 function current(ctx: Ctx): { scene: Scene; ex: Exchange } | undefined {
   const run = ctx.state.run;
   if (!run) return undefined;
-  const scene = sceneById(ctx, run.scene)!;
-  return { scene, ex: scene.exchanges[run.exchange] };
+  const scene = sceneById(ctx, run.scene);
+  const ex = scene?.exchanges[run.exchange];
+  if (!scene || !ex || !ex.variants[comboKey(run.combo)]) return undefined;
+  return { scene, ex };
+}
+
+/** Slots that change the action. A slot the action doesn't use is never a mix-up. */
+function actionDiff(ex: Exchange, chosen: Combo, expected: Combo): string[] {
+  const got = resolveParams(ex.expect, chosen);
+  const want = resolveParams(ex.expect, expected);
+  return Object.keys(want).filter((k) => got[k] !== want[k]);
 }
 
 export function reply(ctx: Ctx, choice: number): void {
+  const run = ctx.state.run;
+  if (run && !current(ctx)) return reject(ctx, "stale-run");
   const cur = current(ctx);
-  if (!cur || ctx.state.run!.mode !== "pick") return reject(ctx, "no-pick");
-  const key = ctx.state.run!.options[choice];
+  if (!cur || !run || run.mode !== "pick") return reject(ctx, "no-pick");
+  const key = run.options[choice];
   if (key === undefined) return reject(ctx, "bad-choice");
   const chosen = parseComboKey(key);
-  const diff = Object.keys(ctx.state.run!.combo).filter((s) => chosen[s] !== ctx.state.run!.combo[s]);
-  resolve(ctx, cur.scene, cur.ex, chosen, diff);
+  resolve(ctx, cur.scene, cur.ex, chosen, actionDiff(cur.ex, chosen, run.combo));
 }
 
 export function replyTiles(ctx: Ctx, tiles: number[]): void {
-  const cur = current(ctx);
   const run = ctx.state.run;
+  if (run && !current(ctx)) return reject(ctx, "stale-run");
+  const cur = current(ctx);
   if (!cur || !run || run.mode !== "tiles") return reject(ctx, "no-tiles");
   if (tiles.some((i) => run.tiles[i] === undefined)) return reject(ctx, "bad-tile");
   const answer = tiles.map((i) => run.tiles[i]).join("");

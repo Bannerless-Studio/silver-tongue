@@ -72,7 +72,7 @@ describe("core", () => {
     expect(types(miss1)).not.toContain("lineRephrased");
 
     const miss2 = core.send({ type: "reply", choice: wrong });
-    expect(types(miss2)).toContain("lineRephrased");
+    expect(find(miss2, "lineRephrased")).toMatchObject({ npc: "cook", slow: false });
 
     const ok = core.send({ type: "reply", choice: right });
     expect(find(ok, "sceneEnded")).toEqual({ type: "sceneEnded", scene: "shift", earned: 3 });
@@ -100,6 +100,27 @@ describe("core", () => {
     const bad = createCore(course, { ...core.state, words }, { now: () => T0, rng: mulberry32(2) });
     bad.send({ type: "startScene", scene: "shift" });
     expect(find(bad.send({ type: "replyTiles", tiles: [0] }), "actionPerformed").matched).toBe(false);
+  });
+
+  it("only slots that change the action count as a mix-up", () => {
+    const c = fixtureCourse();
+    c.scenes[1].exchanges[0].expect = { action: "serve", item: "$item" };
+    c.scenes[1].exchanges[0].hinges = ["$item"];
+    const core = createCore(c, newGame(c), { now: () => T0, rng: mulberry32(1) });
+    playIntro(core);
+    core.send({ type: "startScene", scene: "shift" });
+    const run = core.state.run!;
+    const sameItem = run.options.findIndex((k) => k !== comboKey(run.combo) && k.endsWith(`item=${run.combo.item}`));
+    expect(sameItem).toBeGreaterThanOrEqual(0);
+    expect(find(core.send({ type: "reply", choice: sameItem }), "actionPerformed").matched).toBe(true);
+  });
+
+  it("rejects a resumed scene that no longer fits the course instead of throwing", () => {
+    const core = setup();
+    playIntro(core);
+    core.send({ type: "startScene", scene: "shift" });
+    const stale = createCore(course, { ...core.state, run: { ...core.state.run!, exchange: 5 } }, { now: () => T0, rng: mulberry32(1) });
+    expect(stale.send({ type: "reply", choice: 0 })).toEqual([{ type: "inputRejected", reason: "stale-run" }]);
   });
 
   it("a help lookup makes a word shaky", () => {
