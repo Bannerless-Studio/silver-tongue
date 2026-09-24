@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bindSlots, messageIds, parseFtl, Renderer, termNames } from "../src/fluent";
+import { bindSlots, messageIds, parseFtl, Renderer, termNames, type FtlSource } from "../src/fluent";
 
 const zhTerms = `-tea = { $form ->
     [measure] 杯
@@ -23,6 +23,9 @@ const esLines = `order = { $count ->
 }
 `;
 
+const zh = (slots: string): FtlSource[] => [["t", zhTerms], ["slots", slots], ["l", zhLines]];
+const es = (slots: string): FtlSource[] => [["t", esTerms], ["slots", slots], ["l", esLines]];
+
 describe("fluent", () => {
   it("lists terms and messages, and rejects syntax errors", () => {
     expect(termNames(zhTerms, "t")).toEqual(["tea", "three"]);
@@ -31,19 +34,33 @@ describe("fluent", () => {
   });
 
   it("binds slots to concept terms (zh measure words)", () => {
-    const r = new Renderer("zh", [zhTerms, bindSlots(zhTerms, { item: "tea", count: "three" }), zhLines]);
+    const r = new Renderer("zh", zh(bindSlots(zhTerms, { item: "tea", count: "three" }, zhLines, "l")));
     expect(r.render("order", { count: 3 })).toBe("三杯茶。");
   });
 
   it("lets each language choose its own grammar (es plurals)", () => {
-    const three = new Renderer("es", [esTerms, bindSlots(esTerms, { item: "tea", count: "three" }), esLines]);
+    const three = new Renderer("es", es(bindSlots(esTerms, { item: "tea", count: "three" }, esLines, "l")));
     expect(three.render("order", { count: 3 })).toBe("tres tés, por favor.");
-    const one = new Renderer("es", [esTerms, bindSlots(esTerms, { item: "tea", count: "one" }), esLines]);
+    const one = new Renderer("es", es(bindSlots(esTerms, { item: "tea", count: "one" }, esLines, "l")));
     expect(one.render("order", { count: 1 })).toBe("Un té, por favor.");
   });
 
   it("fails loudly on unknown concepts and missing messages", () => {
-    expect(() => bindSlots(zhTerms, { item: "coffee" })).toThrow(/no term -coffee/);
-    expect(() => new Renderer("zh", [zhTerms]).render("nope")).toThrow(/missing message "nope"/);
+    expect(() => bindSlots(zhTerms, { item: "coffee" }, zhLines, "l")).toThrow(/no term -coffee/);
+    expect(() => new Renderer("zh", [["t", zhTerms]]).render("nope")).toThrow(/missing message "nope"/);
+  });
+
+  it("rejects broken entries and duplicate names instead of dropping them", () => {
+    expect(() => new Renderer("zh", [["l", "ok = fine\nbroken = { -tea\nnext = x\n"]])).toThrow(/l: Fluent syntax error/);
+    expect(() => new Renderer("zh", [["l", "a = 1\na = 2\n"]])).toThrow(/l: .*a/);
+    expect(() => new Renderer("zh", [["t", zhTerms], ["t2", "-tea = 水\n"]])).toThrow(/t2: .*tea/);
+  });
+
+  it("refuses a slot named like a term, and forms a term doesn't have", () => {
+    expect(() => bindSlots(zhTerms, { tea: "three" }, zhLines, "l")).toThrow(/slot "tea" has the same name as the term -tea/);
+    const typo = `order = { -item(form: "measur") }\n`;
+    expect(() => bindSlots(zhTerms, { item: "tea" }, typo, "l")).toThrow(/l: -item \(-tea\) has no form "measur"/);
+    const noForms = `order = { -three(form: "measure") }\n`;
+    expect(() => bindSlots(zhTerms, {}, noForms, "l")).toThrow(/l: -three has no form "measure"/);
   });
 });
