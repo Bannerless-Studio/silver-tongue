@@ -2490,6 +2490,13 @@ describe("checkCourse", () => {
     expect(errors).toContain("intro/greet: the reply has 8 words; at most 7");
     expect(errors).toContain("intro/greet: the npc line has 10 words; at most 9");
   });
+
+  it("keeps each place's menu on keys 1-7, before sleep and quit", () => {
+    const c = fixtureCourse();
+    c.world.places.noodle_shop.links = ["street", "a", "b", "c", "d", "e"];
+    for (const l of ["a", "b", "c", "d", "e"]) c.world.places[l] = { links: [] };
+    expect(checkCourse(input({ course: c }))).toContain('world: place "noodle_shop" has 8 scenes and exits; at most 7');
+  });
 });
 ```
 
@@ -2531,6 +2538,8 @@ export const MIN_SCENES_PER_WORD = 3;
 export const MAX_REPLY_WORDS = 7;
 /** Word help offers each word of the NPC's line on keys 1-9. */
 export const MAX_LINE_WORDS = 9;
+/** A place's menu: its scenes and exits on keys 1-7, then sleep and quit. */
+export const MAX_PLACE_ITEMS = 7;
 
 /** Scenes in `after` order; ties keep file order. */
 export function orderScenes(scenes: Scene[]): { ordered: Scene[]; errors: string[] } {
@@ -2585,6 +2594,10 @@ export function checkCourse(input: CheckInput): string[] {
   if (!world.places[world.start]) errors.push(`world: start place "${world.start}" does not exist`);
   for (const [id, p] of Object.entries(world.places)) {
     for (const l of p.links) if (!world.places[l]) errors.push(`world: place "${id}" links to unknown place "${l}"`);
+  }
+  for (const [id, p] of Object.entries(world.places)) {
+    const items = p.links.length + course.scenes.filter((s) => s.place === id).length;
+    if (items > MAX_PLACE_ITEMS) errors.push(`world: place "${id}" has ${items} scenes and exits; at most ${MAX_PLACE_ITEMS}`);
   }
   for (const [id, n] of Object.entries(world.npcs)) {
     if (!world.places[n.place]) errors.push(`world: npc "${id}" is at unknown place "${n.place}"`);
@@ -2716,7 +2729,7 @@ export function checkCourse(input: CheckInput): string[] {
 
 Run: `npx vitest run tools/test/check.test.ts`
 
-Expected: PASS (10 tests).
+Expected: PASS (12 tests).
 
 - [ ] **Step 5: Commit**
 
@@ -3573,9 +3586,8 @@ export function startApp(opts: AppOptions): App {
     for (const p of course.world.places[s.place].links) {
       items.push({ label: t("menu-go", { place: t(`place-${p}`) }), input: { type: "goTo", place: p } });
     }
-    items.push({ label: t("menu-sleep"), input: { type: "sleep" } });
-    items.push({ label: t("menu-quit"), quit: true });
-    return items.slice(0, 9);
+    // Sleep and quit always keep their keys; the content checker keeps places within 7 other items.
+    return [...items.slice(0, 7), { label: t("menu-sleep"), input: { type: "sleep" } }, { label: t("menu-quit"), quit: true }];
   }
 
   function helpWords(): { text: string; word: WordId }[] {
@@ -4171,7 +4183,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) main();
 
 Run: `npx vitest run tools`
 
-Expected: PASS (32 tests in 5 files).
+Expected: PASS (33 tests in 5 files).
 
 - [ ] **Step 6: Build the course from the command line**
 
@@ -4543,7 +4555,7 @@ npm run bundle -w silver-tongue   # build packages/tui-node/dist for npm/npx
 
 Run: `npm run typecheck && npm run build:course && npm test`
 
-Expected: `tsc` prints nothing, the course builds, and **84 tests pass in 14 files**.
+Expected: `tsc` prints nothing, the course builds, and **85 tests pass in 14 files**.
 
 - [ ] **Step 5: Commit and push**
 
