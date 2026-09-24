@@ -57,4 +57,44 @@ describe("checkCourse", () => {
     expect(errors).toContain('coverage: "你" (stage 1) is in 1 scenes; needs 3');
     expect(errors).toContain("intro/greet: npc line has no audio");
   });
+
+  it("doesn't count words from scenes that can be played in another order", () => {
+    const c = fixtureCourse();
+    // shift no longer comes after intro, so intro's words are new in shift.
+    c.scenes[1].after = [];
+    c.scenes[1].requires = {};
+    expect(checkCourse(input({ course: c })).some((e) => /^shift\/order\[.*new words/.test(e))).toBe(true);
+  });
+
+  it("checks reactions against the earliest stage", () => {
+    const c = fixtureCourse();
+    c.scenes[1].stage = 2;
+    c.words.w_cha.lv = "2";
+    c.reactions["wrong-generic"] = line(["茶", "w_cha"]);
+    const errors = checkCourse(input({ course: c, stages: { "1": ["1"], "2": ["2"] } }));
+    expect(errors).toContain('reaction wrong-generic: "茶" is level 2, above stage 1');
+  });
+
+  it("keeps checking scenes stuck in a cycle", () => {
+    const c = fixtureCourse();
+    c.scenes[0].after = ["shift"];
+    c.scenes[0].exchanges[0].variants[""].npc = line(["你", "w_ni"], ["好", "w_hao"], ["茶", "w_cha"]);
+    const errors = checkCourse(input({ course: c }));
+    expect(errors.some((e) => /cycle/.test(e))).toBe(true);
+    expect(errors).toContain("intro/greet: 3 new words (你 好 茶); at most 2");
+  });
+
+  it("rejects duplicate ids and trust no earlier scene can give", () => {
+    const c = fixtureCourse();
+    c.scenes.push({ ...c.scenes[1] });
+    c.scenes[0].exchanges.push(c.scenes[0].exchanges[0]);
+    const errors = checkCourse(input({ course: c }));
+    expect(errors).toContain('scenes: id "shift" is used twice');
+    expect(errors).toContain('intro: exchange id "greet" is used twice');
+
+    const d = fixtureCourse();
+    d.scenes[1].requires = { trust: { cook: 3 } };
+    d.scenes[1].repeatable = false;
+    expect(checkCourse(input({ course: d }))).toContain('shift: needs trust 3 with "cook", but earlier scenes give at most 2');
+  });
 });
