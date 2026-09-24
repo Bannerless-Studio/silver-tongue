@@ -106,4 +106,11 @@ describe("checkCourse", () => {
     expect(errors).toContain("intro/greet: the reply has 8 words; at most 7");
     expect(errors).toContain("intro/greet: the npc line has 10 words; at most 9");
   });
+
+  it("keeps each place's menu on keys 1-7, before sleep and quit", () => {
+    const c = fixtureCourse();
+    c.world.places.noodle_shop.links = ["street", "a", "b", "c", "d", "e"];
+    for (const l of ["a", "b", "c", "d", "e"]) c.world.places[l] = { links: [] };
+    expect(checkCourse(input({ course: c }))).toContain('world: place "noodle_shop" has 8 scenes and exits; at most 7');
+  });
 });

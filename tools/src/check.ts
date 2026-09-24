@@ -17,6 +17,8 @@ export const MIN_SCENES_PER_WORD = 3;
 export const MAX_REPLY_WORDS = 7;
 /** Word help offers each word of the NPC's line on keys 1-9. */
 export const MAX_LINE_WORDS = 9;
+/** A place's menu: its scenes and exits on keys 1-7, then sleep and quit. */
+export const MAX_PLACE_ITEMS = 7;
 
 /** Scenes in `after` order; ties keep file order. */
 export function orderScenes(scenes: Scene[]): { ordered: Scene[]; errors: string[] } {
@@ -71,6 +73,10 @@ export function checkCourse(input: CheckInput): string[] {
   if (!world.places[world.start]) errors.push(`world: start place "${world.start}" does not exist`);
   for (const [id, p] of Object.entries(world.places)) {
     for (const l of p.links) if (!world.places[l]) errors.push(`world: place "${id}" links to unknown place "${l}"`);
+  }
+  for (const [id, p] of Object.entries(world.places)) {
+    const items = p.links.length + course.scenes.filter((s) => s.place === id).length;
+    if (items > MAX_PLACE_ITEMS) errors.push(`world: place "${id}" has ${items} scenes and exits; at most ${MAX_PLACE_ITEMS}`);
   }
   for (const [id, n] of Object.entries(world.npcs)) {
     if (!world.places[n.place]) errors.push(`world: npc "${id}" is at unknown place "${n.place}"`);

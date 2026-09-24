@@ -150,9 +150,8 @@ export function startApp(opts: AppOptions): App {
     for (const p of course.world.places[s.place].links) {
       items.push({ label: t("menu-go", { place: t(`place-${p}`) }), input: { type: "goTo", place: p } });
     }
-    items.push({ label: t("menu-sleep"), input: { type: "sleep" } });
-    items.push({ label: t("menu-quit"), quit: true });
-    return items.slice(0, 9);
+    // Sleep and quit always keep their keys; the content checker keeps places within 7 other items.
+    return [...items.slice(0, 7), { label: t("menu-sleep"), input: { type: "sleep" } }, { label: t("menu-quit"), quit: true }];
   }
 
   function helpWords(): { text: string; word: WordId }[] {
