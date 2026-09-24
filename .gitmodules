@@ -1,0 +1,3 @@
+[submodule "vendor/vocab-engine"]
+	path = vendor/vocab-engine
+	url = https://github.com/ishmum123/vocab-engine

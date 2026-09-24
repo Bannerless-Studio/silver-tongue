@@ -1,0 +1,29 @@
+{
+  "key": "zh",
+  "name": "Mandarin (HSK 1–4)",
+  "locale": "zh",
+  "tts": "zh-CN",
+  "ttsRate": 0.85,
+  "levels": [
+    "1",
+    "2",
+    "3",
+    "4"
+  ],
+  "stages": {
+    "1": [
+      "1"
+    ],
+    "2": [
+      "2"
+    ],
+    "3": [
+      "3"
+    ],
+    "4": [
+      "4"
+    ]
+  },
+  "typing": null,
+  "spaced": false
+}
