@@ -1654,9 +1654,9 @@ git commit -m "feat(core): add strict versioned saves and package entry"
 
 ```ts
 import { describe, expect, it } from "vitest";
-import { convertPack, ftlValue } from "../src/import-vocab-pack";
+import { convertPack, ftlValue, packProblems } from "../src/import-vocab-pack";
 
-const pack = { key: "zh", name: "Mandarin", tts: "zh-CN", levels: [{ id: "1", label: "HSK 1" }, { id: "2", label: "HSK 2" }], typing: null, spaced: false };
+const pack = { key: "zh", name: "Mandarin", tts: "zh-CN", ttsRate: 0.85, levels: [{ id: "1", label: "HSK 1" }, { id: "2", label: "HSK 2" }], typing: null, spaced: false };
 const words = [
   { id: "w0133", w: "茶", en: "tea; tea plant", lv: "1", pron: "chá" },
   { id: "w0900", w: "括号", en: "brackets {like these}", lv: "2" },
@@ -1675,9 +1675,11 @@ describe("import-vocab-pack", () => {
       key: "zh",
       name: "Mandarin",
       locale: "zh",
+      tts: "zh-CN",
+      ttsRate: 0.85,
       levels: ["1", "2"],
       stages: { "1": ["1"], "2": ["2"] },
-      typing: false,
+      typing: null,
       spaced: false,
     });
     expect(r.words).toEqual([
@@ -1692,6 +1694,34 @@ describe("import-vocab-pack", () => {
     const first = convertPack(pack, words);
     const again = convertPack(pack, words, { ...first.meta, stages: { "1": ["1", "2"] } });
     expect(again.meta.stages).toEqual({ "1": ["1", "2"] });
+  });
+
+  it("keeps alternatives, part of speech, typing rules and an explicit locale", () => {
+    const typing = { caseSensitive: false, accents: "lenient" };
+    const es = { key: "es", name: "Spanish", tts: "es-ES", langTag: "es-419", levels: [{ id: "A1", label: "A1" }], typing, spaced: true };
+    const r = convertPack(es, [{ id: "w1", w: "hola", en: "hello", lv: "A1", alt: ["buenas"], pos: "intj" }]);
+    expect(r.meta).toMatchObject({ locale: "es-419", tts: "es-ES", typing, spaced: true });
+    expect(r.meta).not.toHaveProperty("ttsRate");
+    expect(r.words).toEqual([{ id: "w1", w: "hola", lv: "A1", alt: ["buenas"], pos: "intj" }]);
+  });
+
+  it("reports every bad word and stale stage instead of writing a broken pack", () => {
+    const bad = [
+      { id: "w1", w: "茶", en: "tea", lv: "1" },
+      { id: "w1", w: "水", en: "water", lv: "1" },
+      { id: "1x", w: "一", en: "one", lv: "1" },
+      { id: "w2", w: "", en: "empty", lv: "1" },
+      { id: "w3", w: "山", lv: "9" },
+    ] as never[];
+    expect(packProblems(pack, bad, { ...convertPack(pack, words).meta, stages: { "1": ["1", "5"] } })).toEqual([
+      "word 1 (w1): duplicate id",
+      "word 2 (1x): id must match /^[a-zA-Z][a-zA-Z0-9_-]*$/",
+      "word 3 (w2): missing w",
+      "word 4 (w3): missing en",
+      'word 4 (w3): level "9" is not in the pack\'s levels',
+      'stage 1: level "5" is not in the pack\'s levels',
+    ]);
+    expect(() => convertPack(pack, bad)).toThrow(/can't be imported/);
   });
 });
 ```
@@ -1713,10 +1743,14 @@ export interface PackMeta {
   name: string;
   /** Intl locale used for Fluent plural rules, e.g. "zh", "es" */
   locale: string;
+  /** speech-synthesis locale for audio, e.g. "zh-CN" */
+  tts: string;
+  ttsRate?: number;
   levels: string[];
   /** stage number -> the pack levels it covers */
   stages: Record<string, string[]>;
-  typing: boolean;
+  /** typed-reply rules as vocab-engine writes them; null when the script can't be typed */
+  typing: Record<string, unknown> | null;
   /** true when the script separates words with spaces */
   spaced: boolean;
 }
@@ -1736,9 +1770,10 @@ export interface VocabPackJson {
   key: string;
   name: string;
   tts: string;
+  ttsRate?: number;
   langTag?: string;
   levels: { id: string; label: string }[];
-  typing?: object | null;
+  typing?: Record<string, unknown> | null;
   spaced?: boolean;
 }
 
@@ -1774,19 +1809,46 @@ export interface ImportResult {
   glossesFtl: string;
 }
 
+/** Word ids become Fluent message ids, so they must be valid ones. */
+const FTL_ID = /^[a-zA-Z][a-zA-Z0-9_-]*$/;
+
+/** Every problem in the input, so one run reports them all. */
+export function packProblems(pack: VocabPackJson, words: VocabWordJson[], existing?: PackMeta): string[] {
+  const levels = new Set(pack.levels.map((l) => String(l.id)));
+  const problems: string[] = [];
+  const seen = new Set<string>();
+  for (const [i, v] of words.entries()) {
+    const at = `word ${i} (${v.id ?? "no id"})`;
+    if (typeof v.id !== "string" || !FTL_ID.test(v.id)) problems.push(`${at}: id must match ${FTL_ID}`);
+    else if (seen.has(v.id)) problems.push(`${at}: duplicate id`);
+    else seen.add(v.id);
+    if (typeof v.w !== "string" || !v.w) problems.push(`${at}: missing w`);
+    if (typeof v.en !== "string") problems.push(`${at}: missing en`);
+    if (!levels.has(String(v.lv))) problems.push(`${at}: level "${v.lv}" is not in the pack's levels`);
+  }
+  for (const [stage, lvs] of Object.entries(existing?.stages ?? {})) {
+    for (const lv of lvs) if (!levels.has(lv)) problems.push(`stage ${stage}: level "${lv}" is not in the pack's levels`);
+  }
+  return problems;
+}
+
 /**
  * Converts a vocab-engine pack. `existing` is our current pack.json, whose
- * hand-set fields (stages) survive a re-import.
+ * hand-set fields (stages) survive a re-import. Throws on bad input, listing every problem.
  */
 export function convertPack(pack: VocabPackJson, words: VocabWordJson[], existing?: PackMeta): ImportResult {
+  const problems = packProblems(pack, words, existing);
+  if (problems.length) throw new Error(`vocab-engine pack "${pack.key}" can't be imported:\n  ${problems.join("\n  ")}`);
   const levels = pack.levels.map((l) => String(l.id));
   const meta: PackMeta = {
     key: pack.key,
     name: pack.name,
     locale: pack.langTag ?? pack.tts.split("-")[0],
+    tts: pack.tts,
+    ...(pack.ttsRate !== undefined && { ttsRate: pack.ttsRate }),
     levels,
     stages: existing?.stages ?? Object.fromEntries(levels.map((lv, i) => [String(i + 1), [lv]])),
-    typing: pack.typing != null,
+    typing: pack.typing ?? null,
     spaced: pack.spaced !== false,
   };
   const out: PackWord[] = words.map((v) => {
@@ -1829,7 +1891,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) main();
 
 Run: `npx vitest run tools/test/import.test.ts`
 
-Expected: PASS (3 tests).
+Expected: PASS (5 tests).
 
 - [ ] **Step 5: Commit**
 
@@ -3149,7 +3211,7 @@ We have the author's consent to reuse anything from it. The submodule pins the e
 Run: `npm run import:zh`
 
 Expected: `imported 1193 words into content/languages/zh`. Also check:
-- `content/languages/zh/pack.json` has `"locale": "zh"`, `"typing": false`, `"spaced": false`, and one stage per HSK level.
+- `content/languages/zh/pack.json` has `"locale": "zh"`, `"tts": "zh-CN"`, `"typing": null`, `"spaced": false`, and one stage per HSK level.
 - `content/learner/en/glosses-zh.ftl` starts with the generated-file comment, then `w0001 = one; single`.
 
 - [ ] **Step 3: Add the bonus word the pilot needs**
@@ -3569,7 +3631,7 @@ export function buildCourse(root: string, courseId: string): BuildResult {
     readFileSync(join(learnerDir, `narration-${cfg.setting}.ftl`), "utf8"),
   ].join("\n");
 
-  const course: Course = { id: cfg.id, typing: meta.typing, words, concepts, groups, world, scenes, reactions, learnerFtl };
+  const course: Course = { id: cfg.id, typing: meta.typing !== null, words, concepts, groups, world, scenes, reactions, learnerFtl };
   errors.push(
     ...checkCourse({
       course,
@@ -3604,7 +3666,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) main();
 
 Run: `npx vitest run tools`
 
-Expected: PASS (19 tests in 5 files).
+Expected: PASS (21 tests in 5 files).
 
 - [ ] **Step 6: Build the course from the command line**
 
@@ -3973,7 +4035,7 @@ npm run bundle -w silver-tongue   # build packages/tui-node/dist for npm/npx
 
 Run: `npm run typecheck && npm run build:course && npm test`
 
-Expected: `tsc` prints nothing, the course builds, and **61 tests pass in 14 files**.
+Expected: `tsc` prints nothing, the course builds, and **63 tests pass in 14 files**.
 
 - [ ] **Step 5: Commit and push**
 
