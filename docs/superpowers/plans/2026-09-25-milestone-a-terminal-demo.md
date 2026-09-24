@@ -2849,7 +2849,7 @@ git commit -m "feat(tui): add Terminal interface and CJK-aware width"
 ```ts
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { makeText, UI_KEYS } from "../src/text";
+import { makeText, uiTextProblems } from "../src/text";
 
 describe("text", () => {
   const t = makeText("hello = Hello, { $name }!\n");
@@ -2863,9 +2863,16 @@ describe("text", () => {
     expect(t("hello")).toBe("Hello, {$name}!");
   });
 
-  it("the English UI file defines every UI key", () => {
-    const en = makeText(readFileSync(new URL("../../../content/learner/en/ui.ftl", import.meta.url), "utf8"));
-    for (const k of UI_KEYS) expect(en(k), k).not.toBe(k);
+  it("the English UI file defines every UI message with the variables the TUI passes", () => {
+    const en = readFileSync(new URL("../../../content/learner/en/ui.ftl", import.meta.url), "utf8");
+    expect(uiTextProblems(en, "en")).toEqual([]);
+  });
+
+  it("reports missing messages and unknown variables", () => {
+    const broken = "hud = Day { $dya }\n";
+    const problems = uiTextProblems(broken, "en");
+    expect(problems).toContain('learner text "hud": Unknown variable: $dya');
+    expect(problems).toContain('learner text: missing "menu-title"');
   });
 });
 ```
@@ -2898,40 +2905,77 @@ export function makeText(ftl: string, locale = "en"): Text {
   };
 }
 
-/** Message ids the TUI uses. The content checker fails a course that lacks any of them. */
-export const UI_KEYS = [
-  "hud",
-  "rank-0",
-  "rank-1",
-  "rank-2",
-  "rank-3",
-  "rank-4",
-  "menu-title",
-  "menu-talk",
-  "menu-go",
-  "menu-sleep",
-  "menu-quit",
-  "keys-explore",
-  "keys-pick",
-  "keys-tiles",
-  "keys-help",
-  "help-title",
-  "tiles-answer",
-  "mismatch",
-  "rephrased",
-  "wallet-change",
-  "reason-wages",
-  "reason-mixup",
-  "reason-food",
-  "reason-rent",
-  "trust-up",
-  "scene-done",
-  "unlocked",
-  "rank-up",
-  "day-ended",
-  "rejected",
-  "notice-bad-save",
+/** Why the core refused an input (inputRejected.reason); each has a `reject-<code>` message. */
+export const REJECT_CODES = [
+  "unknown-scene",
+  "in-scene",
+  "wrong-place",
+  "locked",
+  "no-slots",
+  "stale-run",
+  "no-pick",
+  "bad-choice",
+  "no-tiles",
+  "bad-tile",
+  "not-linked",
+  "unknown-word",
 ];
+
+/**
+ * Message ids the TUI uses, with the variables it passes to each.
+ * The course build fails a learner language that lacks any of them or uses other variables.
+ */
+export const UI_KEYS: Record<string, string[]> = {
+  hud: ["day", "slot", "slots", "currency", "wallet", "rank"],
+  "rank-0": [],
+  "rank-1": [],
+  "rank-2": [],
+  "rank-3": [],
+  "rank-4": [],
+  "menu-title": [],
+  "menu-talk": ["npc", "scene"],
+  "menu-go": ["place"],
+  "menu-sleep": [],
+  "menu-quit": [],
+  "keys-explore": [],
+  "keys-pick": [],
+  "keys-tiles": [],
+  "keys-help": [],
+  "help-title": [],
+  "tiles-answer": [],
+  mismatch: [],
+  rephrased: [],
+  "wallet-change": ["sign", "currency", "amount", "reason"],
+  "reason-wages": [],
+  "reason-mixup": [],
+  "reason-food": [],
+  "reason-rent": [],
+  "trust-up": ["npc", "trust"],
+  "scene-done": ["currency", "earned"],
+  unlocked: ["scene"],
+  "rank-up": ["rank"],
+  "day-ended": ["day"],
+  "notice-bad-save": [],
+  ...Object.fromEntries(REJECT_CODES.map((c) => [`reject-${c}`, []])),
+};
+
+/** Every UI message that is missing or can't be formatted with the variables the TUI passes. */
+export function uiTextProblems(ftl: string, locale: string): string[] {
+  const bundle = new FluentBundle(locale, { useIsolating: false });
+  bundle.addResource(new FluentResource(ftl));
+  const problems: string[] = [];
+  for (const [id, vars] of Object.entries(UI_KEYS)) {
+    const msg = bundle.getMessage(id);
+    if (!msg?.value) {
+      problems.push(`learner text: missing "${id}"`);
+      continue;
+    }
+    const errors: Error[] = [];
+    bundle.formatPattern(msg.value, Object.fromEntries(vars.map((v) => [v, 1])), errors);
+    for (const e of errors) problems.push(`learner text "${id}": ${e.message}`);
+  }
+  return problems;
+}
 ```
 
 `content/learner/en/ui.ftl`:
@@ -2973,7 +3017,18 @@ scene-done = Done. You earned { $currency }{ $earned }.
 unlocked = New: { $scene }
 rank-up = You're now: { $rank }
 day-ended = Day { $day } is over. You sleep.
-rejected = You can't do that now ({ $reason }).
+reject-unknown-scene = There's nobody here for that.
+reject-in-scene = Finish the conversation first.
+reject-wrong-place = They're not here.
+reject-locked = They're not ready to talk about that yet.
+reject-no-slots = You're out of time today. Sleep first.
+reject-stale-run = That conversation can't continue. Start it again.
+reject-no-pick = Choose a reply with the number keys.
+reject-bad-choice = There's no reply with that number.
+reject-no-tiles = Build your reply from the tiles.
+reject-bad-tile = There's no tile with that number.
+reject-not-linked = You can't get there from here.
+reject-unknown-word = That word isn't in the dictionary.
 notice-bad-save = Your save couldn't be read. It was kept as a backup and a new game started.
 ```
 
@@ -2981,7 +3036,7 @@ notice-bad-save = Your save couldn't be read. It was kept as a backup and a new 
 
 Run: `npx vitest run packages/tui/test/text.test.ts`
 
-Expected: PASS (3 tests).
+Expected: PASS (4 tests).
 
 - [ ] **Step 5: Commit**
 
@@ -3350,7 +3405,7 @@ export function startApp(opts: AppOptions): App {
           push([], [{ text: t("day-ended", { day: e.day }), dim: true }]);
           break;
         case "inputRejected":
-          push([{ text: t("rejected", { reason: e.reason }), color: "red" }]);
+          push([{ text: t(`reject-${e.reason}`), color: "red" }]);
           break;
         case "wordStateChanged":
           break;
@@ -3472,7 +3527,7 @@ export { startApp, type App, type AppOptions } from "./app";
 
 Run: `npx vitest run packages/tui`
 
-Expected: PASS (12 tests in 3 files).
+Expected: PASS (13 tests in 3 files).
 
 - [ ] **Step 5: Commit**
 
@@ -3797,7 +3852,7 @@ import {
   type Word,
   type World,
 } from "@silver-tongue/core";
-import { UI_KEYS } from "@silver-tongue/tui";
+import { uiTextProblems } from "@silver-tongue/tui";
 import { checkCourse } from "./check";
 import { bindSlots, messageIds, Renderer, termNames, type FtlSource } from "./fluent";
 import type { PackMeta, PackWord } from "./pack";
@@ -3938,9 +3993,10 @@ export function buildCourse(root: string, courseId: string): BuildResult {
       stages: meta.stages,
       checks: cfg.checks,
       learnerIds: new Set(messageIds(learnerFtl, "learner files")),
-      requiredUi: UI_KEYS,
+      requiredUi: [],
     }),
   );
+  errors.push(...uiTextProblems(learnerFtl, cfg.learner));
   return { course, errors };
 }
 
@@ -4338,7 +4394,7 @@ npm run bundle -w silver-tongue   # build packages/tui-node/dist for npm/npx
 
 Run: `npm run typecheck && npm run build:course && npm test`
 
-Expected: `tsc` prints nothing, the course builds, and **75 tests pass in 14 files**.
+Expected: `tsc` prints nothing, the course builds, and **76 tests pass in 14 files**.
 
 - [ ] **Step 5: Commit and push**
 
