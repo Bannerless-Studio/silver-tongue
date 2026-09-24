@@ -64,7 +64,7 @@ The first course is Mandarin (HSK) in a Chinese city, with English as the learne
 
 The unit is a **dictionary word** with a stable id from the language pack (`w0321`). Inflected forms count toward their dictionary word.
 
-Each word has one record: `{ right, wrong, streak, helps, firstSeen, lastSeen }`. Its state is derived from that record:
+Each word has one record: `{ right, wrong, streak, helps, lapsed, firstSeen, lastSeen }`. `lapsed` means the word was missed, helped or found decayed since its last correct answer. Its state is derived from that record:
 
 | State | Rule (all thresholds tunable) |
 |---|---|
@@ -73,7 +73,7 @@ Each word has one record: `{ right, wrong, streak, helps, firstSeen, lastSeen }`
 | shaky | missed or helped since the last correct answer, **or** was known and has decayed |
 | known | streak ≥ 3 and not decayed |
 
-- **Decay** runs on **real time**, not game days. A known word decays to shaky once `now − lastSeen > interval(streak)`, where `interval = 2^(streak−2)` days, capped at 60. So a streak of 3 lasts 2 days, a streak of 4 lasts 4 days, and so on.
+- **Decay** runs on **real time**, not game days. A known word decays to shaky once `now − lastSeen > interval(streak)`, where `interval = 2^(streak−2)` days, capped at 60. So a streak of 3 lasts 2 days, a streak of 4 lasts 4 days, and so on. Decay sticks: seeing a decayed word again marks it `lapsed`, so it stays shaky until it is answered right. Otherwise just hearing it in a line would revive it before its review.
 - **Evidence from an exchange:**
   - Each skeleton exchange lists its **hinge** words, the 1–3 words the right reply depends on.
   - A correct reply counts as right for the hinge words (streak +1).

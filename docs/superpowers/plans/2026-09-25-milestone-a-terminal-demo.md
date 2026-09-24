@@ -510,6 +510,14 @@ describe("word state", () => {
     const r = rightTimes(3);
     expect(wordState(r, T0 + 2 * DAY_MS)).toBe("known");
     expect(wordState(r, T0 + 2 * DAY_MS + 1)).toBe("shaky");
+    expect(wordState(rightTimes(5), T0 + 8 * DAY_MS + 1)).toBe("shaky");
+  });
+
+  it("seeing a decayed word keeps it shaky until it is answered right", () => {
+    const later = T0 + 3 * DAY_MS;
+    const seenAgain = recordSeen(rightTimes(3), later);
+    expect(wordState(seenAgain, later)).toBe("shaky");
+    expect(wordState(recordRight(seenAgain, later), later)).toBe("known");
   });
 });
 
@@ -531,6 +539,11 @@ describe("pickPreferred", () => {
     expect(pickPreferred(["c", "b"], wordsOf, records, T0, () => 0.99)).toBe("b");
     expect(pickPreferred(["c", "d"], wordsOf, records, T0, () => 0.99)).toBe("d");
   });
+
+  it("judges a multi-word candidate by its weakest word, and refuses an empty list", () => {
+    expect(pickPreferred([["c"], ["b", "a"]], (c) => c, records, T0, () => 0)).toEqual(["b", "a"]);
+    expect(() => pickPreferred([], wordsOf, records, T0, () => 0)).toThrow(/no candidates/);
+  });
 });
 
 describe("rank", () => {
@@ -538,6 +551,7 @@ describe("rank", () => {
     const ids = ["a", "b", "c", "d", "e"];
     expect(rankFor({}, ids, T0)).toBe(0);
     expect(rankFor({ a: rightTimes(3) }, ids, T0)).toBe(1);
+    expect(rankFor(Object.fromEntries(ids.slice(0, 4).map((i) => [i, rightTimes(3)])), ids, T0)).toBe(3);
     expect(rankFor(Object.fromEntries(ids.map((i) => [i, rightTimes(3)])), ids, T0)).toBe(4);
   });
 });
@@ -579,8 +593,10 @@ function base(rec: WordRecord | undefined, now: number): WordRecord {
     : { right: 0, wrong: 0, streak: 0, helps: 0, lapsed: false, firstSeen: now, lastSeen: now };
 }
 
+/** Seeing a word that has decayed doesn't revive it: it stays shaky until it is answered right. */
 export function recordSeen(rec: WordRecord | undefined, now: number): WordRecord {
   const r = base(rec, now);
+  if (wordState(rec, now) === "shaky") r.lapsed = true;
   r.lastSeen = now;
   return r;
 }
@@ -636,6 +652,7 @@ export function pickPreferred<T>(
         return s === "shaky" ? 0 : s === "met" ? 1 : 2;
       }),
     );
+  if (candidates.length === 0) throw new Error("pickPreferred: no candidates");
   const best = Math.min(...candidates.map(prio));
   const pool = candidates.filter((c) => prio(c) === best);
   return pool[Math.floor(rng() * pool.length)];
@@ -657,7 +674,7 @@ export function rankFor(records: Record<WordId, WordRecord>, wordIds: WordId[], 
 
 Run: `npx vitest run packages/core/test/learner.test.ts`
 
-Expected: PASS (6 tests).
+Expected: PASS (8 tests).
 
 - [ ] **Step 5: Commit**
 
@@ -1494,7 +1511,7 @@ Expected: PASS (2 tests).
 
 Run: `npx vitest run packages/core && npx tsc`
 
-Expected: 22 tests pass in 5 files; `tsc` prints nothing.
+Expected: 24 tests pass in 5 files; `tsc` prints nothing.
 
 - [ ] **Step 6: Commit**
 
@@ -3830,7 +3847,7 @@ npm run bundle -w silver-tongue   # build packages/tui-node/dist for npm/npx
 
 Run: `npm run typecheck && npm run build:course && npm test`
 
-Expected: `tsc` prints nothing, the course builds, and **53 tests pass in 14 files**.
+Expected: `tsc` prints nothing, the course builds, and **55 tests pass in 14 files**.
 
 - [ ] **Step 5: Commit and push**
 
