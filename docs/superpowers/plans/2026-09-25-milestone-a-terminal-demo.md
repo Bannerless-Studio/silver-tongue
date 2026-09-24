@@ -3499,6 +3499,7 @@ This package is the one published to npm as `silver-tongue`. The name was free o
   "version": "0.1.0",
   "description": "Learn a language by living in it: a text game for the terminal.",
   "type": "module",
+  "repository": { "type": "git", "url": "git+https://github.com/jamil314/silver-tongue.git", "directory": "packages/tui-node" },
   "engines": { "node": ">=22" },
   "bin": { "silver-tongue": "dist/silver-tongue.mjs" },
   "files": ["dist"],
