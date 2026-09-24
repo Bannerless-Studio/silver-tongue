@@ -32,21 +32,35 @@ export function messageIds(src: string, name: string): string[] {
   return parseFtl(src, name).body.filter((e): e is Message => e instanceof Message).map((m) => m.id.name);
 }
 
-/** The variant keys a term chooses between with `$form`; empty when it has no forms. */
-function formsOf(term: Term): string[] {
-  const select = term.value.elements
+/**
+ * The forms a term (or one of its attributes) chooses between with `$form`; empty when it has none.
+ * Only named keys count: a number key like `[1]` is a plural category, not a form.
+ */
+function formsOf(term: Term, attribute?: string): string[] {
+  const pattern = attribute ? term.attributes.find((a) => a.id.name === attribute)?.value : term.value;
+  const select = pattern?.elements
     .map((e) => (e as Placeable).expression)
     .find((x): x is SelectExpression => x instanceof SelectExpression && x.selector instanceof VariableReference && x.selector.id.name === "form");
-  return select ? select.variants.map((v) => (v.key instanceof Identifier ? v.key.name : v.key.value)) : [];
+  return select ? select.variants.flatMap((v) => (v.key instanceof Identifier ? [v.key.name] : [])) : [];
 }
 
-/** Every `-term(form: "...")` in the source, with the term name and the form asked for. */
-function formRefs(src: string, name: string): { term: string; form: string }[] {
-  const refs: { term: string; form: string }[] = [];
+interface FormRef {
+  term: string;
+  attribute?: string;
+  /** a number means the line wrote `form: 1`, which never picks a named form */
+  form: string | number;
+}
+
+/** Every `-term(form: ...)` in the source. */
+function formRefs(src: string, name: string): FormRef[] {
+  const refs: FormRef[] = [];
   class Collect extends Visitor {
     visitTermReference(node: TermReference) {
       const form = node.arguments?.named.find((a) => a.name.name === "form")?.value;
-      if (form instanceof StringLiteral) refs.push({ term: node.id.name, form: form.value });
+      if (form) {
+        const value = form instanceof StringLiteral ? form.value : Number(form.value);
+        refs.push({ term: node.id.name, ...(node.attribute && { attribute: node.attribute.name }), form: value });
+      }
       this.genericVisit(node);
     }
   }
@@ -57,7 +71,7 @@ function formRefs(src: string, name: string): { term: string; form: string }[] {
 /**
  * Slot binding: for each slot, defines a term named after the slot as a copy
  * of the chosen concept's term, so lines can say { -item } or { -item(form: "measure") }.
- * Throws if a slot name is already a term, or if the lines ask a term for a form it doesn't have
+ * Throws if a slot name is already a term, or if the lines or terms ask a term for a form it doesn't have
  * (Fluent would quietly fall back to the default form).
  */
 export function bindSlots(termsSrc: string, combo: Record<string, string>, linesSrc: string, linesName: string): string {
@@ -75,11 +89,18 @@ export function bindSlots(termsSrc: string, combo: Record<string, string>, lines
     copy.comment = null;
     return copy;
   });
-  for (const { term, form } of formRefs(linesSrc, linesName)) {
-    const target = terms.get(combo[term] ?? term);
-    if (target && !formsOf(target).includes(form)) {
-      const shown = term in combo ? `-${term} (-${combo[term]})` : `-${term}`;
-      throw new Error(`${linesName}: ${shown} has no form "${form}"`);
+  const sources: [string, string][] = [
+    ["terms.ftl", termsSrc],
+    [linesName, linesSrc],
+  ];
+  for (const [name, src] of sources) {
+    for (const { term, attribute, form } of formRefs(src, name)) {
+      const target = terms.get(combo[term] ?? term);
+      if (target && !(typeof form === "string" && formsOf(target, attribute).includes(form))) {
+        const ref = `-${term}${attribute ? `.${attribute}` : ""}`;
+        const shown = term in combo ? `${ref} (-${combo[term]})` : ref;
+        throw new Error(`${name}: ${shown} has no form ${JSON.stringify(form)}`);
+      }
     }
   }
   return new FluentSerializer().serialize(new Resource(aliases));

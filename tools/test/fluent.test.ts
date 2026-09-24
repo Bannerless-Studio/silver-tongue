@@ -62,5 +62,16 @@ describe("fluent", () => {
     expect(() => bindSlots(zhTerms, { item: "tea" }, typo, "l")).toThrow(/l: -item \(-tea\) has no form "measur"/);
     const noForms = `order = { -three(form: "measure") }\n`;
     expect(() => bindSlots(zhTerms, {}, noForms, "l")).toThrow(/l: -three has no form "measure"/);
+    const inTerms = `${zhTerms}-cup = { -tea(form: "measur") }\n`;
+    expect(() => bindSlots(inTerms, {}, zhLines, "l")).toThrow(/terms.ftl: -tea has no form "measur"/);
+    expect(() => bindSlots(zhTerms, {}, `order = { -tea(form: 1) }\n`, "l")).toThrow(/l: -tea has no form 1/);
+  });
+
+  it("checks forms on term attributes against the attribute's own forms", () => {
+    const terms = `-tea = 茶\n    .word = { $form ->\n        [measure] 杯\n       *[base] 茶\n    }\n`;
+    const ok = `order = { -item.word(form: "measure") ->\n   *[other] 杯\n}\n`;
+    expect(() => bindSlots(terms, { item: "tea" }, ok, "l")).not.toThrow();
+    const bad = `order = { -item.word(form: "plural") ->\n   *[x] x\n}\n`;
+    expect(() => bindSlots(terms, { item: "tea" }, bad, "l")).toThrow(/l: -item.word \(-tea\) has no form "plural"/);
   });
 });
