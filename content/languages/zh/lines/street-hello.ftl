@@ -20,18 +20,13 @@ name-reply = 你好，老王！
 name-alt1 = 我叫老王。
 name-alt2 = 很好！
 
-naming = 你叫小马！
-naming-reply = 我叫小马？
-naming-alt1 = 你叫小马！
-naming-alt2 = 我叫老王？
-
 ask = 你叫什么名字？
-ask-reply = 我叫小马。
+ask-reply = 我叫{ $player }。
 ask-alt1 = 我叫老王。
-ask-alt2 = 你叫小马。
+ask-alt2 = 你好吗？
 ask-alt3 = 很好！
 
-bye = 再见！
-bye-reply = 再见！
+bye = 再见，{ $player }！
+bye-reply = 再见，老王！
 bye-alt1 = 你好！
 bye-alt2 = 很好！

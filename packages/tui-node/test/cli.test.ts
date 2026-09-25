@@ -34,7 +34,7 @@ describe("cli", () => {
     const course = fixtureCourse();
     const lines = sessionLines(
       [
-        { lastPlayed: 0, state: { ...newGame(course), day: 3, wallet: 47, scenesDone: { intro: 1 } } },
+        { lastPlayed: 0, state: { ...newGame(course), day: 3, wallet: 47, scenesDone: { intro: 1 }, player: "Jamil" } },
         { lastPlayed: 5, state: { ...newGame(course), place: "noodle_shop", scenesDone: { intro: 1, shift: 4 } } },
       ],
       course,
@@ -42,7 +42,7 @@ describe("cli", () => {
       (ms) => `T${ms}`,
     );
     expect(lines).toEqual([
-      "1) Day 3 · The street · ¥47 · 1 scene done · last played T0",
+      "1) Jamil · Day 3 · The street · ¥47 · 1 scene done · last played T0",
       "2) Day 1 · Noodle shop · ¥20 · 2 scenes done · last played T5",
     ]);
   });

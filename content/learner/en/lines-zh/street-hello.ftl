@@ -17,18 +17,13 @@ name-reply = Hello, Old Wang!
 name-alt1 = My name is Old Wang.
 name-alt2 = Very well!
 
-naming = Your name is Xiao Ma!
-naming-reply = My name is Xiao Ma?
-naming-alt1 = Your name is Xiao Ma!
-naming-alt2 = My name is Old Wang?
-
 ask = What's your name?
-ask-reply = My name is Xiao Ma.
+ask-reply = My name is { $player }.
 ask-alt1 = My name is Old Wang.
-ask-alt2 = Your name is Xiao Ma.
+ask-alt2 = How are you?
 ask-alt3 = Very well!
 
-bye = Goodbye!
-bye-reply = Goodbye!
+bye = Goodbye, { $player }!
+bye-reply = Goodbye, Old Wang!
 bye-alt1 = Hello!
 bye-alt2 = Very well!

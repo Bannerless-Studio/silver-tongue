@@ -2,6 +2,7 @@ import { reject, reply, replyTiles, setWord, startScene, type Ctx } from "./dial
 import { recordHelp, rankFor } from "./learner";
 import { availableSceneIds, endDay } from "./life";
 import { newlyTriggered, visitMentor } from "./mentor";
+import { cleanName } from "./player";
 import type { Course, GameEvent, GameState, Input } from "./types";
 
 export { newGame } from "./life";
@@ -37,6 +38,13 @@ function handle(ctx: Ctx, input: Input): void {
     case "helpWord":
       if (!course.words[input.word]) return reject(ctx, "unknown-word");
       return setWord(ctx, input.word, recordHelp);
+    case "setName": {
+      const name = cleanName(input.name);
+      if (!name) return reject(ctx, "bad-name");
+      state.player = name;
+      ctx.ev.push({ type: "playerNamed", name });
+      return;
+    }
     case "visitMentor":
       return visitMentor(ctx);
     case "sleep":

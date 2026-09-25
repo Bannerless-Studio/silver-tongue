@@ -111,5 +111,6 @@ export function fixtureCourse(): Course {
     conceptNames: { tea: "tea", water: "water", three: "three", four: "four" },
     stageWords: { "1": [...Object.keys(W), "w_unused"] },
     notes: [],
+    needsName: false,
   } satisfies Course);
 }

@@ -8,6 +8,8 @@ export interface ScreenModel {
   log: StyledLine[];
   prompt: StyledLine[];
   footer: string;
+  /** shown at the right of the bottom border, e.g. "Silver Tongue v0.5.0" */
+  footerRight?: string;
 }
 
 /** A line of the language being learned; words met for the first time are underlined. */
@@ -67,6 +69,6 @@ export function renderScreen(m: ScreenModel, cols: number, rows: number): Styled
   return [
     border("┌", m.title, "┐", "─", cols, m.hud),
     ...body.map((l) => [{ text: "│ ", dim: true }, ...fitLine(l, inner), { text: " │", dim: true }]),
-    border("└", m.footer, "┘", "─", cols),
+    border("└", m.footer, "┘", "─", cols, m.footerRight),
   ];
 }

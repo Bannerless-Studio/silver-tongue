@@ -11,6 +11,7 @@ export interface SessionSummary {
 export function sessionLines(sessions: SessionSummary[], course: Course, t: Text, date: (ms: number) => string): string[] {
   return sessions.map((s, i) => {
     const text = t("resume-item", {
+      name: s.state.player ? `${s.state.player} · ` : "",
       day: s.state.day,
       place: t(`place-${s.state.place}`),
       currency: course.world.currency,

@@ -1,5 +1,11 @@
 export type WordId = string;
 
+/**
+ * Stands for the player's name in built lines (a private-use character, never a word). The core
+ * puts the name in before a line reaches a front end.
+ */
+export const PLAYER_MARK = "\uE000";
+
 export interface Word {
   id: WordId;
   w: string;
@@ -110,6 +116,8 @@ export interface Course {
   stageWords: Record<string, WordId[]>;
   /** in the order the mentor explains them */
   notes: Note[];
+  /** some lines say the player's name, so a game needs one before its first scene */
+  needsName: boolean;
 }
 
 export type WordState = "unseen" | "met" | "shaky" | "known";
@@ -153,6 +161,8 @@ export interface LogEntry {
 export interface GameState {
   v: 1;
   course: string;
+  /** the player's name, said in lines that have PLAYER_MARK */
+  player?: string;
   day: number;
   slot: number;
   wallet: number;
@@ -183,6 +193,8 @@ export const REJECT_REASONS = [
   "not-linked",
   "unknown-word",
   "no-mentor",
+  "bad-name",
+  "no-name",
 ] as const;
 export type RejectReason = (typeof REJECT_REASONS)[number];
 
@@ -198,6 +210,7 @@ export type Input =
   | { type: "replyTiles"; tiles: number[] }
   | { type: "helpWord"; word: WordId }
   | { type: "visitMentor" }
+  | { type: "setName"; name: string }
   | { type: "sleep" };
 
 export type GameEvent =
@@ -231,6 +244,7 @@ export type GameEvent =
   | { type: "dayEnded"; day: number }
   /** a mentor note's trigger was met; the mentor can now explain it */
   | { type: "noteReady"; note: string }
+  | { type: "playerNamed"; name: string }
   /** notes: the notes explained on this visit, in order; empty when there was nothing new */
   | { type: "mentorVisited"; npc: string; notes: string[] }
   | { type: "inputRejected"; reason: RejectReason };

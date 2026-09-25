@@ -15,7 +15,7 @@ npc-cook = Cook
 # Scene names for the menu; scene-<id>-start and scene-<id>-end are optional narration.
 scene-street-hello = Meet Old Wang
 scene-street-hello-start = The old man pats the bench beside him and points at himself. He seems to have decided you need lessons: he says something, you answer. Stuck? Press [w] to look words up, and [s] there to see what the whole sentence means.
-scene-street-hello-end = Old Wang looks delighted with his new student. You have a Chinese name now: 小马, Xiǎo Mǎ, "little horse". You didn't get a vote.
+scene-street-hello-end = Old Wang looks delighted with his new student. He repeats your name a few times, getting it a little wrong each time, and seems very pleased about it.
 
 scene-street-hungry = Talk about food
 scene-street-hungry-start = Your stomach growls, loudly. Old Wang raises an eyebrow.

@@ -5,6 +5,7 @@ import { createCore, mulberry32, type Course } from "@silver-tongue/core";
 import { decodeSave, encodeSave, makeText, sessionLines, startApp } from "@silver-tongue/tui";
 import { parseFlags, pickAnswer, USAGE } from "./cli";
 import { createNodeTerminal } from "./node-terminal";
+import pkg from "../package.json" with { type: "json" };
 import { listSessions, migrateLegacySave, newSessionPath, sessionsDir } from "./sessions";
 import { configDir, loadSave, writeSave } from "./storage";
 
@@ -32,6 +33,10 @@ if (major < 22) {
 }
 
 const flags = parseFlags(process.argv.slice(2));
+if (flags.mode === "version") {
+  console.log(pkg.version);
+  process.exit(0);
+}
 if (flags.mode === "help") {
   console.log(USAGE);
   process.exit(0);
@@ -134,6 +139,7 @@ startApp({
   term,
   now: Date.now,
   notice,
+  version: pkg.version,
   save: readOnly ? undefined : (s) => writeSave(savePath, s),
   quit: () => bail(0),
 });

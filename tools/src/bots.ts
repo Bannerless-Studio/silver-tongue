@@ -137,6 +137,7 @@ export function runBot(course: Course, bot: Bot, opts: { days: number; seed: num
     return s.repeatable && s.exchanges.some((ex) => ex.pay > 0);
   };
   let dayChecked = 0;
+  if (course.needsName) core.send({ type: "setName", name: "Bot" });
 
   for (let steps = 0; core.state.day <= opts.days && steps < 100_000; steps++) {
     const s = core.state;

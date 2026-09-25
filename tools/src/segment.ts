@@ -23,8 +23,8 @@ export function buildLexicon(words: PackWord[]): Lexicon {
   return { byForm, maxLen };
 }
 
-/** Punctuation, symbols, spaces and digits are not words. */
-const SKIP = /^[\p{P}\p{S}\p{Z}\s\p{Nd}]$/u;
+/** Punctuation, symbols, spaces, digits and the player-name mark are not words. */
+const SKIP = /^[\p{P}\p{S}\p{Z}\s\p{Nd}\uE000]$/u;
 
 export interface Unknown {
   start: number;

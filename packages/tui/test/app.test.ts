@@ -360,5 +360,30 @@ describe("tui app", () => {
     term.press("n", "n");
     expect(term.screen().join("\n")).toContain("Your reply:");
   });
+
+  it("asks for the player's name first when the course's lines use it", () => {
+    const { term, core } = setup(() => {}, (c) => {
+      c.needsName = true;
+    });
+    let s = term.screen().join("\n");
+    expect(s).toContain("what's your name?");
+    expect(s).toContain("[enter] done");
+    term.press("1"); // typing, not choosing from the menu
+    term.press("backspace");
+    term.type("Jamil");
+    expect(term.screen().join("\n")).toContain("> Jamil");
+    term.press("return");
+    expect(core.state.player).toBe("Jamil");
+    s = term.screen().join("\n");
+    expect(s).toContain("1) Go to Noodle shop");
+  });
+
+  it("shows the game's version in the bottom border when given one", () => {
+    const course = fixtureWithText();
+    const core = createCore(course, newGame(course), { now: () => T0, rng: mulberry32(1) });
+    const term = new FakeTerminal();
+    startApp({ course, core, term, now: () => T0, quit: () => {}, version: "0.5.0" });
+    expect(term.screen().at(-1)).toMatch(/Silver Tongue v0\.5\.0 ┘$/);
+  });
 });
 
