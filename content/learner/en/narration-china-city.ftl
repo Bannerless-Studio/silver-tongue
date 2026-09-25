@@ -5,7 +5,7 @@ intro-3 = Food costs money. There's a room for you down the street, and the rent
 intro-4 = On a bench by the road, an old man is watching you with open curiosity. Maybe start there.
 
 place-street = Main Street
-place-street-desc = Bikes, steam and shouting. An old man sits on a bench by the road. Across it, a noodle shop glows, and past it the street opens onto a market.
+place-street-desc = Bikes, steam and shouting. An old man sits on a bench by the road. Across it, a noodle shop glows, and past it the street opens onto Market Street, where your room is.
 place-noodle_shop = Noodle Shop
 place-noodle_shop-desc = Steam everywhere. The cook is shouting orders at nobody in particular.
 place-room = Your Room

@@ -25,8 +25,8 @@ ten-reply = 十！
 ten-alt1 = 五！
 ten-alt2 = 我饿了。
 
-job = 很好！你会工作吗？
-job-reply = 会！
+job = 很好！你想工作吗？
+job-reply = 想！
 job-alt1 = 我叫{ $player }。
 job-alt2 = 我喜欢面条。
 

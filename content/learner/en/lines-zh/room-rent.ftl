@@ -4,7 +4,7 @@ greet-alt1 = I'm hungry.
 greet-alt2 = Goodbye!
 
 money = Do you have money?
-money-reply = Yes. I work.
+money-reply = Yes, I have work.
 money-alt1 = I like noodles.
 money-alt2 = My name is { $player }.
 

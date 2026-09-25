@@ -6,7 +6,7 @@ greet-alt1 = 我饿了。
 greet-alt2 = 再见！
 
 money = 你有钱吗？
-money-reply = 有。我工作。
+money-reply = 有，我有工作。
 money-alt1 = 我喜欢面条。
 money-alt2 = 我叫{ $player }。
 

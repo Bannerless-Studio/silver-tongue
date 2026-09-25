@@ -23,8 +23,8 @@ ten-reply = Ten!
 ten-alt1 = Five!
 ten-alt2 = I'm hungry.
 
-job = Very good! Can you work?
-job-reply = I can!
+job = Very good! Do you want to work?
+job-reply = I do!
 job-alt1 = My name is { $player }.
 job-alt2 = I like noodles.
 

@@ -74,7 +74,7 @@ describe("build-course (real content)", () => {
     // Not `count`: that slot's reaction is the noodle shop's 几杯？
     expect(carry.slots).toEqual({ amount: "numbers_3_10", item: "furniture" });
     // English says "{amount} {item}s", so no amount may be one or two.
-    expect(course!.groups.numbers_3_10[0]).toBe("three");
+    expect(course!.groups.numbers_3_10).toEqual(["three", "four", "five", "six", "seven", "eight", "nine", "ten"]);
     expect(shift.exchanges.every((ex) => ex.pay > 0)).toBe(true);
   });
 
@@ -85,6 +85,17 @@ describe("build-course (real content)", () => {
     for (const n of ["六", "七", "八", "九", "十"]) expect(heard).toContain(n);
   });
 
+  it("Big Liu asks if you want to work (想), not if you know how (会)", () => {
+    const job = course!.scenes.find((s) => s.id === "warehouse-intro")!.exchanges.find((ex) => ex.id === "job")!;
+    expect(job.variants[""].npc.text).toContain("想工作");
+  });
+
+  it("the note on 个 says which measure words chairs and tables really take", () => {
+    const note = course!.learnerFtl.match(/^note-ge = (.*)$/m)![1];
+    expect(note).toContain("把");
+    expect(note).toContain("张");
+  });
+
   it("puts your room and the warehouse on Market Street, and keeps Main Street's menu at 7", () => {
     const { places, npcs, mentor } = course!.world;
     expect([...places.market.links].sort()).toEqual(["room", "street", "warehouse"]);
@@ -92,6 +103,13 @@ describe("build-course (real content)", () => {
     expect(places.street.links).toContain("market");
     const mentorHere = mentor && npcs[mentor.npc].place === "street" ? 1 : 0;
     expect(places.street.links.length + course!.scenes.filter((s) => s.place === "street").length + mentorHere).toBe(7);
+    for (const from of Object.keys(places)) {
+      const seen = new Set([from]);
+      for (const p of seen) for (const next of places[p].links) seen.add(next);
+      expect(seen.has("room"), `${from} reaches room`).toBe(true);
+    }
+    // Main Street no longer links to the room, so its description says where the room went.
+    expect(course!.learnerFtl.match(/^place-street-desc = (.*)$/m)![1]).toContain("your room");
   });
 
   it("the cook offers work only once Old Wang has taught you to count", () => {
