@@ -46,6 +46,10 @@ describe("tui app", () => {
       s.scenesDone.intro = 1;
     });
     expect(term.screen().join("\n")).not.toContain("no words");
+    const moved = setup((s) => {
+      s.place = "noodle_shop";
+    });
+    expect(moved.term.screen().join("\n")).not.toContain("no words");
   });
 
   it("narrates the start and end of a scene when the narration has lines for it", () => {
@@ -209,6 +213,7 @@ describe("tui app", () => {
     const term = new FakeTerminal();
     startApp({ course, core, term, now: () => T0, save: () => true, quit: () => {} });
     expect(term.screen().join("\n")).toMatch(/Cook: (茶|水)。/);
+    expect(term.screen().join("\n")).not.toContain("steaming pot");
     term.press(rightKey(core));
     expect(term.screen().join("\n")).toContain("Done. You earned");
   });

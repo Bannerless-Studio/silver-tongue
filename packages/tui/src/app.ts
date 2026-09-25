@@ -48,6 +48,7 @@ export function startApp(opts: AppOptions): App {
   let replyMode: "pick" | "tiles" = "pick";
   let tileInput: number[] = [];
   let lastLine: RenderedLine | null = null;
+  let resuming = false; // replaying a scene saved half-way: it has already been introduced
 
   const push = (...lines: StyledLine[]) => {
     log = [...log, ...lines].slice(-LOG_LIMIT);
@@ -70,7 +71,8 @@ export function startApp(opts: AppOptions): App {
   /** The opening story, for a game that hasn't started yet. Lines intro-1, intro-2, … */
   function tellIntro() {
     const s = core.state;
-    const fresh = s.day === 1 && s.slot === 0 && !s.run && !Object.keys(s.scenesDone).length && !Object.keys(s.words).length;
+    const fresh =
+      s.day === 1 && s.slot === 0 && !s.run && s.place === course.world.start && !Object.keys(s.scenesDone).length && !Object.keys(s.words).length;
     if (!fresh) return;
     const args = { currency: course.world.currency, wallet: s.wallet, rent: course.world.rentPerWeek };
     for (let i = 1; t.has(`intro-${i}`); i++) push([{ text: t(`intro-${i}`, args) }], []);
@@ -92,7 +94,7 @@ export function startApp(opts: AppOptions): App {
         case "sceneStarted":
           mode = "scene";
           push([]);
-          narrate(`scene-${e.scene}-start`);
+          if (!resuming) narrate(`scene-${e.scene}-start`);
           break;
         case "lineSpoken":
           lastLine = e.line;
@@ -300,7 +302,9 @@ export function startApp(opts: AppOptions): App {
   if (opts.notice) push([{ text: t(opts.notice), color: "yellow" }]);
   tellIntro();
   enterPlace(core.state.place);
+  resuming = true;
   apply(describeRun(course, core.state)); // a save made mid-scene resumes in the scene
+  resuming = false;
   term.onKey(press);
   term.onResize(render);
   render();
