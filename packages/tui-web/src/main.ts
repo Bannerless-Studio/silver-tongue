@@ -49,7 +49,12 @@ xterm.attachCustomKeyEventHandler((e) => !forBrowser(e));
 // uses the font's glyphs, which leave gaps between lines.
 try {
   const webgl = new WebglAddon();
-  webgl.onContextLoss(() => webgl.dispose());
+  // Phones drop WebGL contexts (a backgrounded tab, low memory): fall back to the DOM renderer
+  // and redraw, or the terminal would stay blank.
+  webgl.onContextLoss(() => {
+    webgl.dispose();
+    xterm.refresh(0, xterm.rows - 1);
+  });
   xterm.loadAddon(webgl);
 } catch {
   // no WebGL: the DOM renderer still works

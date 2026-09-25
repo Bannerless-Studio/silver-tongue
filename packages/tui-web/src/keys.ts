@@ -27,3 +27,17 @@ export function keyName(key: string, mods: { ctrlKey?: boolean; altKey?: boolean
 export function forBrowser(e: { key: string; ctrlKey?: boolean; altKey?: boolean; metaKey?: boolean }): boolean {
   return !!(e.ctrlKey || e.altKey || e.metaKey) || /^F\d+$/.test(e.key) || e.key === "Tab";
 }
+
+/**
+ * Text that reaches the terminal as data rather than key presses (phone keyboards, input methods)
+ * as the keys a keyboard would have sent. Enter and backspace become their keys; other control
+ * characters and escape sequences are dropped.
+ */
+export function dataKeys(data: string): { name: string; text?: string }[] {
+  if (data === "\r" || data === "\n") return [{ name: "return" }];
+  if (data === "\x7f" || data === "\b") return [{ name: "backspace" }];
+  if (data.startsWith("\x1b")) return [];
+  return [...data]
+    .filter((ch) => ch >= " " && ch !== "\x7f")
+    .map((ch) => ({ name: keyName(ch) ?? ch, text: ch.normalize("NFKC") }));
+}

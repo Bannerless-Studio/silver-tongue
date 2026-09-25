@@ -14,7 +14,7 @@ import {
 } from "@silver-tongue/core";
 import { notebookLines } from "./notebook";
 import { lineSpans, renderScreen, wrapItems } from "./screen";
-import { wrapLine } from "./width";
+import { strWidth, wrapLine } from "./width";
 import type { Key, StyledLine, Terminal } from "./terminal";
 import { makeText, type Text } from "./text";
 
@@ -309,7 +309,11 @@ export function startApp(opts: AppOptions): App {
             ? ["keys-pick", pickOptions.length]
             : ["keys-tiles", tiles.length];
     const footer = t(footerId, { keys: keyRange(count) });
-    term.write(renderScreen({ title: t(`place-${s.place}`), hud, log, prompt: prompt(cols - 4), footer, footerRight }, cols, rows));
+    term.write(
+      renderScreen({ title: t(`place-${s.place}`), hud, log, prompt: prompt(cols - 4), footer, footerRight }, cols, rows),
+      // Typing a name: the cursor sits after the text, where a phone keyboard shows what's being composed.
+      mode === "name" ? { row: rows - 2, col: Math.min(cols - 3, 4 + strWidth(nameInput)) } : undefined,
+    );
   }
 
   function press(key: Key) {
