@@ -69,6 +69,9 @@ export const UI_KEYS: Record<string, string[]> = {
   "resume-item": ["day", "place", "currency", "wallet", "done", "date"],
   "resume-ask": [],
   "resume-none": [],
+  "export-none": [],
+  "import-bad": ["reason"],
+  "import-done": ["game"],
   ...Object.fromEntries(REJECT_REASONS.map((c) => [`reject-${c}`, []])),
 };
 

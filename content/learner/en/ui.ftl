@@ -78,3 +78,6 @@ notebook-progress = Stage { $stage }: { $known } of { $total } words known · { 
 notebook-empty = Nothing yet. Words you hear are written down here.
 notebook-elsewhere = Heard elsewhere
 notebook-notes = Notes
+export-none = There's no saved game to export yet.
+import-bad = That line isn't a saved game for this course ({ $reason }).
+import-done = Added: { $game }. Run the game to continue it.
