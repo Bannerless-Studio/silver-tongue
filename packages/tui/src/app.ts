@@ -58,6 +58,10 @@ export function startApp(opts: AppOptions): App {
     ...lineSpans(line, fresh),
   ];
 
+  /** The number keys that choose among `n` items: "1", "1-4". */
+  const keyRange = (n: number) => (n <= 1 ? "1" : `1-${Math.min(n, 9)}`);
+  const echo = (text: string) => push([{ text: `${t("you")}: `, color: "green", bold: true }, { text }]);
+
   function enterPlace(place: string) {
     push([], [{ text: t(`place-${place}`), bold: true }], [{ text: t(`place-${place}-desc`), dim: true }]);
   }
@@ -178,8 +182,10 @@ export function startApp(opts: AppOptions): App {
       const words = helpWords().map((w, i) => `${i + 1}) ${w.text}`);
       return [[{ text: t("help-title"), dim: true }], ...wrapItems(words, width)];
     }
-    if (replyMode === "pick") return pickOptions.map((o, i) => [{ text: `${i + 1}) ` }, ...lineSpans(o, new Set())]);
+    const title: StyledLine = [{ text: t("reply-title"), dim: true }];
+    if (replyMode === "pick") return [title, ...pickOptions.map((o, i) => [{ text: `${i + 1}) ` }, ...lineSpans(o, new Set())])];
     return [
+      title,
       ...wrapItems(
         tiles.map((x, i) => `[${i + 1}]${x}`),
         width,
@@ -200,7 +206,15 @@ export function startApp(opts: AppOptions): App {
       wallet: s.wallet,
       rank: t(`rank-${rankFor(s.words, wordIds, opts.now())}`),
     });
-    const footer = t(mode === "explore" ? "keys-explore" : mode === "help" ? "keys-help" : replyMode === "pick" ? "keys-pick" : "keys-tiles");
+    const [footerId, count] =
+      mode === "explore"
+        ? ["keys-explore", menu().length]
+        : mode === "help"
+          ? ["keys-help", helpWords().length]
+          : replyMode === "pick"
+            ? ["keys-pick", pickOptions.length]
+            : ["keys-tiles", tiles.length];
+    const footer = t(footerId, { keys: keyRange(count) });
     term.write(renderScreen({ title: t(`place-${s.place}`), hud, log, prompt: prompt(cols - 4), footer }, cols, rows));
   }
 
@@ -226,12 +240,16 @@ export function startApp(opts: AppOptions): App {
     } else if (key.name === "w") {
       mode = "help";
     } else if (replyMode === "pick") {
-      if (n >= 0 && n < pickOptions.length) send({ type: "reply", choice: n });
+      if (n >= 0 && n < pickOptions.length) {
+        echo(pickOptions[n].text);
+        send({ type: "reply", choice: n });
+      }
     } else if (n >= 0 && n < tiles.length && !tileInput.includes(n)) {
       tileInput = [...tileInput, n];
     } else if (key.name === "backspace") {
       tileInput = tileInput.slice(0, -1);
     } else if (key.name === "return" && tileInput.length) {
+      echo(tileInput.map((i) => tiles[i]).join(""));
       send({ type: "replyTiles", tiles: tileInput });
     }
     render();
