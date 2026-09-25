@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { comboKey, createCore, mulberry32, newGame, type Course, type GameState } from "@silver-tongue/core";
+import { comboKey, createCore, mulberry32, newGame, PLAYER_MARK, type Course, type GameState } from "@silver-tongue/core";
+import { line } from "@silver-tongue/core/testing";
 import { startApp } from "../src/app";
 import { lineWidth } from "../src/width";
 import { FakeTerminal, fixtureWithText } from "./fake-terminal";
@@ -195,6 +196,23 @@ describe("tui app", () => {
     term.press("1", "1");
     expect(term.screen().join("\n")).toContain("You're out of time today. Sleep first.");
     expect(saves.length).toBe(1);
+  });
+
+  it("offers the player's name as a tile and says it in the answer", () => {
+    const lapsed = { right: 1, wrong: 1, streak: 0, helps: 0, lapsed: true, firstSeen: T0, lastSeen: T0 };
+    const { term, core } = setup(
+      (s) => Object.assign(s, { place: "noodle_shop", player: "Jamil", words: { w_ni: { ...lapsed }, w_hao: { ...lapsed } } }),
+      (c) => {
+        c.needsName = true;
+        c.scenes[0].exchanges[0].variants[""].reply = line(["你", "w_ni"], ["好", "w_hao"], ["，", null], [PLAYER_MARK, null], ["！", null]);
+      },
+    );
+    term.press("1");
+    expect(core.state.run!.mode).toBe("tiles");
+    expect(term.screen().join("\n")).toContain("Jamil");
+    const tiles = core.state.run!.tiles;
+    term.press(...["你", "好", PLAYER_MARK].map((p) => String(tiles.indexOf(p) + 1)), "return");
+    expect(term.screen().join("\n")).toContain("You: 你好Jamil");
   });
 
   it("won't sleep away from home, and says so", () => {

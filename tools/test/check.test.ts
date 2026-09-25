@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { PLAYER_MARK } from "@silver-tongue/core";
 import { fixtureCourse, line } from "@silver-tongue/core/testing";
 import { checkCourse, orderScenes, type CheckInput } from "../src/check";
 
@@ -106,6 +107,13 @@ describe("checkCourse", () => {
     const errors = checkCourse(input({ course: c }));
     expect(errors).toContain("intro/greet: the reply has 8 words; at most 7");
     expect(errors).toContain("intro/greet: the npc line has 10 words; at most 9");
+  });
+
+  it("counts the player's name as a tile of the reply", () => {
+    const c = fixtureCourse();
+    const w = ["你", "w_ni"] as [string, string];
+    c.scenes[0].exchanges[0].variants[""].reply = line(w, w, w, w, w, w, w, [PLAYER_MARK, null]);
+    expect(checkCourse(input({ course: c }))).toContain("intro/greet: the reply has 8 words; at most 7");
   });
 
   it("keeps each place's menu on keys 1-7, before sleep and quit", () => {

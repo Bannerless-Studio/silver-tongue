@@ -10,6 +10,7 @@ import {
 } from "./learner";
 import { personalize } from "./player";
 import { shuffle } from "./rng";
+import { PLAYER_MARK } from "./types";
 import type {
   Course,
   Exchange,
@@ -46,9 +47,14 @@ export function setWord(
   if (from !== to) ctx.ev.push({ type: "wordStateChanged", word, from, to });
 }
 
-/** The words of a line in reading order, as tiles. Punctuation is not a tile. */
+/**
+ * The words of a line in reading order, as tiles. The player's name is a tile too, kept as
+ * PLAYER_MARK until it is shown. Punctuation is not a tile.
+ */
 export function tilePieces(line: RenderedLine): string[] {
-  return line.tokens.map((t) => line.text.slice(t.start, t.end));
+  const words = line.tokens.map((t) => ({ at: t.start, text: line.text.slice(t.start, t.end) }));
+  const names = [...line.text.matchAll(new RegExp(PLAYER_MARK, "g"))].map((m) => ({ at: m.index, text: PLAYER_MARK }));
+  return [...words, ...names].sort((a, b) => a.at - b.at).map((p) => p.text);
 }
 
 function sceneById(ctx: Ctx, id: string): Scene | undefined {
@@ -144,7 +150,7 @@ function optionLine(ex: Exchange, run: SceneRun, key: string): RenderedLine {
 function optionsEvent(ex: Exchange, run: SceneRun, name: string): GameEvent {
   return run.mode === "pick"
     ? { type: "replyOptions", mode: "pick", options: run.options.map((k) => personalize(optionLine(ex, run, k), name)) }
-    : { type: "replyOptions", mode: "tiles", tiles: run.tiles };
+    : { type: "replyOptions", mode: "tiles", tiles: run.tiles.map((x) => (x === PLAYER_MARK ? name : x)) };
 }
 
 function emitOptions(ctx: Ctx, ex: Exchange): void {

@@ -1,4 +1,4 @@
-import type { Course, RenderedLine, Scene, WordId } from "@silver-tongue/core";
+import { tilePieces, type Course, type RenderedLine, type Scene, type WordId } from "@silver-tongue/core";
 
 export interface CheckInput {
   course: Course;
@@ -189,10 +189,13 @@ export function checkCourse(input: CheckInput): string[] {
           if (unmet.length) {
             errors.push(`${where}: the wrong reply "${alt.text}" uses words not met yet: ${unmet.map((w) => course.words[w]?.w ?? w).join(" ")}`);
           }
-          if (alt.tokens.length > MAX_REPLY_WORDS) errors.push(`${where}: the wrong reply "${alt.text}" has ${alt.tokens.length} words; at most ${MAX_REPLY_WORDS}`);
+          const altTiles = tilePieces(alt).length;
+          if (altTiles > MAX_REPLY_WORDS) errors.push(`${where}: the wrong reply "${alt.text}" has ${altTiles} words; at most ${MAX_REPLY_WORDS}`);
         }
-        if (v.reply.tokens.length > MAX_REPLY_WORDS) {
-          errors.push(`${where}: the reply has ${v.reply.tokens.length} words; at most ${MAX_REPLY_WORDS}`);
+        // Each word is a tile, and so is the player's name.
+        const replyTiles = tilePieces(v.reply).length;
+        if (replyTiles > MAX_REPLY_WORDS) {
+          errors.push(`${where}: the reply has ${replyTiles} words; at most ${MAX_REPLY_WORDS}`);
         }
         for (const [name, l] of [["npc", v.npc], ["rephrase", v.rephrase]] as const) {
           if (l && l.tokens.length > MAX_LINE_WORDS) {
