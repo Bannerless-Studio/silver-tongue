@@ -58,6 +58,14 @@ describe("build-course (real content)", () => {
     expect(course!.learnerFtl).toContain("note-bei-title");
   });
 
+  it("a wrong number while counting with Old Wang gets a plain no, not the noodle shop's 几杯", () => {
+    // Reactions are keyed by slot name (wrong-<slot>) across the whole course.
+    const counting = course!.scenes.find((s) => s.id === "street-numbers")!;
+    for (const ex of counting.exchanges) {
+      for (const slot of Object.keys(ex.slots)) expect(course!.reactions[`wrong-${slot}`], `${ex.id}: wrong-${slot}`).toBeUndefined();
+    }
+  });
+
   it("ships only the words the course uses", () => {
     const ids = Object.keys(course!.words);
     // The pack has over a thousand words; stage 1 content uses a small part of HSK 1.

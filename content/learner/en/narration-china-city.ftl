@@ -73,4 +73,4 @@ asked-friend = They were telling you about a friend.
 asked-job = They were offering you work.
 asked-live = They were telling you this room is yours.
 asked-numbers = They wanted you to count along.
-asked-next = They wanted the next number: { $count }.
+asked-next = They wanted the next number: { $number }.

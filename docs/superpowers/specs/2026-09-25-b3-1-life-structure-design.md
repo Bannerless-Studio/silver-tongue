@@ -82,12 +82,12 @@ One scene, `street-numbers`, on the street with Old Wang.
   - `one-two`: introduces 一 and 二.
   - `three-four`: introduces 三 and 四.
   - `five`: introduces 五.
-  - `next-a` and `next-b`: both slotted, `slots: { count: "numbers_2_5" }`. Old Wang counts and stops ("一，二……"), and the player says the next number. Echoing a number shown on screen would test nothing; knowing what comes next does.
-- Actions: `numbers` for the three teaching exchanges, and `next` (with `count: "$count"`) for the slotted ones.
+  - `next-a` and `next-b`: both slotted, `slots: { number: "numbers_2_5" }` (not `count`: reactions are keyed by slot name, and `wrong-count` is the noodle shop's 几杯？). Old Wang counts and stops ("一，二……"), and the player says the next number. Echoing a number shown on screen would test nothing; knowing what comes next does.
+- Actions: `numbers` for the three teaching exchanges, and `next` (with `number: "$number"`) for the slotted ones.
 
 **Content plumbing**
 
-- `groups.json`: a new group `numbers_2_5` (two to five), and `numbers` gains `two: 2`. The build passes it as `$count`, which the line uses to choose how far Old Wang counts.
+- `groups.json`: a new group `numbers_2_5` (two to five), and `numbers` gains `two: 2`. The build passes it as `$number`, which the line uses to choose how far Old Wang counts.
 - `languages/zh/terms.ftl` and `learner/en/terms.ftl`: `-two`, in the same shape as `-three`.
 - The numbers 一 二 三 四 五 are the HSK 1 words w0001, w0019, w0003, w0060, w0020.
 - Orders keep `numbers_3_5`. 二 as a counting word is fine here, but 两 (the form used before measure words) is HSK 2 and so not allowed at stage 1.
@@ -101,7 +101,7 @@ One scene, `street-numbers`, on the street with Old Wang.
 ## 4. Narration for every action
 
 - `content/learner/en/narration-china-city.ftl` gets one `asked-<action>` line for each of the 18 conversational actions the pilot uses (`answer`, `ask`, `bye`, `farewell`, `friend`, `greet`, `hello`, `hungry`, `how`, `job`, `like`, `name`, `names`, `noodles`, `shop`, `there`, `wang`, `zhang`), plus one for each new action from sections 2 and 3. `fetch` and `serve` already have theirs.
-- The lines say what was wanted, not what to type: "They wanted to know your name." Slotted actions take the action's parameters, for example `asked-next = They wanted the next number: { $count }.`
+- The lines say what was wanted, not what to type: "They wanted to know your name." Slotted actions take the action's parameters, for example `asked-next = They wanted the next number: { $number }.`
 - An `asked-` line belongs to the action, not the scene, so every scene that uses the action shows the same line. A line may name an NPC only if one NPC uses that action. The landlord reuses `greet`, `names` and `bye`, so those lines must say "they", not "Old Wang" or "the cook".
 - A written wrong reply already reaches this path: the core reports it as action `other`, not matched, so the TUI shows the `asked-` line of the expected action.
 - The TUI already shows `asked-<action>` after a mix-up and falls back to the generic line when there is none. No TUI change.
