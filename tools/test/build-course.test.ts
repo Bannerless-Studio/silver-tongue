@@ -28,7 +28,7 @@ describe("build-course (real content)", () => {
 
   it("builds zh-china-en with no errors", () => {
     expect(errors).toEqual([]);
-    expect(course!.scenes.map((s) => s.id)).toEqual(["noodle-intro", "noodle-shift", "room-hello", "street-hello", "street-hungry", "street-numbers", "street-practice"]);
+    expect(course!.scenes.map((s) => s.id)).toEqual(["noodle-intro", "noodle-shift", "room-hello", "room-rent", "street-hello", "street-hungry", "street-numbers", "street-practice", "warehouse-intro", "warehouse-shift"]);
   });
 
   it("renders every slot combination and tags its words", () => {
@@ -53,9 +53,63 @@ describe("build-course (real content)", () => {
     expect(course!.conceptNames.tea).toBe("tea");
     expect(course!.conceptNames.thanks).toBe("Thank you");
     expect(course!.stageWords["1"]).toHaveLength(150);
-    expect(course!.notes.map((n) => n.id)).toEqual(["hao-ma", "lao-xiao", "le", "bukeqi", "bei"]);
+    expect(course!.notes.map((n) => n.id)).toEqual(["hao-ma", "lao-xiao", "le", "bukeqi", "bei", "ge", "kuai"]);
     expect(course!.world.mentor).toEqual({ npc: "wang", after: "street-hello" });
     expect(course!.learnerFtl).toContain("note-bei-title");
+  });
+
+  it("gives every scene its own name, so an unlock line says which one opened", () => {
+    const names = course!.scenes.map((sc) => course!.learnerFtl.match(new RegExp(`^scene-${sc.id} = (.*)$`, "m"))![1]);
+    expect(new Set(names).size).toBe(names.length);
+  });
+
+  it("Mr Li talks about rent after your first warehouse shift, and Old Wang explains 个 and 块", () => {
+    expect(course!.scenes.find((s) => s.id === "room-rent")!.after).toEqual(["room-hello", "warehouse-shift"]);
+    expect(course!.notes.map((n) => n.id)).toEqual(expect.arrayContaining(["ge", "kuai"]));
+  });
+
+  it("the warehouse shift counts from three to ten, in its own slot", () => {
+    const shift = course!.scenes.find((s) => s.id === "warehouse-shift")!;
+    const carry = shift.exchanges.find((ex) => ex.id === "carry")!;
+    // Not `count`: that slot's reaction is the noodle shop's 几杯？
+    expect(carry.slots).toEqual({ amount: "numbers_3_10", item: "furniture" });
+    // English says "{amount} {item}s", so no amount may be one or two.
+    expect(course!.groups.numbers_3_10).toEqual(["three", "four", "five", "six", "seven", "eight", "nine", "ten"]);
+    expect(shift.exchanges.every((ex) => ex.pay > 0)).toBe(true);
+  });
+
+  it("Big Liu counts you from six to ten, after you can count to five", () => {
+    const intro = course!.scenes.find((s) => s.id === "warehouse-intro")!;
+    expect(intro.after).toEqual(["street-numbers"]);
+    const heard = intro.exchanges.flatMap((ex) => ex.variants[""].npc.tokens.map((t) => course!.words[t.word].w));
+    for (const n of ["六", "七", "八", "九", "十"]) expect(heard).toContain(n);
+  });
+
+  it("Big Liu asks if you want to work (想), not if you know how (会)", () => {
+    const job = course!.scenes.find((s) => s.id === "warehouse-intro")!.exchanges.find((ex) => ex.id === "job")!;
+    expect(job.variants[""].npc.text).toContain("想工作");
+  });
+
+  it("the note on 个 says which measure words chairs and tables really take", () => {
+    const note = course!.learnerFtl.match(/^note-ge = (.*)$/m)![1];
+    expect(note).toContain("把");
+    expect(note).toContain("张");
+  });
+
+  it("puts your room and the warehouse on Market Street, and keeps Main Street's menu at 7", () => {
+    const { places, npcs, mentor } = course!.world;
+    expect([...places.market.links].sort()).toEqual(["room", "street", "warehouse"]);
+    expect(places.room.links).toEqual(["market"]);
+    expect(places.street.links).toContain("market");
+    const mentorHere = mentor && npcs[mentor.npc].place === "street" ? 1 : 0;
+    expect(places.street.links.length + course!.scenes.filter((s) => s.place === "street").length + mentorHere).toBe(7);
+    for (const from of Object.keys(places)) {
+      const seen = new Set([from]);
+      for (const p of seen) for (const next of places[p].links) seen.add(next);
+      expect(seen.has("room"), `${from} reaches room`).toBe(true);
+    }
+    // Main Street no longer links to the room, so its description says where the room went.
+    expect(course!.learnerFtl.match(/^place-street-desc = (.*)$/m)![1]).toContain("your room");
   });
 
   it("the cook offers work only once Old Wang has taught you to count", () => {

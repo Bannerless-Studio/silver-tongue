@@ -14,3 +14,9 @@ note-bukeqi = 谢谢 (xièxie) is "thank you". The usual answer is 不客气 (b�
 
 note-bei-title = 杯, a measure word
 note-bei = Chinese doesn't say "three teas". A measure word goes between a number and a thing: 三杯茶 is "three cups of tea". 杯 (bēi) is the one for cups and glasses. There are many measure words; 个 (gè) is the everyday all-purpose one.
+
+note-ge-title = 个, the everyday measure word
+note-ge = 个 (gè) is the measure word you can use for almost anything: 八个椅子, "eight chairs". For two of something, say 两 (liǎng), not 二: 两个桌子. 二 is for counting and for numbers like 十二. Strictly, chairs take 把 (bǎ) and tables take 张 (zhāng), but 个 is always understood.
+
+note-kuai-title = 块, money
+note-kuai = Prices on a sign say 元 (yuán), but people say 块 (kuài): 五十块 is fifty yuan. 多少钱？ is "how much?", literally "how much money?"

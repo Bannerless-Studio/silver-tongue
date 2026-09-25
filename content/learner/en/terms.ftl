@@ -42,3 +42,39 @@
     [cap] Five
    *[base] five
 }
+-six = { $form ->
+    [cap] Six
+   *[base] six
+}
+-seven = { $form ->
+    [cap] Seven
+   *[base] seven
+}
+-eight = { $form ->
+    [cap] Eight
+   *[base] eight
+}
+-nine = { $form ->
+    [cap] Nine
+   *[base] nine
+}
+-ten = { $form ->
+    [cap] Ten
+   *[base] ten
+}
+-table = { $form ->
+    [cap] Table
+   *[base] table
+}
+-chair = { $form ->
+    [cap] Chair
+   *[base] chair
+}
+-big = { $form ->
+    [cap] Big
+   *[base] big
+}
+-small = { $form ->
+    [cap] Small
+   *[base] small
+}
