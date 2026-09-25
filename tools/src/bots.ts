@@ -44,6 +44,8 @@ export interface BotReport {
   wordsHeard: number;
   wordsKnown: number;
   endWallet: number;
+  /** inputs the core refused; a sensible player never sends one */
+  rejected: number;
 }
 
 const HOUR = 3_600_000;
@@ -115,7 +117,8 @@ function goals(course: Course, state: GameState): Goal[] {
 
 /**
  * Plays `days` game days. Each step: answer if in a scene; else take the best goal (see `goals`)
- * here, or walk toward the nearest place with it; sleep when out of slots or goals.
+ * here, or walk toward the nearest place with it; sleep (at home, walking there first) when out
+ * of slots or goals.
  */
 export function runBot(course: Course, bot: Bot, opts: { days: number; seed: number }): BotReport {
   let clock = 0;
@@ -131,6 +134,7 @@ export function runBot(course: Course, bot: Bot, opts: { days: number; seed: num
     wordsHeard: 0,
     wordsKnown: 0,
     endWallet: 0,
+    rejected: 0,
   };
   const paying = (id: string) => {
     const s = course.scenes.find((x) => x.id === id)!;
@@ -157,8 +161,20 @@ export function runBot(course: Course, bot: Bot, opts: { days: number; seed: num
       if (here) input = here.input;
       else if (step) input = { type: "goTo", place: step };
     }
+    // Bed is at home: walk there before sleeping.
+    const home = course.world.home;
+    if (input.type === "sleep" && home && s.place !== home) {
+      const step = stepToward(course, s.place, new Set([home]));
+      if (step) input = { type: "goTo", place: step };
+    }
     clock += HOUR;
-    for (const e of core.send(input)) {
+    const events = core.send(input);
+    if (events.some((e) => e.type === "inputRejected")) {
+      // A bot repeats itself, so a refused input would be refused forever: stop and report it.
+      report.rejected += 1;
+      break;
+    }
+    for (const e of events) {
       if (e.type === "walletChanged") {
         report.minWallet = Math.min(report.minWallet, e.wallet);
         report.maxWallet = Math.max(report.maxWallet, e.wallet);
@@ -186,7 +202,7 @@ function main(): void {
   for (const [name, bot] of Object.entries(BOTS)) {
     const r = runBot(course, bot, { days, seed: 7 });
     const done = oneOff.map((id) => `${id}:${r.firstDone[id] ?? "-"}`).join(" ");
-    console.log(`${name.padEnd(8)} wallet ${r.minWallet}..${r.maxWallet} (end ${r.endWallet}) · words ${r.wordsKnown} known / ${r.wordsHeard} heard · notes ${r.notesRead}/${course.notes.length} · dead-end days ${r.deadEndDays} · broke without work ${r.brokeWithoutWork}`);
+    console.log(`${name.padEnd(8)} wallet ${r.minWallet}..${r.maxWallet} (end ${r.endWallet}) · words ${r.wordsKnown} known / ${r.wordsHeard} heard · notes ${r.notesRead}/${course.notes.length} · dead-end days ${r.deadEndDays} · broke without work ${r.brokeWithoutWork} · rejected ${r.rejected}`);
     console.log(`         ${done}`);
   }
 }

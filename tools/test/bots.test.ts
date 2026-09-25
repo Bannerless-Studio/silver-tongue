@@ -1,5 +1,6 @@
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { fixtureCourse } from "@silver-tongue/core/testing";
 import { BOTS, runBot } from "../src/bots";
 import { buildCourse } from "../src/build-course";
 
@@ -29,7 +30,30 @@ describe("course bots (real content)", () => {
     }
   });
 
+  it("the core never refuses a bot's input", () => {
+    for (const [name, r] of Object.entries(reports)) expect(r.rejected, name).toBe(0);
+  });
+
   it("is repeatable with the same seed", () => {
     expect(runBot(course!, BOTS.learner, { days: 5, seed: 3 })).toEqual(runBot(course!, BOTS.learner, { days: 5, seed: 3 }));
+  });
+});
+
+describe("course bots (a world with a home)", () => {
+  it("walk home to sleep, so every day ends and nothing is refused", () => {
+    const c = fixtureCourse();
+    c.world.home = "street";
+    for (const [name, bot] of Object.entries(BOTS)) {
+      const r = runBot(c, bot, { days: 3, seed: 7 });
+      expect(r.rejected, name).toBe(0);
+      expect(r.firstDone.intro, name).toBe(1);
+    }
+  });
+
+  it("stop at the first refused input instead of repeating it", () => {
+    const c = fixtureCourse();
+    c.world.places.attic = { links: [] };
+    c.world.home = "attic";
+    expect(runBot(c, BOTS.right, { days: 3, seed: 7 }).rejected).toBe(1);
   });
 });

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { comboKey } from "../src/combo";
 import { createCore, newGame } from "../src/core";
+import { tilePieces } from "../src/dialogue";
 import { personalize } from "../src/player";
 import { mulberry32 } from "../src/rng";
 import { fixtureCourse, line } from "../src/testing/fixture";
@@ -43,5 +44,50 @@ describe("player name", () => {
     const opts = ev.find((e) => e.type === "replyOptions")!;
     expect(opts.type === "replyOptions" && opts.mode === "pick" && opts.options.every((o) => !o.text.includes(PLAYER_MARK))).toBe(true);
     core.send({ type: "reply", choice: core.state.run!.options.indexOf(comboKey(core.state.run!.combo)) });
+  });
+
+  it("makes the player's name a tile, shows it as the name, and accepts it in the reply", () => {
+    const c = fixtureCourse();
+    c.needsName = true;
+    c.scenes[0].exchanges[0].variants[""].reply = line(["你", "w_ni"], ["好", "w_hao"], ["，", null], [PLAYER_MARK, null], ["！", null]);
+    // Words that were got wrong once but are known: the reply is built from tiles.
+    const lapsed = { right: 1, wrong: 1, streak: 0, helps: 0, lapsed: true, firstSeen: T0, lastSeen: T0 };
+    const state = { ...newGame(c), place: "noodle_shop", player: "Jamil", words: { w_ni: { ...lapsed }, w_hao: { ...lapsed } } };
+    const core = createCore(c, state, { now: () => T0, rng: mulberry32(2) });
+    const opts = core.send({ type: "startScene", scene: "intro" }).find((e) => e.type === "replyOptions")!;
+    expect(opts.type === "replyOptions" && opts.mode === "tiles" && [...opts.tiles].sort()).toEqual(["Jamil", "你", "好"].sort());
+    const run = core.state.run!;
+    const order = ["你", "好", PLAYER_MARK].map((p) => run.tiles.indexOf(p));
+    const done = core.send({ type: "replyTiles", tiles: order }).find((e) => e.type === "actionPerformed");
+    expect(done).toMatchObject({ matched: true, tilesWrong: false });
+  });
+
+  it("judges a tile reply by what it shows, so a name that looks like a word still counts", () => {
+    const c = fixtureCourse();
+    c.needsName = true;
+    c.scenes[0].exchanges[0].variants[""].reply = line(["你", "w_ni"], ["好", "w_hao"], ["，", null], [PLAYER_MARK, null], ["！", null]);
+    const lapsed = { right: 1, wrong: 1, streak: 0, helps: 0, lapsed: true, firstSeen: T0, lastSeen: T0 };
+    const state = { ...newGame(c), place: "noodle_shop", player: "你", words: { w_ni: { ...lapsed }, w_hao: { ...lapsed } } };
+    const core = createCore(c, state, { now: () => T0, rng: mulberry32(2) });
+    core.send({ type: "startScene", scene: "intro" });
+    const run = core.state.run!;
+    // The name tile first, the word 你 last: on screen that is 你好你, the right answer.
+    const order = [PLAYER_MARK, "好", "你"].map((p) => run.tiles.indexOf(p));
+    const done = core.send({ type: "replyTiles", tiles: order }).find((e) => e.type === "actionPerformed");
+    expect(done).toMatchObject({ matched: true, tilesWrong: false });
+  });
+
+  it("puts the name tile where the name is in the line", () => {
+    expect(tilePieces(line(["你", "w_ni"], [PLAYER_MARK, null], ["好", "w_hao"], ["，", null], [PLAYER_MARK, null]))).toEqual(["你", PLAYER_MARK, "好", PLAYER_MARK]);
+  });
+
+  it("says the name, not the mark, in the notebook line a word was first met in", () => {
+    const c = fixtureCourse();
+    c.needsName = true;
+    c.scenes[0].exchanges[0].variants[""].reply = line(["是", "w_shi"], [PLAYER_MARK, null], ["。", null]);
+    const core = createCore(c, { ...newGame(c), place: "noodle_shop", player: "Jamil" }, { now: () => T0, rng: mulberry32(1) });
+    core.send({ type: "startScene", scene: "intro" });
+    core.send({ type: "reply", choice: core.state.run!.options.indexOf(comboKey(core.state.run!.combo)) });
+    expect(core.state.words.w_shi.first?.line).toBe("是Jamil。");
   });
 });

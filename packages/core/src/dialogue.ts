@@ -10,6 +10,7 @@ import {
 } from "./learner";
 import { personalize } from "./player";
 import { shuffle } from "./rng";
+import { PLAYER_MARK } from "./types";
 import type {
   Course,
   Exchange,
@@ -46,9 +47,14 @@ export function setWord(
   if (from !== to) ctx.ev.push({ type: "wordStateChanged", word, from, to });
 }
 
-/** The words of a line in reading order, as tiles. Punctuation is not a tile. */
+/**
+ * The words of a line in reading order, as tiles. The player's name is a tile too, kept as
+ * PLAYER_MARK until it is shown. Punctuation is not a tile.
+ */
 export function tilePieces(line: RenderedLine): string[] {
-  return line.tokens.map((t) => line.text.slice(t.start, t.end));
+  const words = line.tokens.map((t) => ({ at: t.start, text: line.text.slice(t.start, t.end) }));
+  const names = [...line.text.matchAll(new RegExp(PLAYER_MARK, "g"))].map((m) => ({ at: m.index, text: PLAYER_MARK }));
+  return [...words, ...names].sort((a, b) => a.at - b.at).map((p) => p.text);
 }
 
 function sceneById(ctx: Ctx, id: string): Scene | undefined {
@@ -144,7 +150,7 @@ function optionLine(ex: Exchange, run: SceneRun, key: string): RenderedLine {
 function optionsEvent(ex: Exchange, run: SceneRun, name: string): GameEvent {
   return run.mode === "pick"
     ? { type: "replyOptions", mode: "pick", options: run.options.map((k) => personalize(optionLine(ex, run, k), name)) }
-    : { type: "replyOptions", mode: "tiles", tiles: run.tiles };
+    : { type: "replyOptions", mode: "tiles", tiles: run.tiles.map((x) => (x === PLAYER_MARK ? name : x)) };
 }
 
 function emitOptions(ctx: Ctx, ex: Exchange): void {
@@ -229,7 +235,7 @@ function resolve(
     for (const w of new Set([...hinges, ...reply.tokens.map((t) => t.word)])) setWord(ctx, w, recordRight);
     for (const t of reply.tokens) {
       const rec = ctx.state.words[t.word];
-      if (!rec.first) rec.first = { line: reply.text, place: ctx.state.place };
+      if (!rec.first) rec.first = { line: personalize(reply, nameOf(ctx.state)).text, place: ctx.state.place };
     }
     run.earned += ex.pay;
     if (run.exchange + 1 < scene.exchanges.length) beginExchange(ctx, scene, run.exchange + 1);
@@ -321,8 +327,11 @@ export function replyTiles(ctx: Ctx, tiles: number[]): void {
   if (tiles.some((i) => run.tiles[i] === undefined)) return reject(ctx, "bad-tile");
   const chosen = tiles.map((i) => run.tiles[i]);
   const reply = cur.ex.variants[comboKey(run.combo)].reply;
-  const target = tilePieces(reply).join("");
+  // Judged by what the player sees: a name that looks like a word is as good as that word.
+  const name = nameOf(ctx.state);
+  const shown = (pieces: string[]) => pieces.map((x) => (x === PLAYER_MARK ? name : x)).join("");
+  const target = shown(tilePieces(reply));
   // Words of the reply the player placed count as said; the rest were missed.
   const said = reply.tokens.filter((t) => chosen.includes(reply.text.slice(t.start, t.end))).map((t) => t.word);
-  resolve(ctx, cur.scene, cur.ex, run.combo, [], chosen.join("") !== target, false, said);
+  resolve(ctx, cur.scene, cur.ex, run.combo, [], shown(chosen) !== target, false, said);
 }

@@ -49,6 +49,7 @@ function handle(ctx: Ctx, input: Input): void {
       return visitMentor(ctx);
     case "sleep":
       if (state.run) return reject(ctx, "in-scene");
+      if (course.world.home && state.place !== course.world.home) return reject(ctx, "not-home");
       ctx.ev.push(...endDay(course, state));
       return;
   }

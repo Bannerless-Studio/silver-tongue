@@ -59,6 +59,7 @@ reject-bad-choice = There's no reply with that number.
 reject-no-tiles = Build your reply from the tiles.
 reject-bad-tile = There's no tile with that number.
 reject-not-linked = You can't get there from here.
+reject-not-home = You want your own bed. Head home first.
 reject-unknown-word = That word isn't in the dictionary.
 notice-read-only = Your progress can't be saved on this computer, so this session won't be kept.
 notice-bad-save = Your save couldn't be read. It was kept as a backup and a new game started.

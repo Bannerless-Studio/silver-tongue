@@ -1,5 +1,6 @@
 {
   "start": "street",
+  "home": "room",
   "currency": "¥",
   "slotsPerDay": 4,
   "startWallet": 20,
@@ -8,10 +9,16 @@
   "places": {
     "street": {
       "links": [
-        "noodle_shop"
+        "noodle_shop",
+        "room"
       ]
     },
     "noodle_shop": {
+      "links": [
+        "street"
+      ]
+    },
+    "room": {
       "links": [
         "street"
       ]
@@ -23,6 +30,9 @@
     },
     "cook": {
       "place": "noodle_shop"
+    },
+    "landlord": {
+      "place": "room"
     }
   },
   "mentor": {

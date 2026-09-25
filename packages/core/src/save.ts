@@ -1,7 +1,7 @@
 import { comboKey } from "./combo";
 import { altIndex, tilePieces } from "./dialogue";
 import { cleanName } from "./player";
-import type { Course, GameState, SceneRun } from "./types";
+import { PLAYER_MARK, type Course, type GameState, type SceneRun } from "./types";
 
 export const SAVE_VERSION = 1;
 
@@ -58,6 +58,15 @@ function runFits(run: SceneRun, course: Course): boolean {
   return tilesCover(run.tiles, tilePieces(v.reply));
 }
 
+/** Saves from before the player's name was a tile have only the word tiles: add the name tile back. */
+function addNameTiles(run: SceneRun, course: Course): void {
+  if (run.mode !== "tiles") return;
+  const v = course.scenes.find((s) => s.id === run.scene)?.exchanges[run.exchange]?.variants[comboKey(run.combo)];
+  if (!v) return;
+  const missing = tilePieces(v.reply).filter((p) => p === PLAYER_MARK).length - run.tiles.filter((t) => t === PLAYER_MARK).length;
+  for (let i = 0; i < missing; i++) run.tiles.push(PLAYER_MARK);
+}
+
 /**
  * Strict: anything malformed is rejected with a reason, never half-loaded.
  * One exception: a scene in progress that the course no longer has (after a content update)
@@ -96,6 +105,7 @@ export function parseSave(raw: string, course: Course): ParseResult {
   const keep = (ids: string[]) => [...new Set(ids)].filter((id) => noteIds.has(id));
   data.notes = { ready: keep(data.notes.ready), read: keep(data.notes.read) };
   const state = data as unknown as GameState;
+  if (state.run) addNameTiles(state.run, course);
   if (state.run && !runFits(state.run, course)) state.run = null;
   return { ok: true, state };
 }

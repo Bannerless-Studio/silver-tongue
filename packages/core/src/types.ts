@@ -88,6 +88,8 @@ export interface World {
   places: Record<string, Place>;
   npcs: Record<string, Npc>;
   mentor?: Mentor;
+  /** The place the player sleeps. Without it, sleep works anywhere. */
+  home?: string;
 }
 
 /** A usage note the mentor explains once its trigger is met: a word seen, or a scene done. */
@@ -195,6 +197,7 @@ export const REJECT_REASONS = [
   "no-mentor",
   "bad-name",
   "no-name",
+  "not-home",
 ] as const;
 export type RejectReason = (typeof REJECT_REASONS)[number];
 

@@ -1,4 +1,4 @@
-import { wordState, type Course, type GameState, type WordState } from "@silver-tongue/core";
+import { PLAYER_MARK, wordState, type Course, type GameState, type WordState } from "@silver-tongue/core";
 import type { StyledLine } from "./terminal";
 import type { Text } from "./text";
 
@@ -43,7 +43,8 @@ export function notebookLines(course: Course, state: GameState, t: Text, now: nu
         ...(w.pron ? [{ text: ` ${w.pron}`, color: "yellow" as const }] : []),
         { text: ` — ${w.gloss}` },
       ]);
-      if (rec.first) out.push([{ text: `    ${rec.first.line}`, dim: true }]);
+      // Saves from before 0.7.0 may hold the name's mark instead of the name.
+      if (rec.first) out.push([{ text: `    ${rec.first.line.split(PLAYER_MARK).join(state.player ?? "")}`, dim: true }]);
     }
   }
 

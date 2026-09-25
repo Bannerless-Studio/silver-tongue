@@ -8,6 +8,9 @@
     [measure] 杯
    *[base] 水
 }
+# 二 is for counting. Before a measure word two is 两 (两杯), which is HSK 2, so keep `two` out of
+# groups used with measure words.
+-two = 二
 -three = 三
 -four = 四
 -five = 五

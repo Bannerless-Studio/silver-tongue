@@ -26,6 +26,10 @@
     [cap] Water
    *[base] water
 }
+-two = { $form ->
+    [cap] Two
+   *[base] two
+}
 -three = { $form ->
     [cap] Three
    *[base] three

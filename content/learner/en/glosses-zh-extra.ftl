@@ -2,3 +2,4 @@
 x0001 = cup; glass (measure word for drinks)
 x0002 = Old Wang (a name: 老 "old" + the surname Wang)
 x0004 = Xiao Zhang, the cook (小 "little" + the surname Zhang)
+x0005 = Mr Li, your landlord (the surname Li + 先生 "Mr")

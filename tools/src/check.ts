@@ -1,4 +1,4 @@
-import type { Course, RenderedLine, Scene, WordId } from "@silver-tongue/core";
+import { tilePieces, type Course, type RenderedLine, type Scene, type WordId } from "@silver-tongue/core";
 
 export interface CheckInput {
   course: Course;
@@ -17,7 +17,11 @@ export const MIN_SCENES_PER_WORD = 3;
 export const MAX_REPLY_WORDS = 7;
 /** Word help offers each word of the NPC's line on keys 1-9. */
 export const MAX_LINE_WORDS = 9;
-/** A place's menu: its scenes and exits on keys 1-7, then sleep and quit. */
+/**
+ * A place's menu: its scenes, exits and the mentor's visit on keys 1-7, then sleep and quit. The
+ * mentor's item always counts, though the menu shows it only when a note is waiting, so no place
+ * can overflow once one is.
+ */
 export const MAX_PLACE_ITEMS = 7;
 
 /** Scenes in `after` order; ties keep file order. */
@@ -36,6 +40,22 @@ export function orderScenes(scenes: Scene[]): { ordered: Scene[]; errors: string
     done.add(s.id);
   }
   return { ordered, errors: [] };
+}
+
+/** Whether `to` can be walked to from `from` along place links. */
+function reaches(places: Course["world"]["places"], from: string, to: string): boolean {
+  const seen = new Set([from]);
+  const queue = [from];
+  while (queue.length) {
+    const p = queue.shift()!;
+    if (p === to) return true;
+    for (const next of places[p]?.links ?? []) {
+      if (seen.has(next)) continue;
+      seen.add(next);
+      queue.push(next);
+    }
+  }
+  return false;
 }
 
 const lineWords = (l: RenderedLine | undefined): WordId[] => (l ? l.tokens.map((t) => t.word) : []);
@@ -93,8 +113,17 @@ export function checkCourse(input: CheckInput): string[] {
     for (const l of p.links) if (!world.places[l]) errors.push(`world: place "${id}" links to unknown place "${l}"`);
   }
   for (const [id, p] of Object.entries(world.places)) {
-    const items = p.links.length + course.scenes.filter((s) => s.place === id).length;
-    if (items > MAX_PLACE_ITEMS) errors.push(`world: place "${id}" has ${items} scenes and exits; at most ${MAX_PLACE_ITEMS}`);
+    // The mentor's visit is an item too, at the mentor's place.
+    const mentorItem = world.mentor && world.npcs[world.mentor.npc]?.place === id ? 1 : 0;
+    const items = p.links.length + course.scenes.filter((s) => s.place === id).length + mentorItem;
+    if (items > MAX_PLACE_ITEMS) errors.push(`world: place "${id}" has ${items} menu items; at most ${MAX_PLACE_ITEMS}`);
+  }
+  if (world.home !== undefined && !world.places[world.home]) errors.push(`world: home "${world.home}" is not a place`);
+  else if (world.home !== undefined) {
+    // Sleep works only at home, so a place with no way home would be a day that never ends.
+    for (const id of Object.keys(world.places)) {
+      if (!reaches(world.places, id, world.home)) errors.push(`world: home "${world.home}" can't be reached from "${id}"`);
+    }
   }
   for (const [id, n] of Object.entries(world.npcs)) {
     if (!world.places[n.place]) errors.push(`world: npc "${id}" is at unknown place "${n.place}"`);
@@ -186,10 +215,13 @@ export function checkCourse(input: CheckInput): string[] {
           if (unmet.length) {
             errors.push(`${where}: the wrong reply "${alt.text}" uses words not met yet: ${unmet.map((w) => course.words[w]?.w ?? w).join(" ")}`);
           }
-          if (alt.tokens.length > MAX_REPLY_WORDS) errors.push(`${where}: the wrong reply "${alt.text}" has ${alt.tokens.length} words; at most ${MAX_REPLY_WORDS}`);
+          const altTiles = tilePieces(alt).length;
+          if (altTiles > MAX_REPLY_WORDS) errors.push(`${where}: the wrong reply "${alt.text}" has ${altTiles} words; at most ${MAX_REPLY_WORDS}`);
         }
-        if (v.reply.tokens.length > MAX_REPLY_WORDS) {
-          errors.push(`${where}: the reply has ${v.reply.tokens.length} words; at most ${MAX_REPLY_WORDS}`);
+        // Each word is a tile, and so is the player's name.
+        const replyTiles = tilePieces(v.reply).length;
+        if (replyTiles > MAX_REPLY_WORDS) {
+          errors.push(`${where}: the reply has ${replyTiles} words; at most ${MAX_REPLY_WORDS}`);
         }
         for (const [name, l] of [["npc", v.npc], ["rephrase", v.rephrase]] as const) {
           if (l && l.tokens.length > MAX_LINE_WORDS) {
@@ -217,6 +249,16 @@ export function checkCourse(input: CheckInput): string[] {
     if (checks.audio && !l.audio) errors.push(`reaction ${id}: no audio`);
   }
   if (!course.reactions["wrong-generic"]) errors.push(`reactions: "wrong-generic" is required`);
+  // A wrong-<slot> reaction is chosen by slot name alone, anywhere in the course, so every exchange
+  // with that slot must be about the same kind of thing (the noodle shop's 几杯？ is for cups).
+  for (const id of Object.keys(course.reactions)) {
+    if (!id.startsWith("wrong-") || id === "wrong-generic") continue;
+    const slot = id.slice("wrong-".length);
+    const groups = [...new Set(course.scenes.flatMap((s) => s.exchanges.flatMap((ex) => (ex.slots[slot] ? [ex.slots[slot]] : []))))];
+    if (groups.length > 1) {
+      errors.push(`reactions: "${id}" answers slot "${slot}", which draws from ${groups.sort().join(" and ")}; give one of them another slot name`);
+    }
+  }
 
   if (checks.coverage) {
     const stagesUsed = new Set(course.scenes.map((s) => String(s.stage)));
@@ -241,6 +283,14 @@ export function checkCourse(input: CheckInput): string[] {
   if (world.mentor) {
     if (!world.npcs[world.mentor.npc]) errors.push(`world: mentor "${world.mentor.npc}" is not an npc`);
     if (!sceneIds.has(world.mentor.after)) errors.push(`world: mentor comes after unknown scene "${world.mentor.after}"`);
+  }
+
+  // Every action says what was asked after a wrong reply (asked-<action>), so no scene falls back
+  // to the generic line.
+  const actionScene = new Map<string, string>();
+  for (const s of course.scenes) for (const ex of s.exchanges) if (!actionScene.has(ex.expect.action)) actionScene.set(ex.expect.action, s.id);
+  for (const [action, scene] of actionScene) {
+    if (!learnerIds.has(`asked-${action}`)) errors.push(`narration: no "asked-${action}" line (used by ${scene})`);
   }
 
   const need = [
