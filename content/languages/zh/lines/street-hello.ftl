@@ -11,11 +11,11 @@ wang-alt1 = 老王！
 wang-alt2 = 好，老王！
 
 how = 你好吗？
-how-reply = 很好！
+how-reply = 很好！你好吗？
 how-alt1 = 老王！
 how-alt2 = 你好，老王！
 
-name = 我叫老王。
+name = 很好！叫我老王。
 name-reply = 你好，老王！
 name-alt1 = 我叫老王。
 name-alt2 = 很好！

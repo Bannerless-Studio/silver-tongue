@@ -1,10 +1,10 @@
 greet = 你好！
 greet-reply = 你好！你叫什么名字？
 greet-alt1 = 再见！
-greet-alt2 = 我饿了。
+greet-alt2 = 你叫小马。
 
 names = 我叫小张。你呢？
-names-reply = 我叫小马。
+names-reply = 我叫小马。老王是我朋友。
 names-alt1 = 我叫小张。
 names-alt2 = 你好！
 

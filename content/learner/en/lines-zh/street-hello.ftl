@@ -8,11 +8,11 @@ wang-alt1 = Old Wang!
 wang-alt2 = OK, Old Wang!
 
 how = How are you?
-how-reply = Very well!
+how-reply = Very well! How are you?
 how-alt1 = Old Wang!
 how-alt2 = Hello, Old Wang!
 
-name = My name is Old Wang.
+name = Very well! Call me Old Wang.
 name-reply = Hello, Old Wang!
 name-alt1 = My name is Old Wang.
 name-alt2 = Very well!

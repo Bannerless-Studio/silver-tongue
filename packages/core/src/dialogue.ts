@@ -205,6 +205,7 @@ function resolve(
   diff: string[],
   tilesWrong = false,
   other = false,
+  saidWords: string[] = [],
 ): void {
   const run = ctx.state.run!;
   const matched = diff.length === 0 && !tilesWrong && !other;
@@ -230,7 +231,12 @@ function resolve(
     else finishScene(ctx, scene);
     return;
   }
-  for (const w of hinges) setWord(ctx, w, recordWrong);
+  // A miss weakens the hinge words and the right reply's words the chosen reply lacked
+  // (the ones the player didn't recognise). `chosen` is what they said instead.
+  const said = new Set(saidWords);
+  const reply = ex.variants[comboKey(run.combo)].reply;
+  const missed = reply.tokens.map((t) => t.word).filter((w) => !said.has(w));
+  for (const w of new Set([...hinges, ...missed])) setWord(ctx, w, recordWrong);
   run.misses += 1;
   run.mixups += 1;
   ctx.ev.push(...changeWallet(ctx.state, -ex.missCost, "mixup"));
@@ -252,8 +258,8 @@ function resolve(
 }
 
 /** A written wrong reply: it doesn't do the asked action at all. */
-function resolveOther(ctx: Ctx, scene: Scene, ex: Exchange): void {
-  resolve(ctx, scene, ex, ctx.state.run!.combo, [], false, true);
+function resolveOther(ctx: Ctx, scene: Scene, ex: Exchange, said: RenderedLine): void {
+  resolve(ctx, scene, ex, ctx.state.run!.combo, [], false, true, said.tokens.map((t) => t.word));
 }
 
 export function startScene(ctx: Ctx, id: string): void {
@@ -295,9 +301,10 @@ export function reply(ctx: Ctx, choice: number): void {
   if (!cur || !run || run.mode !== "pick") return reject(ctx, "no-pick");
   const key = run.options[choice];
   if (key === undefined) return reject(ctx, "bad-choice");
-  if (altIndex(key) !== undefined) return resolveOther(ctx, cur.scene, cur.ex);
+  if (altIndex(key) !== undefined) return resolveOther(ctx, cur.scene, cur.ex, optionLine(cur.ex, run, key));
   const chosen = parseComboKey(key);
-  resolve(ctx, cur.scene, cur.ex, chosen, actionDiff(cur.ex, chosen, run.combo));
+  const said = cur.ex.variants[key].reply.tokens.map((t) => t.word);
+  resolve(ctx, cur.scene, cur.ex, chosen, actionDiff(cur.ex, chosen, run.combo), false, false, said);
 }
 
 export function replyTiles(ctx: Ctx, tiles: number[]): void {
@@ -306,7 +313,10 @@ export function replyTiles(ctx: Ctx, tiles: number[]): void {
   const cur = current(ctx);
   if (!cur || !run || run.mode !== "tiles") return reject(ctx, "no-tiles");
   if (tiles.some((i) => run.tiles[i] === undefined)) return reject(ctx, "bad-tile");
-  const answer = tiles.map((i) => run.tiles[i]).join("");
-  const target = tilePieces(cur.ex.variants[comboKey(run.combo)].reply).join("");
-  resolve(ctx, cur.scene, cur.ex, run.combo, [], answer !== target);
+  const chosen = tiles.map((i) => run.tiles[i]);
+  const reply = cur.ex.variants[comboKey(run.combo)].reply;
+  const target = tilePieces(reply).join("");
+  // Words of the reply the player placed count as said; the rest were missed.
+  const said = reply.tokens.filter((t) => chosen.includes(reply.text.slice(t.start, t.end))).map((t) => t.word);
+  resolve(ctx, cur.scene, cur.ex, run.combo, [], chosen.join("") !== target, false, said);
 }

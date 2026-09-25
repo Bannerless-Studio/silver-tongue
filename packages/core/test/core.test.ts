@@ -252,5 +252,24 @@ describe("core", () => {
     expect(find(tiles.send({ type: "startScene", scene: "intro" }), "replyOptions").mode).toBe("tiles");
     expect([...tiles.state.run!.tiles].sort()).toEqual(["你", "好"].sort()); // the wrong replies add no new words here
   });
+
+  it("a mix-up weakens the right reply's words that the chosen reply lacked", () => {
+    const c = fixtureCourse();
+    c.scenes[0].exchanges[0].variants[""].alts = [line(["好", "w_hao"], ["！", null])];
+    const core = createCore(c, newGame(c), { now: () => T0, rng: mulberry32(1) });
+    core.send({ type: "goTo", place: "noodle_shop" });
+    core.send({ type: "startScene", scene: "intro" });
+    const alt = core.state.run!.options.indexOf("alt:0");
+    core.send({ type: "reply", choice: alt });
+    expect(core.state.words.w_ni).toMatchObject({ wrong: 1, lapsed: true }); // 你 was missing from 好！
+    expect(core.state.words.w_hao.wrong).toBe(0); // 好 was in both
+  });
+
+  it("resumes a saved pick that includes written wrong replies", () => {
+    const core = setup();
+    core.send({ type: "goTo", place: "noodle_shop" });
+    const start = core.send({ type: "startScene", scene: "intro" });
+    expect(describeRun(course, core.state)).toContainEqual(find(start, "replyOptions"));
+  });
 });
 
