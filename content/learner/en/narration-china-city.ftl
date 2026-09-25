@@ -39,3 +39,24 @@ action-fetch = You bring { $item }.
 asked-fetch = They wanted { $item }.
 action-serve = You set down { $count } cups of { $item }.
 asked-serve = They wanted { $count } cups of { $item }.
+
+# Conversations: what was asked, shown after a wrong reply. These are shared by every scene that
+# uses the action, so they say "they" unless only one person ever uses it.
+asked-hello = They were saying hello.
+asked-greet = They were saying hello.
+asked-wang = They were telling you their name.
+asked-how = They wanted to know how you are.
+asked-name = They were telling you what to call them.
+asked-ask = They wanted your name.
+asked-names = They told you their name and wanted yours.
+asked-bye = They were saying goodbye.
+asked-farewell = They were saying goodbye.
+asked-answer = They said "{ $said }" and wanted the usual answer.
+asked-hungry = They asked how you are, and your stomach has an answer.
+asked-noodles = They were offering you noodles.
+asked-like = They wanted to know if you like noodles.
+asked-there = They were pointing somewhere.
+asked-shop = They were telling you there's a restaurant over there.
+asked-zhang = They said a name.
+asked-friend = They were telling you about a friend.
+asked-job = They were offering you work.
