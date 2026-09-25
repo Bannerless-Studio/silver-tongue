@@ -64,7 +64,26 @@ describe("tui app", () => {
     expect(term.screen().join("\n")).toContain("好 — good");
     expect(core.state.words.w_hao.helps).toBe(1);
     term.press("escape");
-    expect(term.screen().join("\n")).toContain("[1-4] reply");
+    expect(term.screen().join("\n")).toContain("[1] reply");
+  });
+
+  it("heads the replies, counts them in the footer, and echoes the one chosen", () => {
+    const { term, core } = setup();
+    term.press("1", "1");
+    let s = term.screen().join("\n");
+    expect(s).toContain("Your reply:");
+    expect(s).toContain("1) 你好！");
+    expect(s).toContain("[1] reply");
+    term.press("1");
+    s = term.screen().join("\n");
+    expect(s).toContain("You: 你好！");
+    expect(s).toContain(`[1-${core.state.run!.options.length}] reply`);
+    expect(term.screen().filter((l) => l.includes("Your reply:")).length).toBe(1);
+  });
+
+  it("counts the menu items in the footer", () => {
+    const { term } = setup();
+    expect(term.screen().join("\n")).toContain("[1-3] choose");
   });
 
   it("q quits from the menu", () => {
@@ -92,6 +111,7 @@ describe("tui app", () => {
     expect(term.screen().join("\n")).toContain("That's not what they asked for.");
     expect(term.screen().at(-2)).toMatch(/You say: +│$/);
     term.press(right, "return");
+    expect(term.screen().join("\n")).toContain(`You: ${want}`);
     expect(term.screen().join("\n")).toContain("Done. You earned");
   });
 

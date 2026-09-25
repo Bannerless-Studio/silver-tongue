@@ -14,13 +14,15 @@ menu-go = Go to { $place }
 menu-sleep = Sleep (end the day)
 menu-quit = Save and quit
 
-keys-explore = [1-9] choose · [q] quit
-keys-pick = [1-4] reply · [w] word help
-keys-tiles = [1-9] add tile · [⌫] undo · [enter] say it · [w] word help
-keys-help = [1-9] look up · [esc] back
+keys-explore = [{ $keys }] choose · [q] quit
+keys-pick = [{ $keys }] reply · [w] word help
+keys-tiles = [{ $keys }] add tile · [⌫] undo · [enter] say it · [w] word help
+keys-help = [{ $keys }] look up · [esc] back
 
 help-title = Which word?
+reply-title = Your reply:
 tiles-answer = You say:
+you = You
 
 mismatch = That's not what they asked for.
 rephrased = (slower)
