@@ -197,6 +197,18 @@ describe("tui app", () => {
     expect(saves.length).toBe(1);
   });
 
+  it("won't sleep away from home, and says so", () => {
+    const { term, core, saves } = setup(
+      (s) => (s.place = "noodle_shop"),
+      (c) => (c.world.home = "street"),
+    );
+    const savedBefore = saves.length;
+    term.press("3");
+    expect(term.screen().join("\n")).toContain("You want your own bed. Head home first.");
+    expect(core.state.day).toBe(1);
+    expect(saves.length).toBe(savedBefore); // a refused input isn't saved
+  });
+
   it("sleeping ends the day", () => {
     const { term } = setup();
     term.press("2");

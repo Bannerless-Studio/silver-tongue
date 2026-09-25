@@ -147,6 +147,30 @@ describe("core", () => {
     ]);
   });
 
+  it("sleeps only at home when the course has one", () => {
+    const c = fixtureCourse();
+    c.world.home = "street";
+    const core = createCore(c, newGame(c), { now: () => T0, rng: mulberry32(1) });
+    core.send({ type: "goTo", place: "noodle_shop" });
+    const before = core.state;
+    expect(core.send({ type: "sleep" })).toEqual([{ type: "inputRejected", reason: "not-home" }]);
+    expect(core.state).toBe(before);
+    core.send({ type: "goTo", place: "street" });
+    expect(types(core.send({ type: "sleep" }))).toContain("dayEnded");
+    expect(core.state.day).toBe(2);
+  });
+
+  it("keeps a running scene going after the course adds to its `after`", () => {
+    const core = setup();
+    playIntro(core);
+    core.send({ type: "startScene", scene: "shift" });
+    const c = fixtureCourse();
+    c.scenes[1].after = ["intro", "later"];
+    const resumed = createCore(c, core.state, { now: () => T0, rng: mulberry32(1) });
+    const choice = resumed.state.run!.options.indexOf(comboKey(resumed.state.run!.combo));
+    expect(types(resumed.send({ type: "reply", choice }))).not.toContain("inputRejected");
+  });
+
   it("uses day slots and refuses scenes when they run out", () => {
     const core = setup();
     playIntro(core);
