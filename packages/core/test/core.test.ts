@@ -225,7 +225,7 @@ describe("core", () => {
     core.send({ type: "goTo", place: "noodle_shop" });
     const start = core.send({ type: "startScene", scene: "intro" });
     const opts = find(start, "replyOptions");
-    expect(opts.mode === "pick" && opts.options.map((o) => o.text).sort()).toEqual(["不好！", "你好！", "这个！"].sort());
+    expect(opts.mode === "pick" && opts.options.map((o) => o.text).sort()).toEqual(["你好！", "好你！", "好！"].sort());
     const run = core.state.run!;
     const alt = run.options.findIndex((k) => k.startsWith("alt:"));
     const miss = core.send({ type: "reply", choice: alt });
@@ -250,7 +250,7 @@ describe("core", () => {
     const words = { w_ni: { ...lapsed }, w_hao: { ...lapsed } };
     const tiles = createCore(course, { ...core.state, place: "noodle_shop", words }, { now: () => T0, rng: mulberry32(2) });
     expect(find(tiles.send({ type: "startScene", scene: "intro" }), "replyOptions").mode).toBe("tiles");
-    expect(tiles.state.run!.tiles.length).toBeGreaterThan(2); // the reply's words plus extras from the wrong replies
+    expect([...tiles.state.run!.tiles].sort()).toEqual(["你", "好"].sort()); // the wrong replies add no new words here
   });
 });
 

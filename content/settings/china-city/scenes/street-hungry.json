@@ -1,68 +1,70 @@
 {
-  "id": "street-hello",
+  "id": "street-hungry",
   "place": "street",
   "npc": "wang",
   "stage": 1,
-  "after": [],
+  "after": [
+    "street-hello"
+  ],
   "requires": {},
   "repeatable": false,
   "trustGain": 1,
   "exchanges": [
     {
-      "id": "hello",
+      "id": "hungry",
       "slots": {},
       "expect": {
-        "action": "hello"
+        "action": "hungry"
       },
       "hinges": [],
       "pay": 0,
       "missCost": 0
     },
     {
-      "id": "wang",
+      "id": "noodles",
       "slots": {},
       "expect": {
-        "action": "wang"
+        "action": "noodles"
       },
       "hinges": [],
       "pay": 0,
       "missCost": 0
     },
     {
-      "id": "how",
+      "id": "there",
       "slots": {},
       "expect": {
-        "action": "how"
+        "action": "there"
       },
       "hinges": [],
       "pay": 0,
       "missCost": 0
     },
     {
-      "id": "name",
+      "id": "shop",
       "slots": {},
       "expect": {
-        "action": "name"
+        "action": "shop"
       },
       "hinges": [],
       "pay": 0,
       "missCost": 0
     },
     {
-      "id": "naming",
+      "id": "zhang",
       "slots": {},
       "expect": {
-        "action": "naming"
+        "action": "zhang"
       },
       "hinges": [],
       "pay": 0,
       "missCost": 0
     },
     {
-      "id": "ask",
+      "id": "friend",
       "slots": {},
       "expect": {
-        "action": "ask"
+        "action": "friend"
       },
       "hinges": [],
       "pay": 0,

@@ -272,6 +272,12 @@ The build fails if:
 
 A single fixed-form line (for example, an irregular form that templating handles badly) can be written as an explicit Fluent variant for that slot value.
 
+**Written wrong replies.** A lines file may add `<exchange>-alt1` … `-alt3`: wrong replies offered next to the right one (pick mode) and as extra tiles. This gives exchanges without slots real choices. They may use only words the player has met by then, so every option is something they could have understood. Picking one is a mix-up.
+
+**Reply words count.** A right reply records its own words as answered right (and where first said), not only the hinge words, so a word the player says, such as 不客气, is learned too. The reply mode follows the weakest of the hinge and reply words; a word never yet answered right keeps pick mode, and two wrong tile answers fall back to pick.
+
+**Bonus words.** `languages/<lang>/bonus.json` lists pack word ids above the stage that the course may use anyway (面条 at a noodle shop); `extra-words.json` adds words not in the pack at all, such as names (老王, 小马).
+
 ## Front ends
 
 ### Text game (TUI)

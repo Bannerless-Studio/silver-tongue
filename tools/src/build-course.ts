@@ -73,7 +73,12 @@ export function buildCourse(root: string, courseId: string): BuildResult {
   const packWords = attempt("words", () => {
     const extraPath = join(langDir, "extra-words.json");
     const extra = existsSync(extraPath) ? readJson<PackWord[]>(extraPath).map((w) => ({ ...w, bonus: true })) : [];
-    return [...readJson<PackWord[]>(join(langDir, "words.json")), ...extra];
+    // bonus.json: pack words above the stage that the course may use anyway, e.g. 面条 at a noodle shop.
+    const bonusPath = join(langDir, "bonus.json");
+    const bonusIds = new Set(existsSync(bonusPath) ? readJson<string[]>(bonusPath) : []);
+    const pack = readJson<PackWord[]>(join(langDir, "words.json")).map((w) => (bonusIds.has(w.id) ? { ...w, bonus: true } : w));
+    for (const id of bonusIds) if (!pack.some((w) => w.id === id)) throw new Error(`bonus.json: unknown word id "${id}"`);
+    return [...pack, ...extra];
   });
   const lex: Lexicon | undefined = packWords && attempt("words", () => buildLexicon(packWords));
   if (!packWords || !lex) return stop();
@@ -186,6 +191,8 @@ export function buildCourse(root: string, courseId: string): BuildResult {
             reply: toLine(r.render(`${ex.id}-reply`, args), where),
           };
           if (r.has(`${ex.id}-rephrase`)) variant.rephrase = toLine(r.render(`${ex.id}-rephrase`, args), where);
+          const altIds = [1, 2, 3].map((n) => `${ex.id}-alt${n}`).filter((id) => r.has(id));
+          if (altIds.length) variant.alts = altIds.map((id) => toLine(r.render(id, args), where));
           variants[comboKey(combo)] = variant;
           if (meaningsSrc === undefined || meaningTerms === undefined) return;
           attempt(`${where} (${cfg.learner} meaning)`, () => {
@@ -197,6 +204,7 @@ export function buildCourse(root: string, courseId: string): BuildResult {
             variant.npc.meaning = m.render(ex.id, args);
             variant.reply.meaning = m.render(`${ex.id}-reply`, args);
             if (variant.rephrase) variant.rephrase.meaning = m.render(`${ex.id}-rephrase`, args);
+            variant.alts?.forEach((l, i) => (l.meaning = m.render(`${ex.id}-alt${i + 1}`, args)));
           });
         });
       }
@@ -285,7 +293,9 @@ export function buildCourse(root: string, courseId: string): BuildResult {
     ...Object.values(reactions).flatMap((l) => l.tokens.map((t) => t.word)),
     ...scenes.flatMap((s) =>
       s.exchanges.flatMap((ex) =>
-        Object.values(ex.variants).flatMap((v) => [v.npc, v.reply, v.rephrase].flatMap((l) => l?.tokens.map((t) => t.word) ?? [])),
+        Object.values(ex.variants).flatMap((v) =>
+          [v.npc, v.reply, v.rephrase, ...(v.alts ?? [])].flatMap((l) => l?.tokens.map((t) => t.word) ?? []),
+        ),
       ),
     ),
   ]);

@@ -28,7 +28,7 @@ describe("build-course (real content)", () => {
 
   it("builds zh-china-en with no errors", () => {
     expect(errors).toEqual([]);
-    expect(course!.scenes.map((s) => s.id)).toEqual(["noodle-intro", "noodle-shift", "street-hello", "street-practice"]);
+    expect(course!.scenes.map((s) => s.id)).toEqual(["noodle-intro", "noodle-shift", "street-hello", "street-hungry", "street-practice"]);
   });
 
   it("renders every slot combination and tags its words", () => {
@@ -53,7 +53,7 @@ describe("build-course (real content)", () => {
     expect(course!.conceptNames.tea).toBe("tea");
     expect(course!.conceptNames.thanks).toBe("Thank you");
     expect(course!.stageWords["1"]).toHaveLength(150);
-    expect(course!.notes.map((n) => n.id)).toEqual(["bukeqi", "hao-ma", "bei"]);
+    expect(course!.notes.map((n) => n.id)).toEqual(["hao-ma", "lao-xiao", "le", "bukeqi", "bei"]);
     expect(course!.world.mentor).toEqual({ npc: "wang", after: "street-hello" });
     expect(course!.learnerFtl).toContain("note-bei-title");
   });
