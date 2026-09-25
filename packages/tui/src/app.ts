@@ -258,7 +258,7 @@ export function startApp(opts: AppOptions): App {
     const title: StyledLine = [{ text: t("reply-title"), dim: true }];
     if (replyMode === "pick") return [title, ...pickOptions.map((o, i) => [{ text: `${i + 1}) ` }, ...lineSpans(o, new Set())])];
     return [
-      title,
+      [{ text: t("tiles-title"), dim: true }],
       ...wrapItems(
         tiles.map((x, i) => `[${i + 1}]${x}`),
         width,

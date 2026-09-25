@@ -192,5 +192,32 @@ describe("core", () => {
     expect(core.state.log).toHaveLength(LOG_LIMIT);
     expect(core.state.log.at(-1)!.input).toEqual({ type: "helpWord", word: "w_ni" });
   });
+
+  it("keeps picking for a word got wrong but never right: tiles are for words once known", () => {
+    const core = setup();
+    playIntro(core);
+    const wrongOnly = { right: 0, wrong: 1, streak: 0, helps: 0, lapsed: true, firstSeen: T0, lastSeen: T0 };
+    const words = Object.fromEntries(["w_cha", "w_shui", "w_san", "w_si"].map((w) => [w, { ...wrongOnly }]));
+    const pick = createCore(course, { ...core.state, words }, { now: () => T0, rng: mulberry32(2) });
+    expect(find(pick.send({ type: "startScene", scene: "shift" }), "replyOptions").mode).toBe("pick");
+    const lapsed = Object.fromEntries(Object.keys(words).map((w) => [w, { ...wrongOnly, right: 1 }]));
+    const tiles = createCore(course, { ...core.state, words: lapsed }, { now: () => T0, rng: mulberry32(2) });
+    expect(find(tiles.send({ type: "startScene", scene: "shift" }), "replyOptions").mode).toBe("tiles");
+  });
+
+  it("falls back to picking after two wrong tile answers", () => {
+    const core = setup();
+    playIntro(core);
+    const lapsed = { right: 1, wrong: 1, streak: 0, helps: 0, lapsed: true, firstSeen: T0, lastSeen: T0 };
+    const words = Object.fromEntries(["w_cha", "w_shui", "w_san", "w_si"].map((w) => [w, { ...lapsed }]));
+    const tiles = createCore(course, { ...core.state, words }, { now: () => T0, rng: mulberry32(2) });
+    tiles.send({ type: "startScene", scene: "shift" });
+    expect(find(tiles.send({ type: "replyTiles", tiles: [0] }), "replyOptions").mode).toBe("tiles");
+    const second = tiles.send({ type: "replyTiles", tiles: [0] });
+    expect(find(second, "replyOptions").mode).toBe("pick");
+    expect(tiles.state.run!.mode).toBe("pick");
+    expect(tiles.state.run!.options).toContain(comboKey(tiles.state.run!.combo));
+    expect(find(answerRight(tiles), "actionPerformed").matched).toBe(true);
+  });
 });
 

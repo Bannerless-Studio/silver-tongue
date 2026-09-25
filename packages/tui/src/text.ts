@@ -52,6 +52,7 @@ export const UI_KEYS: Record<string, string[]> = {
   "help-in-replies": [],
   "help-title": [],
   "reply-title": [],
+  "tiles-title": [],
   "tiles-answer": [],
   you: [],
   mismatch: [],

@@ -21,7 +21,7 @@ menu-quit = Save and quit
 
 keys-explore = [{ $keys }] choose · [n] notebook · [q] quit
 keys-pick = [{ $keys }] reply · [w] word help · [n] notebook
-keys-tiles = [{ $keys }] add tile · [⌫] undo · [enter] say it · [w] word help
+keys-tiles = [{ $keys }] add · [⌫] undo · [enter] say · [w] help · [n] notebook
 keys-help = [{ $keys }] look up · [esc] back
 keys-help-sentence = [{ $keys }] look up · [s] whole sentence · [esc] back
 
@@ -29,6 +29,7 @@ help-title = Which word?
 help-sentence = The whole sentence
 help-in-replies = In the replies:
 reply-title = Your reply:
+tiles-title = Your reply: tap the words in order, then press [enter].
 tiles-answer = You say:
 you = You
 
