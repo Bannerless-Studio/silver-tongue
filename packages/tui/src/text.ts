@@ -92,3 +92,23 @@ export function uiTextProblems(ftl: string, locale: string): string[] {
   }
   return problems;
 }
+
+/**
+ * Narration for actions (action-<name>, asked-<name>) that can't be formatted with the action's
+ * parameters, e.g. a misspelt variable. Both messages are optional.
+ */
+export function narrationProblems(ftl: string, locale: string, actions: Record<string, string[]>): string[] {
+  const bundle = new FluentBundle(locale, { useIsolating: false });
+  bundle.addResource(new FluentResource(ftl));
+  const problems: string[] = [];
+  for (const [action, params] of Object.entries(actions)) {
+    for (const id of [`action-${action}`, `asked-${action}`]) {
+      const msg = bundle.getMessage(id);
+      if (!msg?.value) continue;
+      const errors: Error[] = [];
+      bundle.formatPattern(msg.value, Object.fromEntries(params.map((p) => [p, "x"])), errors);
+      for (const e of errors) problems.push(`narration "${id}": ${e.message}`);
+    }
+  }
+  return problems;
+}

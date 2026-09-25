@@ -88,14 +88,14 @@ export function startApp(opts: AppOptions): App {
     Object.fromEntries(Object.entries(a).map(([k, v]) => [k, course.conceptNames[v] ?? v]));
 
   /**
-   * What the reply did (action-<name>) and, on a mix-up, what was asked (asked-<name>), falling back
-   * to the generic mismatch line. A wrong tile answer did nothing recognisable, so it isn't narrated.
+   * What the reply did (action-<name>) and, on a mix-up, what was asked (asked-<name> of the asked
+   * action), falling back to the generic mismatch line. Wrong tiles did nothing recognisable, so only
+   * what was asked is narrated.
    */
   function narrateAction(action: Record<string, string>, expected: Record<string, string>, matched: boolean, tilesWrong: boolean) {
-    const name = action.action;
-    if (!tilesWrong && t.has(`action-${name}`)) push([{ text: t(`action-${name}`, actionArgs(action)), dim: true }]);
+    if (!tilesWrong && t.has(`action-${action.action}`)) push([{ text: t(`action-${action.action}`, actionArgs(action)), dim: true }]);
     if (matched) return;
-    if (!tilesWrong && t.has(`asked-${name}`)) push([{ text: t(`asked-${name}`, actionArgs(expected)), color: "yellow" }]);
+    if (t.has(`asked-${expected.action}`)) push([{ text: t(`asked-${expected.action}`, actionArgs(expected)), color: "yellow" }]);
     else push([{ text: t("mismatch"), color: "yellow" }]);
   }
 
@@ -107,6 +107,7 @@ export function startApp(opts: AppOptions): App {
     const fresh = new Set(
       events.flatMap((e) => (e.type === "wordStateChanged" && e.from === "unseen" ? [e.word] : [])),
     );
+    let hinted = false;
     for (const e of events) {
       switch (e.type) {
         case "placeEntered":
@@ -172,7 +173,9 @@ export function startApp(opts: AppOptions): App {
           push([{ text: t(`reject-${e.reason}`), color: "red" }]);
           break;
         case "noteReady":
-          if (course.world.mentor) push([{ text: t("note-hint", { npc: npcName(course.world.mentor.npc) }), color: "magenta" }]);
+          // One hint however many notes became ready at once.
+          if (course.world.mentor && !hinted) push([{ text: t("note-hint", { npc: npcName(course.world.mentor.npc) }), color: "magenta" }]);
+          hinted = true;
           break;
         case "mentorVisited":
           push([]);
@@ -210,7 +213,8 @@ export function startApp(opts: AppOptions): App {
         input: { type: "startScene", scene: id },
       });
     }
-    if (mentorAvailable(course, s)) {
+    // Offered only when there is something to explain, so a slot is never spent on nothing.
+    if (mentorAvailable(course, s) && s.notes.ready.length) {
       items.push({ label: t("menu-mentor", { npc: npcName(course.world.mentor!.npc) }) + t("cost-slot"), input: { type: "visitMentor" } });
     }
     for (const p of course.world.places[s.place].links) {

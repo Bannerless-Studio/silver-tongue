@@ -13,7 +13,8 @@ The player's reply is an action, and the game now says what happened instead of 
 - Narration messages, all optional, in `narration-<setting>.ftl`:
   - `action-<name>`: what happened. Variables: the action's parameters, with concept values given as learner names. Example: `action-serve = You set down { $count } cups of { $item }.`
   - `asked-<name>`: what was asked, shown only on a mismatch. Example: `asked-serve = The cook wanted { $count } cups of { $item }.`
-- The TUI shows `action-<name>` after every reply that has one. On a mismatch it shows `asked-<name>` if there is one, and otherwise falls back to the generic `mismatch` line.
+- The TUI shows `action-<name>` after every reply that has one, except a wrong tiles answer, which did nothing recognisable. On a mismatch it shows `asked-<name>` for the asked action if there is one, and otherwise falls back to the generic `mismatch` line.
+- The build checks that narration formats with each action's parameters, so a misspelt variable fails the build.
 - Pilot content gets narration for `fetch` and `serve`, the noodle-shop actions. Greetings have none, because Old Wang's reaction says enough.
 
 ## 2. Notebook (`n`)
@@ -21,7 +22,7 @@ The player's reply is an action, and the game now says what happened instead of 
 - `WordRecord` gains an optional `first: { line: string; place: string }`, set the first time the word is seen in a spoken line. Old saves stay valid (the field is optional; `SAVE_VERSION` stays 1).
 - The build gives the course `stageWords: Record<stage, WordId[]>`: every pack word on each stage's levels. That's the "stage word list" progress counts toward. It's ids only, so it stays small.
 - The view is reachable from the menu and in conversation. It costs no time.
-  - Header: `Stage 1: 5 of 150 words known · 12 met`.
+  - Header: `Stage 1: 5 of 150 words known · 12 heard`.
   - Words the player has seen, grouped by the place they were first heard. Each line: state mark (`●` known, `◐` shaky, `○` met), word, pronunciation, gloss, first line.
   - Then **Notes**: the mentor notes already read, as title and text.
   - `↑`/`↓` scroll. `esc` or `n` closes it.
@@ -30,7 +31,7 @@ The player's reply is an action, and the game now says what happened instead of 
 
 Old Wang already teaches on the bench, so he is the mentor. There's no separate neighbour.
 
-- The world gains `mentor: { npc: "wang", after: "street-hello" }`. Once `after` is done, the menu at his place offers "Ask Old Wang about the language (1 slot)".
+- The world gains `mentor: { npc: "wang", after: "street-hello" }`. Once `after` is done and a note is waiting, the menu at his place offers "Ask Old Wang about the language (1 slot)". It isn't offered with nothing to explain, so a slot is never wasted.
 - `languages/zh/notes.json` holds `[{ "id": "bei", "trigger": { "word": "x0001" } }, { "id": "hao-ma", "trigger": { "scene": "noodle-intro" } }, …]`. A `word` trigger fires when the word has been seen; a `scene` trigger fires when the scene is done.
 - `learner/en/mentor-zh.ftl` holds `note-<id>-title` and `note-<id>`.
 - Core:
@@ -39,7 +40,7 @@ Old Wang already teaches on the bench, so he is the mentor. There's no separate 
   - New input `visitMentor`. It needs no running scene, the mentor's place and a free slot. It costs one slot and emits `mentorVisited { npc, notes }` with the ready notes in order, which then count as read. With nothing ready, `notes` is `[]`.
   - New reject reasons: `no-mentor` for the wrong place or before `after`. Otherwise the existing `in-scene` and `no-slots` apply.
 - TUI:
-  - `noteReady` shows a hint: "Old Wang looks like he has something to tell you."
+  - `noteReady` shows a hint, once however many notes became ready together: "Old Wang seems to have something to tell you."
   - `mentorVisited` shows each note's title and text, or `mentor-nothing` when there's none.
 - Pilot notes, three of them:
   - 不客气 means "don't be polite" (after street-hello).

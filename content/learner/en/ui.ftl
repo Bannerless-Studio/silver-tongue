@@ -70,7 +70,7 @@ resume-item = Day { $day } · { $place } · { $currency }{ $wallet } · { $done 
 resume-ask = Which one? (number, or enter to cancel)
 resume-none = No saved games yet, so here's a new one.
 reject-no-mentor = There's nobody here to explain things.
-note-hint = { $npc } looks like they have something to tell you.
+note-hint = { $npc } seems to have something to tell you.
 mentor-nothing = { $npc } has nothing new to explain today.
 
 keys-notebook = [↑↓] scroll · [esc] back

@@ -13,7 +13,7 @@ import {
   type Word,
   type World,
 } from "@silver-tongue/core";
-import { uiTextProblems } from "@silver-tongue/tui";
+import { narrationProblems, uiTextProblems } from "@silver-tongue/tui";
 import { checkCourse } from "./check";
 import { bindSlots, messageIds, parseFtl, Renderer, termNames, type FtlSource } from "./fluent";
 import type { PackMeta, PackWord } from "./pack";
@@ -271,6 +271,13 @@ export function buildCourse(root: string, courseId: string): BuildResult {
   const learnerIds = attempt("learner text", () => new Set(messageIds(learnerFtl, "learner files"))) ?? new Set<string>();
   errors.push(...checkCourse({ course, stages: meta.stages, checks: cfg.checks, learnerIds, requiredUi: [] }));
   errors.push(...uiTextProblems(learnerFtl, cfg.learner));
+  // Each action's narration gets the parameters its exchanges' `expect` gives it.
+  const actions: Record<string, string[]> = {};
+  for (const ex of scenes.flatMap((s) => s.exchanges)) {
+    const name = ex.expect.action;
+    if (name) actions[name] = [...new Set([...(actions[name] ?? []), ...Object.keys(ex.expect).filter((k) => k !== "action")])];
+  }
+  errors.push(...narrationProblems(learnerFtl, cfg.learner, actions));
   // Ship only the words the course uses: rank is the share of these that are known, and
   // the pack has far more words than one course needs. (The checks above see the whole pack.)
   const used = new Set<string>([

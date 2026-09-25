@@ -298,7 +298,7 @@ describe("tui app", () => {
     };
     const { term, core } = setup(() => {}, mentor);
     term.press("1", "1");
-    expect(term.screen().join("\n")).toContain("Cook looks like they have something to tell you.");
+    expect(term.screen().join("\n")).toContain("Cook seems to have something to tell you.");
     term.press("1");
     term.press(rightKey(core));
     expect(term.screen().join("\n")).toContain("2) Ask Cook about the language · 1 slot");
@@ -306,9 +306,36 @@ describe("tui app", () => {
     let s = term.screen().join("\n");
     expect(s).toContain("好 means good");
     expect(s).toContain("On its own, 好 agrees.");
-    term.press("2");
-    s = term.screen().join("\n");
-    expect(s).toContain("Cook has nothing new to explain today.");
+    expect(s).not.toContain("Ask Cook about the language"); // nothing left to explain
+  });
+
+  it("on a wrong tiles answer, says what was asked but not an action", () => {
+    const shaky = { right: 0, wrong: 1, streak: 0, helps: 0, lapsed: true, firstSeen: 0, lastSeen: 0 };
+    const { term, core } = setup((s) => {
+      s.scenesDone.intro = 1;
+      s.trust.cook = 2;
+      s.place = "noodle_shop";
+      for (const w of ["w_cha", "w_shui", "w_san", "w_si"]) s.words[w] = { ...shaky };
+    });
+    term.press("1");
+    expect(core.state.run!.mode).toBe("tiles");
+    const { combo } = core.state.run!;
+    term.press("1", "return");
+    const s = term.screen().join("\n");
+    expect(s).toContain(`They wanted ${combo.count} cups of ${combo.item}.`);
+    expect(s).not.toContain("You set down");
+  });
+
+  it("keeps the NPC's request on screen when the prompt nearly fills it", () => {
+    const { term, core } = setup((s) => {
+      s.scenesDone.intro = 1;
+      s.trust.cook = 2;
+      s.place = "noodle_shop";
+    });
+    term.press("1");
+    const rows = core.state.run!.options.length + 1 + 1 + 2; // options, "Your reply:", one log line, frame
+    term.resize(64, rows);
+    expect(term.screen().join("\n")).toMatch(/Cook: .+。/);
   });
 
   it("opens the notebook with n, scrolls it, and goes back where it was", () => {

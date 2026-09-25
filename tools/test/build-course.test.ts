@@ -1,4 +1,4 @@
-import { cpSync, mkdtempSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
+import { cpSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -97,6 +97,14 @@ describe("build-course (broken content)", () => {
     });
     expect(bad.errors).toContain('noodle-intro/job (en meaning): missing message "job"');
     expect(bad.errors.some((e) => e.startsWith("noodle-shift: no en meanings"))).toBe(true);
+  });
+
+  it("reports narration that can't be formatted with the action's parameters", () => {
+    const bad = buildChanged((d) => {
+      const f = join(d, "learner/en/narration-china-city.ftl");
+      writeFileSync(f, readFileSync(f, "utf8").replace("action-fetch = You bring { $item }.", "action-fetch = You bring { $itme }."));
+    });
+    expect(bad.errors.some((e) => e.startsWith('narration "action-fetch"'))).toBe(true);
   });
 
   it("reports a syntax error in a lines file once, not once per slot combination", () => {
