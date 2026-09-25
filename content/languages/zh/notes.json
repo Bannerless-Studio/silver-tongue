@@ -1,5 +1,7 @@
 [
-  { "id": "bukeqi", "trigger": { "scene": "street-hello" } },
-  { "id": "hao-ma", "trigger": { "scene": "noodle-intro" } },
+  { "id": "hao-ma", "trigger": { "scene": "street-hello" } },
+  { "id": "lao-xiao", "trigger": { "word": "x0004" } },
+  { "id": "le", "trigger": { "scene": "street-hungry" } },
+  { "id": "bukeqi", "trigger": { "word": "w0141" } },
   { "id": "bei", "trigger": { "word": "x0001" } }
 ]

@@ -44,6 +44,8 @@ const greet: Exchange = {
     "": {
       npc: { ...line(["你", "w_ni"], ["好", "w_hao"], ["！", null]), meaning: "Hello!" },
       reply: { ...line(["你", "w_ni"], ["好", "w_hao"], ["！", null]), meaning: "Hello!" },
+      // Written wrong replies may only use words met by now: here, the greeting's own.
+      alts: [line(["好", "w_hao"], ["！", null]), line(["好", "w_hao"], ["你", "w_ni"], ["！", null])],
     },
   },
 };

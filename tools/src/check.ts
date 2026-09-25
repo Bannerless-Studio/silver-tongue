@@ -177,6 +177,17 @@ export function checkCourse(input: CheckInput): string[] {
           errors.push(`${where}: ${fresh.length} new words (${shown}); at most ${MAX_NEW_PER_EXCHANGE}`);
         }
         checkLevels(where, words, s.stage);
+        // Written wrong replies are offered next to the right one: they may use only words the
+        // player has met, so every option is something they could have understood.
+        for (const alt of v.alts ?? []) {
+          const altWords = lineWords(alt);
+          checkLevels(where, altWords, s.stage);
+          const unmet = [...new Set(altWords)].filter((w) => !seen.has(w) && !words.includes(w));
+          if (unmet.length) {
+            errors.push(`${where}: the wrong reply "${alt.text}" uses words not met yet: ${unmet.map((w) => course.words[w]?.w ?? w).join(" ")}`);
+          }
+          if (alt.tokens.length > MAX_REPLY_WORDS) errors.push(`${where}: the wrong reply "${alt.text}" has ${alt.tokens.length} words; at most ${MAX_REPLY_WORDS}`);
+        }
         if (v.reply.tokens.length > MAX_REPLY_WORDS) {
           errors.push(`${where}: the reply has ${v.reply.tokens.length} words; at most ${MAX_REPLY_WORDS}`);
         }

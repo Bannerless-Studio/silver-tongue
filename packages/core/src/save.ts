@@ -1,5 +1,5 @@
 import { comboKey } from "./combo";
-import { tilePieces } from "./dialogue";
+import { altIndex, tilePieces } from "./dialogue";
 import type { Course, GameState, SceneRun } from "./types";
 
 export const SAVE_VERSION = 1;
@@ -48,7 +48,12 @@ function runFits(run: SceneRun, course: Course): boolean {
   const ex = course.scenes.find((s) => s.id === run.scene)?.exchanges[run.exchange];
   const v = ex?.variants[comboKey(run.combo)];
   if (!ex || !v) return false;
-  if (run.mode === "pick") return run.options.every((k) => !!ex.variants[k]);
+  if (run.mode === "pick") {
+    return run.options.every((k) => {
+      const n = altIndex(k);
+      return n === undefined ? !!ex.variants[k] : !!v.alts?.[n];
+    });
+  }
   return tilesCover(run.tiles, tilePieces(v.reply));
 }
 

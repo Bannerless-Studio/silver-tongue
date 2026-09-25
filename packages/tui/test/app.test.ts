@@ -57,7 +57,7 @@ describe("tui app", () => {
     const { term, core } = setup();
     term.press("1", "1");
     expect(term.screen().join("\n")).toContain("The cook looks up from a steaming pot");
-    term.press("1");
+    term.press(rightKey(core));
     term.press(rightKey(core));
     expect(term.screen().join("\n")).toContain("She hands you an apron.");
   });
@@ -93,7 +93,7 @@ describe("tui app", () => {
     expect(term.screen().join("\n")).toContain("好 hǎo — good");
     expect(core.state.words.w_hao.helps).toBe(1);
     term.press("escape");
-    expect(term.screen().join("\n")).toContain("[1] reply");
+    expect(term.screen().join("\n")).toContain("[1-3] reply");
   });
 
   it("heads the replies, counts them in the footer, and echoes the one chosen", () => {
@@ -101,9 +101,9 @@ describe("tui app", () => {
     term.press("1", "1");
     let s = term.screen().join("\n");
     expect(s).toContain("Your reply:");
-    expect(s).toContain("1) 你好！");
-    expect(s).toContain("[1] reply");
-    term.press("1");
+    expect(s).toMatch(/[1-3]\) 你好！/);
+    expect(s).toContain("[1-3] reply");
+    term.press(rightKey(core));
     s = term.screen().join("\n");
     expect(s).toContain("You: 你好！");
     expect(s).toContain(`[1-${core.state.run!.options.length}] reply`);
@@ -299,7 +299,7 @@ describe("tui app", () => {
     const { term, core } = setup(() => {}, mentor);
     term.press("1", "1");
     expect(term.screen().join("\n")).toContain("Cook seems to have something to tell you.");
-    term.press("1");
+    term.press(rightKey(core));
     term.press(rightKey(core));
     expect(term.screen().join("\n")).toContain("2) Ask Cook about the language · 1 slot");
     term.press("2");
@@ -315,7 +315,7 @@ describe("tui app", () => {
       s.scenesDone.intro = 1;
       s.trust.cook = 2;
       s.place = "noodle_shop";
-      for (const w of ["w_cha", "w_shui", "w_san", "w_si"]) s.words[w] = { ...shaky };
+      for (const w of ["w_cha", "w_shui", "w_san", "w_si", "w_hao", "x_bei"]) s.words[w] = { ...shaky };
     });
     term.press("1");
     expect(core.state.run!.mode).toBe("tiles");

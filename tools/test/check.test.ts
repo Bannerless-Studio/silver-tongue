@@ -160,5 +160,11 @@ describe("checkCourse", () => {
     expect(errors).toContain('world: mentor "ghost" is not an npc');
     expect(errors).toContain('world: mentor comes after unknown scene "nope"');
   });
+
+  it("lets written wrong replies use only words the player has met", () => {
+    const c = fixtureCourse();
+    c.scenes[0].exchanges[0].variants[""].alts = [line(["茶", "w_cha"], ["！", null])];
+    expect(checkCourse(input({ course: c }))).toContain('intro/greet: the wrong reply "茶！" uses words not met yet: 茶');
+  });
 });
 

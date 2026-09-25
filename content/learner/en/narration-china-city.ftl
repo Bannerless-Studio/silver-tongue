@@ -13,16 +13,20 @@ npc-wang = Old Wang
 npc-cook = Cook
 
 # Scene names for the menu; scene-<id>-start and scene-<id>-end are optional narration.
-scene-street-hello = Say hello
-scene-street-hello-start = The old man pats the bench beside him. "Wang," he says, pointing at himself. He seems to have decided you need lessons: he says something, you answer. Use [w] when you're stuck.
-scene-street-hello-end = Old Wang beams. He points across the road at the noodle shop, mimes slurping noodles, then rubs his fingers together. Work. Money.
+scene-street-hello = Meet Old Wang
+scene-street-hello-start = The old man pats the bench beside him and points at himself. He seems to have decided you need lessons: he says something, you answer. Stuck? Press [w] to look words up, and [s] there to see what the whole sentence means.
+scene-street-hello-end = Old Wang looks delighted with his new student. You have a Chinese name now: 小马, Xiǎo Mǎ, "little horse". You didn't get a vote.
+
+scene-street-hungry = Talk about food
+scene-street-hungry-start = Your stomach growls, loudly. Old Wang raises an eyebrow.
+scene-street-hungry-end = Old Wang points at the noodle shop, then at you, then mimes rolling up his sleeves. Work first, noodles after.
 
 scene-street-practice = Practise greetings
 scene-street-practice-start = Old Wang shuffles over to make room. Another lesson, then.
 scene-street-practice-end = Old Wang nods, satisfied, and goes back to watching the street.
 
 scene-noodle-intro = Ask about work
-scene-noodle-intro-start = The cook looks you up and down, wiping her hands on her apron.
+scene-noodle-intro-start = The cook looks you up and down, wiping her hands on her apron. So this is Old Wang's latest project.
 scene-noodle-intro-end = She throws you an apron. You have a job, sort of.
 
 scene-noodle-shift = Work a shift

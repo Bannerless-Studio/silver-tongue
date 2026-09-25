@@ -28,6 +28,8 @@ export interface Variant {
   npc: RenderedLine;
   reply: RenderedLine;
   rephrase?: RenderedLine;
+  /** written wrong replies, offered alongside the right one (pick mode: "alt:<n>"; tiles: extra words) */
+  alts?: RenderedLine[];
 }
 
 export interface Exchange {
@@ -131,7 +133,7 @@ export interface SceneRun {
   exchange: number;
   combo: Record<string, string>;
   mode: ReplyMode;
-  /** pick mode: combo keys in display order */
+  /** pick mode: combo keys, or "alt:<n>" for a written wrong reply, in display order */
   options: string[];
   /** tiles mode: tile texts in display order */
   tiles: string[];

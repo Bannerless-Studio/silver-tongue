@@ -82,7 +82,14 @@ function speak(ctx: Ctx, npc: string, line: RenderedLine): void {
   hear(ctx, line);
 }
 
-/** Right reply plus up to 3 replies that differ from it in exactly one slot, with distinct text. */
+/** A written wrong reply's option key. */
+const altKey = (n: number) => `alt:${n}`;
+export const altIndex = (key: string): number | undefined => (/^alt:\d+$/.test(key) ? Number(key.slice(4)) : undefined);
+
+/**
+ * Right reply plus up to 3 wrong ones with distinct text: replies that differ from it in exactly
+ * one slot first, then the written wrong replies.
+ */
 function pickOptions(ctx: Ctx, ex: Exchange, combo: Combo): string[] {
   const rightKey = comboKey(combo);
   const texts = new Set([ex.variants[rightKey].reply.text]);
@@ -97,25 +104,41 @@ function pickOptions(ctx: Ctx, ex: Exchange, combo: Combo): string[] {
       wrong.push(key);
     }
   }
+  const alts = ex.variants[rightKey].alts ?? [];
+  for (const n of shuffle(alts.map((_, i) => i), ctx.rng)) {
+    if (wrong.length === 3) break;
+    if (!texts.has(alts[n].text)) {
+      texts.add(alts[n].text);
+      wrong.push(altKey(n));
+    }
+  }
   return shuffle([rightKey, ...wrong], ctx.rng);
 }
 
-/** The right reply's words plus up to 2 words from other replies. */
+/** The right reply's words plus up to 2 words from other replies (other variants, then written wrong ones). */
 function buildTiles(ctx: Ctx, ex: Exchange, combo: Combo): string[] {
   const rightKey = comboKey(combo);
   const pieces = tilePieces(ex.variants[rightKey].reply);
   const extra = new Set<string>();
-  for (const key of shuffle(Object.keys(ex.variants), ctx.rng)) {
-    if (key === rightKey) continue;
-    for (const p of tilePieces(ex.variants[key].reply)) if (!pieces.includes(p)) extra.add(p);
+  const others = shuffle(Object.keys(ex.variants), ctx.rng)
+    .filter((k) => k !== rightKey)
+    .map((k) => ex.variants[k].reply);
+  for (const l of [...others, ...shuffle(ex.variants[rightKey].alts ?? [], ctx.rng)]) {
+    for (const p of tilePieces(l)) if (!pieces.includes(p)) extra.add(p);
     if (extra.size >= 2) break;
   }
   return shuffle([...pieces, ...[...extra].slice(0, 2)], ctx.rng);
 }
 
+/** The line an option key stands for: a variant's reply, or one of the right variant's written wrong replies. */
+function optionLine(ex: Exchange, run: SceneRun, key: string): RenderedLine {
+  const n = altIndex(key);
+  return n === undefined ? ex.variants[key].reply : ex.variants[comboKey(run.combo)].alts![n];
+}
+
 function optionsEvent(ex: Exchange, run: SceneRun): GameEvent {
   return run.mode === "pick"
-    ? { type: "replyOptions", mode: "pick", options: run.options.map((k) => ex.variants[k].reply) }
+    ? { type: "replyOptions", mode: "pick", options: run.options.map((k) => optionLine(ex, run, k)) }
     : { type: "replyOptions", mode: "tiles", tiles: run.tiles };
 }
 
@@ -147,7 +170,9 @@ function beginExchange(ctx: Ctx, scene: Scene, index: number): void {
   speak(ctx, scene.npc, ex.variants[comboKey(combo)].npc);
   // A word got wrong but never yet right is still new to the player: keep picking for it.
   // Tiles are for words the player has known at some point.
-  const states = hingeWords(ctx, ex, combo).map((w) => {
+  const v = ex.variants[comboKey(combo)];
+  const modeWords = [...new Set([...hingeWords(ctx, ex, combo), ...v.reply.tokens.map((t) => t.word)])];
+  const states = modeWords.map((w) => {
     const rec = ctx.state.words[w];
     const st = wordState(rec, ctx.now);
     return st === "shaky" && rec && rec.right === 0 ? "met" : st;
@@ -172,12 +197,21 @@ function finishScene(ctx: Ctx, scene: Scene): void {
   ctx.ev.push(...addTrust(ctx.state, scene.npc, scene.trustGain + (run.mixups === 0 ? 1 : 0)));
 }
 
-function resolve(ctx: Ctx, scene: Scene, ex: Exchange, chosen: Combo, diff: string[], tilesWrong = false): void {
+function resolve(
+  ctx: Ctx,
+  scene: Scene,
+  ex: Exchange,
+  chosen: Combo,
+  diff: string[],
+  tilesWrong = false,
+  other = false,
+  saidWords: string[] = [],
+): void {
   const run = ctx.state.run!;
-  const matched = diff.length === 0 && !tilesWrong;
+  const matched = diff.length === 0 && !tilesWrong && !other;
   ctx.ev.push({
     type: "actionPerformed",
-    action: resolveParams(ex.expect, chosen),
+    action: other ? { action: "other" } : resolveParams(ex.expect, chosen),
     expected: resolveParams(ex.expect, run.combo),
     matched,
     diff,
@@ -185,13 +219,24 @@ function resolve(ctx: Ctx, scene: Scene, ex: Exchange, chosen: Combo, diff: stri
   });
   const hinges = hingeWords(ctx, ex, run.combo);
   if (matched) {
-    for (const w of hinges) setWord(ctx, w, recordRight);
+    // The reply's own words count too: saying them right is how a player learns 不客气.
+    const reply = ex.variants[comboKey(run.combo)].reply;
+    for (const w of new Set([...hinges, ...reply.tokens.map((t) => t.word)])) setWord(ctx, w, recordRight);
+    for (const t of reply.tokens) {
+      const rec = ctx.state.words[t.word];
+      if (!rec.first) rec.first = { line: reply.text, place: ctx.state.place };
+    }
     run.earned += ex.pay;
     if (run.exchange + 1 < scene.exchanges.length) beginExchange(ctx, scene, run.exchange + 1);
     else finishScene(ctx, scene);
     return;
   }
-  for (const w of hinges) setWord(ctx, w, recordWrong);
+  // A miss weakens the hinge words and the right reply's words the chosen reply lacked
+  // (the ones the player didn't recognise). `chosen` is what they said instead.
+  const said = new Set(saidWords);
+  const reply = ex.variants[comboKey(run.combo)].reply;
+  const missed = reply.tokens.map((t) => t.word).filter((w) => !said.has(w));
+  for (const w of new Set([...hinges, ...missed])) setWord(ctx, w, recordWrong);
   run.misses += 1;
   run.mixups += 1;
   ctx.ev.push(...changeWallet(ctx.state, -ex.missCost, "mixup"));
@@ -210,6 +255,11 @@ function resolve(ctx: Ctx, scene: Scene, ex: Exchange, chosen: Combo, diff: stri
     hear(ctx, line);
   }
   emitOptions(ctx, ex);
+}
+
+/** A written wrong reply: it doesn't do the asked action at all. */
+function resolveOther(ctx: Ctx, scene: Scene, ex: Exchange, said: RenderedLine): void {
+  resolve(ctx, scene, ex, ctx.state.run!.combo, [], false, true, said.tokens.map((t) => t.word));
 }
 
 export function startScene(ctx: Ctx, id: string): void {
@@ -251,8 +301,10 @@ export function reply(ctx: Ctx, choice: number): void {
   if (!cur || !run || run.mode !== "pick") return reject(ctx, "no-pick");
   const key = run.options[choice];
   if (key === undefined) return reject(ctx, "bad-choice");
+  if (altIndex(key) !== undefined) return resolveOther(ctx, cur.scene, cur.ex, optionLine(cur.ex, run, key));
   const chosen = parseComboKey(key);
-  resolve(ctx, cur.scene, cur.ex, chosen, actionDiff(cur.ex, chosen, run.combo));
+  const said = cur.ex.variants[key].reply.tokens.map((t) => t.word);
+  resolve(ctx, cur.scene, cur.ex, chosen, actionDiff(cur.ex, chosen, run.combo), false, false, said);
 }
 
 export function replyTiles(ctx: Ctx, tiles: number[]): void {
@@ -261,7 +313,10 @@ export function replyTiles(ctx: Ctx, tiles: number[]): void {
   const cur = current(ctx);
   if (!cur || !run || run.mode !== "tiles") return reject(ctx, "no-tiles");
   if (tiles.some((i) => run.tiles[i] === undefined)) return reject(ctx, "bad-tile");
-  const answer = tiles.map((i) => run.tiles[i]).join("");
-  const target = tilePieces(cur.ex.variants[comboKey(run.combo)].reply).join("");
-  resolve(ctx, cur.scene, cur.ex, run.combo, [], answer !== target);
+  const chosen = tiles.map((i) => run.tiles[i]);
+  const reply = cur.ex.variants[comboKey(run.combo)].reply;
+  const target = tilePieces(reply).join("");
+  // Words of the reply the player placed count as said; the rest were missed.
+  const said = reply.tokens.filter((t) => chosen.includes(reply.text.slice(t.start, t.end))).map((t) => t.word);
+  resolve(ctx, cur.scene, cur.ex, run.combo, [], chosen.join("") !== target, false, said);
 }
