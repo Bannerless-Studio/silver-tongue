@@ -130,4 +130,35 @@ describe("checkCourse", () => {
     expect(errors).toContain("shift/order: pay must be a whole number of 0 or more");
     expect(errors).toContain('shift/order: expect uses unknown slot "$itme"');
   });
+
+  it("needs a learner-language name for every concept", () => {
+    const c = fixtureCourse();
+    delete c.conceptNames.tea;
+    expect(checkCourse(input({ course: c }))).toContain('concepts: no learner-language name for "tea"');
+  });
+
+  it("checks mentor notes: unique ids, known triggers, and their text", () => {
+    const c = fixtureCourse();
+    c.notes = [
+      { id: "a", trigger: { word: "w_ni" } },
+      { id: "a", trigger: { scene: "intro" } },
+      { id: "b", trigger: { word: "w_nope" } },
+      { id: "c", trigger: { scene: "nope" } },
+    ];
+    const ids = new Set([...LEARNER, "note-a", "note-a-title", "note-b", "note-b-title", "note-c"]);
+    const errors = checkCourse(input({ course: c, learnerIds: ids }));
+    expect(errors).toContain('notes: id "a" is used twice');
+    expect(errors).toContain('notes: "b" is triggered by unknown word "w_nope"');
+    expect(errors).toContain('notes: "c" is triggered by unknown scene "nope"');
+    expect(errors).toContain('learner text: missing "note-c-title"');
+  });
+
+  it("checks the mentor's npc and the scene that unlocks them", () => {
+    const c = fixtureCourse();
+    c.world.mentor = { npc: "ghost", after: "nope" };
+    const errors = checkCourse(input({ course: c }));
+    expect(errors).toContain('world: mentor "ghost" is not an npc');
+    expect(errors).toContain('world: mentor comes after unknown scene "nope"');
+  });
 });
+

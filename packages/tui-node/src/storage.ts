@@ -17,13 +17,23 @@ export interface Loaded {
   readOnly: boolean;
 }
 
+/** `<path>.invalid-backup`, or with a time added when that is taken, so an older backup is never replaced. */
+function backupPath(path: string): string {
+  const plainName = `${path}.invalid-backup`;
+  if (!existsSync(plainName)) return plainName;
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  let candidate = `${plainName}-${stamp}`;
+  for (let n = 2; existsSync(candidate); n++) candidate = `${plainName}-${stamp}-${n}`;
+  return candidate;
+}
+
 /** A save that won't parse is kept as a backup and the game starts fresh. */
 export function loadSave(course: Course, path: string): Loaded {
   try {
     if (!existsSync(path)) return { state: newGame(course), readOnly: false };
     const parsed = parseSave(readFileSync(path, "utf8"), course);
     if (parsed.ok) return { state: parsed.state, readOnly: false };
-    renameSync(path, `${path}.invalid-backup`);
+    renameSync(path, backupPath(path));
     return { state: newGame(course), notice: "notice-bad-save", readOnly: false };
   } catch {
     return { state: newGame(course), notice: "notice-read-only", readOnly: true };

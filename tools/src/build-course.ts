@@ -6,13 +6,14 @@ import {
   comboKey,
   type Course,
   type Exchange,
+  type Note,
   type RenderedLine,
   type Scene,
   type Variant,
   type Word,
   type World,
 } from "@silver-tongue/core";
-import { uiTextProblems } from "@silver-tongue/tui";
+import { narrationProblems, uiTextProblems } from "@silver-tongue/tui";
 import { checkCourse } from "./check";
 import { bindSlots, messageIds, parseFtl, Renderer, termNames, type FtlSource } from "./fluent";
 import type { PackMeta, PackWord } from "./pack";
@@ -218,18 +219,65 @@ export function buildCourse(root: string, courseId: string): BuildResult {
     }
   });
 
+  // Concept names for narration: each concept's base form in the learner's language.
+  const conceptNames: Record<string, string> = {};
+  if (meaningTerms !== undefined) {
+    for (const name of Object.keys(concepts)) {
+      const r = attempt(`${meaningTermsName} -${name}`, () =>
+        new Renderer(cfg.learner, [[meaningTermsName, meaningTerms], ["name", `name = { -${name} }`]]),
+      );
+      if (r) {
+        try {
+          conceptNames[name] = r.render("name");
+        } catch {
+          // no learner term: the checker reports the missing name
+        }
+      }
+    }
+  }
+  // Every word on each stage's levels: the list the notebook counts progress toward.
+  const stageWords = Object.fromEntries(
+    Object.entries(meta.stages).map(([stage, levels]) => [
+      stage,
+      packWords.filter((w) => !w.bonus && levels.includes(w.lv)).map((w) => w.id),
+    ]),
+  );
+  const notesPath = join(langDir, "notes.json");
+  const notes = (existsSync(notesPath) && attempt("notes.json", () => readJson<Note[]>(notesPath))) || [];
+
   const learnerFtl =
     attempt(`learner/${cfg.learner}`, () =>
       [
         readFileSync(join(learnerDir, "ui.ftl"), "utf8"),
         readFileSync(join(learnerDir, `narration-${cfg.setting}.ftl`), "utf8"),
+        readOptional(join(learnerDir, `mentor-${cfg.language}.ftl`)),
       ].join("\n"),
     ) ?? "";
 
-  const course: Course = { id: cfg.id, typing: meta.typing !== null, words, concepts, groups, world, scenes, reactions, learnerFtl };
+  const course: Course = {
+    id: cfg.id,
+    typing: meta.typing !== null,
+    words,
+    concepts,
+    groups,
+    world,
+    scenes,
+    reactions,
+    learnerFtl,
+    conceptNames,
+    stageWords,
+    notes,
+  };
   const learnerIds = attempt("learner text", () => new Set(messageIds(learnerFtl, "learner files"))) ?? new Set<string>();
   errors.push(...checkCourse({ course, stages: meta.stages, checks: cfg.checks, learnerIds, requiredUi: [] }));
   errors.push(...uiTextProblems(learnerFtl, cfg.learner));
+  // Each action's narration gets the parameters its exchanges' `expect` gives it.
+  const actions: Record<string, string[]> = {};
+  for (const ex of scenes.flatMap((s) => s.exchanges)) {
+    const name = ex.expect.action;
+    if (name) actions[name] = [...new Set([...(actions[name] ?? []), ...Object.keys(ex.expect).filter((k) => k !== "action")])];
+  }
+  errors.push(...narrationProblems(learnerFtl, cfg.learner, actions));
   // Ship only the words the course uses: rank is the share of these that are known, and
   // the pack has far more words than one course needs. (The checks above see the whole pack.)
   const used = new Set<string>([

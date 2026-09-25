@@ -3,7 +3,7 @@ import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
 import { createCore, mulberry32, type Course } from "@silver-tongue/core";
 import { makeText, startApp } from "@silver-tongue/tui";
-import { parseFlags, pickAnswer, sessionLines, USAGE } from "./cli";
+import { decodeSave, encodeSave, parseFlags, pickAnswer, sessionLines, USAGE } from "./cli";
 import { createNodeTerminal } from "./node-terminal";
 import { listSessions, migrateLegacySave, newSessionPath, sessionsDir } from "./sessions";
 import { configDir, loadSave, writeSave } from "./storage";
@@ -43,6 +43,42 @@ if (flags.mode === "error") {
 
 const course = JSON.parse(readFileSync(coursePath(flags.coursePath), "utf8")) as Course;
 
+/** --export and --import work on the sessions folder and exit without starting the game. */
+function exportOrImport(mode: "export" | "import", line: string): never {
+  const t = makeText(course.learnerFtl);
+  const root = configDir();
+  const dir = sessionsDir(root, course.id);
+  try {
+    migrateLegacySave(root, course.id);
+  } catch {
+    // listed below as no saves, or the write fails and says so
+  }
+  if (mode === "export") {
+    const last = listSessions(dir, course)[0];
+    if (!last) {
+      console.error(t("export-none"));
+      process.exit(1);
+    }
+    console.log(encodeSave(last.state));
+    process.exit(0);
+  }
+  const decoded = decodeSave(line === "-" ? readFileSync(0, "utf8") : line, course);
+  if (!decoded.ok) {
+    console.error(t("import-bad", { reason: decoded.reason }));
+    process.exit(1);
+  }
+  const now = Date.now();
+  const path = newSessionPath(dir, now);
+  if (!writeSave(path, decoded.state)) {
+    console.error(t("notice-read-only"));
+    process.exit(1);
+  }
+  const [summary] = sessionLines([{ id: "", path, lastPlayed: now, state: decoded.state }], course, t, (ms) => new Date(ms).toLocaleString());
+  console.log(t("import-done", { game: summary.replace(/^1\) /, "") }));
+  process.exit(0);
+}
+if (flags.mode === "export" || flags.mode === "import") exportOrImport(flags.mode, flags.mode === "import" ? flags.line : "");
+
 /** Which save file to play: the last session, a new one, or one the player picks. */
 async function chooseSave(): Promise<string> {
   // SILVER_TONGUE_SAVE pins one save file (for tests and scripts); sessions don't apply.
@@ -55,7 +91,7 @@ async function chooseSave(): Promise<string> {
     // can't move it: the sessions folder is probably unwritable too, and loadSave will say so
   }
   const sessions = listSessions(dir, course);
-  if (flags.mode === "continue") return sessions[0]?.path ?? newSessionPath(dir, Date.now());
+  if (flags.mode !== "new" && flags.mode !== "resume") return sessions[0]?.path ?? newSessionPath(dir, Date.now());
   if (flags.mode === "new") return newSessionPath(dir, Date.now());
   const t = makeText(course.learnerFtl);
   if (!sessions.length) {

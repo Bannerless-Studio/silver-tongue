@@ -1,0 +1,5 @@
+[
+  { "id": "bukeqi", "trigger": { "scene": "street-hello" } },
+  { "id": "hao-ma", "trigger": { "scene": "noodle-intro" } },
+  { "id": "bei", "trigger": { "word": "x0001" } }
+]

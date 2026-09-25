@@ -23,7 +23,7 @@ export function makeText(ftl: string, locale = "en"): Text {
  * The course build fails a learner language that lacks any of them or uses other variables.
  */
 export const UI_KEYS: Record<string, string[]> = {
-  hud: ["day", "slot", "slots", "currency", "wallet", "rank"],
+  hud: ["day", "slot", "slots", "currency", "wallet", "rank", "rentLate"],
   "rank-0": [],
   "rank-1": [],
   "rank-2": [],
@@ -32,12 +32,21 @@ export const UI_KEYS: Record<string, string[]> = {
   "menu-title": [],
   "menu-talk": ["npc", "scene"],
   "menu-go": ["place"],
+  "menu-mentor": ["npc"],
+  "cost-slot": [],
+  "note-hint": ["npc"],
+  "mentor-nothing": ["npc"],
   "menu-sleep": [],
   "menu-quit": [],
   "keys-explore": ["keys"],
   "keys-pick": ["keys"],
   "keys-tiles": ["keys"],
   "keys-help": ["keys"],
+  "keys-notebook": [],
+  "notebook-progress": ["stage", "known", "total", "heard"],
+  "notebook-empty": [],
+  "notebook-elsewhere": [],
+  "notebook-notes": [],
   "keys-help-sentence": ["keys"],
   "help-sentence": [],
   "help-in-replies": [],
@@ -60,6 +69,9 @@ export const UI_KEYS: Record<string, string[]> = {
   "resume-item": ["day", "place", "currency", "wallet", "done", "date"],
   "resume-ask": [],
   "resume-none": [],
+  "export-none": [],
+  "import-bad": ["reason"],
+  "import-done": ["game"],
   ...Object.fromEntries(REJECT_REASONS.map((c) => [`reject-${c}`, []])),
 };
 
@@ -77,6 +89,26 @@ export function uiTextProblems(ftl: string, locale: string): string[] {
     const errors: Error[] = [];
     bundle.formatPattern(msg.value, Object.fromEntries(vars.map((v) => [v, 1])), errors);
     for (const e of errors) problems.push(`learner text "${id}": ${e.message}`);
+  }
+  return problems;
+}
+
+/**
+ * Narration for actions (action-<name>, asked-<name>) that can't be formatted with the action's
+ * parameters, e.g. a misspelt variable. Both messages are optional.
+ */
+export function narrationProblems(ftl: string, locale: string, actions: Record<string, string[]>): string[] {
+  const bundle = new FluentBundle(locale, { useIsolating: false });
+  bundle.addResource(new FluentResource(ftl));
+  const problems: string[] = [];
+  for (const [action, params] of Object.entries(actions)) {
+    for (const id of [`action-${action}`, `asked-${action}`]) {
+      const msg = bundle.getMessage(id);
+      if (!msg?.value) continue;
+      const errors: Error[] = [];
+      bundle.formatPattern(msg.value, Object.fromEntries(params.map((p) => [p, "x"])), errors);
+      for (const e of errors) problems.push(`narration "${id}": ${e.message}`);
+    }
   }
   return problems;
 }

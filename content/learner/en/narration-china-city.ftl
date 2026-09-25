@@ -28,3 +28,10 @@ scene-noodle-intro-end = She throws you an apron. You have a job, sort of.
 scene-noodle-shift = Work a shift
 scene-noodle-shift-start = Orders fly across the counter. Keep up.
 scene-noodle-shift-end = The rush dies down. The cook counts coins into your hand.
+
+# What a reply does (action-<name>), and on a mix-up what was asked (asked-<name>).
+# Concept values arrive as learner names: $item = "tea", $count = "three".
+action-fetch = You bring { $item }.
+asked-fetch = They wanted { $item }.
+action-serve = You set down { $count } cups of { $item }.
+asked-serve = They wanted { $count } cups of { $item }.

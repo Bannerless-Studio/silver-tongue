@@ -50,6 +50,32 @@ describe("save", () => {
     expect(bad({ ...s, run: { scene: "x" } })).toEqual({ ok: false, reason: "bad-run" });
   });
 
+  it("loads a save from before notes and the log existed, filling them in", () => {
+    const { notes: _n, log: _l, ...old } = newGame(course);
+    expect(parseSave(JSON.stringify(old), course)).toEqual({ ok: true, state: newGame(course) });
+  });
+
+  it("checks notes, the log and first-heard lines when present", () => {
+    const s = newGame(course);
+    const rec = { right: 1, wrong: 0, streak: 1, helps: 0, lapsed: false, firstSeen: 0, lastSeen: 0 };
+    const withFirst = { ...s, words: { w_ni: { ...rec, first: { line: "你好！", place: "street" } } } };
+    expect(parseSave(JSON.stringify(withFirst), course)).toMatchObject({ ok: true });
+    expect(bad({ ...s, words: { w_ni: { ...rec, first: { line: 1 } } } })).toEqual({ ok: false, reason: "bad-words" });
+    expect(bad({ ...s, notes: { ready: "x", read: [] } })).toEqual({ ok: false, reason: "bad-notes" });
+    expect(bad({ ...s, log: [{ t: 1 }] })).toEqual({ ok: false, reason: "bad-log" });
+    expect(bad({ ...s, notes: null })).toEqual({ ok: false, reason: "bad-notes" });
+    expect(bad({ ...s, log: null })).toEqual({ ok: false, reason: "bad-log" });
+    expect(bad({ ...s, log: [{ t: 1, day: 1, slot: 0, input: { type: "bogus" } }] })).toEqual({ ok: false, reason: "bad-log" });
+    const logged = { ...s, log: [{ t: 1, day: 1, slot: 0, input: { type: "sleep" } }] };
+    expect(parseSave(JSON.stringify(logged), course)).toMatchObject({ ok: true });
+  });
+
+  it("drops notes the course no longer has, and duplicates", () => {
+    const c = { ...course, notes: [{ id: "a", trigger: { scene: "intro" } }] };
+    const res = parseSave(JSON.stringify({ ...newGame(c), notes: { ready: ["a", "a", "gone"], read: ["gone"] } }), c);
+    expect(res).toMatchObject({ ok: true, state: { notes: { ready: ["a"], read: [] } } });
+  });
+
   it("drops a scene in progress that the course no longer has", () => {
     const core = inScene();
     const stale: GameState = { ...core.state, run: { ...core.state.run!, scene: "gone" } };

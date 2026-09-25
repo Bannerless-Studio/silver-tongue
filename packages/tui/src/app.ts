@@ -1,6 +1,7 @@
 import {
   availableSceneIds,
   describeRun,
+  mentorAvailable,
   rankFor,
   type Core,
   type Course,
@@ -10,7 +11,9 @@ import {
   type RenderedLine,
   type WordId,
 } from "@silver-tongue/core";
+import { notebookLines } from "./notebook";
 import { lineSpans, renderScreen, wrapItems } from "./screen";
+import { wrapLine } from "./width";
 import type { Key, StyledLine, Terminal } from "./terminal";
 import { makeText, type Text } from "./text";
 
@@ -27,7 +30,7 @@ export interface AppOptions {
 }
 
 type MenuItem = { label: string; input?: Input; quit?: true };
-type Mode = "explore" | "scene" | "help";
+type Mode = "explore" | "scene" | "help" | "notebook";
 
 export interface App {
   press(key: Key): void;
@@ -48,6 +51,8 @@ export function startApp(opts: AppOptions): App {
   let replyMode: "pick" | "tiles" = "pick";
   let tileInput: number[] = [];
   let lastLine: RenderedLine | null = null;
+  let notebookFrom: Mode = "explore"; // where closing the notebook returns to
+  let notebookTop = 0; // first notebook line on screen
   let resuming = false; // replaying a scene saved half-way: it has already been introduced
 
   const push = (...lines: StyledLine[]) => {
@@ -78,6 +83,22 @@ export function startApp(opts: AppOptions): App {
     for (let i = 1; t.has(`intro-${i}`); i++) push([{ text: t(`intro-${i}`, args) }], []);
   }
 
+  /** An action's parameters as narration variables: concept values become learner-language names. */
+  const actionArgs = (a: Record<string, string>) =>
+    Object.fromEntries(Object.entries(a).map(([k, v]) => [k, course.conceptNames[v] ?? v]));
+
+  /**
+   * What the reply did (action-<name>) and, on a mix-up, what was asked (asked-<name> of the asked
+   * action), falling back to the generic mismatch line. Wrong tiles did nothing recognisable, so only
+   * what was asked is narrated.
+   */
+  function narrateAction(action: Record<string, string>, expected: Record<string, string>, matched: boolean, tilesWrong: boolean) {
+    if (!tilesWrong && t.has(`action-${action.action}`)) push([{ text: t(`action-${action.action}`, actionArgs(action)), dim: true }]);
+    if (matched) return;
+    if (t.has(`asked-${expected.action}`)) push([{ text: t(`asked-${expected.action}`, actionArgs(expected)), color: "yellow" }]);
+    else push([{ text: t("mismatch"), color: "yellow" }]);
+  }
+
   function enterPlace(place: string) {
     push([], [{ text: t(`place-${place}`), bold: true }], [{ text: t(`place-${place}-desc`), dim: true }]);
   }
@@ -86,6 +107,7 @@ export function startApp(opts: AppOptions): App {
     const fresh = new Set(
       events.flatMap((e) => (e.type === "wordStateChanged" && e.from === "unseen" ? [e.word] : [])),
     );
+    let hinted = false;
     for (const e of events) {
       switch (e.type) {
         case "placeEntered":
@@ -107,7 +129,7 @@ export function startApp(opts: AppOptions): App {
           else tiles = e.tiles;
           break;
         case "actionPerformed":
-          if (!e.matched) push([{ text: t("mismatch"), color: "yellow" }]);
+          narrateAction(e.action, e.expected, e.matched, e.tilesWrong);
           break;
         case "npcReacted":
           // Word help keeps offering the request the player got wrong, not the reaction.
@@ -150,6 +172,16 @@ export function startApp(opts: AppOptions): App {
         case "inputRejected":
           push([{ text: t(`reject-${e.reason}`), color: "red" }]);
           break;
+        case "noteReady":
+          // One hint however many notes became ready at once.
+          if (course.world.mentor && !hinted) push([{ text: t("note-hint", { npc: npcName(course.world.mentor.npc) }), color: "magenta" }]);
+          hinted = true;
+          break;
+        case "mentorVisited":
+          push([]);
+          if (!e.notes.length) push([{ text: t("mentor-nothing", { npc: npcName(e.npc) }), dim: true }]);
+          for (const id of e.notes) push([{ text: t(`note-${id}-title`), bold: true }], [{ text: t(`note-${id}`) }], []);
+          break;
         case "wordStateChanged":
           break;
       }
@@ -176,7 +208,14 @@ export function startApp(opts: AppOptions): App {
     for (const id of availableSceneIds(course, s)) {
       const scene = course.scenes.find((x) => x.id === id)!;
       if (scene.place !== s.place) continue;
-      items.push({ label: t("menu-talk", { npc: npcName(scene.npc), scene: t(`scene-${id}`) }), input: { type: "startScene", scene: id } });
+      items.push({
+        label: t("menu-talk", { npc: npcName(scene.npc), scene: t(`scene-${id}`) }) + t("cost-slot"),
+        input: { type: "startScene", scene: id },
+      });
+    }
+    // Offered only when there is something to explain, so a slot is never spent on nothing.
+    if (mentorAvailable(course, s) && s.notes.ready.length) {
+      items.push({ label: t("menu-mentor", { npc: npcName(course.world.mentor!.npc) }) + t("cost-slot"), input: { type: "visitMentor" } });
     }
     for (const p of course.world.places[s.place].links) {
       items.push({ label: t("menu-go", { place: t(`place-${p}`) }), input: { type: "goTo", place: p } });
@@ -239,7 +278,17 @@ export function startApp(opts: AppOptions): App {
       currency: course.world.currency,
       wallet: s.wallet,
       rank: t(`rank-${rankFor(s.words, wordIds, opts.now())}`),
+      rentLate: s.rentLate ? "yes" : "no",
     });
+    if (mode === "notebook") {
+      const lines = notebookLines(course, s, t, opts.now()).flatMap((l) => wrapLine(l, cols - 4));
+      const bodyRows = Math.max(1, rows - 2);
+      notebookTop = Math.max(0, Math.min(notebookTop, lines.length - bodyRows));
+      const page = lines.slice(notebookTop, notebookTop + bodyRows);
+      const prompt = [...page, ...Array(bodyRows - page.length).fill([])];
+      term.write(renderScreen({ title: t(`place-${s.place}`), hud, log: [], prompt, footer: t("keys-notebook") }, cols, rows));
+      return;
+    }
     const [footerId, count] =
       mode === "explore"
         ? ["keys-explore", menu().length]
@@ -254,6 +303,18 @@ export function startApp(opts: AppOptions): App {
 
   function press(key: Key) {
     if (key.name === "ctrl-c") return opts.quit();
+    if (mode === "notebook") {
+      if (key.name === "escape" || key.name === "n") mode = notebookFrom;
+      else if (key.name === "down") notebookTop += 1;
+      else if (key.name === "up") notebookTop = Math.max(0, notebookTop - 1);
+      return render();
+    }
+    if (key.name === "n" && mode !== "help") {
+      notebookFrom = mode;
+      notebookTop = 0;
+      mode = "notebook";
+      return render();
+    }
     const n = /^[1-9]$/.test(key.name) ? Number(key.name) - 1 : -1;
     if (mode === "explore") {
       const item = n >= 0 ? menu()[n] : undefined;

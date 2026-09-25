@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { comboKey } from "../src/combo";
 import { describeRun } from "../src/dialogue";
-import { createCore, newGame, type Core } from "../src/core";
+import { createCore, LOG_LIMIT, newGame, type Core } from "../src/core";
 import { recordRight } from "../src/learner";
 import { mulberry32 } from "../src/rng";
 import { fixtureCourse } from "../src/testing/fixture";
@@ -159,4 +159,38 @@ describe("core", () => {
     expect(types(core.send({ type: "sleep" }))).toContain("dayEnded");
     expect(core.state.slot).toBe(0);
   });
+
+  it("says what was asked alongside what the reply did", () => {
+    const core = setup();
+    playIntro(core);
+    core.send({ type: "startScene", scene: "shift" });
+    const { combo, options } = core.state.run!;
+    const expected = { action: "serve", item: combo.item, count: combo.count };
+    const wrongKey = options.find((k) => k !== comboKey(combo))!;
+    const miss = find(core.send({ type: "reply", choice: options.indexOf(wrongKey) }), "actionPerformed");
+    expect(miss.expected).toEqual(expected);
+    expect(miss.action).not.toEqual(expected);
+    expect(find(answerRight(core), "actionPerformed")).toMatchObject({ matched: true, action: expected, expected });
+  });
+
+  it("remembers the line and place where each word was first heard, and never overwrites it", () => {
+    const core = setup();
+    playIntro(core);
+    expect(core.state.words.w_ni.first).toEqual({ line: "你好！", place: "noodle_shop" });
+    core.send({ type: "startScene", scene: "shift" });
+    expect(core.state.words.w_ni.first).toEqual({ line: "你好！", place: "noodle_shop" });
+    const bei = core.state.words.x_bei.first!;
+    expect(bei.line).toMatch(/杯/);
+  });
+
+  it("logs accepted inputs for play-tests, not rejected ones, keeping the last 500", () => {
+    const core = setup();
+    core.send({ type: "goTo", place: "nowhere" });
+    core.send({ type: "goTo", place: "noodle_shop" });
+    expect(core.state.log).toEqual([{ t: T0, day: 1, slot: 0, input: { type: "goTo", place: "noodle_shop" } }]);
+    for (let i = 0; i < 600; i++) core.send({ type: "helpWord", word: "w_ni" });
+    expect(core.state.log).toHaveLength(LOG_LIMIT);
+    expect(core.state.log.at(-1)!.input).toEqual({ type: "helpWord", word: "w_ni" });
+  });
 });
+

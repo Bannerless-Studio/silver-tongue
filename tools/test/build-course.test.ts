@@ -1,4 +1,4 @@
-import { cpSync, mkdtempSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
+import { cpSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -49,6 +49,15 @@ describe("build-course (real content)", () => {
     expect(course!.reactions["wrong-count"].meaning).toBe("How many cups?");
   });
 
+  it("names concepts in the learner's language, lists the stage words, and loads the mentor notes", () => {
+    expect(course!.conceptNames.tea).toBe("tea");
+    expect(course!.conceptNames.thanks).toBe("Thank you");
+    expect(course!.stageWords["1"]).toHaveLength(150);
+    expect(course!.notes.map((n) => n.id)).toEqual(["bukeqi", "hao-ma", "bei"]);
+    expect(course!.world.mentor).toEqual({ npc: "wang", after: "street-hello" });
+    expect(course!.learnerFtl).toContain("note-bei-title");
+  });
+
   it("ships only the words the course uses", () => {
     const ids = Object.keys(course!.words);
     expect(ids.length).toBeLessThan(40);
@@ -88,6 +97,14 @@ describe("build-course (broken content)", () => {
     });
     expect(bad.errors).toContain('noodle-intro/job (en meaning): missing message "job"');
     expect(bad.errors.some((e) => e.startsWith("noodle-shift: no en meanings"))).toBe(true);
+  });
+
+  it("reports narration that can't be formatted with the action's parameters", () => {
+    const bad = buildChanged((d) => {
+      const f = join(d, "learner/en/narration-china-city.ftl");
+      writeFileSync(f, readFileSync(f, "utf8").replace("action-fetch = You bring { $item }.", "action-fetch = You bring { $itme }."));
+    });
+    expect(bad.errors.some((e) => e.startsWith('narration "action-fetch"'))).toBe(true);
   });
 
   it("reports a syntax error in a lines file once, not once per slot combination", () => {

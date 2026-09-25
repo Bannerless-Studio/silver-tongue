@@ -32,6 +32,17 @@ describe("storage", () => {
     expect(readFileSync(`${path}.invalid-backup`, "utf8")).toBe("{");
   });
 
+  it("never replaces an older backup", () => {
+    const path = join(root, "twice.json");
+    writeFileSync(path, "{1");
+    loadSave(course, path);
+    writeFileSync(path, "{2");
+    loadSave(course, path);
+    const backups = readdirSync(root).filter((f) => f.startsWith("twice.json.invalid-backup"));
+    expect(backups).toHaveLength(2);
+    expect(backups.map((f) => readFileSync(join(root, f), "utf8")).sort()).toEqual(["{1", "{2"]);
+  });
+
   it("goes read-only when the save can't be read, and reports a failed write", () => {
     const dir = join(root, "is-a-directory.json");
     mkdirSync(dir);

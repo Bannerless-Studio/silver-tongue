@@ -57,10 +57,12 @@ export function renderScreen(m: ScreenModel, cols: number, rows: number): Styled
   const bodyRows = Math.max(1, rows - 2);
   const wrap = (lines: StyledLine[]) => lines.flatMap((l) => wrapLine(l, inner));
   const prompt = wrap(m.prompt).slice(-bodyRows);
-  const logRows = Math.max(0, bodyRows - prompt.length - (prompt.length ? 1 : 0));
+  // A blank line separates the log from the prompt, only when a log line fits above it too.
+  const gap = prompt.length && bodyRows - prompt.length >= 2 ? 1 : 0;
+  const logRows = Math.max(0, bodyRows - prompt.length - gap);
   const log = logRows > 0 ? wrap(m.log).slice(-logRows) : []; // slice(-0) would be the whole log
   const body: StyledLine[] = [...Array(logRows - log.length).fill([]), ...log];
-  if (prompt.length) body.push([]);
+  if (gap) body.push([]);
   body.push(...prompt);
   return [
     border("┌", m.title, "┐", "─", cols, m.hud),
