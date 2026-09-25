@@ -56,8 +56,8 @@ Old Wang already teaches on the bench, so he is the mentor. There's no separate 
 
 ## 5. Saves: export, import, play-test log
 
-- `npx silver-tongue --export` prints the last-played session as one base64 line of the save JSON. `--resume` style picking isn't needed: export the one you'd continue.
-- `npx silver-tongue --import <line>` checks the line strictly (base64, JSON, `parseSave`) and saves it as a **new session**. Nothing is overwritten, so no backup is needed. On failure it prints the reason and exits 1.
+- `npx silver-tongue --export` prints the last-played session as one line: `st1:` and the base64 of the compressed save JSON (compression keeps a long game's line to a few KB). `--resume` style picking isn't needed: export the one you'd continue.
+- `npx silver-tongue --import <line>` (or `--import -` to read it from standard input, for lines too long for a command line) ignores spaces and line breaks, checks the line strictly (prefix, base64, compression, JSON, `parseSave`) and saves it as a **new session**. Nothing is overwritten, so no backup is needed. On failure it prints the reason and exits 1.
 - `GameState` gains optional `log: { t: number; day: number; slot: number; input: Input }[]`. The core appends each accepted input and keeps the last 500. There is no analytics service, and the log goes wherever the save goes.
 
 ## 6. Course bots
@@ -67,11 +67,11 @@ Old Wang already teaches on the bench, so he is the mentor. There's no separate 
 | Bot | Replies |
 |---|---|
 | `right` | always right |
-| `wrong` | always wrong while a wrong reply exists, then right |
+| `wrong` | wrong twice on every exchange (so the NPC rephrases), then right |
 | `random` | random |
 | `learner` | right 70% of the time |
 
-- Every bot follows the same plan: visit the mentor when a note is ready; start an available scene here; else walk to the nearest place with one; else sleep.
+- Every bot follows the same plan, in priority order: a one-off scene, the mentor when a note is ready, paid repeatable work, then unpaid practice. It does the best one here, else walks toward the nearest place with it, else sleeps.
 - A bot may read the run's expected combo to answer; bots are test code.
 - Each bot plays 14 game days.
 - Report per bot:

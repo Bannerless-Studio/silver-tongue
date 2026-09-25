@@ -20,6 +20,7 @@ describe("cli", () => {
   it("knows --export and --import <line>", () => {
     expect(parseFlags(["--export"])).toEqual({ mode: "export" });
     expect(parseFlags(["--import", "abc"])).toEqual({ mode: "import", line: "abc" });
+    expect(parseFlags(["--import", "-"])).toEqual({ mode: "import", line: "-" });
     expect(parseFlags(["--import"])).toMatchObject({ mode: "error" });
     expect(parseFlags(["--export", "--new"])).toMatchObject({ mode: "error" });
   });
@@ -28,12 +29,21 @@ describe("cli", () => {
     const course = fixtureCourse();
     const state = { ...newGame(course), day: 6, wallet: 31 };
     const line = encodeSave(state);
-    expect(line).toMatch(/^[A-Za-z0-9+/]+=*$/);
+    expect(line).toMatch(/^st1:[A-Za-z0-9+/]+=*$/);
     expect(decodeSave(`  ${line}\n`, course)).toEqual({ ok: true, state });
-    expect(decodeSave("not base64!", course)).toEqual({ ok: false, reason: "not-base64" });
-    expect(decodeSave(Buffer.from("{").toString("base64"), course)).toEqual({ ok: false, reason: "not-json" });
-    const other = Buffer.from(serialize({ ...state, course: "other" })).toString("base64");
+    const wrapped = line.replace(/(.{20})/g, "$1\n"); // a line broken up by copy and paste
+    expect(decodeSave(wrapped, course)).toEqual({ ok: true, state });
+    expect(decodeSave("not a save!", course)).toEqual({ ok: false, reason: "not-a-save" });
+    expect(decodeSave("st1:AAAA", course)).toEqual({ ok: false, reason: "not-a-save" });
+    const other = encodeSave({ ...state, course: "other" });
     expect(decodeSave(other, course)).toEqual({ ok: false, reason: "other-course" });
+  });
+
+  it("keeps a long game's export short by compressing it", () => {
+    const course = fixtureCourse();
+    const log = Array.from({ length: 500 }, (_, i) => ({ t: i, day: 1, slot: 0, input: { type: "helpWord" as const, word: "w_ni" } }));
+    const line = encodeSave({ ...newGame(course), log });
+    expect(line.length).toBeLessThan(serialize({ ...newGame(course), log }).length / 5);
   });
 
   it("refuses unknown flags and --new with --resume", () => {

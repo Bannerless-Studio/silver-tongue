@@ -62,7 +62,7 @@ function exportOrImport(mode: "export" | "import", line: string): never {
     console.log(encodeSave(last.state));
     process.exit(0);
   }
-  const decoded = decodeSave(line, course);
+  const decoded = decodeSave(line === "-" ? readFileSync(0, "utf8") : line, course);
   if (!decoded.ok) {
     console.error(t("import-bad", { reason: decoded.reason }));
     process.exit(1);

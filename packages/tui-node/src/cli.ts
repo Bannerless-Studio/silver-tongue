@@ -1,4 +1,5 @@
 import { parseArgs } from "node:util";
+import { deflateRawSync, inflateRawSync } from "node:zlib";
 import { parseSave, serialize, type Course, type GameState, type ParseResult } from "@silver-tongue/core";
 import type { Text } from "@silver-tongue/tui";
 import type { Session } from "./sessions";
@@ -9,7 +10,8 @@ export const USAGE = `Usage: silver-tongue [--new | --resume | --export | --impo
   --new            start a new game (your other games are kept)
   --resume         choose one of your saved games
   --export         print the game you played last as one line of text
-  --import <line>  add a game exported with --export (nothing is overwritten)
+  --import <line>  add a game exported with --export (nothing is overwritten);
+                   use --import - to paste the line on standard input
   --help           show this help`;
 
 export type Flags =
@@ -70,14 +72,23 @@ export function pickAnswer(answer: string, count: number): number | "cancel" | "
   return Number.isInteger(n) && n >= 1 && n <= count ? n - 1 : "again";
 }
 
-/** A save as one line of text: base64 of its JSON. */
+const PREFIX = "st1:";
+
+/** A save as one line of text: "st1:" and the base64 of its compressed JSON. */
 export function encodeSave(state: GameState): string {
-  return Buffer.from(serialize(state), "utf8").toString("base64");
+  return PREFIX + deflateRawSync(Buffer.from(serialize(state), "utf8")).toString("base64");
 }
 
-/** The reverse of encodeSave, as strict as loading a save. */
+/** The reverse of encodeSave, as strict as loading a save. Spaces and line breaks (from copying) are ignored. */
 export function decodeSave(line: string, course: Course): ParseResult {
-  const text = line.trim();
-  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(text)) return { ok: false, reason: "not-base64" };
-  return parseSave(Buffer.from(text, "base64").toString("utf8"), course);
+  const text = line.replace(/\s+/g, "");
+  const body = text.startsWith(PREFIX) ? text.slice(PREFIX.length) : "";
+  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(body)) return { ok: false, reason: "not-a-save" };
+  let json: string;
+  try {
+    json = inflateRawSync(Buffer.from(body, "base64")).toString("utf8");
+  } catch {
+    return { ok: false, reason: "not-a-save" };
+  }
+  return parseSave(json, course);
 }

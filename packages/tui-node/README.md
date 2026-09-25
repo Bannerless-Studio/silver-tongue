@@ -14,6 +14,7 @@ npx silver-tongue --new      # start a new game (your other games are kept)
 npx silver-tongue --resume   # choose one of your saved games
 npx silver-tongue --export   # print the game you played last as one line of text
 npx silver-tongue --import <line>   # add a game exported elsewhere (nothing is overwritten)
+npx silver-tongue --import - < game.txt   # the same, reading the line from a file or a paste
 ```
 
 | Key | Does |
