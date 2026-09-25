@@ -9,7 +9,9 @@ The first course is Mandarin (HSK 1), in a Chinese city, explained in English.
 ## Play in the terminal
 
 ```sh
-npx silver-tongue
+npx silver-tongue            # continue the game you played last
+npx silver-tongue --new      # start a new game (your other games are kept)
+npx silver-tongue --resume   # choose one of your saved games
 ```
 
 | Key | Does |
@@ -20,7 +22,7 @@ npx silver-tongue
 | `esc` | back |
 | `q` | save and quit (from the menu) |
 
-Progress saves automatically to `~/.config/silver-tongue/<course>.json` (or under `$XDG_CONFIG_HOME`, or `%APPDATA%` on Windows). If a save can't be read, it is kept next to it as `<course>.json.invalid-backup` and a new game starts. If saving fails, the game says so and plays on without saving.
+Progress saves automatically. Each game is one file in `~/.config/silver-tongue/sessions/<course>/` (or under `$XDG_CONFIG_HOME`, or `%APPDATA%` on Windows); a save from 0.2.0 or earlier is moved there on first run. If a save can't be read, it is kept next to it as `<name>.json.invalid-backup` and a new game starts. If saving fails, the game says so and plays on without saving.
 
 Needs Node 22 or newer. Source, issues and other ways to play: https://github.com/jamil314/silver-tongue
 

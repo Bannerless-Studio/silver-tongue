@@ -56,6 +56,10 @@ export const UI_KEYS: Record<string, string[]> = {
   "day-ended": ["day"],
   "notice-bad-save": [],
   "notice-read-only": [],
+  "resume-title": [],
+  "resume-item": ["day", "place", "currency", "wallet", "done", "date"],
+  "resume-ask": [],
+  "resume-none": [],
   ...Object.fromEntries(REJECT_REASONS.map((c) => [`reject-${c}`, []])),
 };
 

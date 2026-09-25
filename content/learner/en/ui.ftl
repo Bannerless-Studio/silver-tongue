@@ -53,3 +53,11 @@ reject-not-linked = You can't get there from here.
 reject-unknown-word = That word isn't in the dictionary.
 notice-read-only = Your progress can't be saved on this computer, so this session won't be kept.
 notice-bad-save = Your save couldn't be read. It was kept as a backup and a new game started.
+
+resume-title = Your games:
+resume-item = Day { $day } · { $place } · { $currency }{ $wallet } · { $done ->
+    [one] 1 scene done
+   *[other] { $done } scenes done
+} · last played { $date }
+resume-ask = Which one? (number, or enter to cancel)
+resume-none = No saved games yet, so here's a new one.

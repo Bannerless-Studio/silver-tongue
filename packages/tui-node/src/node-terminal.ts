@@ -30,6 +30,7 @@ export function keyName(str: string | undefined, key: NodeKey | undefined): stri
 export function createNodeTerminal(input = process.stdin, output = process.stdout): Terminal {
   readline.emitKeypressEvents(input);
   if (input.isTTY) input.setRawMode(true);
+  input.resume(); // a readline prompt before the game (--resume) leaves stdin paused
   output.write("\x1b[?1049h\x1b[?25l"); // alternate screen, hide cursor
   const handlers: ((k: Key) => void)[] = [];
   input.on("keypress", (str: string | undefined, key: NodeKey | undefined) => {
