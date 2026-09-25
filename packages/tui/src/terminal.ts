@@ -19,7 +19,8 @@ export interface Key {
 
 /** What the TUI needs from a terminal. Backends: Node stdin/stdout, xterm.js. */
 export interface Terminal {
-  write(lines: StyledLine[]): void;
+  /** Draws a frame. `cursor` (0-based) shows the text cursor there, for typing; otherwise it's hidden. */
+  write(lines: StyledLine[], cursor?: { row: number; col: number }): void;
   onKey(handler: (key: Key) => void): void;
   /** Called after the terminal changes size (window resize, phone rotation). */
   onResize(handler: () => void): void;

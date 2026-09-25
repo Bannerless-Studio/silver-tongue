@@ -1,7 +1,7 @@
 import type { FitAddon } from "@xterm/addon-fit";
 import type { Terminal as XTerm } from "@xterm/xterm";
 import { toAnsi, type Key, type Terminal } from "@silver-tongue/tui";
-import { keyName } from "./keys";
+import { dataKeys, keyName } from "./keys";
 
 export interface WebTerminal extends Terminal {
   /** Sends a key as if typed: for the on-screen key bar. */
@@ -17,22 +17,22 @@ export function createWebTerminal(term: XTerm, fit: FitAddon, win: Window): WebT
   const press = (name: string, text?: string) => {
     for (const h of keyHandlers) h(text ? { name, text } : { name });
   };
+  // Keys arrive through onKey, and xterm then reports the same keystroke as data. Phone keyboards
+  // and input methods send text as data only (their key events say "Unidentified"). So data counts
+  // unless the keystroke it came from was already handled as a key.
+  let handledByKey = false;
   const onKey = term.onKey(({ domEvent }) => {
     const name = keyName(domEvent.key, domEvent);
+    handledByKey = !!name;
     // The typed character, case kept, for text entry (a name).
-    const text = [...domEvent.key].length === 1 ? domEvent.key.normalize("NFKC") : undefined;
-    lastKeyText = domEvent.key;
-    if (name) press(name, text);
+    if (name) press(name, [...domEvent.key].length === 1 ? domEvent.key.normalize("NFKC") : undefined);
   });
-  // Text from an input method (Chinese, Japanese, a phone keyboard) arrives as data, not keys.
-  // A key that already arrived through onKey ("é" on a keyboard layout) also shows up here once.
-  let lastKeyText = "";
   const onData = term.onData((data) => {
-    if (data === lastKeyText) {
-      lastKeyText = "";
+    if (handledByKey) {
+      handledByKey = false;
       return;
     }
-    if (/[^\x00-\x7f]/.test(data)) for (const ch of data) press(ch, ch);
+    for (const k of dataKeys(data)) press(k.name, k.text);
   });
   const onResize = term.onResize(() => {
     for (const h of resizeHandlers) h();
@@ -41,8 +41,9 @@ export function createWebTerminal(term: XTerm, fit: FitAddon, win: Window): WebT
   win.addEventListener("resize", refit); // also refit by the page's ResizeObserver
   term.write("\x1b[?25l"); // no cursor: the game draws its own prompt
   return {
-    write(lines) {
-      term.write("\x1b[H\x1b[2J" + lines.map(toAnsi).join("\r\n"));
+    write(lines, cursor) {
+      const place = cursor ? `\x1b[${cursor.row + 1};${cursor.col + 1}H\x1b[?25h` : "\x1b[?25l";
+      term.write("\x1b[H\x1b[2J" + lines.map(toAnsi).join("\r\n") + place);
     },
     onKey(handler) {
       keyHandlers.push(handler);

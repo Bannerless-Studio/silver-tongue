@@ -14,8 +14,10 @@ export class FakeTerminal implements Terminal {
     public rows = 20,
   ) {}
 
-  write(lines: StyledLine[]): void {
+  cursor: { row: number; col: number } | undefined;
+  write(lines: StyledLine[], cursor?: { row: number; col: number }): void {
     this.frames.push(lines);
+    this.cursor = cursor;
   }
   onKey(handler: (k: Key) => void): void {
     this.handler = handler;

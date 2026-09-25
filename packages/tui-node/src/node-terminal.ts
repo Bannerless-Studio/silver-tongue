@@ -37,8 +37,9 @@ export function createNodeTerminal(input = process.stdin, output = process.stdou
   };
   process.on("exit", restore);
   return {
-    write(lines) {
-      output.write("\x1b[H\x1b[2J" + lines.map(toAnsi).join("\r\n"));
+    write(lines, cursor) {
+      const place = cursor ? `\x1b[${cursor.row + 1};${cursor.col + 1}H\x1b[?25h` : "\x1b[?25l";
+      output.write("\x1b[H\x1b[2J" + lines.map(toAnsi).join("\r\n") + place);
     },
     onKey(handler) {
       handlers.push(handler);

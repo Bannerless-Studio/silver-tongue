@@ -372,10 +372,12 @@ describe("tui app", () => {
     term.press("backspace");
     term.type("Jamil");
     expect(term.screen().join("\n")).toContain("> Jamil");
+    expect(term.cursor).toEqual({ row: term.rows - 2, col: 4 + 5 }); // after "│ > Jamil"
     term.press("return");
     expect(core.state.player).toBe("Jamil");
     s = term.screen().join("\n");
     expect(s).toContain("1) Go to Noodle shop");
+    expect(term.cursor).toBeUndefined();
   });
 
   it("shows the game's version in the bottom border when given one", () => {

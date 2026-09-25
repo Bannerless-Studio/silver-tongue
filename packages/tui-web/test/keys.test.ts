@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { forBrowser, keyName } from "../src/keys";
+import { dataKeys, forBrowser, keyName } from "../src/keys";
 
 describe("web keys", () => {
   it("maps browser key names to the game's", () => {
@@ -32,4 +32,19 @@ describe("web keys", () => {
     expect(forBrowser({ key: "1" })).toBe(false);
     expect(forBrowser({ key: "Enter" })).toBe(false);
   });
+
+  it("turns text from a phone keyboard or input method into keys, case kept", () => {
+    expect(dataKeys("Jamil")).toEqual([
+      { name: "j", text: "J" },
+      { name: "a", text: "a" },
+      { name: "m", text: "m" },
+      { name: "i", text: "i" },
+      { name: "l", text: "l" },
+    ]);
+    expect(dataKeys("\r")).toEqual([{ name: "return" }]);
+    expect(dataKeys("\x7f")).toEqual([{ name: "backspace" }]);
+    expect(dataKeys("张")).toEqual([{ name: "张", text: "张" }]);
+    expect(dataKeys("\x1b[A")).toEqual([]); // escape sequences are keys xterm already reported
+  });
 });
+
