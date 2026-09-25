@@ -28,8 +28,10 @@ function isRunShape(x: unknown): x is SceneRun {
   return ["exchange", "misses", "earned", "mixups"].every((k) => isCount(x[k]));
 }
 
+const INPUT_TYPES = new Set(["goTo", "startScene", "reply", "replyTiles", "helpWord", "visitMentor", "sleep"]);
+
 function isLogEntry(x: unknown): boolean {
-  return isObj(x) && isCount(x.t) && isCount(x.day) && isCount(x.slot) && isObj(x.input) && typeof x.input.type === "string";
+  return isObj(x) && isCount(x.t) && isCount(x.day) && isCount(x.slot) && isObj(x.input) && INPUT_TYPES.has(x.input.type as string);
 }
 
 /** Every piece of the reply is among the tiles, repeats counted. */
@@ -75,11 +77,15 @@ export function parseSave(raw: string, course: Course): ParseResult {
   if (!isObj(data.scenesDone) || !allValues(data.scenesDone, isCount)) return { ok: false, reason: "bad-scenesDone" };
   if (!isObj(data.words) || !allValues(data.words, isWordRecord)) return { ok: false, reason: "bad-words" };
   if (data.run !== null && !isRunShape(data.run)) return { ok: false, reason: "bad-run" };
-  // notes and log came later: a save without them gets empty ones.
-  data.notes ??= { ready: [], read: [] };
-  data.log ??= [];
+  // notes and log came later: a save without them gets empty ones (but null is malformed).
+  if (!("notes" in data)) data.notes = { ready: [], read: [] };
+  if (!("log" in data)) data.log = [];
   if (!isObj(data.notes) || !isStrings(data.notes.ready) || !isStrings(data.notes.read)) return { ok: false, reason: "bad-notes" };
   if (!Array.isArray(data.log) || !data.log.every(isLogEntry)) return { ok: false, reason: "bad-log" };
+  // Notes the course no longer has are dropped, like a scene it no longer has.
+  const noteIds = new Set(course.notes.map((n) => n.id));
+  const keep = (ids: string[]) => [...new Set(ids)].filter((id) => noteIds.has(id));
+  data.notes = { ready: keep(data.notes.ready), read: keep(data.notes.read) };
   const state = data as unknown as GameState;
   if (state.run && !runFits(state.run, course)) state.run = null;
   return { ok: true, state };

@@ -35,6 +35,19 @@ describe("mentor", () => {
     expect(core.state.notes.ready).toEqual(["hao-note"]);
   });
 
+  it("doesn't count a word looked up but never heard", () => {
+    const core = setup();
+    expect(core.send({ type: "helpWord", word: "w_hao" }).some((e) => e.type === "noteReady")).toBe(false);
+  });
+
+  it("accepts a state from before notes and the log existed", () => {
+    const c = mentorCourse();
+    const { notes: _n, log: _l, ...old } = newGame(c);
+    const core = createCore(c, old as ReturnType<typeof newGame>, { now: () => T0, rng: () => 0 });
+    expect(core.send({ type: "goTo", place: "noodle_shop" })).toEqual([{ type: "placeEntered", place: "noodle_shop" }]);
+    expect(core.state.log).toHaveLength(1);
+  });
+
   it("is available at the mentor's place once the `after` scene is done", () => {
     const c = mentorCourse();
     const core = setup(c);

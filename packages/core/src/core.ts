@@ -49,7 +49,8 @@ function handle(ctx: Ctx, input: Input): void {
 /** One entry point: send an input, get events. A rejected input leaves the state untouched. */
 export function createCore(course: Course, initial: GameState, deps: CoreDeps): Core {
   const wordIds = Object.keys(course.words);
-  let state = initial;
+  // States from before notes and the log existed (not loaded through parseSave) get empty ones.
+  let state: GameState = { ...initial, notes: initial.notes ?? { ready: [], read: [] }, log: initial.log ?? [] };
   return {
     get state() {
       return state;

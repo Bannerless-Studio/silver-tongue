@@ -91,7 +91,7 @@ These are additive only:
 - the events `noteReady` and `mentorVisited`;
 - `actionPerformed.expected`;
 - `REJECT_REASONS += "no-mentor"`;
-- `GameState.notes?` and `GameState.log?`;
+- `GameState.notes` and `GameState.log` (required in the type; `createCore` and `parseSave` fill them in for older states);
 - `WordRecord.first?`;
 - `Course.conceptNames`, `Course.stageWords`, `Course.notes` and `World.mentor?`.
 

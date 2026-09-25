@@ -9,7 +9,8 @@ export function mentorAvailable(course: Course, state: GameState): boolean {
 }
 
 function triggered(note: Note, state: GameState): boolean {
-  return "word" in note.trigger ? !!state.words[note.trigger.word] : (state.scenesDone[note.trigger.scene] ?? 0) > 0;
+  // A word counts once it has been heard in a line: looking it up or seeing it among replies isn't enough.
+  return "word" in note.trigger ? !!state.words[note.trigger.word]?.first : (state.scenesDone[note.trigger.scene] ?? 0) > 0;
 }
 
 /** Notes whose trigger is met but that are neither waiting nor explained yet, in course order. */
