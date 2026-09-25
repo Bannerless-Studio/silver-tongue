@@ -49,6 +49,15 @@ describe("build-course (real content)", () => {
     expect(course!.reactions["wrong-count"].meaning).toBe("How many cups?");
   });
 
+  it("names concepts in the learner's language, lists the stage words, and loads the mentor notes", () => {
+    expect(course!.conceptNames.tea).toBe("tea");
+    expect(course!.conceptNames.thanks).toBe("Thank you");
+    expect(course!.stageWords["1"]).toHaveLength(150);
+    expect(course!.notes.map((n) => n.id)).toEqual(["bukeqi", "hao-ma", "bei"]);
+    expect(course!.world.mentor).toEqual({ npc: "wang", after: "street-hello" });
+    expect(course!.learnerFtl).toContain("note-bei-title");
+  });
+
   it("ships only the words the course uses", () => {
     const ids = Object.keys(course!.words);
     expect(ids.length).toBeLessThan(40);

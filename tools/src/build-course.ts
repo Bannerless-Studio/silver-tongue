@@ -6,6 +6,7 @@ import {
   comboKey,
   type Course,
   type Exchange,
+  type Note,
   type RenderedLine,
   type Scene,
   type Variant,
@@ -218,11 +219,38 @@ export function buildCourse(root: string, courseId: string): BuildResult {
     }
   });
 
+  // Concept names for narration: each concept's base form in the learner's language.
+  const conceptNames: Record<string, string> = {};
+  if (meaningTerms !== undefined) {
+    for (const name of Object.keys(concepts)) {
+      const r = attempt(`${meaningTermsName} -${name}`, () =>
+        new Renderer(cfg.learner, [[meaningTermsName, meaningTerms], ["name", `name = { -${name} }`]]),
+      );
+      if (r) {
+        try {
+          conceptNames[name] = r.render("name");
+        } catch {
+          // no learner term: the checker reports the missing name
+        }
+      }
+    }
+  }
+  // Every word on each stage's levels: the list the notebook counts progress toward.
+  const stageWords = Object.fromEntries(
+    Object.entries(meta.stages).map(([stage, levels]) => [
+      stage,
+      packWords.filter((w) => !w.bonus && levels.includes(w.lv)).map((w) => w.id),
+    ]),
+  );
+  const notesPath = join(langDir, "notes.json");
+  const notes = (existsSync(notesPath) && attempt("notes.json", () => readJson<Note[]>(notesPath))) || [];
+
   const learnerFtl =
     attempt(`learner/${cfg.learner}`, () =>
       [
         readFileSync(join(learnerDir, "ui.ftl"), "utf8"),
         readFileSync(join(learnerDir, `narration-${cfg.setting}.ftl`), "utf8"),
+        readOptional(join(learnerDir, `mentor-${cfg.language}.ftl`)),
       ].join("\n"),
     ) ?? "";
 
@@ -236,9 +264,9 @@ export function buildCourse(root: string, courseId: string): BuildResult {
     scenes,
     reactions,
     learnerFtl,
-    conceptNames: {},
-    stageWords: {},
-    notes: [],
+    conceptNames,
+    stageWords,
+    notes,
   };
   const learnerIds = attempt("learner text", () => new Set(messageIds(learnerFtl, "learner files"))) ?? new Set<string>();
   errors.push(...checkCourse({ course, stages: meta.stages, checks: cfg.checks, learnerIds, requiredUi: [] }));

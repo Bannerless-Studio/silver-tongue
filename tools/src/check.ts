@@ -219,8 +219,22 @@ export function checkCourse(input: CheckInput): string[] {
     }
   }
 
+  for (const name of Object.keys(course.concepts)) {
+    if (!(name in course.conceptNames)) errors.push(`concepts: no learner-language name for "${name}"`);
+  }
+  for (const d of dupes(course.notes.map((n) => n.id))) errors.push(`notes: id "${d}" is used twice`);
+  for (const n of course.notes) {
+    if ("word" in n.trigger && !course.words[n.trigger.word]) errors.push(`notes: "${n.id}" is triggered by unknown word "${n.trigger.word}"`);
+    if ("scene" in n.trigger && !sceneIds.has(n.trigger.scene)) errors.push(`notes: "${n.id}" is triggered by unknown scene "${n.trigger.scene}"`);
+  }
+  if (world.mentor) {
+    if (!world.npcs[world.mentor.npc]) errors.push(`world: mentor "${world.mentor.npc}" is not an npc`);
+    if (!sceneIds.has(world.mentor.after)) errors.push(`world: mentor comes after unknown scene "${world.mentor.after}"`);
+  }
+
   const need = [
     ...input.requiredUi,
+    ...course.notes.flatMap((n) => [`note-${n.id}`, `note-${n.id}-title`]),
     ...Object.keys(world.places).map((p) => `place-${p}`),
     ...Object.keys(world.places).map((p) => `place-${p}-desc`),
     ...Object.keys(world.npcs).map((n) => `npc-${n}`),
