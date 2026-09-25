@@ -44,6 +44,7 @@ const greet: Exchange = {
     "": {
       npc: { ...line(["你", "w_ni"], ["好", "w_hao"], ["！", null]), meaning: "Hello!" },
       reply: { ...line(["你", "w_ni"], ["好", "w_hao"], ["！", null]), meaning: "Hello!" },
+      alts: [line(["不", "w_bu"], ["好", "w_hao"], ["！", null]), line(["这", "w_zhe"], ["个", "w_ge"], ["！", null])],
     },
   },
 };

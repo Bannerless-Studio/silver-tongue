@@ -70,6 +70,14 @@ describe("save", () => {
     expect(parseSave(JSON.stringify(logged), course)).toMatchObject({ ok: true });
   });
 
+  it("keeps a pick with written wrong replies, and drops one naming a wrong reply the course no longer has", () => {
+    const core = inScene();
+    expect(core.state.run!.options.some((k) => k.startsWith("alt:"))).toBe(true);
+    expect(parseSave(serialize(core.state), course)).toEqual({ ok: true, state: core.state });
+    const stale = { ...core.state, run: { ...core.state.run!, options: ["", "alt:7"] } };
+    expect(parseSave(serialize(stale), course)).toMatchObject({ ok: true, state: { run: null } });
+  });
+
   it("drops notes the course no longer has, and duplicates", () => {
     const c = { ...course, notes: [{ id: "a", trigger: { scene: "intro" } }] };
     const res = parseSave(JSON.stringify({ ...newGame(c), notes: { ready: ["a", "a", "gone"], read: ["gone"] } }), c);

@@ -4,7 +4,7 @@ import { describeRun } from "../src/dialogue";
 import { createCore, LOG_LIMIT, newGame, type Core } from "../src/core";
 import { recordRight } from "../src/learner";
 import { mulberry32 } from "../src/rng";
-import { fixtureCourse } from "../src/testing/fixture";
+import { fixtureCourse, line } from "../src/testing/fixture";
 import type { GameEvent, WordRecord } from "../src/types";
 
 const T0 = 1_000_000;
@@ -85,7 +85,7 @@ describe("core", () => {
     const core = setup();
     playIntro(core);
     const words: Record<string, WordRecord> = {};
-    for (const w of ["w_cha", "w_shui", "w_san", "w_si"]) {
+    for (const w of ["w_cha", "w_shui", "w_san", "w_si", "w_hao", "x_bei"]) {
       words[w] = recordRight(recordRight(recordRight(undefined, T0), T0), T0);
     }
     const tiles = createCore(course, { ...core.state, words }, { now: () => T0, rng: mulberry32(2) });
@@ -197,7 +197,7 @@ describe("core", () => {
     const core = setup();
     playIntro(core);
     const wrongOnly = { right: 0, wrong: 1, streak: 0, helps: 0, lapsed: true, firstSeen: T0, lastSeen: T0 };
-    const words = Object.fromEntries(["w_cha", "w_shui", "w_san", "w_si"].map((w) => [w, { ...wrongOnly }]));
+    const words = Object.fromEntries(["w_cha", "w_shui", "w_san", "w_si", "w_hao", "x_bei"].map((w) => [w, { ...wrongOnly }]));
     const pick = createCore(course, { ...core.state, words }, { now: () => T0, rng: mulberry32(2) });
     expect(find(pick.send({ type: "startScene", scene: "shift" }), "replyOptions").mode).toBe("pick");
     const lapsed = Object.fromEntries(Object.keys(words).map((w) => [w, { ...wrongOnly, right: 1 }]));
@@ -209,7 +209,7 @@ describe("core", () => {
     const core = setup();
     playIntro(core);
     const lapsed = { right: 1, wrong: 1, streak: 0, helps: 0, lapsed: true, firstSeen: T0, lastSeen: T0 };
-    const words = Object.fromEntries(["w_cha", "w_shui", "w_san", "w_si"].map((w) => [w, { ...lapsed }]));
+    const words = Object.fromEntries(["w_cha", "w_shui", "w_san", "w_si", "w_hao", "x_bei"].map((w) => [w, { ...lapsed }]));
     const tiles = createCore(course, { ...core.state, words }, { now: () => T0, rng: mulberry32(2) });
     tiles.send({ type: "startScene", scene: "shift" });
     expect(find(tiles.send({ type: "replyTiles", tiles: [0] }), "replyOptions").mode).toBe("tiles");
@@ -218,6 +218,39 @@ describe("core", () => {
     expect(tiles.state.run!.mode).toBe("pick");
     expect(tiles.state.run!.options).toContain(comboKey(tiles.state.run!.combo));
     expect(find(answerRight(tiles), "actionPerformed").matched).toBe(true);
+  });
+
+  it("offers written wrong replies for an exchange without slots, and picking one is a mix-up", () => {
+    const core = setup();
+    core.send({ type: "goTo", place: "noodle_shop" });
+    const start = core.send({ type: "startScene", scene: "intro" });
+    const opts = find(start, "replyOptions");
+    expect(opts.mode === "pick" && opts.options.map((o) => o.text).sort()).toEqual(["不好！", "你好！", "这个！"].sort());
+    const run = core.state.run!;
+    const alt = run.options.findIndex((k) => k.startsWith("alt:"));
+    const miss = core.send({ type: "reply", choice: alt });
+    expect(find(miss, "actionPerformed")).toMatchObject({ matched: false, action: { action: "other" }, expected: { action: "greet" } });
+    expect(find(miss, "npcReacted")).toBeTruthy();
+    expect(find(answerRight(core), "actionPerformed").matched).toBe(true);
+  });
+
+  it("counts the words of a right reply as answered right, and remembers the reply they were first said in", () => {
+    const c = fixtureCourse();
+    c.scenes[0].exchanges[0].variants[""].reply = line(["不", "w_bu"], ["是", "w_shi"], ["。", null]);
+    const core = createCore(c, newGame(c), { now: () => T0, rng: mulberry32(1) });
+    core.send({ type: "goTo", place: "noodle_shop" });
+    core.send({ type: "startScene", scene: "intro" });
+    answerRight(core);
+    expect(core.state.words.w_bu).toMatchObject({ right: 1, first: { line: "不是。", place: "noodle_shop" } });
+  });
+
+  it("chooses the reply mode by the weakest of the hinge and reply words", () => {
+    const core = setup();
+    const lapsed = { right: 1, wrong: 1, streak: 0, helps: 0, lapsed: true, firstSeen: T0, lastSeen: T0 };
+    const words = { w_ni: { ...lapsed }, w_hao: { ...lapsed } };
+    const tiles = createCore(course, { ...core.state, place: "noodle_shop", words }, { now: () => T0, rng: mulberry32(2) });
+    expect(find(tiles.send({ type: "startScene", scene: "intro" }), "replyOptions").mode).toBe("tiles");
+    expect(tiles.state.run!.tiles.length).toBeGreaterThan(2); // the reply's words plus extras from the wrong replies
   });
 });
 
