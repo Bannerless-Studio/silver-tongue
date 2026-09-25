@@ -72,6 +72,11 @@ export const UI_KEYS: Record<string, string[]> = {
   "export-none": [],
   "import-bad": ["reason"],
   "import-done": ["game"],
+  ...Object.fromEntries(
+    ["new", "games", "games-none", "export", "export-hint", "copy", "copied", "import", "import-hint", "import-go", "close", "saved"].map(
+      (k) => [`web-${k}`, []],
+    ),
+  ),
   ...Object.fromEntries(REJECT_REASONS.map((c) => [`reject-${c}`, []])),
 };
 

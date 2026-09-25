@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { keyName, toAnsi } from "../src/node-terminal";
+import { toAnsi } from "@silver-tongue/tui";
+import { keyName } from "../src/node-terminal";
 
 describe("node terminal", () => {
   it("turns styled spans into ANSI escapes", () => {
