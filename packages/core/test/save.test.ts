@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { createCore, newGame } from "../src/core";
 import { parseSave, serialize } from "../src/save";
-import { fixtureCourse } from "../src/testing/fixture";
-import type { GameState } from "../src/types";
+import { fixtureCourse, line } from "../src/testing/fixture";
+import { PLAYER_MARK, type GameState } from "../src/types";
 
 describe("save", () => {
   const course = fixtureCourse();
@@ -89,6 +89,17 @@ describe("save", () => {
     const stale: GameState = { ...core.state, run: { ...core.state.run!, scene: "gone" } };
     const res = parseSave(serialize(stale), course);
     expect(res).toEqual({ ok: true, state: { ...stale, run: null } });
+  });
+
+  it("gives back the name tile to a reply saved before the name was a tile", () => {
+    const c = fixtureCourse();
+    c.scenes[0].exchanges[0].variants[""].reply = line(["你", "w_ni"], ["好", "w_hao"], ["，", null], [PLAYER_MARK, null], ["！", null]);
+    const core = createCore(c, { ...newGame(c), place: "noodle_shop", player: "Jamil" }, { now: () => 0, rng: () => 0 });
+    core.send({ type: "startScene", scene: "intro" });
+    // Such a save had only the word tiles.
+    const old: GameState = { ...core.state, run: { ...core.state.run!, mode: "tiles", options: [], tiles: ["好", "你"] } };
+    const res = parseSave(serialize(old), c);
+    expect(res.ok && res.state.run?.tiles).toEqual(["好", "你", PLAYER_MARK]);
   });
 
   it("drops a tiles run whose reply the saved tiles can no longer build", () => {

@@ -235,7 +235,7 @@ function resolve(
     for (const w of new Set([...hinges, ...reply.tokens.map((t) => t.word)])) setWord(ctx, w, recordRight);
     for (const t of reply.tokens) {
       const rec = ctx.state.words[t.word];
-      if (!rec.first) rec.first = { line: reply.text, place: ctx.state.place };
+      if (!rec.first) rec.first = { line: personalize(reply, nameOf(ctx.state)).text, place: ctx.state.place };
     }
     run.earned += ex.pay;
     if (run.exchange + 1 < scene.exchanges.length) beginExchange(ctx, scene, run.exchange + 1);
@@ -327,8 +327,11 @@ export function replyTiles(ctx: Ctx, tiles: number[]): void {
   if (tiles.some((i) => run.tiles[i] === undefined)) return reject(ctx, "bad-tile");
   const chosen = tiles.map((i) => run.tiles[i]);
   const reply = cur.ex.variants[comboKey(run.combo)].reply;
-  const target = tilePieces(reply).join("");
+  // Judged by what the player sees: a name that looks like a word is as good as that word.
+  const name = nameOf(ctx.state);
+  const shown = (pieces: string[]) => pieces.map((x) => (x === PLAYER_MARK ? name : x)).join("");
+  const target = shown(tilePieces(reply));
   // Words of the reply the player placed count as said; the rest were missed.
   const said = reply.tokens.filter((t) => chosen.includes(reply.text.slice(t.start, t.end))).map((t) => t.word);
-  resolve(ctx, cur.scene, cur.ex, run.combo, [], chosen.join("") !== target, false, said);
+  resolve(ctx, cur.scene, cur.ex, run.combo, [], shown(chosen) !== target, false, said);
 }

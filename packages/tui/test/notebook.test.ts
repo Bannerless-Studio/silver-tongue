@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { newGame, type WordRecord } from "@silver-tongue/core";
+import { newGame, PLAYER_MARK, type WordRecord } from "@silver-tongue/core";
 import { notebookLines } from "../src/notebook";
 import { plain } from "../src/terminal";
 import { makeText } from "../src/text";
@@ -32,6 +32,13 @@ describe("notebook", () => {
     expect(text).toMatch(/Heard elsewhere\n○ 好 hǎo — good/);
     expect(text).toMatch(/Notes\n好 means good\nOn its own, 好 agrees\./);
     expect(text.indexOf("The street")).toBeLessThan(text.indexOf("Noodle shop"));
+  });
+
+  it("says the player's name in a first line saved with the name's mark", () => {
+    const state = { ...newGame(course), player: "Jamil" };
+    state.words = { w_shi: rec({ first: { line: `是${PLAYER_MARK}。`, place: "street" } }) };
+    const text = notebookLines(course, state, t, T0).map(plain).join("\n");
+    expect(text).toContain("    是Jamil。");
   });
 
   it("says so when nothing has been heard yet", () => {
