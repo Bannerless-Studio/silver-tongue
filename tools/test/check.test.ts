@@ -68,6 +68,16 @@ describe("checkCourse", () => {
     expect(checkCourse(input({ course: c })).some((e) => /^shift\/order\[.*new words/.test(e))).toBe(true);
   });
 
+  it("keeps a slot that has its own reaction to one group", () => {
+    // Reactions are chosen by slot name (wrong-<slot>) across the whole course.
+    const c = fixtureCourse();
+    c.reactions["wrong-item"] = line(["不", "w_bu"], ["是", "w_shi"], ["。", null]);
+    expect(checkCourse(input({ course: c }))).toEqual([]);
+    c.groups.hot = ["tea"];
+    c.scenes[0].exchanges[1].slots = { item: "hot" };
+    expect(checkCourse(input({ course: c }))).toContain('reactions: "wrong-item" answers slot "item", which draws from drinks and hot; give one of them another slot name');
+  });
+
   it("checks reactions against the earliest stage", () => {
     const c = fixtureCourse();
     c.scenes[1].stage = 2;

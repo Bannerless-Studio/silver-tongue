@@ -17,7 +17,11 @@ export const MIN_SCENES_PER_WORD = 3;
 export const MAX_REPLY_WORDS = 7;
 /** Word help offers each word of the NPC's line on keys 1-9. */
 export const MAX_LINE_WORDS = 9;
-/** A place's menu: its scenes, exits and the mentor's visit on keys 1-7, then sleep and quit. */
+/**
+ * A place's menu: its scenes, exits and the mentor's visit on keys 1-7, then sleep and quit. The
+ * mentor's item always counts, though the menu shows it only when a note is waiting, so no place
+ * can overflow once one is.
+ */
 export const MAX_PLACE_ITEMS = 7;
 
 /** Scenes in `after` order; ties keep file order. */
@@ -245,6 +249,16 @@ export function checkCourse(input: CheckInput): string[] {
     if (checks.audio && !l.audio) errors.push(`reaction ${id}: no audio`);
   }
   if (!course.reactions["wrong-generic"]) errors.push(`reactions: "wrong-generic" is required`);
+  // A wrong-<slot> reaction is chosen by slot name alone, anywhere in the course, so every exchange
+  // with that slot must be about the same kind of thing (the noodle shop's 几杯？ is for cups).
+  for (const id of Object.keys(course.reactions)) {
+    if (!id.startsWith("wrong-") || id === "wrong-generic") continue;
+    const slot = id.slice("wrong-".length);
+    const groups = [...new Set(course.scenes.flatMap((s) => s.exchanges.flatMap((ex) => (ex.slots[slot] ? [ex.slots[slot]] : []))))];
+    if (groups.length > 1) {
+      errors.push(`reactions: "${id}" answers slot "${slot}", which draws from ${groups.sort().join(" and ")}; give one of them another slot name`);
+    }
+  }
 
   if (checks.coverage) {
     const stagesUsed = new Set(course.scenes.map((s) => String(s.stage)));

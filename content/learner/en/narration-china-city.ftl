@@ -1,7 +1,7 @@
 # The story. intro-1, intro-2, … open a new game ($currency, $wallet, $rent are available).
 intro-1 = Your phone is dead, your wallet is gone, and the bus that brought you here left an hour ago.
 intro-2 = You're standing on a street in a Chinese city with { $currency }{ $wallet } in your pocket. You know nobody, and nobody here speaks your language.
-intro-3 = Food costs money. There's a room for you down the street, { $currency }{ $rent } a week, due at the end of the week. To earn anything you'll need work, and for work you'll need words.
+intro-3 = Food costs money. There's a room for you down the street, and the rent, { $currency }{ $rent }, is due at the end of each week. To earn anything you'll need work, and for work you'll need words.
 intro-4 = On a bench by the road, an old man is watching you with open curiosity. Maybe start there.
 
 place-street = Main Street
@@ -30,7 +30,7 @@ scene-street-practice-end = Old Wang nods, satisfied, and goes back to watching 
 
 scene-street-numbers = Count with Old Wang
 scene-street-numbers-start = Old Wang holds up one finger, then another. Anyone who works at the noodle shop has to count, and he means to make sure you can.
-scene-street-numbers-end = Old Wang counts your fingers for you, twice, just to be sure. Now the noodle shop.
+scene-street-numbers-end = Old Wang makes you count on your own fingers, twice, just to be sure. Now the noodle shop.
 
 scene-noodle-intro = Ask about work
 scene-noodle-intro-start = The cook looks you up and down, wiping her hands on her apron. So this is Old Wang's latest project.
