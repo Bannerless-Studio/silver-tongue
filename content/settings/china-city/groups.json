@@ -1,5 +1,6 @@
 {
   "groups": {
+    "courtesies": ["hello", "thanks", "sorry", "bye"],
     "drinks": ["tea", "water"],
     "numbers_3_5": ["three", "four", "five"]
   },

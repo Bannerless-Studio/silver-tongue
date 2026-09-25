@@ -12,9 +12,9 @@ export function line(...parts: [string, string | null][]): RenderedLine {
   return { text, tokens };
 }
 
-const W: Record<string, [string, string]> = {
-  w_ni: ["你", "you"],
-  w_hao: ["好", "good"],
+const W: Record<string, [string, string, string?]> = {
+  w_ni: ["你", "you", "nǐ"],
+  w_hao: ["好", "good", "hǎo"],
   w_cha: ["茶", "tea"],
   w_shui: ["水", "water"],
   w_san: ["三", "three"],
@@ -40,7 +40,12 @@ const greet: Exchange = {
   hinges: [],
   pay: 0,
   missCost: 0,
-  variants: { "": { npc: line(["你", "w_ni"], ["好", "w_hao"], ["！", null]), reply: line(["你", "w_ni"], ["好", "w_hao"], ["！", null]) } },
+  variants: {
+    "": {
+      npc: { ...line(["你", "w_ni"], ["好", "w_hao"], ["！", null]), meaning: "Hello!" },
+      reply: { ...line(["你", "w_ni"], ["好", "w_hao"], ["！", null]), meaning: "Hello!" },
+    },
+  },
 };
 
 const menu: Exchange = {
@@ -73,9 +78,9 @@ export function fixtureCourse(): Course {
     id: "test-course",
     typing: false,
     words: Object.fromEntries(
-      Object.entries(W).map(([id, [text, gloss]]) => [
+      Object.entries(W).map(([id, [text, gloss, pron]]) => [
         id,
-        { id, w: text, lv: "1", gloss, ...(id.startsWith("x_") ? { bonus: true } : {}) },
+        { id, w: text, lv: "1", gloss, ...(pron ? { pron } : {}), ...(id.startsWith("x_") ? { bonus: true } : {}) },
       ]),
     ),
     concepts: { tea: ["w_cha"], water: ["w_shui"], three: ["w_san"], four: ["w_si"] },

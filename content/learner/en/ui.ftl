@@ -18,8 +18,11 @@ keys-explore = [{ $keys }] choose · [q] quit
 keys-pick = [{ $keys }] reply · [w] word help
 keys-tiles = [{ $keys }] add tile · [⌫] undo · [enter] say it · [w] word help
 keys-help = [{ $keys }] look up · [esc] back
+keys-help-sentence = [{ $keys }] look up · [s] whole sentence · [esc] back
 
 help-title = Which word?
+help-sentence = The whole sentence
+help-in-replies = In the replies:
 reply-title = Your reply:
 tiles-answer = You say:
 you = You

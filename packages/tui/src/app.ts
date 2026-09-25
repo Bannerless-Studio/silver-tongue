@@ -48,6 +48,7 @@ export function startApp(opts: AppOptions): App {
   let replyMode: "pick" | "tiles" = "pick";
   let tileInput: number[] = [];
   let lastLine: RenderedLine | null = null;
+  let resuming = false; // replaying a scene saved half-way: it has already been introduced
 
   const push = (...lines: StyledLine[]) => {
     log = [...log, ...lines].slice(-LOG_LIMIT);
@@ -61,6 +62,21 @@ export function startApp(opts: AppOptions): App {
   /** The number keys that choose among `n` items: "1", "1-4". */
   const keyRange = (n: number) => (n <= 1 ? "1" : `1-${Math.min(n, 9)}`);
   const echo = (text: string) => push([{ text: `${t("you")}: `, color: "green", bold: true }, { text }]);
+
+  /** Optional narration: shown when the learner text has it. */
+  const narrate = (id: string, args?: Record<string, string | number>) => {
+    if (t.has(id)) push([{ text: t(id, args), dim: true }]);
+  };
+
+  /** The opening story, for a game that hasn't started yet. Lines intro-1, intro-2, … */
+  function tellIntro() {
+    const s = core.state;
+    const fresh =
+      s.day === 1 && s.slot === 0 && !s.run && s.place === course.world.start && !Object.keys(s.scenesDone).length && !Object.keys(s.words).length;
+    if (!fresh) return;
+    const args = { currency: course.world.currency, wallet: s.wallet, rent: course.world.rentPerWeek };
+    for (let i = 1; t.has(`intro-${i}`); i++) push([{ text: t(`intro-${i}`, args) }], []);
+  }
 
   function enterPlace(place: string) {
     push([], [{ text: t(`place-${place}`), bold: true }], [{ text: t(`place-${place}-desc`), dim: true }]);
@@ -78,6 +94,7 @@ export function startApp(opts: AppOptions): App {
         case "sceneStarted":
           mode = "scene";
           push([]);
+          if (!resuming) narrate(`scene-${e.scene}-start`);
           break;
         case "lineSpoken":
           lastLine = e.line;
@@ -118,6 +135,7 @@ export function startApp(opts: AppOptions): App {
           break;
         case "sceneEnded":
           mode = "explore";
+          narrate(`scene-${e.scene}-end`);
           push([{ text: t("scene-done", { currency: course.world.currency, earned: e.earned }), bold: true }]);
           break;
         case "unlocked":
@@ -167,10 +185,18 @@ export function startApp(opts: AppOptions): App {
     return [...items.slice(0, 7), { label: t("menu-sleep"), input: { type: "sleep" } }, { label: t("menu-quit"), quit: true }];
   }
 
-  function helpWords(): { text: string; word: WordId }[] {
+  /**
+   * Words to look up: those of the last line, then (when picking a reply) the other words in the
+   * replies, so a reply the player has never heard can be worked out. At most 9, one per number key.
+   */
+  function helpWords(): { text: string; word: WordId; inReplies: boolean }[] {
     if (!lastLine) return [];
-    const line = lastLine;
-    return line.tokens.map((tk) => ({ text: line.text.slice(tk.start, tk.end), word: tk.word }));
+    const pieces = (l: RenderedLine) => l.tokens.map((tk) => ({ text: l.text.slice(tk.start, tk.end), word: tk.word }));
+    const said = pieces(lastLine).map((p) => ({ ...p, inReplies: false }));
+    const seen = new Set(said.map((p) => p.word));
+    const replies = replyMode === "pick" ? pickOptions.flatMap(pieces) : [];
+    const extra = replies.filter((p) => !seen.has(p.word) && seen.add(p.word)).map((p) => ({ ...p, inReplies: true }));
+    return [...said, ...extra].slice(0, 9);
   }
 
   /** `width` is the room inside the frame, for wrapping tiles and help words. */
@@ -179,8 +205,16 @@ export function startApp(opts: AppOptions): App {
       return [[{ text: t("menu-title"), dim: true }], ...menu().map((m, i) => [{ text: `${i + 1}) ${m.label}` }])];
     }
     if (mode === "help") {
-      const words = helpWords().map((w, i) => `${i + 1}) ${w.text}`);
-      return [[{ text: t("help-title"), dim: true }], ...wrapItems(words, width)];
+      const items = helpWords().map((w, i) => ({ ...w, label: `${i + 1}) ${w.text}` }));
+      const said = items.filter((w) => !w.inReplies).map((w) => w.label);
+      const inReplies = items.filter((w) => w.inReplies).map((w) => w.label);
+      const sentence: StyledLine[] = lastLine?.meaning ? [[{ text: `s) ${t("help-sentence")}` }]] : [];
+      return [
+        [{ text: t("help-title"), dim: true }],
+        ...wrapItems(said, width),
+        ...sentence,
+        ...(inReplies.length ? [[{ text: t("help-in-replies"), dim: true }], ...wrapItems(inReplies, width)] : []),
+      ];
     }
     const title: StyledLine = [{ text: t("reply-title"), dim: true }];
     if (replyMode === "pick") return [title, ...pickOptions.map((o, i) => [{ text: `${i + 1}) ` }, ...lineSpans(o, new Set())])];
@@ -210,7 +244,7 @@ export function startApp(opts: AppOptions): App {
       mode === "explore"
         ? ["keys-explore", menu().length]
         : mode === "help"
-          ? ["keys-help", helpWords().length]
+          ? [lastLine?.meaning ? "keys-help-sentence" : "keys-help", helpWords().length]
           : replyMode === "pick"
             ? ["keys-pick", pickOptions.length]
             : ["keys-tiles", tiles.length];
@@ -236,6 +270,16 @@ export function startApp(opts: AppOptions): App {
           { text: ` — ${w.gloss}` },
         ]);
       }
+      if (key.name === "s" && lastLine?.meaning) {
+        // Reading the whole line is not logged as help on each word: the words still have to be
+        // recognised in the reply.
+        const pron = lastLine.tokens.flatMap((tk) => course.words[tk.word]?.pron ?? []).join(" ");
+        push([
+          { text: lastLine.text, bold: true },
+          ...(pron ? [{ text: ` ${pron}`, color: "yellow" as const }] : []),
+          { text: ` — ${lastLine.meaning}` },
+        ]);
+      }
       if (key.name === "escape" || key.name === "w") mode = "scene";
     } else if (key.name === "w") {
       mode = "help";
@@ -256,8 +300,11 @@ export function startApp(opts: AppOptions): App {
   }
 
   if (opts.notice) push([{ text: t(opts.notice), color: "yellow" }]);
+  tellIntro();
   enterPlace(core.state.place);
+  resuming = true;
   apply(describeRun(course, core.state)); // a save made mid-scene resumes in the scene
+  resuming = false;
   term.onKey(press);
   term.onResize(render);
   render();

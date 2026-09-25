@@ -6,10 +6,23 @@
   "foodPerDay": 5,
   "rentPerWeek": 50,
   "places": {
-    "street": { "links": ["noodle_shop"] },
-    "noodle_shop": { "links": ["street"] }
+    "street": {
+      "links": [
+        "noodle_shop"
+      ]
+    },
+    "noodle_shop": {
+      "links": [
+        "street"
+      ]
+    }
   },
   "npcs": {
-    "cook": { "place": "noodle_shop" }
+    "wang": {
+      "place": "street"
+    },
+    "cook": {
+      "place": "noodle_shop"
+    }
   }
 }

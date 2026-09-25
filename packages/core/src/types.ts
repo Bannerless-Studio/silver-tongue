@@ -20,6 +20,8 @@ export interface RenderedLine {
   text: string;
   tokens: Token[];
   audio?: string;
+  /** what the whole line means, in the learner's language */
+  meaning?: string;
 }
 
 export interface Variant {

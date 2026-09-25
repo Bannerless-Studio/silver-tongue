@@ -178,8 +178,12 @@ content/
     ui.ftl               UI text, rank labels
     glosses-zh.ftl       glosses for zh word ids                           (import seeds it for en)
     glosses-zh-extra.ftl glosses for the bonus words
+    terms.ftl            concepts in the learner's language (same names as the language's terms)
+    lines-zh/<scene>.ftl what each zh line means, same message ids as languages/zh/lines
+    reactions-zh.ftl     what each zh reaction means
     mentor-zh.ftl        usage notes for zh
-    narration-china-city.ftl
+    narration-china-city.ftl   the story: intro-1…n for a new game, place and NPC names,
+                               optional scene-<id>-start / scene-<id>-end narration
   settings/china-city/
     world.json           places and connections, NPCs, jobs, items, prices, currency,
                          slots per day, key NPCs per stage, trust thresholds
@@ -251,7 +255,8 @@ order = { $count ->
 4. **Mark new words** by walking the scenes in `after` order.
 5. **Check** (below). Any error stops the build.
 6. **Generate audio:** one clip per rendered line and one per word, using a TTS service at build time. Clips are mono, around 32 kbps. Unchanged lines are cached.
-7. Write `dist/courses/<course>/`: rendered lines with word ids, spans and audio ids, plus skeletons, world and words. The game loads only this output.
+7. Render each line's **meaning** in the learner language from `learner/<l>/lines-<lang>/`, binding slots to the learner-language concept terms the same way. A missing meaning fails the build.
+8. Write `dist/courses/<course>/`: rendered lines with word ids, spans and audio ids, plus skeletons, world and words. The game loads only this output.
 
 ### Content checker
 
@@ -296,7 +301,8 @@ interface Terminal {
 └ [1-3] reply · [w] word help · [n]otebook · [esc] menu ─┘
 ```
 
-- **Word help:** `w` numbers the words in the current line, and pressing a number shows pronunciation and gloss (sends `helpWord`).
+- **Word help:** `w` numbers the words in the current line, and pressing a number shows pronunciation and gloss (sends `helpWord`). When picking a reply, the words that appear only in the replies are listed too, so a never-heard answer can be worked out. `s` shows the whole line with pronunciation and its meaning; it is not logged as help on each word.
+- **Story:** a new game opens with the intro narration. Scenes can have start and end narration. Long lines wrap to the terminal width.
 - **Replies:** pick by number. Tiles by typing tile numbers in order. Type where the pack allows typing.
 - **Outside conversations:** a menu of places, people, work, mentor and sleep. Actions that cost a slot are marked.
 - **Actions are narrated** from the learner-language narration file ("She sets down four cups. You ordered three.").

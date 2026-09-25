@@ -3,7 +3,7 @@
   "place": "noodle_shop",
   "npc": "cook",
   "stage": 1,
-  "after": [],
+  "after": ["street-hello"],
   "requires": {},
   "repeatable": false,
   "trustGain": 1,

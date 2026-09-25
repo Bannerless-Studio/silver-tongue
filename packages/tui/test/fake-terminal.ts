@@ -51,6 +51,10 @@ place-noodle_shop = Noodle shop
 place-noodle_shop-desc = Steam everywhere. The cook waves you over.
 npc-cook = Cook
 scene-intro = Say hello
+scene-intro-start = The cook looks up from a steaming pot and wipes her hands on her apron.
+scene-intro-end = She hands you an apron.
+intro-1 = You arrive with { $currency }{ $wallet } and no words.
+intro-2 = An old man on a bench is watching you with open curiosity.
 scene-shift = Serve drinks
 `;
 

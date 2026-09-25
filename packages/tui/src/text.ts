@@ -1,17 +1,21 @@
 import { FluentBundle, FluentResource, type FluentVariable } from "@fluent/bundle";
 import { REJECT_REASONS, WALLET_REASONS } from "@silver-tongue/core";
 
-export type Text = (id: string, args?: Record<string, FluentVariable>) => string;
+export type Text = ((id: string, args?: Record<string, FluentVariable>) => string) & {
+  /** Whether the text has this message: for optional text such as scene narration. */
+  has(id: string): boolean;
+};
 
 /** Learner-language text. A missing message shows its id, so gaps are visible, never fatal. */
 export function makeText(ftl: string, locale = "en"): Text {
   const bundle = new FluentBundle(locale, { useIsolating: false });
   bundle.addResource(new FluentResource(ftl));
-  return (id, args) => {
+  const t = (id: string, args?: Record<string, FluentVariable>) => {
     const msg = bundle.getMessage(id);
     // Passing an errors array makes Fluent render problems inline ({$day}) instead of throwing.
     return msg?.value ? bundle.formatPattern(msg.value, args ?? {}, []) : id;
   };
+  return Object.assign(t, { has: (id: string) => !!bundle.getMessage(id)?.value });
 }
 
 /**
@@ -34,6 +38,9 @@ export const UI_KEYS: Record<string, string[]> = {
   "keys-pick": ["keys"],
   "keys-tiles": ["keys"],
   "keys-help": ["keys"],
+  "keys-help-sentence": ["keys"],
+  "help-sentence": [],
+  "help-in-replies": [],
   "help-title": [],
   "reply-title": [],
   "tiles-answer": [],
