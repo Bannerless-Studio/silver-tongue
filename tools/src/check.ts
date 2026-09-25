@@ -38,6 +38,22 @@ export function orderScenes(scenes: Scene[]): { ordered: Scene[]; errors: string
   return { ordered, errors: [] };
 }
 
+/** Whether `to` can be walked to from `from` along place links. */
+function reaches(places: Course["world"]["places"], from: string, to: string): boolean {
+  const seen = new Set([from]);
+  const queue = [from];
+  while (queue.length) {
+    const p = queue.shift()!;
+    if (p === to) return true;
+    for (const next of places[p]?.links ?? []) {
+      if (seen.has(next)) continue;
+      seen.add(next);
+      queue.push(next);
+    }
+  }
+  return false;
+}
+
 const lineWords = (l: RenderedLine | undefined): WordId[] => (l ? l.tokens.map((t) => t.word) : []);
 
 /** Every scene each scene comes after, directly or not. */
@@ -99,6 +115,12 @@ export function checkCourse(input: CheckInput): string[] {
     if (items > MAX_PLACE_ITEMS) errors.push(`world: place "${id}" has ${items} menu items; at most ${MAX_PLACE_ITEMS}`);
   }
   if (world.home !== undefined && !world.places[world.home]) errors.push(`world: home "${world.home}" is not a place`);
+  else if (world.home !== undefined) {
+    // Sleep works only at home, so a place with no way home would be a day that never ends.
+    for (const id of Object.keys(world.places)) {
+      if (!reaches(world.places, id, world.home)) errors.push(`world: home "${world.home}" can't be reached from "${id}"`);
+    }
+  }
   for (const [id, n] of Object.entries(world.npcs)) {
     if (!world.places[n.place]) errors.push(`world: npc "${id}" is at unknown place "${n.place}"`);
   }

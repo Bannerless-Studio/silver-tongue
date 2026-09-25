@@ -49,4 +49,11 @@ describe("course bots (a world with a home)", () => {
       expect(r.firstDone.intro, name).toBe(1);
     }
   });
+
+  it("stop at the first refused input instead of repeating it", () => {
+    const c = fixtureCourse();
+    c.world.places.attic = { links: [] };
+    c.world.home = "attic";
+    expect(runBot(c, BOTS.right, { days: 3, seed: 7 }).rejected).toBe(1);
+  });
 });

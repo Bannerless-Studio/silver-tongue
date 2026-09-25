@@ -169,7 +169,11 @@ export function runBot(course: Course, bot: Bot, opts: { days: number; seed: num
     }
     clock += HOUR;
     const events = core.send(input);
-    if (events.some((e) => e.type === "inputRejected")) report.rejected += 1;
+    if (events.some((e) => e.type === "inputRejected")) {
+      // A bot repeats itself, so a refused input would be refused forever: stop and report it.
+      report.rejected += 1;
+      break;
+    }
     for (const e of events) {
       if (e.type === "walletChanged") {
         report.minWallet = Math.min(report.minWallet, e.wallet);

@@ -136,6 +136,15 @@ describe("checkCourse", () => {
     expect(checkCourse(input({ course: c }))).toContain('world: home "attic" is not a place');
   });
 
+  it("needs home to be reachable from every place, so every day can end", () => {
+    const c = fixtureCourse();
+    c.world.places.attic = { links: ["street"] };
+    c.world.home = "attic";
+    const errors = checkCourse(input({ course: c }));
+    expect(errors).toContain('world: home "attic" can\'t be reached from "street"');
+    expect(errors).toContain('world: home "attic" can\'t be reached from "noodle_shop"');
+  });
+
   it("counts the mentor's visit in their place's menu", () => {
     const c = fixtureCourse();
     // 2 scenes + 5 exits = 7: allowed, until the mentor sits here too.
