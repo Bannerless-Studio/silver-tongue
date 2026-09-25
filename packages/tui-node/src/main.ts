@@ -1,16 +1,18 @@
 import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
 import { createCore, mulberry32, type Course } from "@silver-tongue/core";
-import { startApp } from "@silver-tongue/tui";
+import { makeText, startApp } from "@silver-tongue/tui";
+import { parseFlags, pickAnswer, sessionLines, USAGE } from "./cli";
 import { createNodeTerminal } from "./node-terminal";
+import { listSessions, migrateLegacySave, newSessionPath, sessionsDir } from "./sessions";
 import { configDir, loadSave, writeSave } from "./storage";
 
 const COURSE = "zh-china-en";
 
 /** Next to the bundle when installed; the repo's dist/ when run from source. */
-function coursePath(): string {
-  if (process.argv[2]) return process.argv[2];
+function coursePath(given?: string): string {
+  if (given) return given;
   const candidates = [
     new URL(`./courses/${COURSE}/course.json`, import.meta.url),
     new URL(`../../../dist/courses/${COURSE}/course.json`, import.meta.url),
@@ -29,8 +31,52 @@ if (major < 22) {
   process.exit(1);
 }
 
-const course = JSON.parse(readFileSync(coursePath(), "utf8")) as Course;
-const savePath = process.env.SILVER_TONGUE_SAVE ?? join(configDir(), "silver-tongue", `${course.id}.json`);
+const flags = parseFlags(process.argv.slice(2));
+if (flags.mode === "help") {
+  console.log(USAGE);
+  process.exit(0);
+}
+if (flags.mode === "error") {
+  console.error(`silver-tongue: ${flags.message}\n\n${USAGE}`);
+  process.exit(2);
+}
+
+const course = JSON.parse(readFileSync(coursePath(flags.coursePath), "utf8")) as Course;
+
+/** Which save file to play: the last session, a new one, or one the player picks. */
+async function chooseSave(): Promise<string> {
+  // SILVER_TONGUE_SAVE pins one save file (for tests and scripts); sessions don't apply.
+  if (process.env.SILVER_TONGUE_SAVE) return process.env.SILVER_TONGUE_SAVE;
+  const root = configDir();
+  const dir = sessionsDir(root, course.id);
+  try {
+    migrateLegacySave(root, course.id);
+  } catch {
+    // can't move it: the sessions folder is probably unwritable too, and loadSave will say so
+  }
+  const sessions = listSessions(dir, course);
+  if (flags.mode === "continue") return sessions[0]?.path ?? newSessionPath(dir, Date.now());
+  if (flags.mode === "new") return newSessionPath(dir, Date.now());
+  const t = makeText(course.learnerFtl);
+  if (!sessions.length) {
+    console.log(t("resume-none"));
+    return newSessionPath(dir, Date.now());
+  }
+  console.log(t("resume-title"));
+  for (const line of sessionLines(sessions, course, t, (ms) => new Date(ms).toLocaleString())) console.log(line);
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    for (;;) {
+      const pick = pickAnswer(await rl.question(`${t("resume-ask")} `), sessions.length);
+      if (pick === "cancel") process.exit(0);
+      if (pick !== "again") return sessions[pick].path;
+    }
+  } finally {
+    rl.close();
+  }
+}
+
+const savePath = await chooseSave();
 const { state, notice, readOnly } = loadSave(course, savePath);
 const core = createCore(course, state, { now: Date.now, rng: mulberry32(Date.now() >>> 0) });
 const term = createNodeTerminal();
