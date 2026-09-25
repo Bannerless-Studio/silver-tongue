@@ -28,7 +28,7 @@ describe("build-course (real content)", () => {
 
   it("builds zh-china-en with no errors", () => {
     expect(errors).toEqual([]);
-    expect(course!.scenes.map((s) => s.id)).toEqual(["noodle-intro", "noodle-shift", "room-hello", "street-hello", "street-hungry", "street-practice"]);
+    expect(course!.scenes.map((s) => s.id)).toEqual(["noodle-intro", "noodle-shift", "room-hello", "street-hello", "street-hungry", "street-numbers", "street-practice"]);
   });
 
   it("renders every slot combination and tags its words", () => {
@@ -60,9 +60,10 @@ describe("build-course (real content)", () => {
 
   it("ships only the words the course uses", () => {
     const ids = Object.keys(course!.words);
-    expect(ids.length).toBeLessThan(40);
+    // The pack has over a thousand words; stage 1 content uses a small part of HSK 1.
+    expect(ids.length).toBeLessThan(200);
     expect(ids).toContain("w0133");
-    expect(course!.words.w0001).toBeUndefined();
+    expect(course!.words.w0800).toBeUndefined(); // 对, HSK 4
   });
 
   it("resolves concepts, glosses and bonus words", () => {

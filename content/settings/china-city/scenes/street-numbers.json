@@ -1,0 +1,17 @@
+{
+  "id": "street-numbers",
+  "place": "street",
+  "npc": "wang",
+  "stage": 1,
+  "after": ["street-hungry"],
+  "requires": {},
+  "repeatable": false,
+  "trustGain": 1,
+  "exchanges": [
+    { "id": "one-two", "slots": {}, "expect": { "action": "numbers" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "three-four", "slots": {}, "expect": { "action": "numbers" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "five", "slots": {}, "expect": { "action": "numbers" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "next-a", "slots": { "count": "numbers_2_5" }, "expect": { "action": "next", "count": "$count" }, "hinges": ["$count"], "pay": 0, "missCost": 0 },
+    { "id": "next-b", "slots": { "count": "numbers_2_5" }, "expect": { "action": "next", "count": "$count" }, "hinges": ["$count"], "pay": 0, "missCost": 0 }
+  ]
+}

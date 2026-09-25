@@ -8,6 +8,7 @@
     [measure] 杯
    *[base] 水
 }
+-two = 二
 -three = 三
 -four = 四
 -five = 五

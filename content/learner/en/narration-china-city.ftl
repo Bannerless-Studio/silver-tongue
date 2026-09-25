@@ -28,6 +28,10 @@ scene-street-practice = Practise greetings
 scene-street-practice-start = Old Wang shuffles over to make room. Another lesson, then.
 scene-street-practice-end = Old Wang nods, satisfied, and goes back to watching the street.
 
+scene-street-numbers = Count with Old Wang
+scene-street-numbers-start = Old Wang holds up one finger, then another. Work at the noodle shop means counting, and he isn't sending you over there unable to count.
+scene-street-numbers-end = Old Wang counts your fingers for you, twice, just to be sure. Now the noodle shop.
+
 scene-noodle-intro = Ask about work
 scene-noodle-intro-start = The cook looks you up and down, wiping her hands on her apron. So this is Old Wang's latest project.
 scene-noodle-intro-end = She throws you an apron. You have a job, sort of.
@@ -68,3 +72,5 @@ asked-zhang = They said a name.
 asked-friend = They were telling you about a friend.
 asked-job = They were offering you work.
 asked-live = They were telling you this room is yours.
+asked-numbers = They wanted you to count along.
+asked-next = They wanted the next number: { $count }.

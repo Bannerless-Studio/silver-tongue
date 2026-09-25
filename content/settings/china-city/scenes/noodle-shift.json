@@ -3,7 +3,7 @@
   "place": "noodle_shop",
   "npc": "cook",
   "stage": 1,
-  "after": ["noodle-intro"],
+  "after": ["noodle-intro", "street-numbers"],
   "requires": { "trust": { "cook": 1 } },
   "repeatable": true,
   "trustGain": 1,
