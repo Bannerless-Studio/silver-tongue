@@ -1,0 +1,36 @@
+{
+  "id": "street-practice",
+  "place": "street",
+  "npc": "wang",
+  "stage": 1,
+  "after": ["street-hello"],
+  "requires": {},
+  "repeatable": true,
+  "trustGain": 1,
+  "exchanges": [
+    {
+      "id": "polite-1",
+      "slots": { "said": "courtesies" },
+      "expect": { "action": "answer", "said": "$said" },
+      "hinges": ["$said"],
+      "pay": 0,
+      "missCost": 0
+    },
+    {
+      "id": "polite-2",
+      "slots": { "said": "courtesies" },
+      "expect": { "action": "answer", "said": "$said" },
+      "hinges": ["$said"],
+      "pay": 0,
+      "missCost": 0
+    },
+    {
+      "id": "polite-3",
+      "slots": { "said": "courtesies" },
+      "expect": { "action": "answer", "said": "$said" },
+      "hinges": ["$said"],
+      "pay": 0,
+      "missCost": 0
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { plain } from "../src/terminal";
-import { fitLine, lineWidth, strWidth } from "../src/width";
+import { fitLine, lineWidth, strWidth, wrapLine } from "../src/width";
 
 describe("width", () => {
   it("counts CJK and full-width punctuation as two cells", () => {
@@ -27,4 +27,20 @@ describe("width", () => {
   it("turns control characters into spaces so text can't break the layout", () => {
     expect(plain(fitLine([{ text: "a\tb\x1b[2J" }], 8))).toBe("a b [2J ");
   });
+
+  it("wraps a line at spaces, keeping each span's style", () => {
+    const out = wrapLine([{ text: "Old Wang: ", bold: true }, { text: "he says something and you answer" }], 16).map(plain);
+    expect(out).toEqual(["Old Wang: he", "says something", "and you answer"]);
+    expect(wrapLine([{ text: "a b", bold: true }], 10)[0][0].bold).toBe(true);
+  });
+
+  it("wraps CJK text between any two characters and splits a word longer than the line", () => {
+    expect(wrapLine([{ text: "Cook: 好，三杯茶。" }], 10).map(plain)).toEqual(["Cook: 好，", "三杯茶。"]);
+    expect(wrapLine([{ text: "abcdefghij" }], 4).map(plain)).toEqual(["abcd", "efgh", "ij"]);
+  });
+
+  it("keeps an empty line as one empty line", () => {
+    expect(wrapLine([], 10)).toEqual([[]]);
+  });
 });
+

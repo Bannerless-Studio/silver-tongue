@@ -74,23 +74,29 @@ function formRefs(src: string, name: string): FormRef[] {
  * Throws if a slot name is already a term, or if the lines or terms ask a term for a form it doesn't have
  * (Fluent would quietly fall back to the default form).
  */
-export function bindSlots(termsSrc: string, combo: Record<string, string>, linesSrc: string, linesName: string): string {
+export function bindSlots(
+  termsSrc: string,
+  combo: Record<string, string>,
+  linesSrc: string,
+  linesName: string,
+  termsName = "terms.ftl",
+): string {
   const terms = new Map(
-    parseFtl(termsSrc, "terms.ftl")
+    parseFtl(termsSrc, termsName)
       .body.filter((e): e is Term => e instanceof Term)
       .map((t) => [t.id.name, t]),
   );
   const aliases = Object.entries(combo).map(([slot, concept]) => {
     if (terms.has(slot)) throw new Error(`slot "${slot}" has the same name as the term -${slot}`);
     const term = terms.get(concept);
-    if (!term) throw new Error(`terms.ftl has no term -${concept}`);
+    if (!term) throw new Error(`${termsName} has no term -${concept}`);
     const copy = term.clone();
     copy.id = new Identifier(slot);
     copy.comment = null;
     return copy;
   });
   const sources: [string, string][] = [
-    ["terms.ftl", termsSrc],
+    [termsName, termsSrc],
     [linesName, linesSrc],
   ];
   for (const [name, src] of sources) {

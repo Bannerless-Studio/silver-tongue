@@ -115,6 +115,16 @@ export function buildCourse(root: string, courseId: string): BuildResult {
     if (text !== undefined) concepts[name] = toLine(text, `term -${name}`).tokens.map((t) => t.word);
   }
 
+  // Meanings: what each line says, in the learner's language. Concepts get learner-language
+  // terms, and slots bind to them the same way as in the language being learned.
+  const meaningTermsName = `learner/${cfg.learner}/terms.ftl`;
+  const meaningTerms = attempt(meaningTermsName, () => {
+    const src = readFileSync(join(learnerDir, "terms.ftl"), "utf8");
+    parseFtl(src, meaningTermsName);
+    return src;
+  });
+  const meaningsDir = join(learnerDir, `lines-${cfg.language}`);
+
   const setting = attempt(`settings/${cfg.setting}`, () => ({
     ...readJson<GroupsJson>(join(settingDir, "groups.json")),
     world: readJson<World>(join(settingDir, "world.json")),
@@ -141,6 +151,17 @@ export function buildCourse(root: string, courseId: string): BuildResult {
       return src;
     });
     if (linesSrc === undefined) continue;
+    const meaningsPath = join(meaningsDir, `${sk.id}.ftl`);
+    const meaningsName = `learner/${cfg.learner}/lines-${cfg.language}/${sk.id}.ftl`;
+    if (!existsSync(meaningsPath)) errors.push(`${sk.id}: no ${cfg.learner} meanings (${meaningsPath})`);
+    const meaningsSrc =
+      meaningTerms === undefined || !existsSync(meaningsPath)
+        ? undefined
+        : attempt(sk.id, () => {
+            const src = readFileSync(meaningsPath, "utf8");
+            parseFtl(src, meaningsName);
+            return src;
+          });
     const exchanges: Exchange[] = [];
     for (const ex of sk.exchanges) {
       const variants: Record<string, Variant> = {};
@@ -165,6 +186,17 @@ export function buildCourse(root: string, courseId: string): BuildResult {
           };
           if (r.has(`${ex.id}-rephrase`)) variant.rephrase = toLine(r.render(`${ex.id}-rephrase`, args), where);
           variants[comboKey(combo)] = variant;
+          if (meaningsSrc === undefined || meaningTerms === undefined) return;
+          attempt(`${where} (${cfg.learner} meaning)`, () => {
+            const m = new Renderer(cfg.learner, [
+              [meaningTermsName, meaningTerms],
+              ["slots", bindSlots(meaningTerms, combo, meaningsSrc, meaningsName, meaningTermsName)],
+              [meaningsName, meaningsSrc],
+            ]);
+            variant.npc.meaning = m.render(ex.id, args);
+            variant.reply.meaning = m.render(`${ex.id}-reply`, args);
+            if (variant.rephrase) variant.rephrase.meaning = m.render(`${ex.id}-rephrase`, args);
+          });
         });
       }
       exchanges.push({ ...ex, variants });
@@ -176,9 +208,13 @@ export function buildCourse(root: string, courseId: string): BuildResult {
   attempt("reactions.ftl", () => {
     const src = readFileSync(join(langDir, "reactions.ftl"), "utf8");
     const r = new Renderer(meta.locale, [["terms.ftl", termsSrc], ["reactions.ftl", src]]);
+    const meaningsName = `learner/${cfg.learner}/reactions-${cfg.language}.ftl`;
+    const m = attempt(meaningsName, () => new Renderer(cfg.learner, [[meaningsName, readFileSync(join(learnerDir, `reactions-${cfg.language}.ftl`), "utf8")]]));
     for (const id of messageIds(src, "reactions.ftl")) {
       const text = attempt(`reaction ${id}`, () => r.render(id));
-      if (text !== undefined) reactions[id] = toLine(text, `reaction ${id}`);
+      if (text === undefined) continue;
+      reactions[id] = toLine(text, `reaction ${id}`);
+      if (m) attempt(`reaction ${id} (${cfg.learner} meaning)`, () => (reactions[id].meaning = m.render(id)));
     }
   });
 

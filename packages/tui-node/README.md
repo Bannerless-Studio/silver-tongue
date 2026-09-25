@@ -2,7 +2,7 @@
 
 > You arrive speaking pidgin; you leave with a silver tongue.
 
-A language-learning life game. You arrive in a new city knowing a few words and earn your living by understanding people. Every job, purchase and conversation happens in the language you're learning.
+A language-learning life game. Your phone is dead, your wallet is gone, and you're standing on a street in a Chinese city with ¥20 in your pocket. An old man on a bench teaches you your first words; after that you earn your living by understanding people. Every job, purchase and conversation happens in the language you're learning.
 
 The first course is Mandarin (HSK 1), in a Chinese city, explained in English.
 
@@ -15,7 +15,7 @@ npx silver-tongue
 | Key | Does |
 |---|---|
 | `1`–`9` | choose from the menu, or pick a reply |
-| `w` | word help: look up a word from the last line |
+| `w` | word help: look up a word from the last line or the replies; `s` explains the whole sentence |
 | `enter` / `⌫` | say / undo, when building a reply from tiles |
 | `esc` | back |
 | `q` | save and quit (from the menu) |

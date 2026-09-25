@@ -33,6 +33,30 @@ describe("tui app", () => {
     expect(term.frames.at(-1)!.length).toBe(12);
   });
 
+  it("opens a new game with the story, wrapped to the screen", () => {
+    const { term } = setup();
+    const s = term.screen().join("\n");
+    expect(s).toContain("You arrive with ¥20 and no words.");
+    term.resize(40, 20);
+    expect(term.screen().join("\n")).toMatch(/An old man on a bench is watching\s*│\n│ you with open curiosity\./);
+  });
+
+  it("skips the story when the game is already under way", () => {
+    const { term } = setup((s) => {
+      s.scenesDone.intro = 1;
+    });
+    expect(term.screen().join("\n")).not.toContain("no words");
+  });
+
+  it("narrates the start and end of a scene when the narration has lines for it", () => {
+    const { term, core } = setup();
+    term.press("1", "1");
+    expect(term.screen().join("\n")).toContain("The cook looks up from a steaming pot");
+    term.press("1");
+    term.press(rightKey(core));
+    expect(term.screen().join("\n")).toContain("She hands you an apron.");
+  });
+
   it("starts on the street with a menu and a HUD", () => {
     const { term } = setup();
     const s = term.screen().join("\n");
@@ -61,7 +85,7 @@ describe("tui app", () => {
     term.press("1", "1", "w");
     expect(term.screen().join("\n")).toContain("1) 你  2) 好");
     term.press("2");
-    expect(term.screen().join("\n")).toContain("好 — good");
+    expect(term.screen().join("\n")).toContain("好 hǎo — good");
     expect(core.state.words.w_hao.helps).toBe(1);
     term.press("escape");
     expect(term.screen().join("\n")).toContain("[1] reply");
@@ -84,6 +108,37 @@ describe("tui app", () => {
   it("counts the menu items in the footer", () => {
     const { term } = setup();
     expect(term.screen().join("\n")).toContain("[1-3] choose");
+  });
+
+  it("word help can explain the whole sentence, without counting it as help on each word", () => {
+    const { term, core } = setup();
+    term.press("1", "1", "w");
+    expect(term.screen().join("\n")).toContain("s) The whole sentence");
+    expect(term.screen().join("\n")).toContain("[s] whole sentence");
+    term.press("s");
+    expect(term.screen().join("\n")).toContain("你好！ nǐ hǎo — Hello!");
+    expect(core.state.words.w_hao.helps).toBe(0);
+  });
+
+  it("word help also looks up words that only appear in the replies", () => {
+    const { term, core } = setup();
+    term.press("1", "1");
+    term.press(rightKey(core), "w");
+    const s = term.screen().join("\n");
+    const said = core.state.run!.combo.item === "tea" ? "茶" : "水";
+    const other = said === "茶" ? "水" : "茶";
+    expect(s).toContain(`1) ${said}`);
+    expect(s).toContain("In the replies:");
+    expect(s).toContain(`2) ${other}`);
+    term.press("2");
+    expect(term.screen().join("\n")).toContain(`${other} — ${other === "茶" ? "tea" : "water"}`);
+  });
+
+  it("offers no whole-sentence help for a line without a meaning", () => {
+    const { term, core } = setup();
+    term.press("1", "1");
+    term.press(rightKey(core), "w");
+    expect(term.screen().join("\n")).not.toContain("whole sentence");
   });
 
   it("q quits from the menu", () => {

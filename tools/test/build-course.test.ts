@@ -28,7 +28,7 @@ describe("build-course (real content)", () => {
 
   it("builds zh-china-en with no errors", () => {
     expect(errors).toEqual([]);
-    expect(course!.scenes.map((s) => s.id)).toEqual(["noodle-intro", "noodle-shift"]);
+    expect(course!.scenes.map((s) => s.id)).toEqual(["noodle-intro", "noodle-shift", "street-hello", "street-practice"]);
   });
 
   it("renders every slot combination and tags its words", () => {
@@ -39,6 +39,14 @@ describe("build-course (real content)", () => {
     expect(v.npc.tokens.map((t) => course!.words[t.word].w)).toEqual(["四", "杯", "水"]);
     expect(v.reply.text).toBe("好，四杯水。");
     expect(v.rephrase?.text).toBe("水。四杯。");
+  });
+
+  it("gives every line its meaning in the learner's language", () => {
+    const v = course!.scenes.find((s) => s.id === "noodle-shift")!.exchanges[1].variants["count=four|item=water"];
+    expect(v.npc.meaning).toBe("Four cups of water.");
+    expect(v.reply.meaning).toBe("OK, four cups of water.");
+    expect(v.rephrase?.meaning).toBe("Water. Four cups.");
+    expect(course!.reactions["wrong-count"].meaning).toBe("How many cups?");
   });
 
   it("ships only the words the course uses", () => {
@@ -71,6 +79,15 @@ describe("build-course (broken content)", () => {
 
     const groups = buildChanged((d) => writeFileSync(join(d, "settings/china-city/groups.json"), '{ "groups": {} }'));
     expect(groups.errors.some((e) => /^noodle-shift\/\w+: unknown group/.test(e))).toBe(true);
+  });
+
+  it("reports a line with no meaning, and a scene with no meanings file", () => {
+    const bad = buildChanged((d) => {
+      writeFileSync(join(d, "learner/en/lines-zh/noodle-intro.ftl"), "greet = Hello!\ngreet-reply = Hello!\njob-reply = OK.\n");
+      unlinkSync(join(d, "learner/en/lines-zh/noodle-shift.ftl"));
+    });
+    expect(bad.errors).toContain('noodle-intro/job (en meaning): missing message "job"');
+    expect(bad.errors.some((e) => e.startsWith("noodle-shift: no en meanings"))).toBe(true);
   });
 
   it("reports a syntax error in a lines file once, not once per slot combination", () => {

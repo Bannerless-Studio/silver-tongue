@@ -1,6 +1,6 @@
 import type { RenderedLine, WordId } from "@silver-tongue/core";
 import type { StyledLine } from "./terminal";
-import { fitLine, strWidth } from "./width";
+import { fitLine, strWidth, wrapLine } from "./width";
 
 export interface ScreenModel {
   title: string;
@@ -51,13 +51,14 @@ function border(left: string, label: string, right: string, fill: string, cols: 
   );
 }
 
-/** Frames the screen: title and HUD on top, the log, the prompt, key hints at the bottom. */
+/** Frames the screen: title and HUD on top, the log, the prompt, key hints at the bottom. Long lines wrap. */
 export function renderScreen(m: ScreenModel, cols: number, rows: number): StyledLine[] {
   const inner = Math.max(1, cols - 4);
   const bodyRows = Math.max(1, rows - 2);
-  const prompt = m.prompt.slice(-bodyRows);
+  const wrap = (lines: StyledLine[]) => lines.flatMap((l) => wrapLine(l, inner));
+  const prompt = wrap(m.prompt).slice(-bodyRows);
   const logRows = Math.max(0, bodyRows - prompt.length - (prompt.length ? 1 : 0));
-  const log = logRows > 0 ? m.log.slice(-logRows) : []; // slice(-0) would be the whole log
+  const log = logRows > 0 ? wrap(m.log).slice(-logRows) : []; // slice(-0) would be the whole log
   const body: StyledLine[] = [...Array(logRows - log.length).fill([]), ...log];
   if (prompt.length) body.push([]);
   body.push(...prompt);

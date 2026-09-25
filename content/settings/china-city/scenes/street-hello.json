@@ -1,0 +1,30 @@
+{
+  "id": "street-hello",
+  "place": "street",
+  "npc": "wang",
+  "stage": 1,
+  "after": [],
+  "requires": {},
+  "repeatable": false,
+  "trustGain": 1,
+  "exchanges": [
+    { "id": "hello", "slots": {}, "expect": { "action": "greet" }, "hinges": ["hello"], "pay": 0, "missCost": 0 },
+    {
+      "id": "polite",
+      "slots": { "said": "courtesies" },
+      "expect": { "action": "answer", "said": "$said" },
+      "hinges": ["$said"],
+      "pay": 0,
+      "missCost": 0
+    },
+    {
+      "id": "polite-again",
+      "slots": { "said": "courtesies" },
+      "expect": { "action": "answer", "said": "$said" },
+      "hinges": ["$said"],
+      "pay": 0,
+      "missCost": 0
+    },
+    { "id": "bye", "slots": {}, "expect": { "action": "farewell" }, "hinges": ["bye"], "pay": 0, "missCost": 0 }
+  ]
+}
