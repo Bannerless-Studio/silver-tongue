@@ -1,6 +1,9 @@
 # Text-game UI. Every id here is required by packages/tui (UI_KEYS).
 
-hud = Day { $day } · slot { $slot }/{ $slots } · { $currency }{ $wallet } · { $rank }
+hud = Day { $day } · slot { $slot }/{ $slots } · { $currency }{ $wallet } · { $rank }{ $rentLate ->
+    [yes] { " · rent due" }
+   *[no] {""}
+}
 
 rank-0 = Pidgin
 rank-1 = Getting By
@@ -11,6 +14,8 @@ rank-4 = Silver Tongue
 menu-title = What now?
 menu-talk = Talk to { $npc }: { $scene }
 menu-go = Go to { $place }
+menu-mentor = Ask { $npc } about the language
+cost-slot = { " · 1 slot" }
 menu-sleep = Sleep (end the day)
 menu-quit = Save and quit
 
@@ -65,3 +70,5 @@ resume-item = Day { $day } · { $place } · { $currency }{ $wallet } · { $done 
 resume-ask = Which one? (number, or enter to cancel)
 resume-none = No saved games yet, so here's a new one.
 reject-no-mentor = There's nobody here to explain things.
+note-hint = { $npc } looks like they have something to tell you.
+mentor-nothing = { $npc } has nothing new to explain today.

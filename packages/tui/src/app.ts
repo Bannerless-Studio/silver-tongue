@@ -1,6 +1,7 @@
 import {
   availableSceneIds,
   describeRun,
+  mentorAvailable,
   rankFor,
   type Core,
   type Course,
@@ -78,6 +79,22 @@ export function startApp(opts: AppOptions): App {
     for (let i = 1; t.has(`intro-${i}`); i++) push([{ text: t(`intro-${i}`, args) }], []);
   }
 
+  /** An action's parameters as narration variables: concept values become learner-language names. */
+  const actionArgs = (a: Record<string, string>) =>
+    Object.fromEntries(Object.entries(a).map(([k, v]) => [k, course.conceptNames[v] ?? v]));
+
+  /**
+   * What the reply did (action-<name>) and, on a mix-up, what was asked (asked-<name>), falling back
+   * to the generic mismatch line. A wrong tile answer did nothing recognisable, so it isn't narrated.
+   */
+  function narrateAction(action: Record<string, string>, expected: Record<string, string>, matched: boolean, tilesWrong: boolean) {
+    const name = action.action;
+    if (!tilesWrong && t.has(`action-${name}`)) push([{ text: t(`action-${name}`, actionArgs(action)), dim: true }]);
+    if (matched) return;
+    if (!tilesWrong && t.has(`asked-${name}`)) push([{ text: t(`asked-${name}`, actionArgs(expected)), color: "yellow" }]);
+    else push([{ text: t("mismatch"), color: "yellow" }]);
+  }
+
   function enterPlace(place: string) {
     push([], [{ text: t(`place-${place}`), bold: true }], [{ text: t(`place-${place}-desc`), dim: true }]);
   }
@@ -107,7 +124,7 @@ export function startApp(opts: AppOptions): App {
           else tiles = e.tiles;
           break;
         case "actionPerformed":
-          if (!e.matched) push([{ text: t("mismatch"), color: "yellow" }]);
+          narrateAction(e.action, e.expected, e.matched, e.tilesWrong);
           break;
         case "npcReacted":
           // Word help keeps offering the request the player got wrong, not the reaction.
@@ -150,6 +167,14 @@ export function startApp(opts: AppOptions): App {
         case "inputRejected":
           push([{ text: t(`reject-${e.reason}`), color: "red" }]);
           break;
+        case "noteReady":
+          if (course.world.mentor) push([{ text: t("note-hint", { npc: npcName(course.world.mentor.npc) }), color: "magenta" }]);
+          break;
+        case "mentorVisited":
+          push([]);
+          if (!e.notes.length) push([{ text: t("mentor-nothing", { npc: npcName(e.npc) }), dim: true }]);
+          for (const id of e.notes) push([{ text: t(`note-${id}-title`), bold: true }], [{ text: t(`note-${id}`) }], []);
+          break;
         case "wordStateChanged":
           break;
       }
@@ -176,7 +201,13 @@ export function startApp(opts: AppOptions): App {
     for (const id of availableSceneIds(course, s)) {
       const scene = course.scenes.find((x) => x.id === id)!;
       if (scene.place !== s.place) continue;
-      items.push({ label: t("menu-talk", { npc: npcName(scene.npc), scene: t(`scene-${id}`) }), input: { type: "startScene", scene: id } });
+      items.push({
+        label: t("menu-talk", { npc: npcName(scene.npc), scene: t(`scene-${id}`) }) + t("cost-slot"),
+        input: { type: "startScene", scene: id },
+      });
+    }
+    if (mentorAvailable(course, s)) {
+      items.push({ label: t("menu-mentor", { npc: npcName(course.world.mentor!.npc) }) + t("cost-slot"), input: { type: "visitMentor" } });
     }
     for (const p of course.world.places[s.place].links) {
       items.push({ label: t("menu-go", { place: t(`place-${p}`) }), input: { type: "goTo", place: p } });
@@ -239,6 +270,7 @@ export function startApp(opts: AppOptions): App {
       currency: course.world.currency,
       wallet: s.wallet,
       rank: t(`rank-${rankFor(s.words, wordIds, opts.now())}`),
+      rentLate: s.rentLate ? "yes" : "no",
     });
     const [footerId, count] =
       mode === "explore"

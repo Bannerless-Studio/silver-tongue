@@ -1,13 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { comboKey, createCore, mulberry32, newGame, type GameState } from "@silver-tongue/core";
+import { comboKey, createCore, mulberry32, newGame, type Course, type GameState } from "@silver-tongue/core";
 import { startApp } from "../src/app";
 import { lineWidth } from "../src/width";
 import { FakeTerminal, fixtureWithText } from "./fake-terminal";
 
 const T0 = 1_000_000;
 
-function setup(patch: (s: GameState) => void = () => {}) {
+function setup(patch: (s: GameState) => void = () => {}, change: (c: Course) => void = () => {}) {
   const course = fixtureWithText();
+  change(course);
   const state = newGame(course);
   patch(state);
   const core = createCore(course, state, { now: () => T0, rng: mulberry32(1) });
@@ -224,6 +225,8 @@ describe("tui app", () => {
     term.press("1");
     expect(term.frames.at(-1)!.length).toBe(8);
     for (const line of term.frames.at(-1)!) expect(lineWidth(line)).toBe(30);
+    term.resize(30, 5); // the prompt alone fills the body
+    expect(term.frames.at(-1)!.length).toBe(5);
   });
 
   it("wraps tiles and help words on a narrow screen", () => {
@@ -246,4 +249,66 @@ describe("tui app", () => {
     expect(warnings).toHaveLength(1);
     expect(tries).toBe(1);
   });
+
+  it("narrates what a reply did, and on a mix-up what was asked", () => {
+    const { term, core } = setup((s) => {
+      s.scenesDone.intro = 1;
+      s.trust.cook = 2;
+      s.place = "noodle_shop";
+    });
+    term.press("1");
+    const { combo, options } = core.state.run!;
+    const wrong = options.findIndex((k) => k !== comboKey(combo));
+    term.press(String(wrong + 1));
+    const s = term.screen().join("\n");
+    expect(s).toMatch(/You set down (three|four) cups of (tea|water)\./);
+    expect(s).toContain(`They wanted ${combo.count} cups of ${combo.item}.`);
+    expect(s).not.toContain("That's not what they asked for.");
+    term.press(rightKey(core));
+    expect(term.screen().join("\n")).toContain(`You set down ${combo.count} cups of ${combo.item}.`);
+  });
+
+  it("falls back to the generic mix-up line when there is no asked-for narration", () => {
+    const { term, core } = setup();
+    term.press("1", "1");
+    term.press(rightKey(core));
+    const { combo, options } = core.state.run!;
+    term.press(String(options.findIndex((k) => k !== comboKey(combo)) + 1));
+    const s = term.screen().join("\n");
+    expect(s).toMatch(/You repeat the word for (tea|water)\./);
+    expect(s).toContain("That's not what they asked for.");
+  });
+
+  it("marks menu items that take a slot, and late rent in the HUD", () => {
+    const { term } = setup((s) => {
+      s.place = "noodle_shop";
+      s.rentLate = true;
+    });
+    const s = term.screen().join("\n");
+    expect(s).toContain("1) Talk to Cook: Say hello · 1 slot");
+    expect(s).toContain("2) Go to The street"); // moving is free
+    expect(s).not.toContain("The street · 1 slot");
+    expect(s).toContain("· Pidgin · rent due");
+  });
+
+  it("hints when the mentor has a note, and a visit explains it", () => {
+    const mentor = (c: Course) => {
+      c.world.mentor = { npc: "cook", after: "intro" };
+      c.notes = [{ id: "hao", trigger: { word: "w_hao" } }];
+    };
+    const { term, core } = setup(() => {}, mentor);
+    term.press("1", "1");
+    expect(term.screen().join("\n")).toContain("Cook looks like they have something to tell you.");
+    term.press("1");
+    term.press(rightKey(core));
+    expect(term.screen().join("\n")).toContain("2) Ask Cook about the language · 1 slot");
+    term.press("2");
+    let s = term.screen().join("\n");
+    expect(s).toContain("好 means good");
+    expect(s).toContain("On its own, 好 agrees.");
+    term.press("2");
+    s = term.screen().join("\n");
+    expect(s).toContain("Cook has nothing new to explain today.");
+  });
 });
+
