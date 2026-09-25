@@ -52,7 +52,7 @@ scene-room-rent = Talk about rent
 scene-room-rent-start = Mr Li is waiting at the top of the stairs. He rubs his thumb and fingers together, politely.
 scene-room-rent-end = Mr Li nods and writes it on the back of his hand: fifty, every week. It'll come out of your pocket at the end of the week either way.
 
-scene-warehouse-intro = Ask about work
+scene-warehouse-intro = Meet the foreman
 scene-warehouse-intro-start = The big man with the clipboard looks up. He holds up five fingers, then all ten, and raises an eyebrow: can you count that far?
 scene-warehouse-intro-end = Big Liu writes something on his clipboard, possibly your name. There's work here whenever you want it.
 

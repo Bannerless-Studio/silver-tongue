@@ -58,6 +58,11 @@ describe("build-course (real content)", () => {
     expect(course!.learnerFtl).toContain("note-bei-title");
   });
 
+  it("gives every scene its own name, so an unlock line says which one opened", () => {
+    const names = course!.scenes.map((sc) => course!.learnerFtl.match(new RegExp(`^scene-${sc.id} = (.*)$`, "m"))![1]);
+    expect(new Set(names).size).toBe(names.length);
+  });
+
   it("Mr Li talks about rent after your first warehouse shift, and Old Wang explains 个 and 块", () => {
     expect(course!.scenes.find((s) => s.id === "room-rent")!.after).toEqual(["room-hello", "warehouse-shift"]);
     expect(course!.notes.map((n) => n.id)).toEqual(expect.arrayContaining(["ge", "kuai"]));
