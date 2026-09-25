@@ -145,7 +145,13 @@ function beginExchange(ctx: Ctx, scene: Scene, index: number): void {
   const ex = scene.exchanges[index];
   const combo = chooseCombo(ctx, ex);
   speak(ctx, scene.npc, ex.variants[comboKey(combo)].npc);
-  const states = hingeWords(ctx, ex, combo).map((w) => wordState(ctx.state.words[w], ctx.now));
+  // A word got wrong but never yet right is still new to the player: keep picking for it.
+  // Tiles are for words the player has known at some point.
+  const states = hingeWords(ctx, ex, combo).map((w) => {
+    const rec = ctx.state.words[w];
+    const st = wordState(rec, ctx.now);
+    return st === "shaky" && rec && rec.right === 0 ? "met" : st;
+  });
   const mode = replyModeFor(states, ctx.course.typing);
   run.exchange = index;
   run.combo = combo;
@@ -191,6 +197,12 @@ function resolve(ctx: Ctx, scene: Scene, ex: Exchange, chosen: Combo, diff: stri
   ctx.ev.push(...changeWallet(ctx.state, -ex.missCost, "mixup"));
   const reaction = diff.map((d) => `wrong-${d}`).find((r) => ctx.course.reactions[r]) ?? "wrong-generic";
   ctx.ev.push({ type: "npcReacted", npc: scene.npc, reaction, line: ctx.course.reactions[reaction] });
+  // Two wrong tile answers: fall back to picking, so the player is never stuck building a reply.
+  if (run.mode === "tiles" && run.misses >= 2) {
+    run.mode = "pick";
+    run.options = pickOptions(ctx, ex, run.combo);
+    run.tiles = [];
+  }
   if (run.misses >= 2) {
     const v = ex.variants[comboKey(run.combo)];
     const line = v.rephrase ?? v.npc;

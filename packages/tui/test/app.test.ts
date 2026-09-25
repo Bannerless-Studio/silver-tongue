@@ -153,7 +153,7 @@ describe("tui app", () => {
   });
 
   it("builds a reply from tiles: add, undo, a wrong answer clears the input, then the right one", () => {
-    const shaky = { right: 0, wrong: 1, streak: 0, helps: 0, lapsed: true, firstSeen: 0, lastSeen: 0 };
+    const shaky = { right: 1, wrong: 1, streak: 0, helps: 0, lapsed: true, firstSeen: 0, lastSeen: 0 };
     const { term, core } = setup((s) => {
       s.words.w_cha = { ...shaky };
       s.words.w_shui = { ...shaky };
@@ -310,7 +310,7 @@ describe("tui app", () => {
   });
 
   it("on a wrong tiles answer, says what was asked but not an action", () => {
-    const shaky = { right: 0, wrong: 1, streak: 0, helps: 0, lapsed: true, firstSeen: 0, lastSeen: 0 };
+    const shaky = { right: 1, wrong: 1, streak: 0, helps: 0, lapsed: true, firstSeen: 0, lastSeen: 0 };
     const { term, core } = setup((s) => {
       s.scenesDone.intro = 1;
       s.trust.cook = 2;
@@ -324,6 +324,7 @@ describe("tui app", () => {
     const s = term.screen().join("\n");
     expect(s).toContain(`They wanted ${combo.count} cups of ${combo.item}.`);
     expect(s).not.toContain("You set down");
+    expect(s).toContain("tap the words in order, then press [enter]");
   });
 
   it("keeps the NPC's request on screen when the prompt nearly fills it", () => {
