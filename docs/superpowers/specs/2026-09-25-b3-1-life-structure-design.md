@@ -65,10 +65,11 @@ case "sleep":
 
 One scene, `room-hello` ("Meet the landlord"), in the room with the landlord.
 
-- `after: ["street-hello"]`, not repeatable, `trustGain: 1`, no pay.
-- About five exchanges of the same kind as `noodle-intro`: greet, exchange names, say you live here, thank them, say goodbye.
-- New words: 住 (w0027) and 这 (w0142), both HSK 1. They go in different exchanges, or together in one, since the limit is two new words per exchange. The checker enforces this and the reply-word limits, so the exact lines are settled in the plan.
-- Actions reuse `greet`, `names` and `bye` from `noodle-intro`, plus new ones for what is new (for example `live`, `thanks`). Each new action gets an `asked-` line (section 4).
+- `after: ["street-hungry"]`, not repeatable, `trustGain: 1`, no pay. (Not after `street-hello`: "you live here", 你住这里, is tagged 住 + 这 + 里, and 里 is first met in `street-hungry`, so earlier it would be three new words.)
+- Five exchanges: `greet`, `names` (叫我李先生。你呢？), `how`, `live` (你住这里。), `bye`.
+- The landlord is 李先生, Mr Li: a new name word `x0005` in `extra-words.json`, like 老王 and 小张, glossed in `glosses-zh-extra.ftl`.
+- New HSK 1 words: 住 (w0027) and 这 (w0142).
+- Actions reuse `greet`, `names`, `how` and `bye`, plus one new action, `live`, with its `asked-` line (section 4).
 - Every line has its English in `content/learner/en/lines-zh/room-hello.ftl`, and wrong replies use only words already met.
 - Rent stays automatic at the end of each week, exactly as in `life.ts`. The scene is about meeting the person, not paying.
 
@@ -81,13 +82,13 @@ One scene, `street-numbers`, on the street with Old Wang.
   - `one-two`: introduces 一 and 二.
   - `three-four`: introduces 三 and 四.
   - `five`: introduces 五.
-  - `show-a` and `show-b`: both slotted, `slots: { count: "numbers_1_5" }`, with every number met. Old Wang holds up fingers and the player answers with the number. Two exchanges, so two different numbers usually come up.
-- Actions: `numbers` for the three teaching exchanges, and `show` (with `count: "$count"`) for the slotted ones.
+  - `next-a` and `next-b`: both slotted, `slots: { count: "numbers_2_5" }`. Old Wang counts and stops ("一，二……"), and the player says the next number. Echoing a number shown on screen would test nothing; knowing what comes next does.
+- Actions: `numbers` for the three teaching exchanges, and `next` (with `count: "$count"`) for the slotted ones.
 
 **Content plumbing**
 
-- `groups.json`: a new group `numbers_1_5` (one to five), and `numbers` gains `one: 1` and `two: 2` (used for plural selection).
-- `languages/zh/terms.ftl` and `learner/en/terms.ftl`: `-one` and `-two`, in the same shape as `-three`.
+- `groups.json`: a new group `numbers_2_5` (two to five), and `numbers` gains `two: 2`. The build passes it as `$count`, which the line uses to choose how far Old Wang counts.
+- `languages/zh/terms.ftl` and `learner/en/terms.ftl`: `-two`, in the same shape as `-three`.
 - The numbers 一 二 三 四 五 are the HSK 1 words w0001, w0019, w0003, w0060, w0020.
 - Orders keep `numbers_3_5`. 二 as a counting word is fine here, but 两 (the form used before measure words) is HSK 2 and so not allowed at stage 1.
 
@@ -100,7 +101,7 @@ One scene, `street-numbers`, on the street with Old Wang.
 ## 4. Narration for every action
 
 - `content/learner/en/narration-china-city.ftl` gets one `asked-<action>` line for each of the 18 conversational actions the pilot uses (`answer`, `ask`, `bye`, `farewell`, `friend`, `greet`, `hello`, `hungry`, `how`, `job`, `like`, `name`, `names`, `noodles`, `shop`, `there`, `wang`, `zhang`), plus one for each new action from sections 2 and 3. `fetch` and `serve` already have theirs.
-- The lines say what was wanted, not what to type: "They wanted to know your name." Slotted actions take the action's parameters, for example `asked-show = Old Wang held up { $count } fingers.`
+- The lines say what was wanted, not what to type: "They wanted to know your name." Slotted actions take the action's parameters, for example `asked-next = They wanted the next number: { $count }.`
 - An `asked-` line belongs to the action, not the scene, so every scene that uses the action shows the same line. A line may name an NPC only if one NPC uses that action. The landlord reuses `greet`, `names` and `bye`, so those lines must say "they", not "Old Wang" or "the cook".
 - A written wrong reply already reaches this path: the core reports it as action `other`, not matched, so the TUI shows the `asked-` line of the expected action.
 - The TUI already shows `asked-<action>` after a mix-up and falls back to the generic line when there is none. No TUI change.
@@ -146,6 +147,4 @@ Three additions:
 
 ## Open items for the plan
 
-- Exact Chinese lines and English meanings for `room-hello` and `street-numbers`, settled with the checker's limits (two new words per exchange, reply of at most 7 words, NPC line of at most 9).
-- The exact wording of the intro change and of the `asked-` lines.
 - Whether `street-practice` should also cover counting later. Not in this slice.
