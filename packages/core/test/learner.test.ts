@@ -65,9 +65,9 @@ describe("reply mode", () => {
 describe("pickPreferred", () => {
   const records = { a: recordWrong(undefined, T0), b: recordSeen(undefined, T0) };
   const wordsOf = (c: string) => [c];
-  it("prefers shaky, then met, then anything", () => {
+  it("prefers shaky, then unseen (so new words get introduced), then met", () => {
     expect(pickPreferred(["c", "b", "a"], wordsOf, records, T0, () => 0.99)).toBe("a");
-    expect(pickPreferred(["c", "b"], wordsOf, records, T0, () => 0.99)).toBe("b");
+    expect(pickPreferred(["b", "c"], wordsOf, records, T0, () => 0.99)).toBe("c");
     expect(pickPreferred(["c", "d"], wordsOf, records, T0, () => 0.99)).toBe("d");
   });
 

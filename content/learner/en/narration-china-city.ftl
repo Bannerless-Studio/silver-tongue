@@ -4,9 +4,9 @@ intro-2 = You're standing on a street in a Chinese city with { $currency }{ $wal
 intro-3 = Food costs money. Rent is { $currency }{ $rent }, due at the end of the week. To earn anything you'll need work, and for work you'll need words.
 intro-4 = On a bench by the road, an old man is watching you with open curiosity. Maybe start there.
 
-place-street = The street
+place-street = Main Street
 place-street-desc = Bikes, steam and shouting. An old man sits on a bench by the road. Across it, a noodle shop glows.
-place-noodle_shop = Noodle shop
+place-noodle_shop = Noodle Shop
 place-noodle_shop-desc = Steam everywhere. The cook is shouting orders at nobody in particular.
 
 npc-wang = Old Wang

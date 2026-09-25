@@ -1,8 +1,23 @@
 {
   "groups": {
-    "courtesies": ["hello", "thanks", "sorry", "bye"],
-    "drinks": ["tea", "water"],
-    "numbers_3_5": ["three", "four", "five"]
+    "courtesies": [
+      "hello",
+      "thanks",
+      "sorry"
+    ],
+    "drinks": [
+      "tea",
+      "water"
+    ],
+    "numbers_3_5": [
+      "three",
+      "four",
+      "five"
+    ]
   },
-  "numbers": { "three": 3, "four": 4, "five": 5 }
+  "numbers": {
+    "three": 3,
+    "four": 4,
+    "five": 5
+  }
 }

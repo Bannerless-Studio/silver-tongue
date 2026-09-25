@@ -66,7 +66,10 @@ export function replyModeFor(states: WordState[], typing: boolean): ReplyMode {
   return typing ? "type" : "tiles";
 }
 
-/** Shaky first, then met, then anything; ties broken by rng. */
+/**
+ * Shaky first (hidden repetition), then unseen (so every value of a group gets introduced),
+ * then met, then known; ties broken by rng. A candidate counts as its weakest word.
+ */
 export function pickPreferred<T>(
   candidates: T[],
   wordsOf: (c: T) => WordId[],
@@ -76,10 +79,10 @@ export function pickPreferred<T>(
 ): T {
   const prio = (c: T) =>
     Math.min(
-      2,
+      3,
       ...wordsOf(c).map((w) => {
         const s = wordState(records[w], now);
-        return s === "shaky" ? 0 : s === "met" ? 1 : 2;
+        return s === "shaky" ? 0 : s === "unseen" ? 1 : s === "met" ? 2 : 3;
       }),
     );
   if (candidates.length === 0) throw new Error("pickPreferred: no candidates");

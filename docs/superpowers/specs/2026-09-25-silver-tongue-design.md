@@ -80,7 +80,7 @@ Each word has one record: `{ right, wrong, streak, helps, lapsed, firstSeen, las
   - A wrong reply counts as wrong for them (streak reset).
   - A help lookup on any word resets that word's streak and counts as a help.
   - Every other word in the line only updates `lastSeen`.
-- **Hidden repetition:** when a scene fills a slot from a word group, it picks shaky words first, then met words, then any word. **Repeatable jobs** (`repeatable: true`, such as one more warehouse shift) are the review sessions. They pay a little less and lean on shaky words.
+- **Hidden repetition:** when a scene fills a slot from a word group, it picks shaky words first, then unseen words (so every value gets introduced), then met words, then known ones. **Repeatable jobs** (`repeatable: true`, such as one more warehouse shift) are the review sessions. They pay a little less and lean on shaky words.
 
 ### Reply modes
 
