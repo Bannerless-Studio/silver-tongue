@@ -2,7 +2,7 @@
 
 > You arrive speaking pidgin; you leave with a silver tongue.
 
-A language-learning life game. Your phone is dead, your wallet is gone, and you're standing on a street in a Chinese city with ¥20 in your pocket. An old man on a bench teaches you your first words; after that you earn your living by understanding people. Every job, purchase and conversation happens in the language you're learning.
+A language-learning life game. Your phone is dead, your wallet is gone, and you're standing on a street in a Chinese city with ¥20 in your pocket. An old man on a bench teaches you your first words, and later explains how the language works when you ask; after that you earn your living by understanding people. Every job, purchase and conversation happens in the language you're learning.
 
 The first course is Mandarin (HSK 1), in a Chinese city, explained in English.
 
@@ -12,6 +12,8 @@ The first course is Mandarin (HSK 1), in a Chinese city, explained in English.
 npx silver-tongue            # continue the game you played last
 npx silver-tongue --new      # start a new game (your other games are kept)
 npx silver-tongue --resume   # choose one of your saved games
+npx silver-tongue --export   # print the game you played last as one line of text
+npx silver-tongue --import <line>   # add a game exported elsewhere (nothing is overwritten)
 ```
 
 | Key | Does |
@@ -19,6 +21,7 @@ npx silver-tongue --resume   # choose one of your saved games
 | `1`–`9` | choose from the menu, or pick a reply |
 | `w` | word help: look up a word from the last line or the replies; `s` explains the whole sentence |
 | `enter` / `⌫` | say / undo, when building a reply from tiles |
+| `n` | notebook: every word you've heard, where you first heard it, and Old Wang's notes |
 | `esc` | back |
 | `q` | save and quit (from the menu) |
 
