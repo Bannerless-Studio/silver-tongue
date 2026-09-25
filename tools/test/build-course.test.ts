@@ -28,7 +28,7 @@ describe("build-course (real content)", () => {
 
   it("builds zh-china-en with no errors", () => {
     expect(errors).toEqual([]);
-    expect(course!.scenes.map((s) => s.id)).toEqual(["noodle-intro", "noodle-shift", "room-hello", "street-hello", "street-hungry", "street-numbers", "street-practice"]);
+    expect(course!.scenes.map((s) => s.id)).toEqual(["noodle-intro", "noodle-shift", "room-hello", "street-hello", "street-hungry", "street-numbers", "street-practice", "warehouse-intro"]);
   });
 
   it("renders every slot combination and tags its words", () => {
@@ -56,6 +56,13 @@ describe("build-course (real content)", () => {
     expect(course!.notes.map((n) => n.id)).toEqual(["hao-ma", "lao-xiao", "le", "bukeqi", "bei"]);
     expect(course!.world.mentor).toEqual({ npc: "wang", after: "street-hello" });
     expect(course!.learnerFtl).toContain("note-bei-title");
+  });
+
+  it("Big Liu counts you from six to ten, after you can count to five", () => {
+    const intro = course!.scenes.find((s) => s.id === "warehouse-intro")!;
+    expect(intro.after).toEqual(["street-numbers"]);
+    const heard = intro.exchanges.flatMap((ex) => ex.variants[""].npc.tokens.map((t) => course!.words[t.word].w));
+    for (const n of ["六", "七", "八", "九", "十"]) expect(heard).toContain(n);
   });
 
   it("puts your room and the warehouse on Market Street, and keeps Main Street's menu at 7", () => {

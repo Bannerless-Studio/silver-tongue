@@ -1,0 +1,19 @@
+{
+  "id": "warehouse-intro",
+  "place": "warehouse",
+  "npc": "foreman",
+  "stage": 1,
+  "after": ["street-numbers"],
+  "requires": {},
+  "repeatable": false,
+  "trustGain": 1,
+  "exchanges": [
+    { "id": "greet", "slots": {}, "expect": { "action": "greet" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "names", "slots": {}, "expect": { "action": "foreman" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "six-seven", "slots": {}, "expect": { "action": "numbers" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "eight-nine", "slots": {}, "expect": { "action": "numbers" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "ten", "slots": {}, "expect": { "action": "numbers" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "job", "slots": {}, "expect": { "action": "job" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "bye", "slots": {}, "expect": { "action": "bye" }, "hinges": [], "pay": 0, "missCost": 0 }
+  ]
+}

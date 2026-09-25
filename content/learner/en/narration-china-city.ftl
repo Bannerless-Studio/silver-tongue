@@ -49,6 +49,10 @@ scene-room-hello = Meet the landlord
 scene-room-hello-start = A thin man in slippers opens the door before you knock. He has clearly been expecting you.
 scene-room-hello-end = Mr Li hands you a key on a red string, and points firmly at the bed. You'll sleep here.
 
+scene-warehouse-intro = Ask about work
+scene-warehouse-intro-start = The big man with the clipboard looks up. He holds up five fingers, then all ten, and raises an eyebrow: can you count that far?
+scene-warehouse-intro-end = Big Liu writes something on his clipboard, possibly your name. There's work here whenever you want it.
+
 # What a reply does (action-<name>), and on a mix-up what was asked (asked-<name>).
 # Concept values arrive as learner names: $item = "tea", $count = "three".
 action-fetch = You bring { $item }.
@@ -79,3 +83,4 @@ asked-job = They were offering you work.
 asked-live = They were telling you this room is yours.
 asked-numbers = They wanted you to count along.
 asked-next = They wanted the next number: { $number }.
+asked-foreman = They were telling you their name.
