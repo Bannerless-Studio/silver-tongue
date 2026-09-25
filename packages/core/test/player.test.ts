@@ -1,0 +1,47 @@
+import { describe, expect, it } from "vitest";
+import { comboKey } from "../src/combo";
+import { createCore, newGame } from "../src/core";
+import { personalize } from "../src/player";
+import { mulberry32 } from "../src/rng";
+import { fixtureCourse, line } from "../src/testing/fixture";
+import { PLAYER_MARK, type GameEvent } from "../src/types";
+
+const T0 = 1_000_000;
+
+describe("player name", () => {
+  it("puts the name in place of the mark, shifting the words after it", () => {
+    const l = { ...line(["你", "w_ni"], [PLAYER_MARK, null], ["好", "w_hao"]), meaning: `You ${PLAYER_MARK}, hi` };
+    const p = personalize(l, "Jamil");
+    expect(p.text).toBe("你Jamil好");
+    expect(p.tokens.map((t) => p.text.slice(t.start, t.end))).toEqual(["你", "好"]);
+    expect(p.meaning).toBe("You Jamil, hi");
+    expect(personalize(line(["你", "w_ni"]), "Jamil")).toEqual(line(["你", "w_ni"]));
+  });
+
+  it("takes a name, trimmed, and refuses empty, overlong or control-character names", () => {
+    const c = fixtureCourse();
+    const core = createCore(c, newGame(c), { now: () => T0, rng: () => 0 });
+    expect(core.send({ type: "setName", name: "  Jamil " })).toEqual([{ type: "playerNamed", name: "Jamil" }]);
+    expect(core.state.player).toBe("Jamil");
+    for (const name of ["", "   ", "x".repeat(21), "a\u0007b"]) {
+      expect(core.send({ type: "setName", name })).toEqual([{ type: "inputRejected", reason: "bad-name" }]);
+    }
+  });
+
+  it("needs a name before a scene, when the course's lines use one, and says it in them", () => {
+    const c = fixtureCourse();
+    c.needsName = true;
+    const v = c.scenes[0].exchanges[0].variants[""];
+    v.npc = line(["你", "w_ni"], ["好", "w_hao"], ["，", null], [PLAYER_MARK, null], ["！", null]);
+    const core = createCore(c, { ...newGame(c), place: "noodle_shop" }, { now: () => T0, rng: mulberry32(1) });
+    expect(core.send({ type: "startScene", scene: "intro" })).toEqual([{ type: "inputRejected", reason: "no-name" }]);
+    core.send({ type: "setName", name: "Jamil" });
+    const ev = core.send({ type: "startScene", scene: "intro" });
+    const spoken = ev.find((e) => e.type === "lineSpoken") as Extract<GameEvent, { type: "lineSpoken" }>;
+    expect(spoken.line.text).toBe("你好，Jamil！");
+    expect(core.state.words.w_ni.first?.line).toBe("你好，Jamil！");
+    const opts = ev.find((e) => e.type === "replyOptions")!;
+    expect(opts.type === "replyOptions" && opts.mode === "pick" && opts.options.every((o) => !o.text.includes(PLAYER_MARK))).toBe(true);
+    core.send({ type: "reply", choice: core.state.run!.options.indexOf(comboKey(core.state.run!.combo)) });
+  });
+});

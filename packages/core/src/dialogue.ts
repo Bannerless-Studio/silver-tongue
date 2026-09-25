@@ -8,6 +8,7 @@ import {
   replyModeFor,
   wordState,
 } from "./learner";
+import { personalize } from "./player";
 import { shuffle } from "./rng";
 import type {
   Course,
@@ -77,9 +78,13 @@ function hear(ctx: Ctx, line: RenderedLine): void {
   }
 }
 
+/** The name lines say for the player; "?" only if a front end skipped asking. */
+const nameOf = (state: GameState) => state.player ?? "?";
+
 function speak(ctx: Ctx, npc: string, line: RenderedLine): void {
-  ctx.ev.push({ type: "lineSpoken", npc, line });
-  hear(ctx, line);
+  const said = personalize(line, nameOf(ctx.state));
+  ctx.ev.push({ type: "lineSpoken", npc, line: said });
+  hear(ctx, said);
 }
 
 /** A written wrong reply's option key. */
@@ -136,14 +141,14 @@ function optionLine(ex: Exchange, run: SceneRun, key: string): RenderedLine {
   return n === undefined ? ex.variants[key].reply : ex.variants[comboKey(run.combo)].alts![n];
 }
 
-function optionsEvent(ex: Exchange, run: SceneRun): GameEvent {
+function optionsEvent(ex: Exchange, run: SceneRun, name: string): GameEvent {
   return run.mode === "pick"
-    ? { type: "replyOptions", mode: "pick", options: run.options.map((k) => optionLine(ex, run, k)) }
+    ? { type: "replyOptions", mode: "pick", options: run.options.map((k) => personalize(optionLine(ex, run, k), name)) }
     : { type: "replyOptions", mode: "tiles", tiles: run.tiles };
 }
 
 function emitOptions(ctx: Ctx, ex: Exchange): void {
-  ctx.ev.push(optionsEvent(ex, ctx.state.run!));
+  ctx.ev.push(optionsEvent(ex, ctx.state.run!, nameOf(ctx.state)));
 }
 
 /**
@@ -158,8 +163,8 @@ export function describeRun(course: Course, state: GameState): GameEvent[] {
   if (!run || !scene || !ex || !v) return [];
   return [
     { type: "sceneStarted", scene: scene.id, npc: scene.npc },
-    { type: "lineSpoken", npc: scene.npc, line: v.npc },
-    optionsEvent(ex, run),
+    { type: "lineSpoken", npc: scene.npc, line: personalize(v.npc, nameOf(state)) },
+    optionsEvent(ex, run, nameOf(state)),
   ];
 }
 
@@ -250,7 +255,7 @@ function resolve(
   }
   if (run.misses >= 2) {
     const v = ex.variants[comboKey(run.combo)];
-    const line = v.rephrase ?? v.npc;
+    const line = personalize(v.rephrase ?? v.npc, nameOf(ctx.state));
     ctx.ev.push({ type: "lineRephrased", npc: scene.npc, line, slow: !v.rephrase });
     hear(ctx, line);
   }
@@ -266,6 +271,7 @@ export function startScene(ctx: Ctx, id: string): void {
   const scene = sceneById(ctx, id);
   if (!scene) return reject(ctx, "unknown-scene");
   if (ctx.state.run) return reject(ctx, "in-scene");
+  if (ctx.course.needsName && !ctx.state.player) return reject(ctx, "no-name");
   if (scene.place !== ctx.state.place) return reject(ctx, "wrong-place");
   if (!isAvailable(scene, ctx.state)) return reject(ctx, "locked");
   if (ctx.state.slot >= ctx.course.world.slotsPerDay) return reject(ctx, "no-slots");

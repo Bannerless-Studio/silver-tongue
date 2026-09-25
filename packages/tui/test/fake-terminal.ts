@@ -38,6 +38,10 @@ export class FakeTerminal implements Terminal {
   press(...names: string[]): void {
     for (const name of names) this.handler({ name });
   }
+  /** Types text character by character, as a keyboard would (names keep their case in `text`). */
+  type(text: string): void {
+    for (const ch of text) this.handler({ name: ch.toLowerCase(), text: ch });
+  }
   /** The last frame as plain text lines. */
   screen(): string[] {
     return (this.frames.at(-1) ?? []).map(plain);

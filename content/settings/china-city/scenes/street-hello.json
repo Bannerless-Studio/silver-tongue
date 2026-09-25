@@ -49,16 +49,6 @@
       "missCost": 0
     },
     {
-      "id": "naming",
-      "slots": {},
-      "expect": {
-        "action": "naming"
-      },
-      "hinges": [],
-      "pay": 0,
-      "missCost": 0
-    },
-    {
       "id": "ask",
       "slots": {},
       "expect": {

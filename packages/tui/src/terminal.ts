@@ -13,6 +13,8 @@ export type StyledLine = Span[];
 /** Key names: "0"-"9", letters, "return", "escape", "backspace", "up", "down", "left", "right", "ctrl-c". */
 export interface Key {
   name: string;
+  /** the character typed, case kept ("J"), for text entry; absent for keys like arrows */
+  text?: string;
 }
 
 /** What the TUI needs from a terminal. Backends: Node stdin/stdout, xterm.js. */

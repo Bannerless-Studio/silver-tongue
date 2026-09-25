@@ -9,6 +9,8 @@ import { fromLocalStorage, WebSessions, type KeyValue, type Opened } from "./web
 
 /** The built course, put in by the build (build.mjs), so the page is one self-contained file. */
 declare const __COURSE__: Course;
+/** The game's version (packages/tui-node/package.json), put in by the build. */
+declare const __VERSION__: string;
 const course = __COURSE__;
 const t = makeText(course.learnerFtl);
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
@@ -185,5 +187,7 @@ for (const b of document.querySelectorAll<HTMLButtonElement>("#keybar button")) 
     current?.term.press(b.dataset.key!);
   });
 }
+
+$("#version").textContent = `v${__VERSION__}`;
 
 play(sessions.continueLast());

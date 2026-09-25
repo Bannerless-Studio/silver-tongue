@@ -1,5 +1,6 @@
 import { comboKey } from "./combo";
 import { altIndex, tilePieces } from "./dialogue";
+import { cleanName } from "./player";
 import type { Course, GameState, SceneRun } from "./types";
 
 export const SAVE_VERSION = 1;
@@ -28,7 +29,7 @@ function isRunShape(x: unknown): x is SceneRun {
   return ["exchange", "misses", "earned", "mixups"].every((k) => isCount(x[k]));
 }
 
-const INPUT_TYPES = new Set(["goTo", "startScene", "reply", "replyTiles", "helpWord", "visitMentor", "sleep"]);
+const INPUT_TYPES = new Set(["goTo", "startScene", "reply", "replyTiles", "helpWord", "visitMentor", "setName", "sleep"]);
 
 function isLogEntry(x: unknown): boolean {
   return isObj(x) && isCount(x.t) && isCount(x.day) && isCount(x.slot) && isObj(x.input) && INPUT_TYPES.has(x.input.type as string);
@@ -82,6 +83,9 @@ export function parseSave(raw: string, course: Course): ParseResult {
   if (!isObj(data.scenesDone) || !allValues(data.scenesDone, isCount)) return { ok: false, reason: "bad-scenesDone" };
   if (!isObj(data.words) || !allValues(data.words, isWordRecord)) return { ok: false, reason: "bad-words" };
   if (data.run !== null && !isRunShape(data.run)) return { ok: false, reason: "bad-run" };
+  if (data.player !== undefined && (typeof data.player !== "string" || cleanName(data.player) !== data.player)) {
+    return { ok: false, reason: "bad-player" };
+  }
   // notes and log came later: a save without them gets empty ones (but null is malformed).
   if (!("notes" in data)) data.notes = { ready: [], read: [] };
   if (!("log" in data)) data.log = [];

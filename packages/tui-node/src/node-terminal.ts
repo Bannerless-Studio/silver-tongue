@@ -4,6 +4,7 @@ import { toAnsi, type Key, type Terminal } from "@silver-tongue/tui";
 interface NodeKey {
   name?: string;
   ctrl?: boolean;
+  meta?: boolean;
 }
 
 export function keyName(str: string | undefined, key: NodeKey | undefined): string | undefined {
@@ -19,7 +20,9 @@ export function createNodeTerminal(input = process.stdin, output = process.stdou
   const handlers: ((k: Key) => void)[] = [];
   input.on("keypress", (str: string | undefined, key: NodeKey | undefined) => {
     const name = keyName(str, key);
-    if (name) for (const h of handlers) h({ name });
+    // The typed character, case kept, for text entry (a name); not for control keys.
+    const text = str && [...str].length === 1 && str >= " " && !key?.ctrl && !key?.meta ? str : undefined;
+    if (name) for (const h of handlers) h(text ? { name, text } : { name });
   });
   input.on("end", () => {
     for (const h of handlers) h({ name: "ctrl-c" });

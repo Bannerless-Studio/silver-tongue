@@ -8,12 +8,14 @@ export const USAGE = `Usage: silver-tongue [--new | --resume | --export | --impo
   --export         print the game you played last as one line of text
   --import <line>  add a game exported with --export (nothing is overwritten);
                    use --import - to paste the line on standard input
+  --version        print the version
   --help           show this help`;
 
 export type Flags =
   | { mode: "continue" | "new" | "resume" | "export"; coursePath?: string }
   | { mode: "import"; line: string; coursePath?: string }
   | { mode: "help" }
+  | { mode: "version" }
   | { mode: "error"; message: string };
 
 export function parseFlags(args: string[]): Flags {
@@ -28,6 +30,7 @@ export function parseFlags(args: string[]): Flags {
         export: { type: "boolean" },
         import: { type: "string" },
         help: { type: "boolean", short: "h" },
+        version: { type: "boolean", short: "v" },
       },
     });
   } catch (e) {
@@ -36,6 +39,7 @@ export function parseFlags(args: string[]): Flags {
   }
   const { values, positionals } = parsed;
   if (values.help) return { mode: "help" };
+  if (values.version) return { mode: "version" };
   const chosen = (["new", "resume", "export", "import"] as const).filter((k) => values[k] !== undefined && values[k] !== false);
   if (chosen.length > 1) return { mode: "error", message: `use one of ${chosen.map((k) => `--${k}`).join(", ")}, not several` };
   // A course file path, for playing a course built from source.

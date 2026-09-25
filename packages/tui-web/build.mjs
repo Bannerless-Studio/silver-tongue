@@ -19,7 +19,10 @@ const result = await build({
   target: "es2022",
   minify: true,
   write: false,
-  define: { __COURSE__: course },
+  define: {
+    __COURSE__: course,
+    __VERSION__: JSON.stringify(JSON.parse(readFileSync(join(repo, "packages", "tui-node", "package.json"), "utf8")).version),
+  },
   legalComments: "none",
 });
 // "</script" inside the inlined code would end the script element early.

@@ -2,6 +2,7 @@ import {
   availableSceneIds,
   describeRun,
   mentorAvailable,
+  MAX_NAME_LENGTH,
   rankFor,
   type Core,
   type Course,
@@ -27,10 +28,12 @@ export interface AppOptions {
   quit: () => void;
   /** a message id shown once at start, e.g. "notice-bad-save" */
   notice?: string;
+  /** the game's version, shown in the bottom border ("Silver Tongue v0.5.0") */
+  version?: string;
 }
 
 type MenuItem = { label: string; input?: Input; quit?: true };
-type Mode = "explore" | "scene" | "help" | "notebook";
+type Mode = "explore" | "scene" | "help" | "notebook" | "name";
 
 export interface App {
   press(key: Key): void;
@@ -53,7 +56,8 @@ export function startApp(opts: AppOptions): App {
   let lastLine: RenderedLine | null = null;
   let notebookFrom: Mode = "explore"; // where closing the notebook returns to
   let notebookTop = 0; // first notebook line on screen
-  let resuming = false; // replaying a scene saved half-way: it has already been introduced
+  let resuming = false;
+  let nameInput = ""; // replaying a scene saved half-way: it has already been introduced
 
   const push = (...lines: StyledLine[]) => {
     log = [...log, ...lines].slice(-LOG_LIMIT);
@@ -240,6 +244,9 @@ export function startApp(opts: AppOptions): App {
 
   /** `width` is the room inside the frame, for wrapping tiles and help words. */
   function prompt(width: number): StyledLine[] {
+    if (mode === "name") {
+      return [[{ text: t("name-prompt"), bold: true }], [{ text: "> " }, { text: nameInput, bold: true }, { text: "_", dim: true }]];
+    }
     if (mode === "explore") {
       return [[{ text: t("menu-title"), dim: true }], ...menu().map((m, i) => [{ text: `${i + 1}) ${m.label}` }])];
     }
@@ -268,6 +275,8 @@ export function startApp(opts: AppOptions): App {
     ];
   }
 
+  const footerRight = opts.version ? `Silver Tongue v${opts.version}` : undefined;
+
   function render() {
     const s = core.state;
     const { cols, rows } = term.size();
@@ -286,11 +295,13 @@ export function startApp(opts: AppOptions): App {
       notebookTop = Math.max(0, Math.min(notebookTop, lines.length - bodyRows));
       const page = lines.slice(notebookTop, notebookTop + bodyRows);
       const prompt = [...page, ...Array(bodyRows - page.length).fill([])];
-      term.write(renderScreen({ title: t(`place-${s.place}`), hud, log: [], prompt, footer: t("keys-notebook") }, cols, rows));
+      term.write(renderScreen({ title: t(`place-${s.place}`), hud, log: [], prompt, footer: t("keys-notebook"), footerRight }, cols, rows));
       return;
     }
     const [footerId, count] =
-      mode === "explore"
+      mode === "name"
+        ? ["keys-name", 0]
+        : mode === "explore"
         ? ["keys-explore", menu().length]
         : mode === "help"
           ? [lastLine?.meaning ? "keys-help-sentence" : "keys-help", helpWords().length]
@@ -298,11 +309,22 @@ export function startApp(opts: AppOptions): App {
             ? ["keys-pick", pickOptions.length]
             : ["keys-tiles", tiles.length];
     const footer = t(footerId, { keys: keyRange(count) });
-    term.write(renderScreen({ title: t(`place-${s.place}`), hud, log, prompt: prompt(cols - 4), footer }, cols, rows));
+    term.write(renderScreen({ title: t(`place-${s.place}`), hud, log, prompt: prompt(cols - 4), footer, footerRight }, cols, rows));
   }
 
   function press(key: Key) {
     if (key.name === "ctrl-c") return opts.quit();
+    if (mode === "name") {
+      const ch = key.text ?? ([...key.name].length === 1 ? key.name : undefined);
+      if (key.name === "return") {
+        if (!core.send({ type: "setName", name: nameInput }).some((e) => e.type === "inputRejected")) {
+          persist();
+          mode = core.state.run ? "scene" : "explore";
+        } else push([{ text: t("reject-bad-name"), color: "red" }]);
+      } else if (key.name === "backspace") nameInput = [...nameInput].slice(0, -1).join("");
+      else if (ch && ch >= " " && [...nameInput].length < MAX_NAME_LENGTH) nameInput += ch;
+      return render();
+    }
     if (mode === "notebook") {
       if (key.name === "escape" || key.name === "n") mode = notebookFrom;
       else if (key.name === "down") notebookTop += 1;
@@ -366,6 +388,8 @@ export function startApp(opts: AppOptions): App {
   resuming = true;
   apply(describeRun(course, core.state)); // a save made mid-scene resumes in the scene
   resuming = false;
+  // A course whose lines say the player's name asks for it before anything else.
+  if (course.needsName && !core.state.player) mode = "name";
   term.onKey(press);
   term.onResize(render);
   render();

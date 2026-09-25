@@ -10,6 +10,7 @@
 html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); font: 15px/1.4 system-ui, sans-serif; }
 body { display: flex; flex-direction: column; height: 100dvh; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
 header { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; border-bottom: 1px solid var(--line); }
+h1 sub { margin-left: 0.35em; font-size: 0.7em; font-weight: 400; color: var(--muted); letter-spacing: 0; }
 h1 { margin: 0 auto 0 0; font-size: 1rem; font-weight: 600; color: var(--accent); letter-spacing: 0.02em; }
 nav { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 button { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 0.35rem 0.8rem; font: inherit; cursor: pointer; }

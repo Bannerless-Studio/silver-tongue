@@ -7,6 +7,7 @@ import {
   type Course,
   type Exchange,
   type Note,
+  PLAYER_MARK,
   type RenderedLine,
   type Scene,
   type Variant,
@@ -178,7 +179,8 @@ export function buildCourse(root: string, courseId: string): BuildResult {
       }
       for (const combo of allCombos(ex.slots, groups)) {
         const where = `${sk.id}/${ex.id}${Object.keys(combo).length ? `[${comboKey(combo)}]` : ""}`;
-        const args: Record<string, number> = {};
+        // $player renders as the mark; the core puts the player's name in at play time.
+        const args: Record<string, string | number> = { player: PLAYER_MARK };
         for (const [slot, concept] of Object.entries(combo)) if (concept in numbers) args[slot] = numbers[concept];
         attempt(where, () => {
           const r = new Renderer(meta.locale, [
@@ -275,6 +277,11 @@ export function buildCourse(root: string, courseId: string): BuildResult {
     conceptNames,
     stageWords,
     notes,
+    needsName: scenes.some((s) =>
+      s.exchanges.some((ex) =>
+        Object.values(ex.variants).some((v) => [v.npc, v.reply, v.rephrase, ...(v.alts ?? [])].some((l) => l?.text.includes(PLAYER_MARK))),
+      ),
+    ),
   };
   const learnerIds = attempt("learner text", () => new Set(messageIds(learnerFtl, "learner files"))) ?? new Set<string>();
   errors.push(...checkCourse({ course, stages: meta.stages, checks: cfg.checks, learnerIds, requiredUi: [] }));

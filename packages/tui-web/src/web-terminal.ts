@@ -14,12 +14,25 @@ export interface WebTerminal extends Terminal {
 export function createWebTerminal(term: XTerm, fit: FitAddon, win: Window): WebTerminal {
   const keyHandlers: ((k: Key) => void)[] = [];
   const resizeHandlers: (() => void)[] = [];
-  const press = (name: string) => {
-    for (const h of keyHandlers) h({ name });
+  const press = (name: string, text?: string) => {
+    for (const h of keyHandlers) h(text ? { name, text } : { name });
   };
   const onKey = term.onKey(({ domEvent }) => {
     const name = keyName(domEvent.key, domEvent);
-    if (name) press(name);
+    // The typed character, case kept, for text entry (a name).
+    const text = [...domEvent.key].length === 1 ? domEvent.key.normalize("NFKC") : undefined;
+    lastKeyText = domEvent.key;
+    if (name) press(name, text);
+  });
+  // Text from an input method (Chinese, Japanese, a phone keyboard) arrives as data, not keys.
+  // A key that already arrived through onKey ("é" on a keyboard layout) also shows up here once.
+  let lastKeyText = "";
+  const onData = term.onData((data) => {
+    if (data === lastKeyText) {
+      lastKeyText = "";
+      return;
+    }
+    if (/[^\x00-\x7f]/.test(data)) for (const ch of data) press(ch, ch);
   });
   const onResize = term.onResize(() => {
     for (const h of resizeHandlers) h();
@@ -44,6 +57,7 @@ export function createWebTerminal(term: XTerm, fit: FitAddon, win: Window): WebT
     press,
     dispose() {
       onKey.dispose();
+      onData.dispose();
       onResize.dispose();
       win.removeEventListener("resize", refit);
       keyHandlers.length = 0;

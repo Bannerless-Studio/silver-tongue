@@ -2,7 +2,7 @@
 
 > You arrive speaking pidgin; you leave with a silver tongue.
 
-A language-learning life game. Your phone is dead, your wallet is gone, and you're standing on a street in a Chinese city with ¥20 in your pocket. An old man on a bench teaches you your first words, and later explains how the language works when you ask; after that you earn your living by understanding people. Every job, purchase and conversation happens in the language you're learning.
+A language-learning life game. Your phone is dead, your wallet is gone, and you're standing on a street in a Chinese city with ¥20 in your pocket. You start by telling the game your name. An old man on a bench teaches you your first words, and later explains how the language works when you ask; after that you earn your living by understanding people. Every job, purchase and conversation happens in the language you're learning.
 
 The first course is Mandarin (HSK 1), in a Chinese city, explained in English.
 

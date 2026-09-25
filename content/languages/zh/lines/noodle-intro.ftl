@@ -1,14 +1,14 @@
 greet = 你好！
 greet-reply = 你好！你叫什么名字？
 greet-alt1 = 再见！
-greet-alt2 = 你叫小马。
+greet-alt2 = 你好吗？
 
 names = 我叫小张。你呢？
-names-reply = 我叫小马。老王是我朋友。
+names-reply = 我叫{ $player }。老王是我朋友。
 names-alt1 = 我叫小张。
 names-alt2 = 你好！
 
 job = 工作，好吗？
 job-reply = 好。
 job-alt1 = 再见！
-job-alt2 = 我叫小马。
+job-alt2 = 我叫{ $player }。

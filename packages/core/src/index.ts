@@ -7,3 +7,4 @@ export * from "./save";
 export { createCore, type Core, type CoreDeps } from "./core";
 export { describeRun, tilePieces } from "./dialogue";
 export { mentorAvailable } from "./mentor";
+export { cleanName, MAX_NAME_LENGTH, personalize } from "./player";

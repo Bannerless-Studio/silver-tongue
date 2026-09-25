@@ -64,7 +64,7 @@ notice-read-only = Your progress can't be saved on this computer, so this sessio
 notice-bad-save = Your save couldn't be read. It was kept as a backup and a new game started.
 
 resume-title = Your games:
-resume-item = Day { $day } · { $place } · { $currency }{ $wallet } · { $done ->
+resume-item = { $name }Day { $day } · { $place } · { $currency }{ $wallet } · { $done ->
     [one] 1 scene done
    *[other] { $done } scenes done
 } · last played { $date }
@@ -96,3 +96,7 @@ web-import-hint = Paste a line from Export, here or from the terminal game. It i
 web-import-go = Add game
 web-close = Close
 web-saved = Your game is saved. You can close this tab, or keep playing.
+reject-bad-name = That name won't work. Use 1 to 20 letters.
+reject-no-name = Tell us your name first.
+name-prompt = Before anything else: what's your name?
+keys-name = type your name · [enter] done · [⌫] delete
