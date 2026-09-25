@@ -3,8 +3,7 @@ import { newGame } from "@silver-tongue/core";
 import { fixtureCourse } from "@silver-tongue/core/testing";
 import { makeText } from "@silver-tongue/tui";
 import { readFileSync } from "node:fs";
-import { serialize } from "@silver-tongue/core";
-import { decodeSave, encodeSave, parseFlags, pickAnswer, sessionLines } from "../src/cli";
+import { parseFlags, pickAnswer, sessionLines } from "../src/cli";
 
 const ui = readFileSync(new URL("../../../content/learner/en/ui.ftl", import.meta.url), "utf8");
 
@@ -23,27 +22,6 @@ describe("cli", () => {
     expect(parseFlags(["--import", "-"])).toEqual({ mode: "import", line: "-" });
     expect(parseFlags(["--import"])).toMatchObject({ mode: "error" });
     expect(parseFlags(["--export", "--new"])).toMatchObject({ mode: "error" });
-  });
-
-  it("round-trips a save through one base64 line, and says why a bad line won't import", () => {
-    const course = fixtureCourse();
-    const state = { ...newGame(course), day: 6, wallet: 31 };
-    const line = encodeSave(state);
-    expect(line).toMatch(/^st1:[A-Za-z0-9+/]+=*$/);
-    expect(decodeSave(`  ${line}\n`, course)).toEqual({ ok: true, state });
-    const wrapped = line.replace(/(.{20})/g, "$1\n"); // a line broken up by copy and paste
-    expect(decodeSave(wrapped, course)).toEqual({ ok: true, state });
-    expect(decodeSave("not a save!", course)).toEqual({ ok: false, reason: "not-a-save" });
-    expect(decodeSave("st1:AAAA", course)).toEqual({ ok: false, reason: "not-a-save" });
-    const other = encodeSave({ ...state, course: "other" });
-    expect(decodeSave(other, course)).toEqual({ ok: false, reason: "other-course" });
-  });
-
-  it("keeps a long game's export short by compressing it", () => {
-    const course = fixtureCourse();
-    const log = Array.from({ length: 500 }, (_, i) => ({ t: i, day: 1, slot: 0, input: { type: "helpWord" as const, word: "w_ni" } }));
-    const line = encodeSave({ ...newGame(course), log });
-    expect(line.length).toBeLessThan(serialize({ ...newGame(course), log }).length / 5);
   });
 
   it("refuses unknown flags and --new with --resume", () => {

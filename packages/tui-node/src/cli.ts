@@ -1,6 +1,5 @@
 import { parseArgs } from "node:util";
-import { deflateRawSync, inflateRawSync } from "node:zlib";
-import { parseSave, serialize, type Course, type GameState, type ParseResult } from "@silver-tongue/core";
+import type { Course } from "@silver-tongue/core";
 import type { Text } from "@silver-tongue/tui";
 import type { Session } from "./sessions";
 
@@ -70,25 +69,4 @@ export function pickAnswer(answer: string, count: number): number | "cancel" | "
   if (a === "" || a === "q") return "cancel";
   const n = Number(a);
   return Number.isInteger(n) && n >= 1 && n <= count ? n - 1 : "again";
-}
-
-const PREFIX = "st1:";
-
-/** A save as one line of text: "st1:" and the base64 of its compressed JSON. */
-export function encodeSave(state: GameState): string {
-  return PREFIX + deflateRawSync(Buffer.from(serialize(state), "utf8")).toString("base64");
-}
-
-/** The reverse of encodeSave, as strict as loading a save. Spaces and line breaks (from copying) are ignored. */
-export function decodeSave(line: string, course: Course): ParseResult {
-  const text = line.replace(/\s+/g, "");
-  const body = text.startsWith(PREFIX) ? text.slice(PREFIX.length) : "";
-  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(body)) return { ok: false, reason: "not-a-save" };
-  let json: string;
-  try {
-    json = inflateRawSync(Buffer.from(body, "base64")).toString("utf8");
-  } catch {
-    return { ok: false, reason: "not-a-save" };
-  }
-  return parseSave(json, course);
 }
