@@ -15,5 +15,15 @@ const NAMED: Record<string, string> = {
 export function keyName(key: string, mods: { ctrlKey?: boolean; altKey?: boolean; metaKey?: boolean } = {}): string | undefined {
   if (mods.ctrlKey || mods.altKey || mods.metaKey) return undefined;
   if (NAMED[key]) return NAMED[key];
-  return [...key].length === 1 ? key.toLowerCase() : undefined;
+  // NFKC turns full-width characters from a Chinese or Japanese input method ("１") into plain ones.
+  const plain = key.normalize("NFKC");
+  return [...plain].length === 1 ? plain.toLowerCase() : undefined;
+}
+
+/**
+ * Keys the browser should handle instead of the terminal: shortcuts (reload, find, copy),
+ * function keys, and Tab so focus can leave the page's terminal.
+ */
+export function forBrowser(e: { key: string; ctrlKey?: boolean; altKey?: boolean; metaKey?: boolean }): boolean {
+  return !!(e.ctrlKey || e.altKey || e.metaKey) || /^F\d+$/.test(e.key) || e.key === "Tab";
 }

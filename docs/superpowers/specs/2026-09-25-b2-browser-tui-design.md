@@ -22,7 +22,8 @@ The same text game in a web page. `packages/tui` already runs against a `Termina
   - **Export** shows the save line (`st1:…`, the same format as the terminal game) with a Copy button.
   - **Import** takes a pasted line and adds it as a new session.
   - The codec is async in the browser (`CompressionStream("deflate-raw")`) but produces the same format as the Node one, so lines move between the terminal and the browser.
-- **Quit:** on the web, "Save and quit" shows a short "Your game is saved" message in the log instead of closing anything.
+- **Quit:** on the web, "Save and quit" shows a short "Your game is saved" message above the terminal instead of closing anything; the next key clears it.
+- Browser shortcuts (ctrl/alt/meta keys), function keys and Tab go to the browser, not the game. Full-width digits from an input method count as digits.
 - **Build:** `npm run build:web` bundles the app, xterm, its CSS and the built course into **one self-contained `index.html`** under `packages/tui-web/dist/`. It needs no server, so it works from a file, GitHub Pages or a shared link.
 
 ## Hosting

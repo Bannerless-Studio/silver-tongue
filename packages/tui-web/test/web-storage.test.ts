@@ -52,6 +52,14 @@ describe("web sessions", () => {
     expect(kv.keys().some((k) => k.includes(":invalid-backup:"))).toBe(true);
   });
 
+  it("recovers from a corrupted index instead of getting stuck", () => {
+    const kv = new FakeStorage();
+    kv.setItem(`silver-tongue:${course.id}:meta`, '{"played":null}');
+    const s = new WebSessions(kv, course, () => T);
+    const g = s.continueLast();
+    expect(s.save(g.id, g.state)).toBe(true);
+  });
+
   it("adds an imported game as a new session", () => {
     const kv = new FakeStorage();
     const s = new WebSessions(kv, course, () => T);

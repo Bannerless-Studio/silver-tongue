@@ -25,7 +25,7 @@ export function createWebTerminal(term: XTerm, fit: FitAddon, win: Window): WebT
     for (const h of resizeHandlers) h();
   });
   const refit = () => fit.fit();
-  win.addEventListener("resize", refit);
+  win.addEventListener("resize", refit); // also refit by the page's ResizeObserver
   term.write("\x1b[?25l"); // no cursor: the game draws its own prompt
   return {
     write(lines) {

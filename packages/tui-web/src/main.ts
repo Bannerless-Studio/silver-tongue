@@ -3,6 +3,7 @@ import { WebglAddon } from "@xterm/addon-webgl";
 import { Terminal as XTerm } from "@xterm/xterm";
 import { createCore, mulberry32, type Core, type Course } from "@silver-tongue/core";
 import { decodeSave, encodeSave, makeText, sessionLines, startApp } from "@silver-tongue/tui";
+import { forBrowser } from "./keys";
 import { createWebTerminal, type WebTerminal } from "./web-terminal";
 import { fromLocalStorage, WebSessions, type KeyValue, type Opened } from "./web-storage";
 
@@ -40,6 +41,8 @@ const xterm = new XTerm({
 const fit = new FitAddon();
 xterm.loadAddon(fit);
 xterm.open($("#term"));
+// xterm takes every key by default; returning false hands shortcuts and Tab back to the browser.
+xterm.attachCustomKeyEventHandler((e) => !forBrowser(e));
 // WebGL draws box-drawing characters itself, so the frame is solid; without it the DOM renderer
 // uses the font's glyphs, which leave gaps between lines.
 try {
@@ -56,6 +59,11 @@ Object.assign(window, {
   silverTongueScreen: () =>
     Array.from({ length: xterm.rows }, (_, i) => xterm.buffer.active.getLine(i)?.translateToString(true) ?? ""),
 });
+
+// Refit when the terminal's box changes, not only the window: the header wrapping, a phone keyboard.
+new ResizeObserver(() => fit.fit()).observe($("#term-wrap"));
+// The "saved" message is for the moment after quitting; the next key clears it.
+document.addEventListener("keydown", () => status(""));
 
 let current: { term: WebTerminal; core: Core; id: string } | undefined;
 const touch = window.matchMedia("(pointer: coarse)").matches;
@@ -172,7 +180,10 @@ dialog.addEventListener("close", () => {
 // The key bar sends the same key names as the keyboard.
 for (const b of document.querySelectorAll<HTMLButtonElement>("#keybar button")) {
   b.addEventListener("pointerdown", (e) => e.preventDefault()); // keep focus (and the phone keyboard) where it was
-  b.addEventListener("click", () => current?.term.press(b.dataset.key!));
+  b.addEventListener("click", () => {
+    status("");
+    current?.term.press(b.dataset.key!);
+  });
 }
 
 play(sessions.continueLast());

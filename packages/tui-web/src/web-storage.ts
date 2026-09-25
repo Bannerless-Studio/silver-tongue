@@ -58,7 +58,9 @@ export class WebSessions {
   private meta(): Meta {
     try {
       const m = JSON.parse(this.kv.getItem(`${this.prefix}meta`) ?? "null") as Meta | null;
-      return m && typeof m.played === "object" ? m : { played: {} };
+      return m && typeof m === "object" && m.played && typeof m.played === "object" && !Array.isArray(m.played)
+        ? m
+        : { played: {} };
     } catch {
       return { played: {} };
     }

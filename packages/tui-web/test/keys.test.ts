@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { keyName } from "../src/keys";
+import { forBrowser, keyName } from "../src/keys";
 
 describe("web keys", () => {
   it("maps browser key names to the game's", () => {
@@ -18,5 +18,18 @@ describe("web keys", () => {
     expect(keyName("F5")).toBeUndefined();
     expect(keyName("c", { ctrlKey: true })).toBeUndefined();
     expect(keyName("r", { metaKey: true })).toBeUndefined();
+  });
+
+  it("reads full-width digits typed with a Chinese input method", () => {
+    expect(keyName("１")).toBe("1");
+  });
+
+  it("leaves browser shortcuts, function keys and Tab to the browser", () => {
+    expect(forBrowser({ key: "r", ctrlKey: true })).toBe(true);
+    expect(forBrowser({ key: "c", metaKey: true })).toBe(true);
+    expect(forBrowser({ key: "F5" })).toBe(true);
+    expect(forBrowser({ key: "Tab" })).toBe(true);
+    expect(forBrowser({ key: "1" })).toBe(false);
+    expect(forBrowser({ key: "Enter" })).toBe(false);
   });
 });
