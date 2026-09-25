@@ -95,6 +95,7 @@ web-import = Import
 web-import-hint = Paste a line from Export, here or from the terminal game. It is added as a new game; nothing is overwritten.
 web-import-go = Add game
 web-close = Close
+web-tap-to-type = Tap the game to type your name.
 web-saved = Your game is saved. You can close this tab, or keep playing.
 reject-bad-name = That name won't work. Use 1 to 20 letters.
 reject-no-name = Tell us your name first.
