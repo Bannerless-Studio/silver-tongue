@@ -1,6 +1,7 @@
 import { reject, reply, replyTiles, setWord, startScene, type Ctx } from "./dialogue";
 import { recordHelp, rankFor } from "./learner";
 import { availableSceneIds, endDay } from "./life";
+import { newlyTriggered, visitMentor } from "./mentor";
 import type { Course, GameEvent, GameState, Input } from "./types";
 
 export { newGame } from "./life";
@@ -36,6 +37,8 @@ function handle(ctx: Ctx, input: Input): void {
     case "helpWord":
       if (!course.words[input.word]) return reject(ctx, "unknown-word");
       return setWord(ctx, input.word, recordHelp);
+    case "visitMentor":
+      return visitMentor(ctx);
     case "sleep":
       if (state.run) return reject(ctx, "in-scene");
       ctx.ev.push(...endDay(course, state));
@@ -60,6 +63,10 @@ export function createCore(course: Course, initial: GameState, deps: CoreDeps): 
       const before = new Set(availableSceneIds(course, state));
       for (const id of availableSceneIds(course, ctx.state)) {
         if (!before.has(id)) ctx.ev.push({ type: "unlocked", scene: id });
+      }
+      for (const note of newlyTriggered(course, ctx.state)) {
+        ctx.state.notes.ready.push(note);
+        ctx.ev.push({ type: "noteReady", note });
       }
       const rank = rankFor(ctx.state.words, wordIds, now);
       if (rank !== rankFor(state.words, wordIds, now)) ctx.ev.push({ type: "rankChanged", rank });
