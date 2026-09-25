@@ -3,5 +3,7 @@
   { "id": "lao-xiao", "trigger": { "word": "x0004" } },
   { "id": "le", "trigger": { "scene": "street-hungry" } },
   { "id": "bukeqi", "trigger": { "word": "w0141" } },
-  { "id": "bei", "trigger": { "word": "x0001" } }
+  { "id": "bei", "trigger": { "word": "x0001" } },
+  { "id": "ge", "trigger": { "word": "w0012" } },
+  { "id": "kuai", "trigger": { "scene": "room-rent" } }
 ]

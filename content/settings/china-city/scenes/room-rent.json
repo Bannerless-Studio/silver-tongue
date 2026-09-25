@@ -1,0 +1,17 @@
+{
+  "id": "room-rent",
+  "place": "room",
+  "npc": "landlord",
+  "stage": 1,
+  "after": ["room-hello", "warehouse-shift"],
+  "requires": {},
+  "repeatable": false,
+  "trustGain": 1,
+  "exchanges": [
+    { "id": "greet", "slots": {}, "expect": { "action": "greet" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "money", "slots": {}, "expect": { "action": "money" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "week", "slots": {}, "expect": { "action": "rent" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "price", "slots": {}, "expect": { "action": "price" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "bye", "slots": {}, "expect": { "action": "bye" }, "hinges": [], "pay": 0, "missCost": 0 }
+  ]
+}

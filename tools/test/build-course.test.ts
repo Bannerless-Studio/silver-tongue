@@ -28,7 +28,7 @@ describe("build-course (real content)", () => {
 
   it("builds zh-china-en with no errors", () => {
     expect(errors).toEqual([]);
-    expect(course!.scenes.map((s) => s.id)).toEqual(["noodle-intro", "noodle-shift", "room-hello", "street-hello", "street-hungry", "street-numbers", "street-practice", "warehouse-intro", "warehouse-shift"]);
+    expect(course!.scenes.map((s) => s.id)).toEqual(["noodle-intro", "noodle-shift", "room-hello", "room-rent", "street-hello", "street-hungry", "street-numbers", "street-practice", "warehouse-intro", "warehouse-shift"]);
   });
 
   it("renders every slot combination and tags its words", () => {
@@ -53,9 +53,14 @@ describe("build-course (real content)", () => {
     expect(course!.conceptNames.tea).toBe("tea");
     expect(course!.conceptNames.thanks).toBe("Thank you");
     expect(course!.stageWords["1"]).toHaveLength(150);
-    expect(course!.notes.map((n) => n.id)).toEqual(["hao-ma", "lao-xiao", "le", "bukeqi", "bei"]);
+    expect(course!.notes.map((n) => n.id)).toEqual(["hao-ma", "lao-xiao", "le", "bukeqi", "bei", "ge", "kuai"]);
     expect(course!.world.mentor).toEqual({ npc: "wang", after: "street-hello" });
     expect(course!.learnerFtl).toContain("note-bei-title");
+  });
+
+  it("Mr Li talks about rent after your first warehouse shift, and Old Wang explains 个 and 块", () => {
+    expect(course!.scenes.find((s) => s.id === "room-rent")!.after).toEqual(["room-hello", "warehouse-shift"]);
+    expect(course!.notes.map((n) => n.id)).toEqual(expect.arrayContaining(["ge", "kuai"]));
   });
 
   it("the warehouse shift counts from three to ten, in its own slot", () => {

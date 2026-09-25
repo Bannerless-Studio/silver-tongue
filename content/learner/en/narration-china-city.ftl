@@ -48,6 +48,9 @@ scene-noodle-shift-end = The rush dies down. The cook counts coins into your han
 scene-room-hello = Meet the landlord
 scene-room-hello-start = A thin man in slippers opens the door before you knock. He has clearly been expecting you.
 scene-room-hello-end = Mr Li hands you a key on a red string, and points firmly at the bed. You'll sleep here.
+scene-room-rent = Talk about rent
+scene-room-rent-start = Mr Li is waiting at the top of the stairs. He rubs his thumb and fingers together, politely.
+scene-room-rent-end = Mr Li nods and writes it on the back of his hand: fifty, every week. It'll come out of your pocket at the end of the week either way.
 
 scene-warehouse-intro = Ask about work
 scene-warehouse-intro-start = The big man with the clipboard looks up. He holds up five fingers, then all ten, and raises an eyebrow: can you count that far?
@@ -92,3 +95,6 @@ asked-live = They were telling you this room is yours.
 asked-numbers = They wanted you to count along.
 asked-next = They wanted the next number: { $number }.
 asked-foreman = They were telling you their name.
+asked-money = They wanted to know if you have money.
+asked-rent = They were talking about the week's rent.
+asked-price = They told you the price.
