@@ -22,14 +22,14 @@ scene-street-hello-end = Old Wang looks delighted with his new student. He repea
 
 scene-street-hungry = Talk about food
 scene-street-hungry-start = Your stomach growls, loudly. Old Wang raises an eyebrow.
-scene-street-hungry-end = Old Wang points at the noodle shop, then at you, then mimes rolling up his sleeves. Work first, noodles after.
+scene-street-hungry-end = Old Wang points at the noodle shop, then at you, then holds up his fingers one by one. Work first, noodles after, and counting before either.
 
 scene-street-practice = Practise greetings
 scene-street-practice-start = Old Wang shuffles over to make room. Another lesson, then.
 scene-street-practice-end = Old Wang nods, satisfied, and goes back to watching the street.
 
 scene-street-numbers = Count with Old Wang
-scene-street-numbers-start = Old Wang holds up one finger, then another. Work at the noodle shop means counting, and he isn't sending you over there unable to count.
+scene-street-numbers-start = Old Wang holds up one finger, then another. Anyone who works at the noodle shop has to count, and he means to make sure you can.
 scene-street-numbers-end = Old Wang counts your fingers for you, twice, just to be sure. Now the noodle shop.
 
 scene-noodle-intro = Ask about work

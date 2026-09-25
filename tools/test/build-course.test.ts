@@ -58,6 +58,11 @@ describe("build-course (real content)", () => {
     expect(course!.learnerFtl).toContain("note-bei-title");
   });
 
+  it("the cook offers work only once Old Wang has taught you to count", () => {
+    // Otherwise she hands you an apron and no shift appears, with nothing to say why.
+    expect(course!.scenes.find((s) => s.id === "noodle-intro")!.after).toContain("street-numbers");
+  });
+
   it("a wrong number while counting with Old Wang gets a plain no, not the noodle shop's 几杯", () => {
     // Reactions are keyed by slot name (wrong-<slot>) across the whole course.
     const counting = course!.scenes.find((s) => s.id === "street-numbers")!;

@@ -4,7 +4,8 @@
   "npc": "cook",
   "stage": 1,
   "after": [
-    "street-hungry"
+    "street-hungry",
+    "street-numbers"
   ],
   "requires": {},
   "repeatable": false,

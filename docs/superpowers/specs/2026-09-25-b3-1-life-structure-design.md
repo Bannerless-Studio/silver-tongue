@@ -94,7 +94,7 @@ One scene, `street-numbers`, on the street with Old Wang.
 
 **Gating**
 
-- `noodle-shift` becomes `after: ["noodle-intro", "street-numbers"]`. `noodle-intro` is unchanged.
+- `noodle-intro` and `noodle-shift` both come after `street-numbers` too. Otherwise a player could meet the cook first, get an apron and find no shift, with nothing saying why. `street-hungry-end` now points at counting first, and `street-numbers-start` reads right whether or not the player has met the cook (an older save may have).
 - Once the player has counted, the shift's numbers 三–五 are already met. The shift's exchanges then introduce fewer new words than before, which the checker allows.
 - Street menu size: with the two exits (noodle shop, room), four scenes (hello, hungry, practice, numbers) and the mentor item, the street reaches exactly 7 items. Slice 2 must not add street scenes without moving one.
 
