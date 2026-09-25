@@ -226,7 +226,20 @@ export function buildCourse(root: string, courseId: string): BuildResult {
       ].join("\n"),
     ) ?? "";
 
-  const course: Course = { id: cfg.id, typing: meta.typing !== null, words, concepts, groups, world, scenes, reactions, learnerFtl };
+  const course: Course = {
+    id: cfg.id,
+    typing: meta.typing !== null,
+    words,
+    concepts,
+    groups,
+    world,
+    scenes,
+    reactions,
+    learnerFtl,
+    conceptNames: {},
+    stageWords: {},
+    notes: [],
+  };
   const learnerIds = attempt("learner text", () => new Set(messageIds(learnerFtl, "learner files"))) ?? new Set<string>();
   errors.push(...checkCourse({ course, stages: meta.stages, checks: cfg.checks, learnerIds, requiredUi: [] }));
   errors.push(...uiTextProblems(learnerFtl, cfg.learner));

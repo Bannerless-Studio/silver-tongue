@@ -72,9 +72,12 @@ const order: Exchange = {
   })),
 };
 
-/** A two-scene course that passes the content checker: meet the cook, then serve drinks (repeatable). */
+/**
+ * A two-scene course that passes the content checker: meet the cook, then serve drinks (repeatable).
+ * Each call returns a fresh copy, so a test can change it without affecting others.
+ */
 export function fixtureCourse(): Course {
-  return {
+  return structuredClone({
     id: "test-course",
     typing: false,
     words: Object.fromEntries(
@@ -103,5 +106,8 @@ export function fixtureCourse(): Course {
       "wrong-generic": line(["不", "w_bu"], ["是", "w_shi"], ["这", "w_zhe"], ["个", "w_ge"], ["。", null]),
     },
     learnerFtl: "",
-  };
+    conceptNames: { tea: "tea", water: "water", three: "three", four: "four" },
+    stageWords: { "1": [...Object.keys(W), "w_unused"] },
+    notes: [],
+  } satisfies Course);
 }

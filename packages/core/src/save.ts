@@ -17,6 +17,7 @@ const allValues = (o: Record<string, unknown>, ok: (v: unknown) => boolean) => O
 
 function isWordRecord(x: unknown): boolean {
   if (!isObj(x) || typeof x.lapsed !== "boolean") return false;
+  if (x.first !== undefined && !(isObj(x.first) && typeof x.first.line === "string" && typeof x.first.place === "string")) return false;
   return ["right", "wrong", "streak", "helps", "firstSeen", "lastSeen"].every((k) => isCount(x[k]));
 }
 
@@ -25,6 +26,10 @@ function isRunShape(x: unknown): x is SceneRun {
     return false;
   if (!["pick", "tiles", "type"].includes(x.mode as string) || !isStrings(x.options) || !isStrings(x.tiles)) return false;
   return ["exchange", "misses", "earned", "mixups"].every((k) => isCount(x[k]));
+}
+
+function isLogEntry(x: unknown): boolean {
+  return isObj(x) && isCount(x.t) && isCount(x.day) && isCount(x.slot) && isObj(x.input) && typeof x.input.type === "string";
 }
 
 /** Every piece of the reply is among the tiles, repeats counted. */
@@ -70,6 +75,11 @@ export function parseSave(raw: string, course: Course): ParseResult {
   if (!isObj(data.scenesDone) || !allValues(data.scenesDone, isCount)) return { ok: false, reason: "bad-scenesDone" };
   if (!isObj(data.words) || !allValues(data.words, isWordRecord)) return { ok: false, reason: "bad-words" };
   if (data.run !== null && !isRunShape(data.run)) return { ok: false, reason: "bad-run" };
+  // notes and log came later: a save without them gets empty ones.
+  data.notes ??= { ready: [], read: [] };
+  data.log ??= [];
+  if (!isObj(data.notes) || !isStrings(data.notes.ready) || !isStrings(data.notes.read)) return { ok: false, reason: "bad-notes" };
+  if (!Array.isArray(data.log) || !data.log.every(isLogEntry)) return { ok: false, reason: "bad-log" };
   const state = data as unknown as GameState;
   if (state.run && !runFits(state.run, course)) state.run = null;
   return { ok: true, state };

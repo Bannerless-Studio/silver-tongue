@@ -68,9 +68,18 @@ function chooseCombo(ctx: Ctx, ex: Exchange): Combo {
   return combo;
 }
 
+/** Records a heard line: each word is seen, and remembers the first line it was heard in. */
+function hear(ctx: Ctx, line: RenderedLine): void {
+  for (const t of line.tokens) {
+    setWord(ctx, t.word, recordSeen);
+    const rec = ctx.state.words[t.word];
+    if (!rec.first) rec.first = { line: line.text, place: ctx.state.place };
+  }
+}
+
 function speak(ctx: Ctx, npc: string, line: RenderedLine): void {
   ctx.ev.push({ type: "lineSpoken", npc, line });
-  for (const t of line.tokens) setWord(ctx, t.word, recordSeen);
+  hear(ctx, line);
 }
 
 /** Right reply plus up to 3 replies that differ from it in exactly one slot, with distinct text. */
@@ -160,7 +169,14 @@ function finishScene(ctx: Ctx, scene: Scene): void {
 function resolve(ctx: Ctx, scene: Scene, ex: Exchange, chosen: Combo, diff: string[], tilesWrong = false): void {
   const run = ctx.state.run!;
   const matched = diff.length === 0 && !tilesWrong;
-  ctx.ev.push({ type: "actionPerformed", action: resolveParams(ex.expect, chosen), matched, diff, tilesWrong });
+  ctx.ev.push({
+    type: "actionPerformed",
+    action: resolveParams(ex.expect, chosen),
+    expected: resolveParams(ex.expect, run.combo),
+    matched,
+    diff,
+    tilesWrong,
+  });
   const hinges = hingeWords(ctx, ex, run.combo);
   if (matched) {
     for (const w of hinges) setWord(ctx, w, recordRight);
@@ -179,7 +195,7 @@ function resolve(ctx: Ctx, scene: Scene, ex: Exchange, chosen: Combo, diff: stri
     const v = ex.variants[comboKey(run.combo)];
     const line = v.rephrase ?? v.npc;
     ctx.ev.push({ type: "lineRephrased", npc: scene.npc, line, slow: !v.rephrase });
-    for (const t of line.tokens) setWord(ctx, t.word, recordSeen);
+    hear(ctx, line);
   }
   emitOptions(ctx, ex);
 }

@@ -60,5 +60,7 @@ export function newGame(course: Course): GameState {
     words: {},
     scenesDone: {},
     run: null,
+    notes: { ready: [], read: [] },
+    log: [],
   };
 }

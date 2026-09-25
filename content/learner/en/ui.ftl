@@ -64,3 +64,4 @@ resume-item = Day { $day } · { $place } · { $currency }{ $wallet } · { $done 
 } · last played { $date }
 resume-ask = Which one? (number, or enter to cancel)
 resume-none = No saved games yet, so here's a new one.
+reject-no-mentor = There's nobody here to explain things.

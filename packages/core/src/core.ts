@@ -5,6 +5,9 @@ import type { Course, GameEvent, GameState, Input } from "./types";
 
 export { newGame } from "./life";
 
+/** Play-test log length: enough for a few days of play, small enough to keep saves light. */
+export const LOG_LIMIT = 500;
+
 export interface CoreDeps {
   now: () => number;
   rng: () => number;
@@ -53,6 +56,7 @@ export function createCore(course: Course, initial: GameState, deps: CoreDeps): 
       const ctx: Ctx = { course, state: structuredClone(state), now, rng: deps.rng, ev: [] };
       handle(ctx, input);
       if (ctx.ev.some((e) => e.type === "inputRejected")) return ctx.ev;
+      ctx.state.log = [...ctx.state.log, { t: now, day: state.day, slot: state.slot, input }].slice(-LOG_LIMIT);
       const before = new Set(availableSceneIds(course, state));
       for (const id of availableSceneIds(course, ctx.state)) {
         if (!before.has(id)) ctx.ev.push({ type: "unlocked", scene: id });
