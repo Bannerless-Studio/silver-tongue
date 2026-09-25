@@ -81,3 +81,17 @@ notebook-notes = Notes
 export-none = There's no saved game to export yet.
 import-bad = That line isn't a saved game for this course ({ $reason }).
 import-done = Added: { $game }. Run the game to continue it.
+
+# Browser page controls (packages/tui-web).
+web-new = New game
+web-games = Games
+web-games-none = No saved games yet.
+web-export = Export
+web-export-hint = This line is your whole game. Paste it into Import on another device, or into the terminal game with: npx silver-tongue --import -
+web-copy = Copy
+web-copied = Copied
+web-import = Import
+web-import-hint = Paste a line from Export, here or from the terminal game. It is added as a new game; nothing is overwritten.
+web-import-go = Add game
+web-close = Close
+web-saved = Your game is saved. You can close this tab, or keep playing.

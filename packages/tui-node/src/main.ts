@@ -2,8 +2,8 @@ import { existsSync, readFileSync } from "node:fs";
 import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
 import { createCore, mulberry32, type Course } from "@silver-tongue/core";
-import { decodeSave, encodeSave, makeText, startApp } from "@silver-tongue/tui";
-import { parseFlags, pickAnswer, sessionLines, USAGE } from "./cli";
+import { decodeSave, encodeSave, makeText, sessionLines, startApp } from "@silver-tongue/tui";
+import { parseFlags, pickAnswer, USAGE } from "./cli";
 import { createNodeTerminal } from "./node-terminal";
 import { listSessions, migrateLegacySave, newSessionPath, sessionsDir } from "./sessions";
 import { configDir, loadSave, writeSave } from "./storage";
@@ -73,7 +73,7 @@ async function exportOrImport(mode: "export" | "import", line: string): Promise<
     console.error(t("notice-read-only"));
     process.exit(1);
   }
-  const [summary] = sessionLines([{ id: "", path, lastPlayed: now, state: decoded.state }], course, t, (ms) => new Date(ms).toLocaleString());
+  const [summary] = sessionLines([{ lastPlayed: now, state: decoded.state }], course, t, (ms) => new Date(ms).toLocaleString());
   console.log(t("import-done", { game: summary.replace(/^1\) /, "") }));
   process.exit(0);
 }

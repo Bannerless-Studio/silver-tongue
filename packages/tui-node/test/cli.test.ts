@@ -3,7 +3,8 @@ import { newGame } from "@silver-tongue/core";
 import { fixtureCourse } from "@silver-tongue/core/testing";
 import { makeText } from "@silver-tongue/tui";
 import { readFileSync } from "node:fs";
-import { parseFlags, pickAnswer, sessionLines } from "../src/cli";
+import { sessionLines } from "@silver-tongue/tui";
+import { parseFlags, pickAnswer } from "../src/cli";
 
 const ui = readFileSync(new URL("../../../content/learner/en/ui.ftl", import.meta.url), "utf8");
 
@@ -33,8 +34,8 @@ describe("cli", () => {
     const course = fixtureCourse();
     const lines = sessionLines(
       [
-        { id: "x", path: "x.json", lastPlayed: 0, state: { ...newGame(course), day: 3, wallet: 47, scenesDone: { intro: 1 } } },
-        { id: "y", path: "y.json", lastPlayed: 5, state: { ...newGame(course), place: "noodle_shop", scenesDone: { intro: 1, shift: 4 } } },
+        { lastPlayed: 0, state: { ...newGame(course), day: 3, wallet: 47, scenesDone: { intro: 1 } } },
+        { lastPlayed: 5, state: { ...newGame(course), place: "noodle_shop", scenesDone: { intro: 1, shift: 4 } } },
       ],
       course,
       makeText(ui + "place-street = The street\nplace-noodle_shop = Noodle shop\n"),

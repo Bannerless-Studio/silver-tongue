@@ -1,7 +1,4 @@
 import { parseArgs } from "node:util";
-import type { Course } from "@silver-tongue/core";
-import type { Text } from "@silver-tongue/tui";
-import type { Session } from "./sessions";
 
 export const USAGE = `Usage: silver-tongue [--new | --resume | --export | --import <line>]
 
@@ -46,21 +43,6 @@ export function parseFlags(args: string[]): Flags {
   if (values.import !== undefined) return { mode: "import", line: values.import, ...course };
   const mode = chosen[0] === "new" || chosen[0] === "resume" || chosen[0] === "export" ? chosen[0] : "continue";
   return { mode, ...course };
-}
-
-/** One numbered line per session, for the --resume picker. */
-export function sessionLines(sessions: Session[], course: Course, t: Text, date: (ms: number) => string): string[] {
-  return sessions.map((s, i) => {
-    const text = t("resume-item", {
-      day: s.state.day,
-      place: t(`place-${s.state.place}`),
-      currency: course.world.currency,
-      wallet: s.state.wallet,
-      done: Object.values(s.state.scenesDone).filter((n) => n > 0).length,
-      date: date(s.lastPlayed),
-    });
-    return `${i + 1}) ${text}`;
-  });
 }
 
 /** The index picked from `count` sessions, "cancel" for enter or q, "again" for anything else. */
