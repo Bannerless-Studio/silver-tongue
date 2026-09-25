@@ -11,7 +11,9 @@ import {
   type RenderedLine,
   type WordId,
 } from "@silver-tongue/core";
+import { notebookLines } from "./notebook";
 import { lineSpans, renderScreen, wrapItems } from "./screen";
+import { wrapLine } from "./width";
 import type { Key, StyledLine, Terminal } from "./terminal";
 import { makeText, type Text } from "./text";
 
@@ -28,7 +30,7 @@ export interface AppOptions {
 }
 
 type MenuItem = { label: string; input?: Input; quit?: true };
-type Mode = "explore" | "scene" | "help";
+type Mode = "explore" | "scene" | "help" | "notebook";
 
 export interface App {
   press(key: Key): void;
@@ -49,6 +51,8 @@ export function startApp(opts: AppOptions): App {
   let replyMode: "pick" | "tiles" = "pick";
   let tileInput: number[] = [];
   let lastLine: RenderedLine | null = null;
+  let notebookFrom: Mode = "explore"; // where closing the notebook returns to
+  let notebookTop = 0; // first notebook line on screen
   let resuming = false; // replaying a scene saved half-way: it has already been introduced
 
   const push = (...lines: StyledLine[]) => {
@@ -272,6 +276,15 @@ export function startApp(opts: AppOptions): App {
       rank: t(`rank-${rankFor(s.words, wordIds, opts.now())}`),
       rentLate: s.rentLate ? "yes" : "no",
     });
+    if (mode === "notebook") {
+      const lines = notebookLines(course, s, t, opts.now()).flatMap((l) => wrapLine(l, cols - 4));
+      const bodyRows = Math.max(1, rows - 2);
+      notebookTop = Math.max(0, Math.min(notebookTop, lines.length - bodyRows));
+      const page = lines.slice(notebookTop, notebookTop + bodyRows);
+      const prompt = [...page, ...Array(bodyRows - page.length).fill([])];
+      term.write(renderScreen({ title: t(`place-${s.place}`), hud, log: [], prompt, footer: t("keys-notebook") }, cols, rows));
+      return;
+    }
     const [footerId, count] =
       mode === "explore"
         ? ["keys-explore", menu().length]
@@ -286,6 +299,18 @@ export function startApp(opts: AppOptions): App {
 
   function press(key: Key) {
     if (key.name === "ctrl-c") return opts.quit();
+    if (mode === "notebook") {
+      if (key.name === "escape" || key.name === "n") mode = notebookFrom;
+      else if (key.name === "down") notebookTop += 1;
+      else if (key.name === "up") notebookTop = Math.max(0, notebookTop - 1);
+      return render();
+    }
+    if (key.name === "n" && mode !== "help") {
+      notebookFrom = mode;
+      notebookTop = 0;
+      mode = "notebook";
+      return render();
+    }
     const n = /^[1-9]$/.test(key.name) ? Number(key.name) - 1 : -1;
     if (mode === "explore") {
       const item = n >= 0 ? menu()[n] : undefined;

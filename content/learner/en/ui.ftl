@@ -19,8 +19,8 @@ cost-slot = { " · 1 slot" }
 menu-sleep = Sleep (end the day)
 menu-quit = Save and quit
 
-keys-explore = [{ $keys }] choose · [q] quit
-keys-pick = [{ $keys }] reply · [w] word help
+keys-explore = [{ $keys }] choose · [n] notebook · [q] quit
+keys-pick = [{ $keys }] reply · [w] word help · [n] notebook
 keys-tiles = [{ $keys }] add tile · [⌫] undo · [enter] say it · [w] word help
 keys-help = [{ $keys }] look up · [esc] back
 keys-help-sentence = [{ $keys }] look up · [s] whole sentence · [esc] back
@@ -72,3 +72,9 @@ resume-none = No saved games yet, so here's a new one.
 reject-no-mentor = There's nobody here to explain things.
 note-hint = { $npc } looks like they have something to tell you.
 mentor-nothing = { $npc } has nothing new to explain today.
+
+keys-notebook = [↑↓] scroll · [esc] back
+notebook-progress = Stage { $stage }: { $known } of { $total } words known · { $heard } heard
+notebook-empty = Nothing yet. Words you hear are written down here.
+notebook-elsewhere = Heard elsewhere
+notebook-notes = Notes

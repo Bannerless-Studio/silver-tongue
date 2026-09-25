@@ -310,5 +310,27 @@ describe("tui app", () => {
     s = term.screen().join("\n");
     expect(s).toContain("Cook has nothing new to explain today.");
   });
+
+  it("opens the notebook with n, scrolls it, and goes back where it was", () => {
+    const { term, core } = setup();
+    term.press("1", "1");
+    term.press(rightKey(core));
+    term.press("n");
+    let s = term.screen();
+    expect(s.join("\n")).toContain("Stage 1: 0 of 12 words known");
+    expect(s.at(-1)).toContain("[↑↓] scroll");
+    term.resize(64, 5);
+    const top = term.screen()[1];
+    term.press("down");
+    expect(term.screen()[1]).not.toBe(top);
+    term.press("up");
+    expect(term.screen()[1]).toBe(top);
+    term.resize(64, 20);
+    term.press("escape");
+    s = term.screen();
+    expect(s.join("\n")).toContain("Your reply:");
+    term.press("n", "n");
+    expect(term.screen().join("\n")).toContain("Your reply:");
+  });
 });
 
