@@ -3,12 +3,20 @@
     "courtesies": ["hello", "thanks", "sorry"],
     "drinks": ["tea", "water"],
     "numbers_2_5": ["two", "three", "four", "five"],
-    "numbers_3_5": ["three", "four", "five"]
+    "numbers_3_5": ["three", "four", "five"],
+    "numbers_3_10": ["three", "four", "five", "six", "seven", "eight", "nine", "ten"],
+    "furniture": ["table", "chair"],
+    "sizes": ["big", "small"]
   },
   "numbers": {
     "two": 2,
     "three": 3,
     "four": 4,
-    "five": 5
+    "five": 5,
+    "six": 6,
+    "seven": 7,
+    "eight": 8,
+    "nine": 9,
+    "ten": 10
   }
 }

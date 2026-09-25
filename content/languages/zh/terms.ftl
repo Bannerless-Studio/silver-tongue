@@ -32,3 +32,12 @@
     [reply] 再见
    *[base] 再见
 }
+-six = 六
+-seven = 七
+-eight = 八
+-nine = 九
+-ten = 十
+-table = 桌子
+-chair = 椅子
+-big = 大
+-small = 小

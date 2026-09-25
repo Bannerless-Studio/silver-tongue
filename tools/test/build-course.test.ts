@@ -28,7 +28,7 @@ describe("build-course (real content)", () => {
 
   it("builds zh-china-en with no errors", () => {
     expect(errors).toEqual([]);
-    expect(course!.scenes.map((s) => s.id)).toEqual(["noodle-intro", "noodle-shift", "room-hello", "street-hello", "street-hungry", "street-numbers", "street-practice", "warehouse-intro"]);
+    expect(course!.scenes.map((s) => s.id)).toEqual(["noodle-intro", "noodle-shift", "room-hello", "street-hello", "street-hungry", "street-numbers", "street-practice", "warehouse-intro", "warehouse-shift"]);
   });
 
   it("renders every slot combination and tags its words", () => {
@@ -56,6 +56,16 @@ describe("build-course (real content)", () => {
     expect(course!.notes.map((n) => n.id)).toEqual(["hao-ma", "lao-xiao", "le", "bukeqi", "bei"]);
     expect(course!.world.mentor).toEqual({ npc: "wang", after: "street-hello" });
     expect(course!.learnerFtl).toContain("note-bei-title");
+  });
+
+  it("the warehouse shift counts from three to ten, in its own slot", () => {
+    const shift = course!.scenes.find((s) => s.id === "warehouse-shift")!;
+    const carry = shift.exchanges.find((ex) => ex.id === "carry")!;
+    // Not `count`: that slot's reaction is the noodle shop's 几杯？
+    expect(carry.slots).toEqual({ amount: "numbers_3_10", item: "furniture" });
+    // English says "{amount} {item}s", so no amount may be one or two.
+    expect(course!.groups.numbers_3_10[0]).toBe("three");
+    expect(shift.exchanges.every((ex) => ex.pay > 0)).toBe(true);
   });
 
   it("Big Liu counts you from six to ten, after you can count to five", () => {

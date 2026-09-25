@@ -53,12 +53,20 @@ scene-warehouse-intro = Ask about work
 scene-warehouse-intro-start = The big man with the clipboard looks up. He holds up five fingers, then all ten, and raises an eyebrow: can you count that far?
 scene-warehouse-intro-end = Big Liu writes something on his clipboard, possibly your name. There's work here whenever you want it.
 
+scene-warehouse-shift = Carry furniture
+scene-warehouse-shift-start = A truck backs up to the doors. Big Liu reads from his clipboard; you do the lifting.
+scene-warehouse-shift-end = The truck pulls away. Big Liu counts out your pay, twice.
+
 # What a reply does (action-<name>), and on a mix-up what was asked (asked-<name>).
 # Concept values arrive as learner names: $item = "tea", $count = "three".
 action-fetch = You bring { $item }.
 asked-fetch = They wanted { $item }.
 action-serve = You set down { $count } cups of { $item }.
 asked-serve = They wanted { $count } cups of { $item }.
+action-carry = You carry { $amount } { $item }s.
+asked-carry = They wanted { $amount } { $item }s.
+action-pick = You pick up the { $size } { $item }.
+asked-pick = They wanted the { $size } { $item }.
 
 # Conversations: what was asked, shown after a wrong reply. These are shared by every scene that
 # uses the action, so they say "they" unless only one person ever uses it.

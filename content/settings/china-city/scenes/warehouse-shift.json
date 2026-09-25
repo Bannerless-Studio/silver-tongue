@@ -1,0 +1,28 @@
+{
+  "id": "warehouse-shift",
+  "place": "warehouse",
+  "npc": "foreman",
+  "stage": 1,
+  "after": ["warehouse-intro"],
+  "requires": { "trust": { "foreman": 1 } },
+  "repeatable": true,
+  "trustGain": 1,
+  "exchanges": [
+    {
+      "id": "carry",
+      "slots": { "amount": "numbers_3_10", "item": "furniture" },
+      "expect": { "action": "carry", "amount": "$amount", "item": "$item" },
+      "hinges": ["$amount", "$item"],
+      "pay": 3,
+      "missCost": 1
+    },
+    {
+      "id": "pick",
+      "slots": { "size": "sizes", "item": "furniture" },
+      "expect": { "action": "pick", "size": "$size", "item": "$item" },
+      "hinges": ["$size", "$item"],
+      "pay": 2,
+      "missCost": 1
+    }
+  ]
+}
