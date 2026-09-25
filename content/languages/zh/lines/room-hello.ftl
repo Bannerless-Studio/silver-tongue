@@ -1,0 +1,26 @@
+# Meet the landlord: names, and the room is yours. Wrong replies use only words met by then.
+
+greet = 你好！
+greet-reply = 你好！你叫什么名字？
+greet-alt1 = 再见！
+greet-alt2 = 我饿了。
+
+names = 叫我李先生。你呢？
+names-reply = 我叫{ $player }。
+names-alt1 = 我叫老王。
+names-alt2 = 我喜欢面条。
+
+how = 你好吗？
+how-reply = 很好！你好吗？
+how-alt1 = 我叫{ $player }。
+how-alt2 = 再见！
+
+live = 你住这里。
+live-reply = 好！谢谢！
+live-alt1 = 我饿了。
+live-alt2 = 小张是我朋友。
+
+bye = 再见，{ $player }！
+bye-reply = 谢谢！再见，李先生！
+bye-alt1 = 你好，李先生！
+bye-alt2 = 我叫{ $player }。

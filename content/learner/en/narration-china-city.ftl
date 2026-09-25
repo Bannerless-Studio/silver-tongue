@@ -1,16 +1,19 @@
 # The story. intro-1, intro-2, … open a new game ($currency, $wallet, $rent are available).
 intro-1 = Your phone is dead, your wallet is gone, and the bus that brought you here left an hour ago.
 intro-2 = You're standing on a street in a Chinese city with { $currency }{ $wallet } in your pocket. You know nobody, and nobody here speaks your language.
-intro-3 = Food costs money. Rent is { $currency }{ $rent }, due at the end of the week. To earn anything you'll need work, and for work you'll need words.
+intro-3 = Food costs money. There's a room for you down the street, { $currency }{ $rent } a week, due at the end of the week. To earn anything you'll need work, and for work you'll need words.
 intro-4 = On a bench by the road, an old man is watching you with open curiosity. Maybe start there.
 
 place-street = Main Street
-place-street-desc = Bikes, steam and shouting. An old man sits on a bench by the road. Across it, a noodle shop glows.
+place-street-desc = Bikes, steam and shouting. An old man sits on a bench by the road. Across it, a noodle shop glows, and a little way down is your room.
 place-noodle_shop = Noodle Shop
 place-noodle_shop-desc = Steam everywhere. The cook is shouting orders at nobody in particular.
+place-room = Your Room
+place-room-desc = A narrow bed and a window onto the street. The landlord seems to hear every step on the stairs.
 
 npc-wang = Old Wang
 npc-cook = Cook
+npc-landlord = Mr Li
 
 # Scene names for the menu; scene-<id>-start and scene-<id>-end are optional narration.
 scene-street-hello = Meet Old Wang
@@ -32,6 +35,10 @@ scene-noodle-intro-end = She throws you an apron. You have a job, sort of.
 scene-noodle-shift = Work a shift
 scene-noodle-shift-start = Orders fly across the counter. Keep up.
 scene-noodle-shift-end = The rush dies down. The cook counts coins into your hand.
+
+scene-room-hello = Meet the landlord
+scene-room-hello-start = A thin man in slippers opens the door before you knock. He has clearly been expecting you.
+scene-room-hello-end = Mr Li hands you a key on a red string, and points firmly at the bed. You'll sleep here.
 
 # What a reply does (action-<name>), and on a mix-up what was asked (asked-<name>).
 # Concept values arrive as learner names: $item = "tea", $count = "three".
@@ -60,3 +67,4 @@ asked-shop = They were telling you there's a restaurant over there.
 asked-zhang = They said a name.
 asked-friend = They were telling you about a friend.
 asked-job = They were offering you work.
+asked-live = They were telling you this room is yours.

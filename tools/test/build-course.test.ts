@@ -28,7 +28,7 @@ describe("build-course (real content)", () => {
 
   it("builds zh-china-en with no errors", () => {
     expect(errors).toEqual([]);
-    expect(course!.scenes.map((s) => s.id)).toEqual(["noodle-intro", "noodle-shift", "street-hello", "street-hungry", "street-practice"]);
+    expect(course!.scenes.map((s) => s.id)).toEqual(["noodle-intro", "noodle-shift", "room-hello", "street-hello", "street-hungry", "street-practice"]);
   });
 
   it("renders every slot combination and tags its words", () => {
