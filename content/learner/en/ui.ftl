@@ -35,7 +35,10 @@ reason-mixup = mix-up
 reason-food = food
 reason-rent = rent
 trust-up = { $npc } trusts you a little more ({ $trust }).
-scene-done = Done. You earned { $currency }{ $earned }.
+scene-done = { $earned ->
+    [0] Done.
+   *[other] Done. You earned { $currency }{ $earned }.
+}
 unlocked = New: { $scene }
 rank-up = You're now: { $rank }
 day-ended = Day { $day } is over. You sleep.

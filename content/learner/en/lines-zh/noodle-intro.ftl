@@ -1,5 +1,5 @@
 greet = Hello!
 greet-reply = Hello!
 
-job = Work here — OK?
+job = Want to work here?
 job-reply = OK.

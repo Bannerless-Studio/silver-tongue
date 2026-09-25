@@ -171,7 +171,7 @@ describe("tui app", () => {
     expect(term.screen().at(-2)).toMatch(/You say: +│$/);
     term.press(right, "return");
     expect(term.screen().join("\n")).toContain(`You: ${want}`);
-    expect(term.screen().join("\n")).toContain("Done. You earned");
+    expect(term.screen().join("\n")).toContain("Done.");
   });
 
   it("a wrong pick shows the reaction, and word help still offers the request", () => {
@@ -215,7 +215,7 @@ describe("tui app", () => {
     expect(term.screen().join("\n")).toMatch(/Cook: (茶|水)。/);
     expect(term.screen().join("\n")).not.toContain("steaming pot");
     term.press(rightKey(core));
-    expect(term.screen().join("\n")).toContain("Done. You earned");
+    expect(term.screen().join("\n")).toContain("Done.");
   });
 
   it("keeps working on a very short screen", () => {
