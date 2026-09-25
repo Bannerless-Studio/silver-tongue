@@ -58,6 +58,15 @@ describe("build-course (real content)", () => {
     expect(course!.learnerFtl).toContain("note-bei-title");
   });
 
+  it("puts your room and the warehouse on Market Street, and keeps Main Street's menu at 7", () => {
+    const { places, npcs, mentor } = course!.world;
+    expect([...places.market.links].sort()).toEqual(["room", "street", "warehouse"]);
+    expect(places.room.links).toEqual(["market"]);
+    expect(places.street.links).toContain("market");
+    const mentorHere = mentor && npcs[mentor.npc].place === "street" ? 1 : 0;
+    expect(places.street.links.length + course!.scenes.filter((s) => s.place === "street").length + mentorHere).toBe(7);
+  });
+
   it("the cook offers work only once Old Wang has taught you to count", () => {
     // Otherwise she hands you an apron and no shift appears, with nothing to say why.
     expect(course!.scenes.find((s) => s.id === "noodle-intro")!.after).toContain("street-numbers");

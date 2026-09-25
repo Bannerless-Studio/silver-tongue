@@ -10,7 +10,7 @@
     "street": {
       "links": [
         "noodle_shop",
-        "room"
+        "market"
       ]
     },
     "noodle_shop": {
@@ -18,9 +18,21 @@
         "street"
       ]
     },
+    "market": {
+      "links": [
+        "street",
+        "room",
+        "warehouse"
+      ]
+    },
     "room": {
       "links": [
-        "street"
+        "market"
+      ]
+    },
+    "warehouse": {
+      "links": [
+        "market"
       ]
     }
   },
@@ -33,6 +45,9 @@
     },
     "landlord": {
       "place": "room"
+    },
+    "foreman": {
+      "place": "warehouse"
     }
   },
   "mentor": {

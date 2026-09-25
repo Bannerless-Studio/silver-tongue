@@ -5,15 +5,20 @@ intro-3 = Food costs money. There's a room for you down the street, and the rent
 intro-4 = On a bench by the road, an old man is watching you with open curiosity. Maybe start there.
 
 place-street = Main Street
-place-street-desc = Bikes, steam and shouting. An old man sits on a bench by the road. Across it, a noodle shop glows, and a little way down is your room.
+place-street-desc = Bikes, steam and shouting. An old man sits on a bench by the road. Across it, a noodle shop glows, and past it the street opens onto a market.
 place-noodle_shop = Noodle Shop
 place-noodle_shop-desc = Steam everywhere. The cook is shouting orders at nobody in particular.
 place-room = Your Room
 place-room-desc = A narrow bed and a window onto the street. The landlord seems to hear every step on the stairs.
+place-market = Market Street
+place-market-desc = Stalls, scooters and a warehouse with its doors wide open. Your room is up the stairs above a shuttered shop.
+place-warehouse = Warehouse
+place-warehouse-desc = Stacks of tables and chairs, and a big man with a clipboard.
 
 npc-wang = Old Wang
 npc-cook = Cook
 npc-landlord = Mr Li
+npc-foreman = Big Liu
 
 # Scene names for the menu; scene-<id>-start and scene-<id>-end are optional narration.
 scene-street-hello = Meet Old Wang
