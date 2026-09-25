@@ -70,7 +70,9 @@ Object.assign(window, {
 // Refit when the terminal's box changes, not only the window: the header wrapping, a phone keyboard.
 new ResizeObserver(() => fit.fit()).observe($("#term-wrap"));
 // The "saved" message is for the moment after quitting; the next key clears it.
-document.addEventListener("keydown", () => status(""));
+document.addEventListener("keydown", () => {
+  if ($("#status").textContent === t("web-saved")) status("");
+});
 
 let current: { term: WebTerminal; core: Core; id: string } | undefined;
 const touch = window.matchMedia("(pointer: coarse)").matches;
@@ -82,7 +84,12 @@ function status(text: string) {
 function play(opened: Opened) {
   current?.term.dispose();
   xterm.reset();
-  const term = createWebTerminal(xterm, fit, window);
+  const term = createWebTerminal(xterm, fit, window, {
+    touch,
+    // A phone keyboard only opens from a tap, and the page can't tell whether it's showing,
+    // so during name entry on a touch screen, say where to tap.
+    onTextEntry: (active) => status(active && touch ? t("web-tap-to-type") : ""),
+  });
   const core = createCore(course, opened.state, { now: Date.now, rng: mulberry32(Date.now() >>> 0) });
   current = { term, core, id: opened.id };
   status("");
@@ -188,7 +195,7 @@ dialog.addEventListener("close", () => {
 for (const b of document.querySelectorAll<HTMLButtonElement>("#keybar button")) {
   b.addEventListener("pointerdown", (e) => e.preventDefault()); // keep focus (and the phone keyboard) where it was
   b.addEventListener("click", () => {
-    status("");
+    if ($("#status").textContent === t("web-saved")) status("");
     current?.term.press(b.dataset.key!);
   });
 }

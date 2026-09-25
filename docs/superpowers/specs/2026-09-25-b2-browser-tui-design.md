@@ -10,6 +10,8 @@ The same text game in a web page. `packages/tui` already runs against a `Termina
   - `write` clears the screen and draws the frame. The line styling (`toAnsi`) moves from `tui-node` into `packages/tui/src/ansi.ts`, so both backends colour lines the same way.
   - `size` comes from xterm's `cols` and `rows`. `onResize` runs after `fit()` when the window or the phone's orientation changes.
   - Keys come from xterm's `onKey`: a DOM key maps to our key names with `keyName(domKey)`. So Enter becomes `return`, Escape `escape`, Backspace `backspace`, the arrows `up`/`down`/`left`/`right`, and a single character stays as it is. Everything else is ignored.
+- **Phone keyboard:** it opens only while the game wants typed text (the name), which the game signals by showing a cursor; elsewhere the terminal's input has `inputmode="none"` and is blurred, and the key bar covers every key. During name entry on a touch screen a hint says to tap the game.
+- **GitHub link:** an icon at the top right of the header opens the repository.
 - **Key bar:** a row of buttons under the terminal for phones: `1`–`9`, `w`, `n`, `s`, `⌫`, `↵`, `esc`, `↑`, `↓`. Each sends the same key names. It's shown on touch screens (`pointer: coarse`) and hidden elsewhere.
 - **Storage (`web-storage.ts`):** sessions in `localStorage`, like the Node sessions folder.
   - `silver-tongue:<course>:session:<id>` holds a save and `silver-tongue:<course>:last` the id played last.
