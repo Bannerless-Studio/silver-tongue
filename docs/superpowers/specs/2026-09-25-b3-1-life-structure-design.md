@@ -101,6 +101,8 @@ One scene, `street-numbers`, on the street with Old Wang.
 
 - `content/learner/en/narration-china-city.ftl` gets one `asked-<action>` line for each of the 18 conversational actions the pilot uses (`answer`, `ask`, `bye`, `farewell`, `friend`, `greet`, `hello`, `hungry`, `how`, `job`, `like`, `name`, `names`, `noodles`, `shop`, `there`, `wang`, `zhang`), plus one for each new action from sections 2 and 3. `fetch` and `serve` already have theirs.
 - The lines say what was wanted, not what to type: "They wanted to know your name." Slotted actions take the action's parameters, for example `asked-show = Old Wang held up { $count } fingers.`
+- An `asked-` line belongs to the action, not the scene, so every scene that uses the action shows the same line. A line may name an NPC only if one NPC uses that action. The landlord reuses `greet`, `names` and `bye`, so those lines must say "they", not "Old Wang" or "the cook".
+- A written wrong reply already reaches this path: the core reports it as action `other`, not matched, so the TUI shows the `asked-` line of the expected action.
 - The TUI already shows `asked-<action>` after a mix-up and falls back to the generic line when there is none. No TUI change.
 - The build already checks that a narration line formats with its action's parameters.
 
@@ -130,7 +132,7 @@ Three additions:
 **Tests first (Vitest)**
 
 - `packages/core/test/core.test.ts`: with `home` set, `sleep` away is refused with `not-home` and leaves the state untouched; at home it ends the day; without `home` it works anywhere (the fixture in `packages/core/src/testing/fixture.ts` gets a home variant).
-- `packages/core/test/save.test.ts`: a save away from the room still loads.
+- `packages/tui/test/app.test.ts`: with a fixture that has `home`, choosing Sleep away from home shows "You want your own bed. Head home first." and the day doesn't end. The existing "sleeping ends the day" test uses a fixture without `home` and stays as it is.
 - `tools/test/check.test.ts`: each of the three new checker errors, and a passing case for each.
 - `tools/test/bots.test.ts`: `rejected` is 0 for every bot. With `home` set, that also means every day ended in the room.
 - Existing build and course tests keep passing with the new scenes.
