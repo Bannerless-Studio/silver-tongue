@@ -187,7 +187,9 @@ export function migrateWebAliases(kv: KeyValue, course: { id: string; aliases?: 
       if (!keys.length) continue;
       const oldMeta = readMeta(kv, `${from}meta`);
       const meta = readMeta(kv, `${to}meta`);
-      const renamed: Record<string, string> = {};
+      // Whichever game was played last, under either id, stays the one played last.
+      const at = (m: Meta, id?: string) => (id === undefined ? -1 : (m.played[id] ?? 0));
+      const lastWins = oldMeta.last !== undefined && at(oldMeta, oldMeta.last) >= at(meta, meta.last);
       for (const key of keys) {
         const rest = key.slice(from.length);
         if (rest === "meta") continue;
@@ -196,19 +198,23 @@ export function migrateWebAliases(kv: KeyValue, course: { id: string; aliases?: 
           const id = rest.slice("session:".length);
           let newId = id;
           for (let n = 2; kv.getItem(`${to}session:${newId}`) !== null; n++) newId = `${id}-${n}`;
-          renamed[id] = newId;
           target = `${to}session:${newId}`;
+          kv.setItem(target, kv.getItem(key) ?? "");
+          // The new meta is written with each game, so storage filling up midway loses no play times.
+          if (oldMeta.played[id] !== undefined) meta.played[newId] = oldMeta.played[id];
+          if (lastWins && id === oldMeta.last) meta.last = newId;
+          try {
+            kv.setItem(`${to}meta`, JSON.stringify(meta));
+          } catch (e) {
+            kv.removeItem(target); // not moved after all: it stays under the old id for next time
+            throw e;
+          }
         } else {
           for (let n = 2; kv.getItem(target) !== null; n++) target = `${to}${rest}-${n}`;
+          kv.setItem(target, kv.getItem(key) ?? "");
         }
-        kv.setItem(target, kv.getItem(key) ?? "");
         kv.removeItem(key);
       }
-      for (const [id, at] of Object.entries(oldMeta.played)) if (renamed[id]) meta.played[renamed[id]] = at;
-      // Whichever game was played last, under either id, stays the one played last.
-      const at = (m: Meta, id?: string) => (id === undefined ? -1 : (m.played[id] ?? 0));
-      if (oldMeta.last && renamed[oldMeta.last] && at(oldMeta, oldMeta.last) >= at(meta, meta.last)) meta.last = renamed[oldMeta.last];
-      kv.setItem(`${to}meta`, JSON.stringify(meta));
       kv.removeItem(`${from}meta`);
     } catch {
       // storage refused: the old games stay where they are and move next time

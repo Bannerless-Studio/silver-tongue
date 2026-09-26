@@ -40,7 +40,11 @@ for (const entry of JSON.parse(readFileSync(join(coursesOut, "index.json"), "utf
   const src = join(repo, "content", "audio", entry.language);
   if (!existsSync(src)) continue;
   const out = join(coursesOut, entry.id, "audio");
-  cpSync(src, out, { recursive: true, filter: (f) => !f.endsWith(".part") });
-  clips += readdirSync(out).length;
+  mkdirSync(out, { recursive: true });
+  // Only finished clips, as the npm bundle copies (bundle-courses.mjs).
+  for (const f of readdirSync(src).filter((f) => f.endsWith(".mp3"))) {
+    cpSync(join(src, f), join(out, f));
+    clips++;
+  }
 }
 console.log(`built packages/tui-web/dist/index.html (${Math.round(html.length / 1024)} KB) and dist/courses/ with ${clips} clips`);
