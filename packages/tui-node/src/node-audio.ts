@@ -103,6 +103,10 @@ export function createNodeAudio(deps: NodeAudioDeps): AudioOut {
     get available() {
       return !broken;
     },
+    get busy() {
+      // A broken player will never fire another exit, so only what is still running counts.
+      return !broken && (proc !== undefined || timer !== undefined);
+    },
     play(lines: Speech[]) {
       stop();
       if (broken) return;

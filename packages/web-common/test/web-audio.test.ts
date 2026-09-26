@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { createWebAudio, type AudioLike } from "../src/web-audio";
 
-type FakeEl = AudioLike & { played: { src: string; rate: number; defaultPlaybackRate: number }[]; paused: number; reject: boolean };
+type FakeEl = AudioLike & { _src: string; played: { src: string; rate: number; defaultPlaybackRate: number }[]; paused: number; reject: boolean };
 
 function fakeEl(): FakeEl {
   return {
-    src: "",
+    _src: "",
     playbackRate: 1,
     defaultPlaybackRate: 1,
     onended: null,
@@ -13,6 +13,13 @@ function fakeEl(): FakeEl {
     played: [],
     paused: 0,
     reject: false,
+    get src() {
+      return this._src;
+    },
+    set src(v: string) {
+      this._src = v;
+      this.playbackRate = this.defaultPlaybackRate; // a new src resets the rate, as in a browser
+    },
     play() {
       this.played.push({ src: this.src, rate: this.playbackRate, defaultPlaybackRate: this.defaultPlaybackRate });
       return this.reject ? Promise.reject(new Error("NotAllowedError")) : Promise.resolve();
@@ -49,6 +56,15 @@ describe("createWebAudio", () => {
       { src: "audio/y.mp3", rate: 0.75, defaultPlaybackRate: 0.75 },
       { src: "audio/z.mp3", rate: 1, defaultPlaybackRate: 1 },
     ]);
+  });
+
+  it("plays a slow line slow even after the src changed, which is what resets the rate in a browser", () => {
+    const el = fakeEl();
+    const { waits, wait } = timers();
+    createWebAudio({ base: "audio/", audio: el, wait }).play([{ clips: ["x"] }, { clips: ["y"], slow: true }]);
+    el.onended!();
+    waits[0].cb();
+    expect(el.played[1]).toEqual({ src: "audio/y.mp3", rate: 0.75, defaultPlaybackRate: 0.75 });
   });
 
   it("plays at the speed the player chose, and a slow line 0.75 slower", () => {
