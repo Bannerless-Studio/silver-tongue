@@ -1,7 +1,8 @@
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { newGame } from "@silver-tongue/core";
 import { addErrand, fixtureCourse } from "@silver-tongue/core/testing";
-import { BOTS, runBot } from "../src/bots";
+import { BOTS, goals, runBot } from "../src/bots";
 import { buildCourse } from "../src/build-course";
 
 const CONTENT = fileURLToPath(new URL("../../content", import.meta.url));
@@ -89,5 +90,35 @@ describe("course bots (a world with a shop)", () => {
     c.world.rentPerWeek = 1000;
     const r = runBot(c, BOTS.right, { days: 2, seed: 1 });
     expect(r.firstDone.intro).toBe(1);
+  });
+});
+
+describe("course bots (money)", () => {
+  it("counts wages, shopping, late rent and the wallet left after rent", () => {
+    const c = fixtureCourse();
+    c.world.rentPerWeek = 1000; // never payable
+    const late = runBot(c, BOTS.right, { days: 8, seed: 1 });
+    expect(late.earned).toBeGreaterThan(0);
+    expect(late.rentLateNights).toBeGreaterThan(0);
+    expect(late.minAfterRent).toBe(Infinity);
+    c.world.rentPerWeek = 1; // always payable
+    const paid = runBot(c, BOTS.right, { days: 8, seed: 1 });
+    expect(paid.rentLateNights).toBe(0);
+    expect(paid.minAfterRent).toBeLessThan(Infinity);
+    expect(paid.shoppingSpent).toBe(0);
+  });
+
+  it("puts paid work before story when rent is close and money is short", () => {
+    const c = fixtureCourse();
+    c.scenes.push({ ...structuredClone(c.scenes[0]), id: "chat", after: ["intro"] });
+    c.world.rentPerWeek = 50;
+    c.world.foodPerDay = 5;
+    const base = { ...newGame(c), place: "noodle_shop", scenesDone: { intro: 1 }, trust: { cook: 2 } };
+    const first = (patch: object) => (goals(c, { ...base, ...patch })[0].input as { scene: string }).scene;
+    expect(first({ day: 2, wallet: 5 })).toBe("chat"); // rent is days away: story first
+    expect(first({ day: 6, wallet: 5 })).toBe("shift"); // rent due tomorrow night, not enough money
+    expect(first({ day: 7, wallet: 5 })).toBe("shift"); // rent due tonight
+    expect(first({ day: 6, wallet: 500 })).toBe("chat"); // enough money: story first
+    expect(first({ day: 3, wallet: 5, rentLate: true })).toBe("chat"); // late, but days till the next try: story (the landlord waits)
   });
 });

@@ -51,6 +51,14 @@ export interface BotReport {
   errands: number;
   /** purchases made */
   shopping: number;
+  /** nights that ended with rent still owed */
+  rentLateNights: number;
+  /** total wages */
+  earned: number;
+  /** total spent at the shop */
+  shoppingSpent: number;
+  /** the lowest wallet right after paying rent; Infinity if rent was never paid */
+  minAfterRent: number;
 }
 
 const HOUR = 3_600_000;
@@ -97,7 +105,7 @@ function stepToward(course: Course, from: string, targets: Set<string>): string 
 }
 
 /** Something worth doing, and where: lower `rank` first. */
-interface Goal {
+export interface Goal {
   rank: number;
   place: string;
   input: Input;
@@ -109,7 +117,14 @@ interface Goal {
  * What a sensible player wants next: a one-off scene (new story), the mentor's waiting notes,
  * paid repeatable work, then unpaid practice.
  */
-function goals(course: Course, state: GameState): Goal[] {
+export function goals(course: Course, state: GameState): Goal[] {
+  const { rentPerWeek, foodPerDay } = course.world;
+  // Rent comes at the end of every 7th day. With it due tonight or tomorrow night and not enough
+  // money for it plus food, a sensible player works before following the story. Rent that is
+  // already late doesn't count: the landlord waits, and a player who can't earn (the wrong bot
+  // earns nothing) would otherwise never see the story again.
+  const rentClose = state.day % 7 === 0 || state.day % 7 === 6;
+  const workFirst = rentClose && state.wallet < rentPerWeek + 2 * foodPerDay;
   const out: Goal[] = availableSceneIds(course, state)
     // Repeat shopping never eats into tonight's food or the rent money, and waits while rent is
     // late; a first visit is the story, so it's taken.
@@ -122,7 +137,8 @@ function goals(course: Course, state: GameState): Goal[] {
     .map((id) => {
     const scene = course.scenes.find((s) => s.id === id)!;
     // A parcel in hand comes first; a pickup is paid work, since the trip pays at the other end.
-    const rank = scene.endsErrand ? 1 : !scene.repeatable ? 0 : scene.startsErrand || scene.exchanges.some((ex) => ex.pay > 0) ? 2 : 3;
+    const paid = scene.repeatable && (scene.startsErrand !== undefined || scene.exchanges.some((ex) => ex.pay > 0));
+    const rank = scene.endsErrand ? 1 : !scene.repeatable ? (workFirst ? 2 : 0) : paid ? (workFirst ? 0 : 2) : 3;
     return { rank, place: scene.place, input: { type: "startScene", scene: id }, done: state.scenesDone[id] ?? 0 };
   });
   const m = course.world.mentor;
@@ -154,6 +170,10 @@ export function runBot(course: Course, bot: Bot, opts: { days: number; seed: num
     rejected: 0,
     errands: 0,
     shopping: 0,
+    rentLateNights: 0,
+    earned: 0,
+    shoppingSpent: 0,
+    minAfterRent: Infinity,
   };
   const paying = (id: string) => {
     const s = course.scenes.find((x) => x.id === id)!;
@@ -193,13 +213,19 @@ export function runBot(course: Course, bot: Bot, opts: { days: number; seed: num
       report.rejected += 1;
       break;
     }
+    if (events.some((e) => e.type === "dayEnded") && core.state.rentLate) report.rentLateNights += 1;
     for (const e of events) {
       if (e.type === "walletChanged") {
         report.minWallet = Math.min(report.minWallet, e.wallet);
         report.maxWallet = Math.max(report.maxWallet, e.wallet);
       }
       if (e.type === "errandEnded") report.errands += 1;
-      if (e.type === "walletChanged" && e.reason === "shopping") report.shopping += 1;
+      if (e.type === "walletChanged" && e.reason === "shopping") {
+        report.shopping += 1;
+        report.shoppingSpent -= e.delta;
+      }
+      if (e.type === "walletChanged" && e.reason === "wages") report.earned += e.delta;
+      if (e.type === "walletChanged" && e.reason === "rent") report.minAfterRent = Math.min(report.minAfterRent, e.wallet);
       if (e.type === "sceneEnded" && !course.scenes.find((x) => x.id === e.scene)!.repeatable) {
         report.firstDone[e.scene] ??= core.state.day;
       }
@@ -223,7 +249,7 @@ function main(): void {
   for (const [name, bot] of Object.entries(BOTS)) {
     const r = runBot(course, bot, { days, seed: 7 });
     const done = oneOff.map((id) => `${id}:${r.firstDone[id] ?? "-"}`).join(" ");
-    console.log(`${name.padEnd(8)} wallet ${r.minWallet}..${r.maxWallet} (end ${r.endWallet}) · words ${r.wordsKnown} known / ${r.wordsHeard} heard · notes ${r.notesRead}/${course.notes.length} · dead-end days ${r.deadEndDays} · broke without work ${r.brokeWithoutWork} · rejected ${r.rejected} · errands ${r.errands} · shopping ${r.shopping}`);
+    console.log(`${name.padEnd(8)} wallet ${r.minWallet}..${r.maxWallet} (end ${r.endWallet}) · words ${r.wordsKnown} known / ${r.wordsHeard} heard · notes ${r.notesRead}/${course.notes.length} · dead-end days ${r.deadEndDays} · broke without work ${r.brokeWithoutWork} · rejected ${r.rejected} · errands ${r.errands} · shopping ${r.shopping} · rent late ${r.rentLateNights} · earned ${r.earned} · spent ${r.shoppingSpent} · after rent ${r.minAfterRent}`);
     console.log(`         ${done}`);
   }
 }
