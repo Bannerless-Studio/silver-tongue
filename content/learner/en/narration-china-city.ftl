@@ -11,7 +11,15 @@ place-noodle_shop-desc = Steam everywhere. The cook is shouting orders at nobody
 place-room = Your Room
 place-room-desc = A narrow bed and a window onto the street. The landlord seems to hear every step on the stairs.
 place-market = Market Street
-place-market-desc = Stalls, scooters and a warehouse with its doors wide open. Your room is up the stairs above a shuttered shop.
+place-market-desc = Stalls, scooters and a warehouse with its doors wide open. A young woman sits behind a stall piled with parcels. Your room is up the stairs above a shuttered shop, and at the far end the road runs down to the station.
+place-station_road = Station Road
+place-station_road-desc = A wide road down to the train station. The school is in front of the hospital, and the station is behind it.
+place-school = School
+place-school-desc = Children's voices through the open windows, and a teacher at the gate.
+place-hospital = Hospital
+place-hospital-desc = White walls and a long queue. A doctor hurries past.
+place-station = Train Station
+place-station-desc = Announcements you can't follow, and people with too much luggage.
 place-warehouse = Warehouse
 place-warehouse-desc = Stacks of tables and chairs, and a big man with a clipboard.
 
@@ -19,6 +27,10 @@ npc-wang = Old Wang
 npc-cook = Cook
 npc-landlord = Mr Li
 npc-foreman = Big Liu
+npc-dispatcher = Miss Gao
+npc-doctor = Doctor
+npc-teacher = Teacher
+npc-traveller = Traveller
 
 # Scene names for the menu; scene-<id>-start and scene-<id>-end are optional narration.
 scene-street-hello = Meet Old Wang
@@ -60,6 +72,22 @@ scene-warehouse-shift = Carry furniture
 scene-warehouse-shift-start = A truck backs up to the doors. Big Liu reads from his clipboard; you do the lifting.
 scene-warehouse-shift-end = The truck pulls away. Big Liu counts out your pay, twice.
 
+scene-delivery-intro = Meet Miss Gao
+scene-delivery-intro-start = A young woman at a stall piled with parcels waves you over. She points down the road, and starts naming things.
+scene-delivery-intro-end = Miss Gao writes your name on a parcel label. Deliveries, from tomorrow.
+scene-delivery-pickup = Take a delivery
+scene-delivery-pickup-start = Miss Gao lifts a parcel onto the counter and taps the label.
+scene-delivery-pickup-end = You tuck the parcel under your arm. Now, where was it going?
+scene-delivery-hospital = Deliver the parcel
+scene-delivery-hospital-start = A doctor in a white coat looks at the parcel under your arm.
+scene-delivery-hospital-end = The doctor signs for the parcel and pays you.
+scene-delivery-school = Deliver the parcel
+scene-delivery-school-start = The teacher at the gate looks at the parcel under your arm.
+scene-delivery-school-end = The teacher carries the parcel inside, and pays you.
+scene-delivery-station = Deliver the parcel
+scene-delivery-station-start = A traveller sitting on a suitcase jumps up when she sees the parcel.
+scene-delivery-station-end = She takes the parcel, pays you, and runs for her train.
+
 # What a reply does (action-<name>), and on a mix-up what was asked (asked-<name>).
 # Concept values arrive as learner names: $item = "tea", $count = "three".
 action-fetch = You bring { $item }.
@@ -98,3 +126,15 @@ asked-foreman = They were telling you their name.
 asked-money = They wanted to know if you have money.
 asked-rent = They were talking about the week's rent.
 asked-price = They told you the price.
+asked-dispatcher = They were telling you their name, and checking yours.
+asked-places = They were showing you where things are.
+asked-where = They wanted to know where the school is.
+action-deliver = You'll take it to the { $place }.
+asked-deliver = They wanted it taken to the { $place }.
+asked-now = They wanted to know if you're going now.
+asked-who = They wanted to know who you are.
+asked-doctor = They were telling you they're a doctor.
+asked-teacher = They were telling you they're a teacher.
+asked-books = They wanted to know if it's books.
+asked-beijing = They were telling you where they're going.
+asked-time = They were telling you the time: { $hour } o'clock.

@@ -6,7 +6,8 @@
     "numbers_3_5": ["three", "four", "five"],
     "numbers_3_10": ["three", "four", "five", "six", "seven", "eight", "nine", "ten"],
     "furniture": ["table", "chair"],
-    "sizes": ["big", "small"]
+    "sizes": ["big", "small"],
+    "destinations": ["hospital", "school", "station"]
   },
   "numbers": {
     "two": 2,

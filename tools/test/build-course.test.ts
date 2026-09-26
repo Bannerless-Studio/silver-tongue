@@ -28,11 +28,11 @@ describe("build-course (real content)", () => {
 
   it("builds zh-china-en with no errors", () => {
     expect(errors).toEqual([]);
-    expect(course!.scenes.map((s) => s.id)).toEqual(["noodle-intro", "noodle-shift", "room-hello", "room-rent", "street-hello", "street-hungry", "street-numbers", "street-practice", "warehouse-intro", "warehouse-shift"]);
+    expect(course!.scenes.map((s) => s.id)).toEqual(["delivery-hospital", "delivery-intro", "delivery-pickup", "delivery-school", "delivery-station", "noodle-intro", "noodle-shift", "room-hello", "room-rent", "street-hello", "street-hungry", "street-numbers", "street-practice", "warehouse-intro", "warehouse-shift"]);
   });
 
   it("renders every slot combination and tags its words", () => {
-    const order = course!.scenes[1].exchanges[1];
+    const order = course!.scenes.find((s) => s.id === "noodle-shift")!.exchanges[1];
     expect(Object.keys(order.variants)).toHaveLength(6);
     const v = order.variants["count=four|item=water"];
     expect(v.npc.text).toBe("四杯水。");
@@ -53,13 +53,14 @@ describe("build-course (real content)", () => {
     expect(course!.conceptNames.tea).toBe("tea");
     expect(course!.conceptNames.thanks).toBe("Thank you");
     expect(course!.stageWords["1"]).toHaveLength(150);
-    expect(course!.notes.map((n) => n.id)).toEqual(["hao-ma", "lao-xiao", "le", "bukeqi", "bei", "ge", "kuai"]);
+    expect(course!.notes.map((n) => n.id)).toEqual(["hao-ma", "lao-xiao", "le", "bukeqi", "bei", "ge", "kuai", "nali", "de", "dian"]);
     expect(course!.world.mentor).toEqual({ npc: "wang", after: "street-hello" });
     expect(course!.learnerFtl).toContain("note-bei-title");
   });
 
   it("gives every scene its own name, so an unlock line says which one opened", () => {
-    const names = course!.scenes.map((sc) => course!.learnerFtl.match(new RegExp(`^scene-${sc.id} = (.*)$`, "m"))![1]);
+    // Drop-offs are never announced, and only one is ever on offer, so they may share a name.
+    const names = course!.scenes.filter((sc) => !sc.endsErrand).map((sc) => course!.learnerFtl.match(new RegExp(`^scene-${sc.id} = (.*)$`, "m"))![1]);
     expect(new Set(names).size).toBe(names.length);
   });
 
@@ -98,7 +99,8 @@ describe("build-course (real content)", () => {
 
   it("puts your room and the warehouse on Market Street, and keeps Main Street's menu at 7", () => {
     const { places, npcs, mentor } = course!.world;
-    expect([...places.market.links].sort()).toEqual(["room", "street", "warehouse"]);
+    expect([...places.market.links].sort()).toEqual(["room", "station_road", "street", "warehouse"]);
+    expect(places.market.links.length + course!.scenes.filter((s) => s.place === "market").length).toBe(6);
     expect(places.room.links).toEqual(["market"]);
     expect(places.street.links).toContain("market");
     const mentorHere = mentor && npcs[mentor.npc].place === "street" ? 1 : 0;
@@ -110,6 +112,17 @@ describe("build-course (real content)", () => {
     }
     // Main Street no longer links to the room, so its description says where the room went.
     expect(course!.learnerFtl.match(/^place-street-desc = (.*)$/m)![1]).toContain("your room");
+  });
+
+  it("Miss Gao sends parcels to the three places on Station Road, each with one drop-off", () => {
+    const pickup = course!.scenes.find((s) => s.id === "delivery-pickup")!;
+    expect(pickup.startsErrand).toBe("$place");
+    expect(course!.groups.destinations).toEqual(["hospital", "school", "station"]);
+    for (const p of course!.groups.destinations) {
+      expect(course!.world.places.station_road.links).toContain(p);
+      expect(course!.scenes.filter((s) => s.endsErrand && s.place === p).map((s) => s.id)).toEqual([`delivery-${p}`]);
+    }
+    expect(course!.scenes.find((s) => s.id === "delivery-intro")!.after).toEqual(["warehouse-shift", "room-hello"]);
   });
 
   it("the cook offers work only once Old Wang has taught you to count", () => {

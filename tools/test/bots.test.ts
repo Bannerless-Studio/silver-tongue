@@ -30,6 +30,10 @@ describe("course bots (real content)", () => {
     }
   });
 
+  it("the always-right player delivers parcels", () => {
+    expect(reports.right.errands).toBeGreaterThan(0);
+  });
+
   it("the core never refuses a bot's input", () => {
     for (const [name, r] of Object.entries(reports)) expect(r.rejected, name).toBe(0);
   });

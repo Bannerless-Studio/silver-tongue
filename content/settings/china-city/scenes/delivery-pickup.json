@@ -1,0 +1,44 @@
+{
+  "id": "delivery-pickup",
+  "place": "market",
+  "npc": "dispatcher",
+  "stage": 1,
+  "after": [
+    "delivery-intro"
+  ],
+  "requires": {
+    "trust": {
+      "dispatcher": 1
+    }
+  },
+  "repeatable": true,
+  "trustGain": 1,
+  "exchanges": [
+    {
+      "id": "parcel",
+      "slots": {
+        "place": "destinations"
+      },
+      "expect": {
+        "action": "deliver",
+        "place": "$place"
+      },
+      "hinges": [
+        "$place"
+      ],
+      "pay": 0,
+      "missCost": 1
+    },
+    {
+      "id": "now",
+      "slots": {},
+      "expect": {
+        "action": "now"
+      },
+      "hinges": [],
+      "pay": 0,
+      "missCost": 0
+    }
+  ],
+  "startsErrand": "$place"
+}

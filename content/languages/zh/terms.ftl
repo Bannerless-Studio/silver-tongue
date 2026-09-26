@@ -41,3 +41,6 @@
 -chair = 椅子
 -big = 大
 -small = 小
+-hospital = 医院
+-school = 学校
+-station = 火车站

@@ -22,7 +22,8 @@
       "links": [
         "street",
         "room",
-        "warehouse"
+        "warehouse",
+        "station_road"
       ]
     },
     "room": {
@@ -33,6 +34,29 @@
     "warehouse": {
       "links": [
         "market"
+      ]
+    },
+    "station_road": {
+      "links": [
+        "market",
+        "school",
+        "hospital",
+        "station"
+      ]
+    },
+    "school": {
+      "links": [
+        "station_road"
+      ]
+    },
+    "hospital": {
+      "links": [
+        "station_road"
+      ]
+    },
+    "station": {
+      "links": [
+        "station_road"
       ]
     }
   },
@@ -48,6 +72,18 @@
     },
     "foreman": {
       "place": "warehouse"
+    },
+    "dispatcher": {
+      "place": "market"
+    },
+    "doctor": {
+      "place": "hospital"
+    },
+    "teacher": {
+      "place": "school"
+    },
+    "traveller": {
+      "place": "station"
     }
   },
   "mentor": {

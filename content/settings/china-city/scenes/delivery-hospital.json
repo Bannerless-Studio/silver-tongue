@@ -1,0 +1,45 @@
+{
+  "id": "delivery-hospital",
+  "place": "hospital",
+  "npc": "doctor",
+  "stage": 1,
+  "after": [
+    "delivery-pickup"
+  ],
+  "requires": {},
+  "repeatable": true,
+  "trustGain": 1,
+  "exchanges": [
+    {
+      "id": "who",
+      "slots": {},
+      "expect": {
+        "action": "who"
+      },
+      "hinges": [],
+      "pay": 2,
+      "missCost": 0
+    },
+    {
+      "id": "doctor",
+      "slots": {},
+      "expect": {
+        "action": "doctor"
+      },
+      "hinges": [],
+      "pay": 2,
+      "missCost": 0
+    },
+    {
+      "id": "bye",
+      "slots": {},
+      "expect": {
+        "action": "bye"
+      },
+      "hinges": [],
+      "pay": 4,
+      "missCost": 0
+    }
+  ],
+  "endsErrand": true
+}
