@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { comboKey, createCore, mulberry32, newGame, PLAYER_MARK, type Course, type GameState } from "@silver-tongue/core";
-import { line } from "@silver-tongue/core/testing";
+import { addErrand, line } from "@silver-tongue/core/testing";
 import { startApp } from "../src/app";
 import { lineWidth } from "../src/width";
 import { FakeTerminal, fixtureWithText } from "./fake-terminal";
@@ -416,6 +416,65 @@ describe("tui app", () => {
     const term = new FakeTerminal();
     startApp({ course, core, term, now: () => T0, quit: () => {}, version: "0.5.0" });
     expect(term.screen().at(-1)).toMatch(/Silver Tongue v0\.5\.0 ┘$/);
+  });
+
+  const ERRAND_TEXT = `
+scene-pickup = Take a parcel
+scene-drop = Deliver the parcel
+place-school = School
+place-school-desc = A school.
+npc-teacher = Teacher
+asked-deliver = They wanted it taken to the { $place }.
+`;
+  /** Presses the number of the menu item whose label contains `label`. */
+  const pressItem = (term: FakeTerminal, label: string) => {
+    const row = term.screen().find((l) => l.includes(label));
+    const n = row?.match(/(\d)\) /)?.[1];
+    if (!n) throw new Error(`no menu item "${label}" in:\n${term.screen().join("\n")}`);
+    term.press(n);
+  };
+  const answerAll = (core: ReturnType<typeof setup>["core"], term: FakeTerminal) => {
+    for (let i = 0; core.state.run && i < 10; i++) {
+      if (core.state.run.mode !== "pick") throw new Error("expected pick mode for fresh words");
+      term.press(rightKey(core));
+    }
+  };
+
+  it("says when you take a parcel and when you hand it over, never where it goes", () => {
+    const { core, term } = setup(
+      (s) => { s.place = "noodle_shop"; s.scenesDone = { intro: 1 }; },
+      (c) => { addErrand(c); c.learnerFtl += ERRAND_TEXT; },
+    );
+    pressItem(term, "Take a parcel");
+    answerAll(core, term);
+    const taken = term.screen().join("\n");
+    expect(taken).toContain("You're carrying a parcel.");
+    expect(taken).not.toContain("New: Deliver the parcel");
+    expect(taken).not.toMatch(/School|school/);
+    pressItem(term, "Go to The street");
+    pressItem(term, "Go to School");
+    pressItem(term, "Deliver the parcel");
+    answerAll(core, term);
+    expect(term.screen().join("\n")).toContain("You hand over the parcel.");
+  });
+
+  it("marks the status line while a parcel is carried", () => {
+    expect(setup((s) => { s.errand = { to: "street" }; }).term.screen().join("\n")).toMatch(/Day 1 .*· parcel/);
+    expect(setup().term.screen().join("\n")).not.toContain("parcel");
+  });
+
+  it("keeps the status line inside a phone-width frame with a parcel and rent due", () => {
+    const { term } = setup((s) => { s.errand = { to: "street" }; s.rentLate = true; });
+    term.resize(40, 16);
+    for (const l of term.frames.at(-1)!) expect(lineWidth(l)).toBe(40);
+  });
+
+  it("reminds you of the parcel above the menu, where a phone-width screen still shows it", () => {
+    const { term } = setup((s) => { s.errand = { to: "street" }; });
+    term.resize(40, 16);
+    const menu = term.screen().slice(1).join("\n");
+    expect(menu).toContain("You're carrying a parcel.");
+    expect(setup().term.screen().slice(1).join("\n")).not.toContain("carrying a parcel");
   });
 });
 

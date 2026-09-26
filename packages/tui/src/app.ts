@@ -167,6 +167,12 @@ export function startApp(opts: AppOptions): App {
         case "unlocked":
           push([{ text: t("unlocked", { scene: t(`scene-${e.scene}`) }), color: "green" }]);
           break;
+        case "errandStarted":
+          push([{ text: t("errand-started"), color: "cyan" }]);
+          break;
+        case "errandEnded":
+          push([{ text: t("errand-ended"), color: "cyan" }]);
+          break;
         case "rankChanged":
           push([{ text: t("rank-up", { rank: t(`rank-${e.rank}`) }), color: "yellow", bold: true }]);
           break;
@@ -248,7 +254,9 @@ export function startApp(opts: AppOptions): App {
       return [[{ text: t("name-prompt"), bold: true }], [{ text: "> " }, { text: nameInput, bold: true }, { text: "_", dim: true }]];
     }
     if (mode === "explore") {
-      return [[{ text: t("menu-title"), dim: true }], ...menu().map((m, i) => [{ text: `${i + 1}) ${m.label}` }])];
+      // The status line's parcel marker is cut off on narrow screens; this line wraps instead.
+      const parcel: StyledLine[] = core.state.errand ? [[{ text: t("errand-started"), color: "cyan" }]] : [];
+      return [...parcel, [{ text: t("menu-title"), dim: true }], ...menu().map((m, i) => [{ text: `${i + 1}) ${m.label}` }])];
     }
     if (mode === "help") {
       const items = helpWords().map((w, i) => ({ ...w, label: `${i + 1}) ${w.text}` }));
@@ -287,6 +295,7 @@ export function startApp(opts: AppOptions): App {
       currency: course.world.currency,
       wallet: s.wallet,
       rank: t(`rank-${rankFor(s.words, wordIds, opts.now())}`),
+      parcel: s.errand ? "yes" : "no",
       rentLate: s.rentLate ? "yes" : "no",
     });
     if (mode === "notebook") {
