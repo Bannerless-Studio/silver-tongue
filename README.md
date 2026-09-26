@@ -43,9 +43,11 @@ Needs Node 22 or newer.
 npm install
 npm run build:course
 npm run play        # the terminal game
-npm run build:web   # the browser game: packages/tui-web/dist/index.html
+npm run build:web   # the browser game in packages/tui-web/dist (serve it: npx serve packages/tui-web/dist)
 npm run bots        # scripted players through the course
 ```
+
+The browser page fetches its course files, so it needs a web server; opening `index.html` straight from disk no longer works.
 
 ## License
 

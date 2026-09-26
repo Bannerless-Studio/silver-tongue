@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { newGame, serialize } from "@silver-tongue/core";
 import { fixtureCourse } from "@silver-tongue/core/testing";
-import { WebSessions, type KeyValue } from "../src/web-storage";
+import { loadWebSettings, migrateWebAliases, saveWebSettings, SETTINGS_KEY, WebSessions, type KeyValue } from "../src/web-storage";
 
 /** An in-memory localStorage. */
 class FakeStorage implements KeyValue {
@@ -91,5 +91,44 @@ describe("web sessions", () => {
     const g = s.continueLast();
     s.save(g.id, g.state);
     expect(kv.getItem(`silver-tongue:${course.id}:session:${g.id}`)).toBe(serialize(g.state));
+  });
+});
+
+describe("settings and old course ids", () => {
+  it("saves settings and ignores a broken value", () => {
+    const kv = new FakeStorage();
+    expect(loadWebSettings(kv)).toEqual({});
+    expect(saveWebSettings(kv, { course: "zh-china", learner: "en" })).toBe(true);
+    expect(loadWebSettings(kv)).toEqual({ course: "zh-china", learner: "en" });
+    kv.setItem(SETTINGS_KEY, "{bad");
+    expect(loadWebSettings(kv)).toEqual({});
+  });
+
+  it("moves alias keys and keeps the last game", () => {
+    const kv = new FakeStorage();
+    const aliased = { ...fixtureCourse(), aliases: ["old"] };
+    const state = { ...newGame(aliased), course: "old" };
+    kv.setItem("silver-tongue:old:session:a", serialize(state));
+    kv.setItem("silver-tongue:old:session:b", serialize(state));
+    kv.setItem("silver-tongue:old:invalid-backup:b:x", "junk");
+    kv.setItem("silver-tongue:old:meta", JSON.stringify({ last: "a", played: { a: 5, b: 3 } }));
+    kv.setItem(`silver-tongue:${aliased.id}:session:b`, serialize(newGame(aliased)));
+    migrateWebAliases(kv, aliased);
+    expect(kv.keys().filter((k) => k.startsWith("silver-tongue:old:"))).toEqual([]);
+    const sessions = new WebSessions(kv, aliased, () => 10);
+    expect(sessions.list().map((x) => x.id)).toEqual(["a", "b-2", "b"]);
+    expect(sessions.continueLast().id).toBe("a");
+    expect(kv.getItem(`silver-tongue:${aliased.id}:invalid-backup:b:x`)).toBe("junk");
+  });
+
+  it("keeps the newer game last when both ids have games", () => {
+    const kv = new FakeStorage();
+    const aliased = { ...fixtureCourse(), aliases: ["old"] };
+    kv.setItem("silver-tongue:old:session:a", serialize({ ...newGame(aliased), course: "old" }));
+    kv.setItem("silver-tongue:old:meta", JSON.stringify({ last: "a", played: { a: 5 } }));
+    kv.setItem(`silver-tongue:${aliased.id}:session:n`, serialize(newGame(aliased)));
+    kv.setItem(`silver-tongue:${aliased.id}:meta`, JSON.stringify({ last: "n", played: { n: 9 } }));
+    migrateWebAliases(kv, aliased);
+    expect(new WebSessions(kv, aliased, () => 10).continueLast().id).toBe("n");
   });
 });
