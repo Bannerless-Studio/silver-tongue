@@ -1,5 +1,8 @@
 name: pages
-# Builds the site (the visual novel at /, the text game at /text/) and deploys it to GitHub Pages on every push to main.
+# Builds the site (the visual novel at /, the text game at /text/, the 3D street at /world3d/)
+# and deploys it to GitHub Pages on every push to main. Every world3d URL is relative, so a
+# fork's <user>.github.io/silver-tongue/world3d/ works too. world3d's GLBs are vendored in
+# packages/world3d/assets: no external asset library.
 # Needs Pages turned on for the repository with "GitHub Actions" as the source.
 
 on:
@@ -28,6 +31,11 @@ jobs:
       - run: npm ci
       - run: npm run build:course
       - run: npm run build:site
+      - run: npm run build -w @silver-tongue/world3d
+      - name: Add world3d to the site (at /world3d/)
+        run: |
+          mkdir -p site/world3d
+          cp -R packages/world3d/dist/. site/world3d/
       - uses: actions/upload-pages-artifact@v4
         with:
           path: site

@@ -24,6 +24,7 @@
   "exclude": [
     "packages/tui-web",
     "packages/web-common",
-    "packages/vn-web"
+    "packages/vn-web",
+    "packages/world3d"
   ]
 }
