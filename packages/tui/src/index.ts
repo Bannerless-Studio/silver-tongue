@@ -8,3 +8,4 @@ export { startApp, type App, type AppOptions } from "./app";
 export type { AudioOut, Speech } from "./audio";
 export * from "./save-line";
 export * from "./session-lines";
+export * from "./choose";
