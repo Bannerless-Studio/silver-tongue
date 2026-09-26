@@ -41,6 +41,14 @@ describe("core", () => {
     expect(core.state.sound).toBe(true);
   });
 
+  it("keeps the sound setting out of the play log, so older versions can still load the save", () => {
+    const core = setup();
+    core.send({ type: "goTo", place: "noodle_shop" });
+    const log = core.state.log;
+    core.send({ type: "setSound", on: false });
+    expect(core.state.log).toEqual(log);
+  });
+
   it("moves between linked places only", () => {
     const core = setup();
     expect(core.send({ type: "goTo", place: "nowhere" })).toEqual([{ type: "inputRejected", reason: "not-linked" }]);

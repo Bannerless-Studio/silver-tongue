@@ -1,5 +1,5 @@
 import { spawn as nodeSpawn } from "node:child_process";
-import { accessSync, constants } from "node:fs";
+import { accessSync, constants, existsSync } from "node:fs";
 import { delimiter, join } from "node:path";
 import type { AudioOut, Speech } from "@silver-tongue/tui";
 
@@ -35,7 +35,9 @@ export const findPlayer = (has: (cmd: string) => boolean): Player | undefined =>
 
 export interface Proc {
   kill(): void;
-  on(ev: "exit" | "error", cb: () => void): void;
+  /** exit gets the exit code, or null when the player was killed */
+  on(ev: "exit", cb: (code: number | null) => void): void;
+  on(ev: "error", cb: () => void): void;
 }
 
 export interface NodeAudioDeps {
@@ -47,6 +49,8 @@ export interface NodeAudioDeps {
 }
 
 const BEAT_MS = 300;
+/** Clips failing one after another: no clip folder, or no sound device. */
+const FAILS_TO_GIVE_UP = 3;
 
 /**
  * Plays clips by running a player program once per clip, with a beat between them. `slow` is
@@ -58,6 +62,7 @@ export function createNodeAudio(deps: NodeAudioDeps): AudioOut {
   let proc: Proc | undefined;
   let timer: { cancel(): void } | undefined;
   let run = 0; // each play() or stop() starts a new run; callbacks from an older one do nothing
+  let fails = 0;
 
   const breakDown = () => {
     broken = true;
@@ -73,9 +78,11 @@ export function createNodeAudio(deps: NodeAudioDeps): AudioOut {
       const p = deps.spawn(deps.player!.cmd, [...deps.player!.args, join(deps.dir, `${clip}.mp3`)]);
       proc = p;
       p.on("error", breakDown);
-      p.on("exit", () => {
-        if (mine !== run) return;
+      p.on("exit", (code) => {
+        if (mine !== run) return; // killed by stop(): not a failure
         proc = undefined;
+        fails = code === 0 ? 0 : fails + 1;
+        if (fails >= FAILS_TO_GIVE_UP) return breakDown();
         if (queue.length) timer = deps.wait(BEAT_MS, () => next(mine));
       });
     } catch {
@@ -110,7 +117,8 @@ export function createNodeAudio(deps: NodeAudioDeps): AudioOut {
 export function nodeAudioDeps(dir: string): NodeAudioDeps {
   return {
     dir,
-    player: findPlayer((c) => onPath(c)),
+    // Without its clips there's nothing to play, and the footer should say so.
+    player: existsSync(dir) ? findPlayer((c) => onPath(c)) : undefined,
     spawn: (cmd, args) => nodeSpawn(cmd, args, { stdio: "ignore" }),
     wait: (ms, cb) => {
       const h = setTimeout(cb, ms);

@@ -618,6 +618,34 @@ asked-deliver = They wanted it taken to the { $place }.
       expect(term.screen().at(-1)).toContain("no audio");
     });
 
+    it("r says nothing once the scene is over", () => {
+      const { term, core, calls } = withAudio();
+      term.press("1", "1");
+      term.press(rightKey(core));
+      term.press(rightKey(core));
+      expect(core.state.run).toBeNull();
+      const n = calls.length;
+      term.press("r");
+      expect(calls.length).toBe(n);
+    });
+
+    it("m does nothing where there is no audio", () => {
+      const { term, core, saves } = withAudio(false);
+      const n = saves.length;
+      term.press("m");
+      expect(core.state.sound).toBeUndefined();
+      expect(saves.length).toBe(n);
+    });
+
+    it("lists r at phone width while picking, and n in tiles mode", () => {
+      const { term, core } = withAudio();
+      term.resize(46, 20);
+      term.press("1", "1");
+      expect(term.screen().at(-1)).toMatch(/^└ \[1-3\] reply · \[w\] help · \[r\] again ─* ♪ \[m\] ┘$/);
+      expect(fixtureWithText().learnerFtl).toMatch(/keys-tiles = .*\[n\] notebook/);
+      void core;
+    });
+
     it("plays nothing while sound is off or unavailable", () => {
       const off = withAudio(true, (s) => (s.sound = false));
       off.term.press("1", "1");

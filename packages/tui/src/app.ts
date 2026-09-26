@@ -187,6 +187,7 @@ export function startApp(opts: AppOptions): App {
           break;
         case "sceneEnded":
           mode = "explore";
+          lastLine = null; // r repeats a line only while its scene is on
           narrate(`scene-${e.scene}-end`);
           push([{ text: t("scene-done", { currency: course.world.currency, earned: e.earned }), bold: true }]);
           break;
@@ -242,6 +243,7 @@ export function startApp(opts: AppOptions): App {
   /** Keys that work wherever a line or word can be heard: r says the last line again, m turns sound on or off. */
   function soundKey(name: string): boolean {
     if (name === "m") {
+      if (!opts.audio?.available) return true; // nothing to turn on or off here
       const on = core.state.sound === false;
       if (!on) opts.audio?.stop();
       send({ type: "setSound", on });

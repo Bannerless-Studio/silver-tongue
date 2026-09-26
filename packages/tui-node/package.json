@@ -9,7 +9,7 @@
   "bin": { "silver-tongue": "dist/silver-tongue.mjs" },
   "files": ["dist"],
   "scripts": {
-    "bundle": "esbuild src/main.ts --bundle --platform=node --format=esm --outfile=dist/silver-tongue.mjs --banner:js=\"#!/usr/bin/env node\" && mkdir -p dist/courses/zh-china-en && cp ../../dist/courses/zh-china-en/course.json dist/courses/zh-china-en/ && rm -rf dist/courses/zh-china-en/audio && cp -r ../../content/audio/zh dist/courses/zh-china-en/audio"
+    "bundle": "esbuild src/main.ts --bundle --platform=node --format=esm --outfile=dist/silver-tongue.mjs --banner:js=\"#!/usr/bin/env node\" && mkdir -p dist/courses/zh-china-en && cp ../../dist/courses/zh-china-en/course.json dist/courses/zh-china-en/ && rm -rf dist/courses/zh-china-en/audio && mkdir dist/courses/zh-china-en/audio && cp ../../content/audio/zh/*.mp3 dist/courses/zh-china-en/audio/"
   },
   "devDependencies": {
     "@silver-tongue/core": "*",

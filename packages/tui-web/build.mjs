@@ -36,5 +36,5 @@ mkdirSync(join(here, "dist"), { recursive: true });
 writeFileSync(join(here, "dist", "index.html"), html);
 const audioOut = join(here, "dist", "audio");
 rmSync(audioOut, { recursive: true, force: true });
-cpSync(join(repo, "content", "audio", "zh"), audioOut, { recursive: true });
+cpSync(join(repo, "content", "audio", "zh"), audioOut, { recursive: true, filter: (f) => !f.endsWith(".part") });
 console.log(`built packages/tui-web/dist/index.html (${Math.round(html.length / 1024)} KB) and ${readdirSync(audioOut).length} clips in dist/audio/`);

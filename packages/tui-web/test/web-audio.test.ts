@@ -60,13 +60,34 @@ describe("createWebAudio", () => {
     expect(el.played.map((p) => p.src)).toEqual(["audio/x.mp3", "audio/y.mp3"]);
   });
 
-  it("ignores a play() the browser refuses, and stays available", async () => {
+  it("ignores a play() the browser refuses, stays available, and goes on to the next clip", async () => {
     const el = fakeEl();
     el.reject = true;
-    const a = createWebAudio({ base: "audio/", audio: el, wait: timers().wait });
-    expect(() => a.play([{ clips: ["x"] }])).not.toThrow();
+    const { waits, wait } = timers();
+    const a = createWebAudio({ base: "audio/", audio: el, wait });
+    expect(() => a.play([{ clips: ["x", "y"] }])).not.toThrow();
     await new Promise((r) => setTimeout(r, 0));
     expect(a.available).toBe(true);
+    waits[0].cb();
+    expect(el.played.map((p) => p.src)).toEqual(["audio/x.mp3", "audio/y.mp3"]);
+  });
+
+  it("says no audio after three clips in a row fail to load (the page without its audio folder)", () => {
+    const el = fakeEl();
+    const { waits, wait } = timers();
+    const a = createWebAudio({ base: "audio/", audio: el, wait });
+    a.play([{ clips: ["x", "y", "z", "w"] }]);
+    el.onerror!();
+    waits[0].cb();
+    el.onended!(); // one clip loads: the count starts again
+    waits[1].cb();
+    el.onerror!();
+    waits[2].cb();
+    el.onerror!();
+    expect(a.available).toBe(true);
+    a.play([{ clips: ["v"] }]);
+    el.onerror!();
+    expect(a.available).toBe(false);
   });
 
   it("stop pauses and drops the rest, even an ended event that comes late", () => {

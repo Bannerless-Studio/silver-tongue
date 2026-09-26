@@ -23,6 +23,8 @@ export interface WebAudioDeps {
 
 const BEAT_MS = 300;
 const SLOW_RATE = 0.8;
+/** Clips failing to load one after another: the clips aren't there (a page saved without its audio folder). */
+const FAILS_TO_GIVE_UP = 3;
 
 /**
  * Plays clips through one audio element, in order with a beat between them; a slow line plays at
@@ -34,6 +36,7 @@ export function createWebAudio(deps: WebAudioDeps): AudioOut {
   let queue: { clip: string; slow: boolean }[] = [];
   let timer: { cancel(): void } | undefined;
   let run = 0; // each play() or stop() starts a new run; events from an older one do nothing
+  let fails = 0;
 
   const next = (mine: number) => {
     timer = undefined;
@@ -44,11 +47,18 @@ export function createWebAudio(deps: WebAudioDeps): AudioOut {
       if (mine !== run) return;
       if (queue.length) timer = deps.wait(BEAT_MS, () => next(mine));
     };
-    el.onended = done;
-    el.onerror = done;
+    el.onended = () => {
+      fails = 0;
+      done();
+    };
+    el.onerror = () => {
+      fails++;
+      done();
+    };
     el.src = `${deps.base}${item.clip}.mp3`;
     el.defaultPlaybackRate = el.playbackRate = item.slow ? SLOW_RATE : 1;
-    el.play().catch(() => {});
+    // Refused (no key pressed yet): nothing will end, so go on as if it had.
+    el.play().catch(() => done());
   };
 
   const stop = () => {
@@ -60,7 +70,9 @@ export function createWebAudio(deps: WebAudioDeps): AudioOut {
   };
 
   return {
-    available: !!el,
+    get available() {
+      return !!el && fails < FAILS_TO_GIVE_UP;
+    },
     play(lines: Speech[]) {
       stop();
       queue = lines.flatMap((l) => l.clips.map((clip) => ({ clip, slow: !!l.slow })));

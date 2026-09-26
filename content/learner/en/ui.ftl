@@ -24,8 +24,8 @@ menu-sleep = Sleep (end the day)
 menu-quit = Save and quit
 
 keys-explore = [{ $keys }] choose · [n] notebook · [q] quit
-keys-pick = [{ $keys }] reply · [w] word help · [r] again · [n] notebook
-keys-tiles = [{ $keys }] add · [⌫] undo · [enter] say · [w] help · [r] again
+keys-pick = [{ $keys }] reply · [w] help · [r] again · [n] notebook
+keys-tiles = [{ $keys }] add · [⌫] undo · [enter] say · [w] help · [r] again · [n] notebook
 keys-help = [{ $keys }] look up · [p] play · [esc] back
 keys-help-sentence = [{ $keys }] look up · [s] whole sentence · [p] play · [esc] back
 

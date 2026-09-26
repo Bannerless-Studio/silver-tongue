@@ -2,24 +2,24 @@ import { mkdtempSync, rmSync, writeFileSync, chmodSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { createNodeAudio, findPlayer, onPath, PLAYERS, type Proc } from "../src/node-audio";
+import { createNodeAudio, findPlayer, nodeAudioDeps, onPath, PLAYERS, type Proc } from "../src/node-audio";
 
-type FakeProc = Proc & { exit(): void; fail(): void; killed: boolean };
+type FakeProc = Proc & { exit(code?: number): void; fail(): void; killed: boolean };
 
 function fakes() {
   const spawned: { cmd: string; args: string[]; proc: FakeProc }[] = [];
   const waits: { ms: number; cb: () => void; cancelled: boolean }[] = [];
   const spawn = (cmd: string, args: string[]) => {
-    const handlers: Record<string, () => void> = {};
+    const handlers: Record<string, (code?: number | null) => void> = {};
     const proc: FakeProc = {
       killed: false,
       kill() {
         this.killed = true;
       },
-      on(ev, cb) {
-        handlers[ev] = cb;
+      on(ev: "exit" | "error", cb: (code: number | null) => void) {
+        handlers[ev] = (code) => cb(code ?? null);
       },
-      exit: () => handlers.exit?.(),
+      exit: (code = 0) => handlers.exit?.(code),
       fail: () => handlers.error?.(),
     };
     spawned.push({ cmd, args, proc });
@@ -112,6 +112,38 @@ describe("createNodeAudio", () => {
     expect(a.available).toBe(false);
     expect(() => a.play([{ clips: ["y"] }])).not.toThrow();
     expect(f.spawned).toHaveLength(1);
+  });
+
+  it("is unavailable after three clips in a row fail to play (no clip folder, no sound device)", () => {
+    const f = fakes();
+    const a = createNodeAudio({ dir: "/a", player, ...f });
+    a.play([{ clips: ["x", "y", "z", "w"] }]);
+    f.spawned[0].proc.exit(1);
+    f.waits[0].cb();
+    f.spawned[1].proc.exit(0);
+    f.waits[1].cb();
+    f.spawned[2].proc.exit(1);
+    f.waits[2].cb();
+    f.spawned[3].proc.exit(1);
+    expect(a.available).toBe(true);
+    a.play([{ clips: ["v"] }]);
+    f.spawned[4].proc.exit(1);
+    expect(a.available).toBe(false);
+  });
+
+  it("a killed clip is not a failure", () => {
+    const f = fakes();
+    const a = createNodeAudio({ dir: "/a", player, ...f });
+    for (let i = 0; i < 4; i++) {
+      a.play([{ clips: ["x"] }]);
+      a.stop();
+      f.spawned[i].proc.exit(1);
+    }
+    expect(a.available).toBe(true);
+  });
+
+  it("has no player without its clip folder", () => {
+    expect(nodeAudioDeps("/no/such/folder").player).toBeUndefined();
   });
 
   it("a spawn that throws marks audio unavailable instead of crashing", () => {

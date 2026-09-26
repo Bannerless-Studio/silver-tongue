@@ -225,7 +225,7 @@ describe("build-course (broken content)", () => {
     expect(clips.length).toBeGreaterThan(500);
     const make = (skip: number) =>
       buildChanged((dir) => {
-        rmSync(join(dir, "audio"), { recursive: true, force: true });
+        unlinkSync(join(dir, "audio")); // the link to the real clips, never the clips themselves
         mkdirSync(join(dir, "audio", "zh"), { recursive: true });
         clips.forEach((c, i) => i !== skip && writeFileSync(join(dir, "audio", "zh", `${c.id}.mp3`), ""));
         const cfgPath = join(dir, "courses", "zh-china-en.json");

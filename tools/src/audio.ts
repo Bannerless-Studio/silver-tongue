@@ -5,11 +5,16 @@ import { fileURLToPath } from "node:url";
 import { buildCourse } from "./build-course";
 import type { Clip } from "./voices";
 
-/** Which clips still need making, and which .mp3 files nothing uses any more. */
+/**
+ * Which clips still need making, and which files to delete: .mp3 files nothing uses any more, and
+ * .part files a stopped run left half-made. The folder belongs to one course: a second course on
+ * the same language would need its clips listed here too, or this deletes them.
+ */
 export function planAudio(clips: Clip[], files: string[]): { missing: Clip[]; unused: string[] } {
   const have = new Set(files.filter((f) => f.endsWith(".mp3")));
   const needed = new Set(clips.map((c) => `${c.id}.mp3`));
-  return { missing: clips.filter((c) => !have.has(`${c.id}.mp3`)), unused: [...have].filter((f) => !needed.has(f)).sort() };
+  const unused = [...[...have].filter((f) => !needed.has(f)), ...files.filter((f) => f.endsWith(".mp3.part"))].sort();
+  return { missing: clips.filter((c) => !have.has(`${c.id}.mp3`)), unused };
 }
 
 /** Makes one clip with edge-tts, trying three times. Written to a .part file first, so a failed run leaves nothing half-made. */
@@ -42,6 +47,7 @@ function main(): void {
     console.error("edge-tts not found. Install it with: pipx install edge-tts");
     process.exit(1);
   }
+  for (const f of unused) rmSync(join(audioDir, f));
   let made = 0;
   const failed: Clip[] = [];
   for (const c of missing) {
@@ -50,7 +56,6 @@ function main(): void {
     process.stdout.write(`\rmade ${made}/${missing.length}`);
   }
   if (missing.length) process.stdout.write("\n");
-  for (const f of unused) rmSync(join(audioDir, f));
   console.log(`clips: ${clips.length} needed, ${made} made, ${unused.length} deleted`);
   for (const c of failed) console.error(`✗ ${c.id} (${c.voice}): ${c.text}`);
   if (failed.length) process.exit(1);
