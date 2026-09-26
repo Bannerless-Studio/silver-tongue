@@ -30,14 +30,15 @@ npm run typecheck        # tsc
 npm run build:course     # content -> dist/courses/zh-china-en/course.json (fails on any checker error)
 npm run play             # play from source in this terminal
 npm run import:zh        # re-import the zh pack from vendor/vocab-engine
+npm run audio            # make missing clips with edge-tts (pipx install edge-tts), delete unused ones
 npm run bundle -w silver-tongue   # build packages/tui-node/dist for npm/npx
 ```
 
 ## Rules
 
 - Always keep core free of I/O and rendering; front ends talk to it only through `send` and `state`.
-- Always run `npm run build:course` after changing anything under `content/`; never ship a course with checker errors.
-- Never edit generated files: `content/languages/zh/words.json`, `content/languages/zh/pack.json` (except `stages`), `content/learner/en/glosses-zh.ftl`, `dist/`. Re-run the import or the build instead.
+- Always run `npm run build:course` after changing anything under `content/`; never ship a course with checker errors. A changed line needs its clip: run `npm run audio` and commit `content/audio/`.
+- Never edit generated files: `content/languages/zh/words.json`, `content/languages/zh/pack.json` (except `stages`), `content/learner/en/glosses-zh.ftl`, `content/audio/`, `dist/`. Re-run the import or the build instead.
 - Bonus (off-list) words go in `content/languages/<lang>/extra-words.json` with glosses in `content/learner/<l>/glosses-<lang>-extra.ftl`.
 - Every UI string the TUI uses must be listed in `packages/tui/src/text.ts` `UI_KEYS`.
 - Code ported from vocab-engine is used with its author's consent; note the origin in a comment.
