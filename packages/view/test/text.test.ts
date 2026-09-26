@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { makeText, uiTextProblems } from "../src/text";
+import { makeText, uiTextProblems } from "../src/index";
 
 describe("text", () => {
   const t = makeText("hello = Hello, { $name }!\n", "en");

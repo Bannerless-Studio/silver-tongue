@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { CatalogEntry } from "@silver-tongue/core";
-import { chooseStart, courseLabels, parseSettings } from "../src/choose";
-import { makeText } from "../src/text";
+import { chooseStart, courseLabels, parseSettings } from "../src/index";
+import { makeText } from "../src/index";
 
 const zh: CatalogEntry = { id: "zh-china", language: "zh", setting: "china-city", learners: ["en"], learnerNames: { en: "English" } };
 const xx: CatalogEntry = { id: "xx-town", language: "xx", setting: "town", learners: ["en", "fr"], learnerNames: { en: "English", fr: "Français" } };

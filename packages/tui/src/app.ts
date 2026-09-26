@@ -20,12 +20,12 @@ import {
   type RenderedLine,
   type WordId,
 } from "@silver-tongue/core";
-import type { AudioOut, Speech } from "./audio";
+import type { AudioOut, Speech } from "@silver-tongue/view";
 import { notebookLines } from "./notebook";
 import { lineSpans, renderScreen, wrapItems } from "./screen";
 import { strWidth, wrapLine } from "./width";
 import type { Key, StyledLine, Terminal } from "./terminal";
-import { makeText, type Text } from "./text";
+import { makeText, type Text } from "@silver-tongue/view";
 
 export interface AppOptions {
   course: Course;

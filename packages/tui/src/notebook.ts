@@ -1,6 +1,6 @@
 import { PLAYER_MARK, wordState, type Course, type GameState, type WordState } from "@silver-tongue/core";
 import type { StyledLine } from "./terminal";
-import type { Text } from "./text";
+import type { Text } from "@silver-tongue/view";
 
 const MARK: Record<WordState, string> = { unseen: " ", met: "○", shaky: "◐", known: "●" };
 

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { newGame, PLAYER_MARK, type WordRecord } from "@silver-tongue/core";
 import { notebookLines } from "../src/notebook";
 import { plain } from "../src/terminal";
-import { makeText } from "../src/text";
+import { makeText } from "@silver-tongue/view";
 import { fixtureWithText, spacedWithText } from "./fake-terminal";
 
 const T0 = 1_000_000;

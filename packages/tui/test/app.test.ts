@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { comboKey, createCore, mulberry32, newGame, PLAYER_MARK, type CatalogEntry, type Course, type GameState } from "@silver-tongue/core";
 import { addErrand, line } from "@silver-tongue/core/testing";
 import { startApp, type AppOptions } from "../src/app";
-import type { AudioOut, Speech } from "../src/audio";
+import type { AudioOut, Speech } from "@silver-tongue/view";
 import { lineWidth } from "../src/width";
 import { FakeTerminal, fixtureWithText, spacedWithText } from "./fake-terminal";
 
