@@ -1,6 +1,9 @@
 import type { Art } from "../art";
 import type { Cue, Vn, VnView } from "../vn";
 
+/** Where whoever you talk to stands: left of centre, clear of the choices on the right. */
+const SPEAKER_X = 0.34;
+
 const MARK: Partial<Record<Cue, string>> = { puzzled: "?", pleased: "!" };
 
 function Silhouette({ vn, svg, cue, x, tint, rim, small, name, onTalk }: {
@@ -31,7 +34,7 @@ export function Stage({ vn, view, art }: { vn: Vn; view: VnView; art: Art }) {
     <div class="scene">
       <div class="bg" key={view.place} dangerouslySetInnerHTML={{ __html: place.svg }} />
       {view.npc ? (
-        <Silhouette vn={vn} svg={art.npc(view.npc)} cue={view.cue} x={0.5} tint={place.tint} rim={place.rim} name={vn.t(`npc-${view.npc}`)} />
+        <Silhouette vn={vn} svg={art.npc(view.npc)} cue={view.cue} x={SPEAKER_X} tint={place.tint} rim={place.rim} name={vn.t(`npc-${view.npc}`)} />
       ) : (
         present.map((npc) => (
           <Silhouette

@@ -22,7 +22,7 @@ export function Hud({ vn, view, onOpen }: { vn: Vn; view: VnView; onOpen: (o: "n
       <span class="hud-buttons">
         <button type="button" aria-label={vn.t("vn-sound")} title={vn.t("vn-sound")} onClick={() => vn.toggleSound()}>{soundOff ? "♪̸" : "♪"}</button>
         <button type="button" aria-label={vn.t("vn-notebook")} title={vn.t("vn-notebook")} onClick={() => onOpen("notebook")}>✎</button>
-        <button type="button" aria-label={vn.t("vn-backlog")} title={vn.t("vn-backlog")} onClick={() => onOpen("backlog")}>☰̲</button>
+        <button type="button" aria-label={vn.t("vn-backlog")} title={vn.t("vn-backlog")} onClick={() => onOpen("backlog")}>⟲</button>
         <button type="button" aria-label={vn.t("vn-menu")} title={vn.t("vn-menu")} onClick={() => onOpen("menu")}>☰</button>
       </span>
     </div>
