@@ -1,7 +1,8 @@
 // Builds dist/index.html: the app, xterm.js with its CSS, and the built course in one file,
-// so the page works from GitHub Pages, a shared link or straight from disk.
+// so the page works from GitHub Pages, a shared link or straight from disk. The clips go in
+// dist/audio/ beside it (without them the game plays silently).
 import { build } from "esbuild";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -33,4 +34,7 @@ const html = readFileSync(join(here, "src", "index.html"), "utf8")
   .replace("/*JS*/", () => js);
 mkdirSync(join(here, "dist"), { recursive: true });
 writeFileSync(join(here, "dist", "index.html"), html);
-console.log(`built packages/tui-web/dist/index.html (${Math.round(html.length / 1024)} KB)`);
+const audioOut = join(here, "dist", "audio");
+rmSync(audioOut, { recursive: true, force: true });
+cpSync(join(repo, "content", "audio", "zh"), audioOut, { recursive: true });
+console.log(`built packages/tui-web/dist/index.html (${Math.round(html.length / 1024)} KB) and ${readdirSync(audioOut).length} clips in dist/audio/`);
