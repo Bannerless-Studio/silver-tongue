@@ -30,9 +30,11 @@ Every place stays within the 7-item menu (scenes + exits + the mentor where he s
 |---|---|---|---|---|
 | Tea house (`tea_house`) | Station Road | owner (`teaboss`, 老陈 Lǎo Chén) | `tea-intro`, `tea-shift` (repeatable, paid), `tea-weather`, `tea-tv` | 1 + 4 = 5 |
 | Stairwell (`stairs`) | your room | neighbour (`neighbour`, 林太太 Lín tàitai) | `stairs-meet`, `stairs-family`, `stairs-pets` | 1 + 3 = 4 |
-| School (existing) | — | classmate (`classmate`, 大卫 Dàwèi); the teacher | `class-first`, `class-write`, `class-read` | 1 + 1 + 3 = 5 |
+| School (existing) | — | classmate (`classmate`, 大卫 Dàwèi); the teacher | `class-first`, `class-write`, `class-break`, `class-read` | 1 + 1 + 4 = 6 |
 | Train station (existing) | — | driver (`driver`, 老马 Lǎo Mǎ) | `taxi-way`, `taxi-luggage` (repeatable, paid), `taxi-visitor` | 1 + 1 + 3 = 5 |
 | Your room (existing) | — | Mr Li on the phone (`landlord`) | `room-phone` | 2 + 3 = 5 |
+| Hospital (existing) | — | the doctor | `hospital-checkup` | 1 + 2 = 3 |
+| Noodle shop (existing) | — | the cook | `noodle-lunch` | 1 + 4 = 5 |
 
 Station Road goes from 4 to 5 items (the tea house exit); the room from 3 to 5 (stairwell exit and
 the phone scene). Names are bonus words in `extra-words.json` with glosses in
@@ -56,8 +58,11 @@ words). Likewise 不 must appear as its own word: compounds such as 不客气 ar
 
 - `tea-intro` after `delivery-intro` (the player knows Station Road).
 - `stairs-meet` after `room-rent`.
-- `class-first` after `delivery-school`.
-- `taxi-way` after `delivery-station`.
+- `class-first` and `taxi-way` after `delivery-pickup`. (Planned after `delivery-school` and
+  `delivery-station`, but parcel destinations are random, so a story scene gated on one drop-off could
+  wait indefinitely; in bot runs the always-right player never met Old Ma.)
+- `hospital-checkup` after `delivery-pickup` and `tea-weather` (it follows the rain).
+- `taxi-visitor` after `taxi-way` and `tea-intro`; `noodle-lunch` after `noodle-kitchen` and `room-rent`.
 - `room-phone` after `room-rent` and `tea-weather` (明天 下雨 comes from the weather talk).
 - Later scenes in each place follow its first one. All checker rules hold: at most 2 new words per
   exchange (against ancestor scenes), replies at most 7 tiles, NPC lines at most 9 words, an
@@ -80,10 +85,33 @@ exported from core and tested directly. No new events, inputs or state.
 
 ### Numbers
 
-Rent stays ¥50 a week, food ¥5 a day, start wallet ¥20. Pay rises from about ¥4–5 per slot to about
-¥6 per slot; the tea-house shift and the luggage job pay the same rate. Exact per-exchange pay is
-tuned with the bots until the CI rules below pass, and the final figures are recorded in this spec
-before release.
+Rent stays ¥50 a week, food ¥5 a day, start wallet ¥20. Pay was tuned with the bots until the CI
+rules below passed; ¥6 a slot (the first guess) and ¥8 left the right bot ¥7–19 after rent, so the
+final rate is ¥9 a job slot, and a delivery pays ¥18 for its two slots (pickup and drop-off):
+
+| Scene | Exchange pay | Total |
+|---|---|---|
+| warehouse-shift | carry 6, pick 3 | 9 |
+| noodle-shift | drink 2, order 7 | 9 |
+| noodle-kitchen | cups 5, lunch 2, out 2 | 9 |
+| tea-shift | pour 5, table 2, busy 2 | 9 |
+| taxi-luggage | bags 5, train 2, phone 1, pay 1 | 9 |
+| delivery-hospital | who 3, doctor 3, bye 12 | 18 |
+| delivery-school | who 3, teacher 3, books 3, bye 9 | 18 |
+| delivery-station | who 3, beijing 3, time 3, bye 9 | 18 |
+
+Bots, 14 days, seed 7:
+
+| Bot | End wallet | Rent late (nights) | Earned | Spent at shop | Lowest after rent |
+|---|---|---|---|---|---|
+| right | 102 | 0 | 261 | 9 (2 buys) | 30 |
+| wrong | 0 | 8 | 0 | 0 | never paid |
+| random | 28 | 6 | 173 | 4 | 5 |
+| learner (70% right) | 8 | 4 | 191 | 4 | 7 |
+
+Tuning needed three bot strategy changes, each a sensible player's habit: work when rent is due
+within two nights and the wallet is short of rent plus a week's food; shopping with money to spare
+takes turns with paid work; and a job never tried counts as story (later scenes may come after it).
 
 ### Bot report
 
@@ -110,8 +138,9 @@ before release.
 - Core tests: `payFor` for 0, 1, 2 and 3 misses; a scene run where one miss halves the exchange's
   pay and the next exchange pays in full.
 - Bot tests: the new report fields and the CI rules, each shown to fail when broken (both ways).
-- Build tests: the pinned scene list, the notes list if notes are added, the map test (menu counts for
-  every new place), and coverage being on.
+- Build tests: the pinned scene list, the notes list if notes are added (`hui-neng`, `zai`), the map
+  test (the checker already enforces the 7-item menu for every place, so the test pins the new
+  links and people), and coverage being on.
 - Play-test at 46 columns with FakeTerminal: one new scene in each place plus the phone call; the pty
   smoke test of `packages/tui-node/dist/silver-tongue.mjs`; a browser check.
 - One opus review of the whole branch; every finding fixed, minors included.

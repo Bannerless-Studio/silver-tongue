@@ -1,0 +1,19 @@
+{
+  "id": "class-read",
+  "place": "school",
+  "npc": "teacher",
+  "stage": 1,
+  "after": ["class-break"],
+  "requires": {},
+  "repeatable": false,
+  "trustGain": 1,
+  "exchanges": [
+    { "id": "read", "slots": {}, "expect": { "action": "read" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "char", "slots": {}, "expect": { "action": "howread" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "listen", "slots": {}, "expect": { "action": "readaloud" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "talk", "slots": {}, "expect": { "action": "talk" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "sorry", "slots": {}, "expect": { "action": "sorry" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "good", "slots": {}, "expect": { "action": "good" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "bye", "slots": {}, "expect": { "action": "bye" }, "hinges": [], "pay": 0, "missCost": 0 }
+  ]
+}

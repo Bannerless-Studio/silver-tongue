@@ -50,3 +50,5 @@
 -apple = 苹果
 -cup = 杯子
 -book = 书
+-board = 上
+-alight = 下

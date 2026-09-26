@@ -27,7 +27,7 @@
       "hinges": [
         "$amount"
       ],
-      "pay": 2,
+      "pay": 5,
       "missCost": 1
     },
     {
@@ -42,7 +42,7 @@
       "hinges": [
         "$food"
       ],
-      "pay": 1,
+      "pay": 2,
       "missCost": 1
     },
     {

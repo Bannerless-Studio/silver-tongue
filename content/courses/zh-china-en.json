@@ -3,5 +3,5 @@
   "language": "zh",
   "setting": "china-city",
   "learner": "en",
-  "checks": { "coverage": false, "audio": false }
+  "checks": { "coverage": true, "audio": false }
 }

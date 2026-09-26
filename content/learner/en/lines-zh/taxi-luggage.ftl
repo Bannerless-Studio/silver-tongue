@@ -1,0 +1,17 @@
+bags = { -amount(form: "cap") } things, { -way } the taxi!
+bags-reply = OK, { -amount } things { -way } the taxi.
+bags-rephrase = { -way(form: "cap") } the taxi! { -amount(form: "cap") } of them!
+
+train = { -hour(form: "cap") } o'clock, to Beijing!
+train-reply = OK, to Beijing at { -hour }.
+train-rephrase = What time? { -hour(form: "cap") } o'clock! To Beijing!
+
+phone = Hello? ... Hang on, I'm on the phone.
+phone-reply = You take the call, I'll work!
+phone-alt1 = That's too much!
+phone-alt2 = How much?
+
+pay = A good afternoon today! Here's the money.
+pay-reply = Thank you, Old Ma!
+pay-alt1 = You take the call, I'll work!
+pay-alt2 = How much?

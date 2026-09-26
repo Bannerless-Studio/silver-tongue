@@ -35,3 +35,9 @@ note-mei = 没有 (méiyǒu) is "don't have" or "there isn't": 杯子没有了 i
 
 note-tai-title = 太…了, too much
 note-tai = 太 (tài) … 了 means "too …": 太多了 is "that's too much". The 了 at the end is part of the pattern. For prices people usually say 太贵了 (tài guì le), "too expensive".
+
+note-hui-neng-title = 会 and 能, can
+note-hui-neng = 会 (huì) is "can" for a skill you learned: 我会写字, "I can write characters". 能 (néng) is "can" because nothing stops you: 你能来吗？, "can you come?". So 不会 means you never learned it, and 不能 means you can't right now.
+
+note-zai-title = 在, in the middle of
+note-zai = Before a place, 在 (zài) means "at": 我在学校. Before an action it means "in the middle of doing it": 猫在睡觉 is "the cat is sleeping", and 谁在说话？ is "who's talking?".

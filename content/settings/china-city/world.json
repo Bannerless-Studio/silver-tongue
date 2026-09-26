@@ -29,7 +29,8 @@
     },
     "room": {
       "links": [
-        "market"
+        "market",
+        "stairs"
       ]
     },
     "warehouse": {
@@ -42,7 +43,8 @@
         "market",
         "school",
         "hospital",
-        "station"
+        "station",
+        "tea_house"
       ]
     },
     "school": {
@@ -63,6 +65,16 @@
     "shop": {
       "links": [
         "market"
+      ]
+    },
+    "tea_house": {
+      "links": [
+        "station_road"
+      ]
+    },
+    "stairs": {
+      "links": [
+        "room"
       ]
     }
   },
@@ -93,6 +105,18 @@
     },
     "shopkeeper": {
       "place": "shop"
+    },
+    "teaboss": {
+      "place": "tea_house"
+    },
+    "neighbour": {
+      "place": "stairs"
+    },
+    "classmate": {
+      "place": "school"
+    },
+    "driver": {
+      "place": "station"
     }
   },
   "mentor": {

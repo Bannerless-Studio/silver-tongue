@@ -1,0 +1,19 @@
+{
+  "id": "stairs-pets",
+  "place": "stairs",
+  "npc": "neighbour",
+  "stage": 1,
+  "after": ["stairs-family"],
+  "requires": {},
+  "repeatable": false,
+  "trustGain": 1,
+  "exchanges": [
+    { "id": "dog", "slots": {}, "expect": { "action": "dog" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "sorry", "slots": {}, "expect": { "action": "sorry" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "love", "slots": {}, "expect": { "action": "loves" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "seen", "slots": {}, "expect": { "action": "seen" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "sleep", "slots": {}, "expect": { "action": "asleep" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "fruit", "slots": {}, "expect": { "action": "offerfruit" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "bye", "slots": {}, "expect": { "action": "bye" }, "hinges": [], "pay": 0, "missCost": 0 }
+  ]
+}

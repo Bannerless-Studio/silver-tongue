@@ -1,0 +1,15 @@
+{
+  "id": "tea-shift",
+  "place": "tea_house",
+  "npc": "teaboss",
+  "stage": 1,
+  "after": ["tea-intro"],
+  "requires": { "trust": { "teaboss": 1 } },
+  "repeatable": true,
+  "trustGain": 1,
+  "exchanges": [
+    { "id": "pour", "slots": { "amount": "numbers_3_10", "drink": "drinks" }, "expect": { "action": "pour", "amount": "$amount", "drink": "$drink" }, "hinges": ["$amount", "$drink"], "pay": 5, "missCost": 1 },
+    { "id": "table", "slots": { "people": "numbers_3_5" }, "expect": { "action": "seat", "people": "$people" }, "hinges": ["$people"], "pay": 2, "missCost": 1 },
+    { "id": "busy", "slots": {}, "expect": { "action": "busy" }, "hinges": [], "pay": 2, "missCost": 0 }
+  ]
+}
