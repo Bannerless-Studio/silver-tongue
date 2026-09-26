@@ -51,6 +51,7 @@ scene-done = { $earned ->
 unlocked = New: { $scene }
 errand-started = You're carrying a parcel.
 errand-ended = You hand over the parcel.
+errand-carrying = You have a parcel to deliver.
 rank-up = You're now: { $rank }
 day-ended = Day { $day } is over. You sleep.
 reject-unknown-scene = There's nobody here for that.

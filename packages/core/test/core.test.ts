@@ -377,6 +377,12 @@ describe("errands", () => {
     expect(availableSceneIds(c, core.state)).not.toContain("drop");
   });
 
+  it("announces the pickup once, not again after every delivery", () => {
+    const { core } = pickedUp();
+    walkToSchool(core);
+    expect(play(core, "drop").filter((e) => e.type === "unlocked")).toEqual([]);
+  });
+
   it("keeps the parcel overnight", () => {
     const { core } = pickedUp();
     core.send({ type: "sleep" });

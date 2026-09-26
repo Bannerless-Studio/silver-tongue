@@ -255,7 +255,7 @@ export function startApp(opts: AppOptions): App {
     }
     if (mode === "explore") {
       // The status line's parcel marker is cut off on narrow screens; this line wraps instead.
-      const parcel: StyledLine[] = core.state.errand ? [[{ text: t("errand-started"), color: "cyan" }]] : [];
+      const parcel: StyledLine[] = core.state.errand ? [[{ text: t("errand-carrying"), color: "cyan" }]] : [];
       return [...parcel, [{ text: t("menu-title"), dim: true }], ...menu().map((m, i) => [{ text: `${i + 1}) ${m.label}` }])];
     }
     if (mode === "help") {

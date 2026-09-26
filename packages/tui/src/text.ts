@@ -66,6 +66,7 @@ export const UI_KEYS: Record<string, string[]> = {
   unlocked: ["scene"],
   "errand-started": [],
   "errand-ended": [],
+  "errand-carrying": [],
   "rank-up": ["rank"],
   "day-ended": ["day"],
   "notice-bad-save": [],

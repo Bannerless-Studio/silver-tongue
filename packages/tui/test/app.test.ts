@@ -473,8 +473,8 @@ asked-deliver = They wanted it taken to the { $place }.
     const { term } = setup((s) => { s.errand = { to: "street" }; });
     term.resize(40, 16);
     const menu = term.screen().slice(1).join("\n");
-    expect(menu).toContain("You're carrying a parcel.");
-    expect(setup().term.screen().slice(1).join("\n")).not.toContain("carrying a parcel");
+    expect(menu).toContain("You have a parcel to deliver.");
+    expect(setup().term.screen().slice(1).join("\n")).not.toContain("parcel to deliver");
   });
 });
 

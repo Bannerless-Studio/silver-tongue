@@ -74,7 +74,7 @@ scene-warehouse-shift-end = The truck pulls away. Big Liu counts out your pay, t
 
 scene-delivery-intro = Meet Miss Gao
 scene-delivery-intro-start = A young woman at a stall piled with parcels waves you over. She points down the road, and starts naming things.
-scene-delivery-intro-end = Miss Gao writes your name on a parcel label. Deliveries, from tomorrow.
+scene-delivery-intro-end = Miss Gao writes your name on a parcel label. She did say tomorrow, but she is already holding out a parcel.
 scene-delivery-pickup = Take a delivery
 scene-delivery-pickup-start = Miss Gao lifts a parcel onto the counter and taps the label.
 scene-delivery-pickup-end = You tuck the parcel under your arm. Now, where was it going?
