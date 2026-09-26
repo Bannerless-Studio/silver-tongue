@@ -2,6 +2,13 @@
 
 Every release of Silver Tongue, newest first.
 
+## 0.13.0 (2026-09-26)
+
+- Ready for more languages: each course keeps its own games, and [o] opens settings to switch what you learn, what you read the game in, and sound.
+- `--learn` and `--read` choose from the command line, and the game remembers your choice.
+- Your games carry over from earlier versions.
+- The browser version loads the course it needs, so it must be served from a web server.
+
 ## 0.12.2 (2026-09-26)
 
 - A right tiles answer is shown as the whole reply, punctuation and all.
