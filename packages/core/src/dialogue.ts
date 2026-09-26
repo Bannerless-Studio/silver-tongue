@@ -1,5 +1,5 @@
 import { comboKey, parseComboKey, resolveParams, type Combo } from "./combo";
-import { addTrust, changeWallet, isAvailable } from "./life";
+import { addTrust, changeWallet, isAvailable, payFor } from "./life";
 import {
   pickPreferred,
   recordRight,
@@ -248,7 +248,7 @@ function resolve(
       const rec = ctx.state.words[t.word];
       if (!rec.first) rec.first = { line: personalize(reply, nameOf(ctx.state)).text, place: ctx.state.place };
     }
-    run.earned += ex.pay;
+    run.earned += payFor(ex.pay, run.misses);
     const cost = ex.variants[comboKey(run.combo)].cost ?? 0;
     if (cost > 0) ctx.ev.push(...changeWallet(ctx.state, -cost, "shopping"));
     if (run.exchange + 1 < scene.exchanges.length) beginExchange(ctx, scene, run.exchange + 1);

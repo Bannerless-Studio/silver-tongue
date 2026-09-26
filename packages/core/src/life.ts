@@ -5,6 +5,16 @@ export function sceneCost(scene: Scene): number {
   return scene.exchanges.reduce((sum, ex) => sum + Math.max(0, ...Object.values(ex.variants).map((v) => v.cost ?? 0)), 0);
 }
 
+/**
+ * What a right reply earns: the full pay on the first try, half (rounded down) after one miss,
+ * nothing once the person has had to rephrase (two misses). Spec: wrong answers leave you short.
+ */
+export function payFor(pay: number, misses: number): number {
+  if (misses <= 0) return pay;
+  if (misses === 1) return Math.floor(pay / 2);
+  return 0;
+}
+
 /** A scene that is closed only because the wallet can't cover it, so a front end can say so. */
 export function moneyBlocked(scene: Scene, state: GameState): boolean {
   return !isAvailable(scene, state) && isAvailable(scene, { ...state, wallet: Infinity });

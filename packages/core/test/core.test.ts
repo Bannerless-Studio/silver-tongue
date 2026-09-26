@@ -5,7 +5,7 @@ import { createCore, LOG_LIMIT, newGame, type Core } from "../src/core";
 import { recordRight } from "../src/learner";
 import { mulberry32 } from "../src/rng";
 import { addErrand, fixtureCourse, line } from "../src/testing/fixture";
-import { availableSceneIds, moneyBlocked, sceneCost } from "../src/life";
+import { availableSceneIds, moneyBlocked, payFor, sceneCost } from "../src/life";
 import type { GameEvent, WordRecord } from "../src/types";
 
 const T0 = 1_000_000;
@@ -77,9 +77,9 @@ describe("core", () => {
     expect(find(miss2, "lineRephrased")).toMatchObject({ npc: "cook", slow: false });
 
     const ok = core.send({ type: "reply", choice: right });
-    expect(find(ok, "sceneEnded")).toEqual({ type: "sceneEnded", scene: "shift", earned: 3 });
+    expect(find(ok, "sceneEnded")).toEqual({ type: "sceneEnded", scene: "shift", earned: 0 });
     expect(find(ok, "trustChanged")).toMatchObject({ trust: 3 });
-    expect(core.state.wallet).toBe(20 - 4 + 3);
+    expect(core.state.wallet).toBe(20 - 4);
   });
 
   it("switches to tiles when the hinge words are known but typing is off", () => {
@@ -477,5 +477,39 @@ describe("prices", () => {
     const ev: GameEvent[] = [];
     while (core.state.run) ev.push(...core.send({ type: "reply", choice: core.state.run.options.indexOf(comboKey(core.state.run.combo)) }));
     expect(ev).toContainEqual({ type: "unlocked", scene: "shift" });
+  });
+});
+
+describe("pay depends on misses", () => {
+  it("full with no misses, half (rounded down) after one, nothing after two", () => {
+    expect(payFor(3, 0)).toBe(3);
+    expect(payFor(3, 1)).toBe(1);
+    expect(payFor(4, 1)).toBe(2);
+    expect(payFor(3, 2)).toBe(0);
+    expect(payFor(3, 5)).toBe(0);
+    expect(payFor(0, 0)).toBe(0);
+  });
+
+  it("pay after one miss is halved, and the mixup cost still stands", () => {
+    const core = setup();
+    playIntro(core);
+    core.send({ type: "startScene", scene: "shift" });
+    const right = rightChoice(core);
+    core.send({ type: "reply", choice: right === 0 ? 1 : 0 });
+    const ok = core.send({ type: "reply", choice: right });
+    expect(find(ok, "sceneEnded")).toEqual({ type: "sceneEnded", scene: "shift", earned: 1 });
+    expect(core.state.wallet).toBe(20 - 2 + 1);
+  });
+
+  it("misses count per exchange: the next exchange pays in full", () => {
+    const c = fixtureCourse();
+    c.scenes[1].exchanges.push({ ...structuredClone(c.scenes[1].exchanges[0]), id: "order2" });
+    const core = createCore(c, { ...newGame(c), place: "noodle_shop", scenesDone: { intro: 1 }, trust: { cook: 2 } }, { now: () => T0, rng: mulberry32(1) });
+    core.send({ type: "startScene", scene: "shift" });
+    const pick = () => core.state.run!.options.indexOf(comboKey(core.state.run!.combo));
+    core.send({ type: "reply", choice: pick() === 0 ? 1 : 0 });
+    core.send({ type: "reply", choice: pick() });
+    const ev = core.send({ type: "reply", choice: pick() });
+    expect(find(ev, "sceneEnded")).toEqual({ type: "sceneEnded", scene: "shift", earned: 1 + 3 });
   });
 });
