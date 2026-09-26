@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { createInterface } from "node:readline/promises";
 import { dirname, join } from "node:path";
-import { createCore, mulberry32, type CatalogEntry, type Course } from "@silver-tongue/core";
+import { createCore, mulberry32, type CatalogEntry, type Course, type GameState } from "@silver-tongue/core";
 import {
   chooseStart,
   courseLabels,
@@ -194,9 +194,10 @@ process.on("unhandledRejection", (e) => bail(1, e));
 process.on("SIGTERM", () => bail(143));
 process.on("SIGHUP", () => bail(129));
 
-function play(session: Chosen, savePath: string) {
+/** Plays a save file; `carried` is the game as played before a reading-language switch, kept even if it couldn't be saved. */
+function play(session: Chosen, savePath: string, carried?: { state: GameState; readOnly: boolean; notice?: string }) {
   audio?.stop();
-  const { state, notice, readOnly } = loadSave(session.course, savePath);
+  const { state, notice, readOnly } = carried ?? loadSave(session.course, savePath);
   const core = createCore(session.course, state, { now: Date.now, rng: mulberry32(Date.now() >>> 0) });
   audio = createNodeAudio(nodeAudioDeps(session.clips));
   const { dir } = session;
@@ -213,12 +214,19 @@ function play(session: Chosen, savePath: string) {
     settings: dir
       ? {
           courses: session.catalog,
-          switchTo: (id, learner) => {
+          switchTo: (id, learner, played) => {
             const entry = session.catalog.find((e) => e.id === id)!;
+            let next: Chosen;
+            try {
+              next = loadCourse(dir, entry, learner, session.catalog);
+            } catch {
+              // The course file is missing or damaged: go on with the game being played.
+              return play(session, savePath, { state: played, readOnly });
+            }
             saveSettings(root, { course: id, learner });
-            const next = loadCourse(dir, entry, learner, session.catalog);
             // Another reading language keeps the game; another course continues its last one.
-            play(next, id === session.course.id ? savePath : lastOrNew(next.course));
+            if (id === session.course.id) play(next, savePath, { state: played, readOnly });
+            else play(next, lastOrNew(next.course));
           },
         }
       : undefined,

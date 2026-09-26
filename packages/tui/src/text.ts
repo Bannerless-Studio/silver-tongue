@@ -98,7 +98,7 @@ export const UI_KEYS: Record<string, string[]> = {
   "import-bad": ["reason"],
   "import-done": ["game"],
   ...Object.fromEntries(
-    ["new", "games", "games-none", "export", "export-hint", "copy", "copied", "import", "import-hint", "import-go", "close", "saved", "tap-to-type"].map(
+    ["new", "games", "games-none", "export", "export-hint", "copy", "copied", "import", "import-hint", "import-go", "close", "saved", "tap-to-type", "load-failed"].map(
       (k) => [`web-${k}`, []],
     ),
   ),

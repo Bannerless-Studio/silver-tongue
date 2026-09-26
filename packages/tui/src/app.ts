@@ -45,8 +45,11 @@ export interface AppOptions {
   settings?: {
     /** the catalog; the course and reading language being played are course.id and course.learner */
     courses: CatalogEntry[];
-    /** the player chose another course or reading language: the app has saved; restart it with this */
-    switchTo(course: string, learner: string): void;
+    /**
+     * The player chose another course or reading language: the app has saved (if it can) and hands
+     * over the game as played, for a reading-language switch to go on with even when saving failed.
+     */
+    switchTo(course: string, learner: string, state: GameState): void;
   };
 }
 
@@ -311,7 +314,7 @@ export function startApp(opts: AppOptions): App {
     opts.audio?.stop();
     persist();
     handedOver = true;
-    opts.settings!.switchTo(courseId, learner);
+    opts.settings!.switchTo(courseId, learner, core.state);
   }
 
   /** The right reply for the exchange being played. */

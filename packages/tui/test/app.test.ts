@@ -772,6 +772,13 @@ describe("settings screen", () => {
     expect(calls).toEqual([["test-course", "fr"]]);
   });
 
+  it("hands over the game being played, so a switch keeps progress that wasn't saved", () => {
+    let handed: unknown;
+    const s = setup(() => {}, names, fixtureWithText, { courses: catalog, switchTo: (_c, _l, state) => void (handed = state) });
+    s.term.press("o", "2", "2");
+    expect(handed).toBe(s.core.state);
+  });
+
   it("does nothing when the current entry is chosen", () => {
     const { term, calls } = withSettings();
     term.press("o", "1", "1");

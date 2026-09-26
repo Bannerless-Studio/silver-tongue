@@ -110,6 +110,7 @@ web-import-go = Add game
 web-close = Close
 web-tap-to-type = Tap the game to type your name.
 web-saved = Your game is saved. You can close this tab, or keep playing.
+web-load-failed = That course did not load. Check your connection and try again.
 reject-bad-name = That name won't work. Use 1 to 20 letters.
 reject-no-name = Tell us your name first.
 name-prompt = Before anything else: what's your name?

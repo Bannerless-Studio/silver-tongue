@@ -1,7 +1,7 @@
 import { FitAddon } from "@xterm/addon-fit";
 import { WebglAddon } from "@xterm/addon-webgl";
 import { Terminal as XTerm } from "@xterm/xterm";
-import { createCore, mulberry32, type CatalogEntry, type Core, type Course } from "@silver-tongue/core";
+import { createCore, mulberry32, type CatalogEntry, type Core, type Course, type GameState } from "@silver-tongue/core";
 import {
   chooseStart,
   courseLabels,
@@ -48,7 +48,7 @@ try {
   // stays noStorage
 }
 
-// The course being played, in its reading language; set by loadCourse before the first game.
+// The course being played, in its reading language; set by use() before the first game.
 let catalog: CatalogEntry[] = [];
 let course: Course;
 let t: Text | undefined;
@@ -97,7 +97,7 @@ document.addEventListener("keydown", () => {
   if ($("#status").textContent === tx("web-saved")) status("");
 });
 
-let current: { term: WebTerminal; core: Core; id: string } | undefined;
+let current: { term: WebTerminal; core: Core; id: string; course: string; readOnly: boolean } | undefined;
 const touch = window.matchMedia("(pointer: coarse)").matches;
 
 function status(text: string) {
@@ -118,41 +118,60 @@ const controls: [string, string, () => void][] = [
   ["#import", "web-import", showImport],
 ];
 
-/** Loads a course file, moves its old games, and labels the page in its reading language. */
-async function loadCourse(entry: CatalogEntry, learner: string) {
-  course = await fetchJson<Course>(`courses/${entry.id}/${learner}.json`);
-  t = makeText(course.learnerFtl, course.learner);
-  document.documentElement.lang = course.learner;
+/** A course file ready to play: its text, its games and its sound. */
+interface Loaded {
+  course: Course;
+  t: Text;
+  sessions: WebSessions;
+  audio: ReturnType<typeof createWebAudio>;
+}
+
+/** Fetches a course file and moves its old games; nothing on the page changes until it is used. */
+async function fetchCourse(entry: CatalogEntry, learner: string): Promise<Loaded> {
+  const course = await fetchJson<Course>(`courses/${entry.id}/${learner}.json`);
   migrateWebAliases(kv, course);
-  sessions = new WebSessions(kv, course, Date.now);
+  return {
+    course,
+    t: makeText(course.learnerFtl, course.learner),
+    sessions: new WebSessions(kv, course, Date.now),
+    // One audio element per course; its clips sit in courses/<course>/audio/.
+    audio: createWebAudio({
+      base: `courses/${entry.id}/audio/`,
+      audio: typeof Audio === "undefined" ? undefined : new Audio(),
+      wait: (ms, cb) => {
+        const h = setTimeout(cb, ms);
+        return { cancel: () => clearTimeout(h) };
+      },
+    }),
+  };
+}
+
+/** Makes a loaded course the page's, labelled in its reading language; `remember` keeps it for next time. */
+function use(loaded: Loaded, remember: boolean) {
   audio?.stop();
-  // One audio element per course; its clips sit in courses/<course>/audio/.
-  audio = createWebAudio({
-    base: `courses/${entry.id}/audio/`,
-    audio: typeof Audio === "undefined" ? undefined : new Audio(),
-    wait: (ms, cb) => {
-      const h = setTimeout(cb, ms);
-      return { cancel: () => clearTimeout(h) };
-    },
-  });
-  saveWebSettings(kv, { course: entry.id, learner });
+  ({ course, t, sessions, audio } = loaded);
+  document.documentElement.lang = course.learner;
+  if (remember) saveWebSettings(kv, { course: course.id, learner: course.learner });
   for (const [sel, id] of controls) $(sel).textContent = tx(id);
   $("#dialog-close").textContent = tx("web-close");
 }
 
 /** Another course or reading language, chosen on the settings screen. */
-async function switchTo(id: string, learner: string) {
+async function switchTo(id: string, learner: string, played: GameState) {
   const entry = catalog.find((e) => e.id === id);
-  if (!entry) return;
-  const keep = id === course.id ? current?.id : undefined;
+  const was = current!;
+  // Another reading language goes on with the game as played, saved or not.
+  const carried: Opened = { id: was.id, state: played, readOnly: was.readOnly };
+  let loaded: Loaded;
   try {
-    await loadCourse(entry, learner);
+    if (!entry) throw new Error(`no course ${id}`);
+    loaded = await fetchCourse(entry, learner);
   } catch {
     // The file didn't come: go on with the game being played.
-    return play(keep !== undefined ? sessions!.open(keep) : sessions!.continueLast());
+    return play(carried);
   }
-  // Another reading language keeps the game; another course continues its last one.
-  play(keep !== undefined ? sessions!.open(keep) : sessions!.continueLast());
+  use(loaded, true);
+  play(id === was.course ? carried : loaded.sessions.continueLast());
 }
 
 function play(opened: Opened) {
@@ -166,7 +185,9 @@ function play(opened: Opened) {
     onTextEntry: (active) => status(active && touch ? tx("web-tap-to-type") : ""),
   });
   const core = createCore(course, opened.state, { now: Date.now, rng: mulberry32(Date.now() >>> 0) });
-  current = { term, core, id: opened.id };
+  current = { term, core, id: opened.id, course: course.id, readOnly: opened.readOnly };
+  // This game's own store: a course loaded later must not take its saves.
+  const store = sessions!;
   status("");
   startApp({
     course,
@@ -174,13 +195,13 @@ function play(opened: Opened) {
     term,
     now: Date.now,
     notice: opened.notice,
-    save: opened.readOnly ? undefined : (s) => sessions!.save(opened.id, s),
+    save: opened.readOnly ? undefined : (s) => store.save(opened.id, s),
     audio,
     quit: () => {
       audio?.stop();
       status(tx("web-saved"));
     },
-    settings: { courses: catalog, switchTo: (id, learner) => void switchTo(id, learner) },
+    settings: { courses: catalog, switchTo: (id, learner, played) => void switchTo(id, learner, played) },
   });
   if (!touch) xterm.focus();
 }
@@ -283,11 +304,12 @@ async function boot() {
     const picked = chooseStart(catalog, settings);
     if ("error" in picked) throw new Error(picked.error);
     if (!picked.ask) {
-      await loadCourse(picked.course, picked.learner);
+      use(await fetchCourse(picked.course, picked.learner), true);
       return play(sessions!.continueLast());
     }
-    // Several courses and none chosen yet: list them, named in the first course's reading language.
-    await loadCourse(catalog[0], learnerFor(catalog[0], settings.learner));
+    // Several courses and none chosen yet: list them, named in the first course's reading language,
+    // without remembering it, since nothing has been chosen.
+    use(await fetchCourse(catalog[0], learnerFor(catalog[0], settings.learner)), false);
   } catch {
     // No course text has loaded, so there is no reading language to say this in.
     status("The game could not load. Serve this page from a web server and reload.");
@@ -297,8 +319,17 @@ async function boot() {
   const buttons = catalog.map((entry, i) => {
     const b = el("button", { className: "game", textContent: labels[i].replace(/^\d+\) /, "") });
     b.addEventListener("click", async () => {
-      // Load first: closing the dialog would otherwise start the first course.
-      await loadCourse(entry, learnerFor(entry, settings.learner)).catch(() => {});
+      status("");
+      let loaded: Loaded;
+      try {
+        loaded = await fetchCourse(entry, learnerFor(entry, settings.learner));
+      } catch {
+        status(tx("web-load-failed"));
+        return; // the list stays open to try again or choose another
+      }
+      // Closed meanwhile, so the first course is already playing: leave it be.
+      if (current) return;
+      use(loaded, true);
       dialog.close();
     });
     return b;
