@@ -18,7 +18,7 @@ talk-reply = My classmate is!
 talk-alt1 = I'm at school.
 talk-alt2 = OK, I'll read.
 
-sorry = David: Sorry, teacher!
+sorry = Sorry about that! David, no talking!
 sorry-reply = That's all right!
 sorry-alt1 = My classmate is!
 sorry-alt2 = I can write them, but I can't read them.

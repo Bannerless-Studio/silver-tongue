@@ -20,7 +20,7 @@ talk-reply = 我同学在说话！
 talk-alt1 = 我在学校。
 talk-alt2 = 好，我读。
 
-sorry = 大卫：对不起，老师！
+sorry = 对不起！大卫，不说话！
 sorry-reply = 没关系！
 sorry-alt1 = 我同学在说话！
 sorry-alt2 = 我会写，不会读。
