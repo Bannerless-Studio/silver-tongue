@@ -7,6 +7,7 @@ import {
   createCore,
   mulberry32,
   newGame,
+  sceneCost,
   tilePieces,
   wordState,
   type Course,
@@ -107,7 +108,13 @@ interface Goal {
  * paid repeatable work, then unpaid practice.
  */
 function goals(course: Course, state: GameState): Goal[] {
-  const out: Goal[] = availableSceneIds(course, state).map((id) => {
+  const out: Goal[] = availableSceneIds(course, state)
+    // Shopping never eats into the rent money.
+    .filter((id) => {
+      const cost = sceneCost(course.scenes.find((s) => s.id === id)!);
+      return cost === 0 || state.wallet - cost >= course.world.rentPerWeek;
+    })
+    .map((id) => {
     const scene = course.scenes.find((s) => s.id === id)!;
     // A parcel in hand comes first; a pickup is paid work, since the trip pays at the other end.
     const rank = scene.endsErrand ? 1 : !scene.repeatable ? 0 : scene.startsErrand || scene.exchanges.some((ex) => ex.pay > 0) ? 2 : 3;

@@ -188,6 +188,31 @@ describe("build-course (broken content)", () => {
     expect(bad.errors.some((e) => e.startsWith('narration "action-fetch"'))).toBe(true);
   });
 
+  it("reports a cost that isn't a number or a slot of numbers", () => {
+    const bad = buildChanged((d) => {
+      const f = join(d, "settings/china-city/scenes/warehouse-shift.json");
+      const sk = JSON.parse(readFileSync(f, "utf8"));
+      sk.exchanges[0].cost = "$item";
+      sk.exchanges[1].cost = "$nope";
+      writeFileSync(f, JSON.stringify(sk));
+    });
+    expect(bad.errors).toContain('warehouse-shift/carry: cost "$item" must be a number or a slot whose values are all numbers');
+    expect(bad.errors).toContain('warehouse-shift/pick: cost "$nope" must be a number or a slot whose values are all numbers');
+  });
+
+  it("resolves a slot's cost into each variant", () => {
+    const ok = buildChanged((d) => {
+      const f = join(d, "settings/china-city/scenes/warehouse-shift.json");
+      const sk = JSON.parse(readFileSync(f, "utf8"));
+      sk.exchanges[0].cost = "$amount";
+      sk.exchanges[1].cost = 2;
+      writeFileSync(f, JSON.stringify(sk));
+    });
+    const shift = ok.course!.scenes.find((s) => s.id === "warehouse-shift")!;
+    expect(shift.exchanges[0].variants["amount=seven|item=chair"].cost).toBe(7);
+    expect(shift.exchanges[1].variants["item=chair|size=big"].cost).toBe(2);
+  });
+
   it("reports a syntax error in a lines file once, not once per slot combination", () => {
     const bad = buildChanged((d) => writeFileSync(join(d, "languages/zh/lines/noodle-shift.ftl"), "order = {\n"));
     expect(bad.errors.filter((e) => e.includes("lines/noodle-shift.ftl"))).toHaveLength(1);

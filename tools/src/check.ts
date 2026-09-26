@@ -153,6 +153,9 @@ export function checkCourse(input: CheckInput): string[] {
       for (const k of ["pay", "missCost"] as const) {
         if (!isCount(ex[k])) errors.push(`${s.id}/${ex.id}: ${k} must be a whole number of 0 or more`);
       }
+      if (Object.values(ex.variants).some((v) => v.cost !== undefined && !isCount(v.cost))) {
+        errors.push(`${s.id}/${ex.id}: cost must be a whole number of 0 or more`);
+      }
       for (const slot of Object.keys(ex.slots)) {
         if (!NAME.test(slot)) errors.push(`${s.id}/${ex.id}: slot "${slot}" may only use letters, digits, _ and -`);
       }

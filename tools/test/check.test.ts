@@ -68,6 +68,12 @@ describe("checkCourse", () => {
     expect(checkCourse(input())).toEqual([]);
   });
 
+  it("needs a whole-number cost", () => {
+    const c = fixtureCourse();
+    c.scenes[0].exchanges[0].variants[""].cost = -1;
+    expect(checkCourse(input({ course: c }))).toContain("intro/greet: cost must be a whole number of 0 or more");
+  });
+
   it("orders scenes by `after` and reports cycles", () => {
     const c = fixtureCourse();
     expect(orderScenes([c.scenes[1], c.scenes[0]]).ordered.map((s) => s.id)).toEqual(["intro", "shift"]);

@@ -177,6 +177,12 @@ export function buildCourse(root: string, courseId: string): BuildResult {
         errors.push(`${sk.id}/${ex.id}: unknown group ${unknownGroups.map((g) => `"${g}"`).join(", ")}`);
         continue;
       }
+      if (typeof ex.cost === "string") {
+        const group = ex.cost.startsWith("$") ? ex.slots[ex.cost.slice(1)] : undefined;
+        if (!group || !groups[group].every((c) => c in numbers)) {
+          errors.push(`${sk.id}/${ex.id}: cost "${ex.cost}" must be a number or a slot whose values are all numbers`);
+        }
+      }
       for (const combo of allCombos(ex.slots, groups)) {
         const where = `${sk.id}/${ex.id}${Object.keys(combo).length ? `[${comboKey(combo)}]` : ""}`;
         // $player renders as the mark; the core puts the player's name in at play time.
@@ -196,6 +202,10 @@ export function buildCourse(root: string, courseId: string): BuildResult {
           const altIds = [1, 2, 3].map((n) => `${ex.id}-alt${n}`).filter((id) => r.has(id));
           if (altIds.length) variant.alts = altIds.map((id) => toLine(r.render(id, args), where));
           variants[comboKey(combo)] = variant;
+          if (typeof ex.cost === "number") variant.cost = ex.cost;
+          else if (typeof ex.cost === "string" && ex.cost.startsWith("$") && combo[ex.cost.slice(1)] in numbers) {
+            variant.cost = numbers[combo[ex.cost.slice(1)]];
+          }
           if (meaningsSrc === undefined || meaningTerms === undefined) return;
           attempt(`${where} (${cfg.learner} meaning)`, () => {
             const m = new Renderer(cfg.learner, [

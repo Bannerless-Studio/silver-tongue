@@ -479,5 +479,15 @@ asked-deliver = They wanted it taken to the { $place }.
     expect(menu).toContain("You have a parcel to deliver.");
     expect(setup().term.screen().slice(1).join("\n")).not.toContain("parcel to deliver");
   });
+
+  it("shows money spent in a shop as shopping", () => {
+    const { core, term } = setup(
+      (s) => { s.place = "noodle_shop"; },
+      (c) => { c.scenes[0].exchanges[0].variants[""].cost = 2; },
+    );
+    pressItem(term, "Say hello");
+    term.press(rightKey(core));
+    expect(term.screen().join("\n")).toContain("-¥2 (shopping)");
+  });
 });
 

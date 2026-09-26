@@ -70,3 +70,14 @@ describe("course bots (a world with an errand)", () => {
     expect(r.rejected).toBe(0);
   });
 });
+
+describe("course bots (a world with a shop)", () => {
+  it("shop only when a week's rent is left over, and never go broke doing it", () => {
+    const c = fixtureCourse();
+    for (const v of Object.values(c.scenes[1].exchanges[0].variants)) v.cost = 1; // the shift now also buys something
+    c.world.rentPerWeek = 1000; // nobody ever has a week's rent spare
+    const r = runBot(c, BOTS.right, { days: 3, seed: 1 });
+    expect(r.rejected).toBe(0);
+    expect(r.minWallet).toBeGreaterThan(0);
+  });
+});
