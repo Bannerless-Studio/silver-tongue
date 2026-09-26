@@ -440,7 +440,7 @@ asked-deliver = They wanted it taken to the { $place }.
     }
   };
 
-  it("says when you take a parcel and when you hand it over, never where it goes", () => {
+  it("says when you take a parcel and when you hand it over, and the status line and menu never say where it goes", () => {
     const { core, term } = setup(
       (s) => { s.place = "noodle_shop"; s.scenesDone = { intro: 1 }; },
       (c) => { addErrand(c); c.learnerFtl += ERRAND_TEXT; },
@@ -450,7 +450,10 @@ asked-deliver = They wanted it taken to the { $place }.
     const taken = term.screen().join("\n");
     expect(taken).toContain("You're carrying a parcel.");
     expect(taken).not.toContain("New: Deliver the parcel");
-    expect(taken).not.toMatch(/School|school/);
+    // The reply's own narration may name the place; the status line and the menu must not.
+    const screen = term.screen();
+    const menu = screen.slice(screen.findIndex((l) => l.includes("What now?")));
+    expect([screen[0], ...menu].join("\n")).not.toMatch(/School|school/);
     pressItem(term, "Go to The street");
     pressItem(term, "Go to School");
     pressItem(term, "Deliver the parcel");

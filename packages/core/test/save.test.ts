@@ -118,6 +118,13 @@ describe("save", () => {
     expect(parseSave(JSON.stringify({ ...newGame(c), errand: "school" }), c)).toEqual({ ok: false, reason: "bad-errand" });
   });
 
+  it("drops a parcel for a place that no longer takes deliveries, so the pickup opens again", () => {
+    const c = addErrand(fixtureCourse());
+    c.scenes.pop(); // the school keeps existing, but its drop-off is gone
+    const r = parseSave(serialize({ ...newGame(c), errand: { to: "school" } }), c);
+    expect(r.ok && r.state.errand).toBeUndefined();
+  });
+
   it("loads a save from before errands with none", () => {
     const old = parseSave(serialize(newGame(course)), course);
     expect(old.ok && old.state.errand).toBeUndefined();

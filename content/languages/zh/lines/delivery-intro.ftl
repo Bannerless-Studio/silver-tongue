@@ -25,8 +25,8 @@ where-reply = 在医院前面！
 where-alt1 = 在医院后面！
 where-alt2 = 医院在那里。
 
-job = 很好！你想工作吗？明天来！
-job-reply = 想！我明天来。
+job = 很好！你想工作吗？
+job-reply = 想！我想工作。
 job-alt1 = 我喜欢面条。
 job-alt2 = 在医院后面。
 

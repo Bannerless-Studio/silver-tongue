@@ -22,7 +22,7 @@ note-kuai-title = 块, money
 note-kuai = Prices on a sign say 元 (yuán), but people say 块 (kuài): 五十块 is fifty yuan. 多少钱？ is "how much?", literally "how much money?"
 
 note-nali-title = 哪里, 那里, 这里
-note-nali = 哪里 (nǎlǐ) is "where", 那里 (nàlǐ) "there" and 这里 (zhèlǐ) "here": 学校在哪里？ In the north people say 哪儿, 那儿 and 这儿 (nǎr, nàr, zhèr). They mean the same.
+note-nali = 哪里 (nǎli) is "where", 那里 (nàli) "there" and 这里 (zhèli) "here": 学校在哪里？ is "where is the school?". In the north people say 哪儿, 那儿 and 这儿 (nǎr, nàr, zhèr). They mean the same.
 
 note-de-title = 的, whose
 note-de = 的 (de) joins an owner to a thing: 高小姐的朋友 is "Miss Gao's friend", and 医院的东西 is "the hospital's things".

@@ -171,6 +171,13 @@ export function checkCourse(input: CheckInput): string[] {
   const dropsAt = new Map<string, string[]>();
   for (const s of course.scenes) if (s.endsErrand) dropsAt.set(s.place, [...(dropsAt.get(s.place) ?? []), s.id]);
   const destinations = new Set<string>();
+  // A parcel in hand locks the pickup, so its drop-off must always be there to take it.
+  for (const s of course.scenes) {
+    if (s.startsErrand !== undefined && !s.repeatable) errors.push(`${s.id}: starts an errand, so it must be repeatable`);
+    if (!s.endsErrand) continue;
+    if (!s.repeatable) errors.push(`${s.id}: ends an errand, so it must be repeatable`);
+    if (Object.keys(s.requires.trust ?? {}).length) errors.push(`${s.id}: ends an errand, so it may not require trust (a parcel could never be delivered)`);
+  }
   for (const s of course.scenes) {
     if (s.startsErrand === undefined) continue;
     const slot = s.startsErrand.startsWith("$") ? s.startsErrand.slice(1) : "";
@@ -185,6 +192,12 @@ export function checkCourse(input: CheckInput): string[] {
       if (!world.places[to]) errors.push(`${s.id}: errand goes to "${to}", which is not a place`);
       else if (n === 0) errors.push(`${s.id}: errand goes to "${to}", which has no scene that ends an errand`);
       else if (n > 1) errors.push(`${s.id}: errand goes to "${to}", which has ${n} scenes that end an errand; needs 1`);
+      for (const drop of course.scenes.filter((x) => x.endsErrand && x.place === to)) {
+        const met = new Set([s.id, ...(before.get(s.id) ?? [])]);
+        for (const a of drop.after) {
+          if (!met.has(a)) errors.push(`${drop.id}: comes after "${a}", which a parcel from ${s.id} doesn't need; a parcel could never be delivered`);
+        }
+      }
     }
   }
   for (const [place, ids] of dropsAt) {

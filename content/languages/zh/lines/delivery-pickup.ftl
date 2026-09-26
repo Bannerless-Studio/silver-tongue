@@ -6,5 +6,5 @@ parcel-rephrase = { -place }！这个东西。
 
 now = 你现在去吗？
 now-reply = 我现在去！
-now-alt1 = 我明天来。
+now-alt1 = 我想工作。
 now-alt2 = 在医院后面！

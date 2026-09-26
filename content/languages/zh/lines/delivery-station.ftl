@@ -5,7 +5,7 @@ who-alt2 = 在医院后面。
 
 beijing = 谢谢！我去北京。
 beijing-reply = 北京！很好！
-beijing-alt1 = 我明天来。
+beijing-alt1 = 我想工作。
 beijing-alt2 = 你好，大刘！
 
 time = 现在{ -hour }点了！

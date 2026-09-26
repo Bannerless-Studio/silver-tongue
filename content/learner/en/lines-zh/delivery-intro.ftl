@@ -23,8 +23,8 @@ where-reply = In front of the hospital!
 where-alt1 = Behind the hospital!
 where-alt2 = The hospital is over there.
 
-job = Very good! Do you want to work? Come tomorrow!
-job-reply = I do! I'll come tomorrow.
+job = Very good! Do you want to work?
+job-reply = I do! I want to work.
 job-alt1 = I like noodles.
 job-alt2 = Behind the hospital.
 

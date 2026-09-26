@@ -5,7 +5,7 @@ who-alt2 = Behind the hospital.
 
 beijing = Thank you! I'm going to Beijing.
 beijing-reply = Beijing! Very good!
-beijing-alt1 = I'll come tomorrow.
+beijing-alt1 = I want to work.
 beijing-alt2 = Hello, Big Liu!
 
 time = It's { -hour } o'clock already!

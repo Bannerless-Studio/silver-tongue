@@ -51,6 +51,17 @@ describe("checkCourse", () => {
       );
       expect(run((c) => void delete c.scenes[2].startsErrand)).toContain('drop: ends an errand, but no errand goes to "school"');
     });
+
+    it("keeps a parcel deliverable: pickups and drop-offs repeat, and a drop-off needs nothing the pickup doesn't", () => {
+      expect(run((c) => void (c.scenes[3].repeatable = false))).toContain("drop: ends an errand, so it must be repeatable");
+      expect(run((c) => void (c.scenes[2].repeatable = false))).toContain("pickup: starts an errand, so it must be repeatable");
+      expect(run((c) => void (c.scenes[3].requires = { trust: { teacher: 1 } }))).toContain(
+        "drop: ends an errand, so it may not require trust (a parcel could never be delivered)",
+      );
+      expect(run((c) => void (c.scenes[3].after = ["pickup", "shift"]))).toContain(
+        'drop: comes after "shift", which a parcel from pickup doesn\'t need; a parcel could never be delivered',
+      );
+    });
   });
 
   it("passes the fixture course", () => {
