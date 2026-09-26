@@ -441,7 +441,7 @@ export function startApp(opts: AppOptions): App {
         send({ type: "helpWord", word: word.word });
         push([
           { text: w.w, bold: true },
-          ...(w.pron ? [{ text: ` ${w.pron}`, color: "yellow" as const }] : []),
+          ...(w.readings?.length ? [{ text: ` ${w.readings.join(" ")}`, color: "yellow" as const }] : []),
           { text: ` — ${w.gloss}` },
         ]);
       }
@@ -455,7 +455,7 @@ export function startApp(opts: AppOptions): App {
         flush();
         // Reading the whole line is not logged as help on each word: the words still have to be
         // recognised in the reply.
-        const pron = lastLine.tokens.flatMap((tk) => course.words[tk.word]?.pron ?? []).join(" ");
+        const pron = lastLine.tokens.flatMap((tk) => course.words[tk.word]?.readings?.at(-1) ?? []).join(" ");
         push([
           { text: lastLine.text, bold: true },
           ...(pron ? [{ text: ` ${pron}`, color: "yellow" as const }] : []),

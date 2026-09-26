@@ -7,6 +7,17 @@ import { PLAYER_MARK, type GameState } from "../src/types";
 describe("save", () => {
   const course = fixtureCourse();
   const bad = (state: unknown) => parseSave(JSON.stringify(state), course);
+  it("loads a save made under an alias as the course's own id", () => {
+    const aliased = { ...fixtureCourse(), aliases: ["old-id"] };
+    const state = { ...newGame(aliased), course: "old-id" };
+    expect(parseSave(serialize(state), aliased)).toEqual({ ok: true, state: { ...state, course: aliased.id } });
+  });
+
+  it("still refuses another course's save", () => {
+    const aliased = { ...fixtureCourse(), aliases: ["old-id"] };
+    expect(parseSave(serialize({ ...newGame(aliased), course: "other" }), aliased)).toEqual({ ok: false, reason: "other-course" });
+  });
+
   const inScene = () => {
     const core = createCore(course, newGame(course), { now: () => 0, rng: () => 0 });
     core.send({ type: "goTo", place: "noodle_shop" });

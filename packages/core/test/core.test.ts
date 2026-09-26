@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { comboKey } from "../src/combo";
-import { describeRun, tilePieces } from "../src/dialogue";
+import { describeRun, joinTiles, tilePieces } from "../src/dialogue";
 import { createCore, LOG_LIMIT, newGame, type Core } from "../src/core";
 import { recordRight } from "../src/learner";
 import { mulberry32 } from "../src/rng";
-import { addErrand, fixtureCourse, line } from "../src/testing/fixture";
+import { addErrand, fixtureCourse, line, spacedCourse } from "../src/testing/fixture";
 import { availableSceneIds, moneyBlocked, payFor, sceneCost } from "../src/life";
 import type { GameEvent, WordRecord } from "../src/types";
 
@@ -532,5 +532,34 @@ describe("pay depends on misses", () => {
     core.send({ type: "reply", choice: pick() });
     const ev = core.send({ type: "reply", choice: pick() });
     expect(find(ev, "sceneEnded")).toEqual({ type: "sceneEnded", scene: "shift", earned: 1 + 3 });
+  });
+});
+
+describe("spaced languages", () => {
+  it("joins tiles with a space only when the language is spaced", () => {
+    expect(joinTiles(fixtureCourse(), ["a", "b"])).toBe("ab");
+    expect(joinTiles(spacedCourse(), ["a", "b"])).toBe("a b");
+  });
+
+  it("accepts the right tiles in a spaced language", () => {
+    const course = spacedCourse();
+    const state = newGame(course);
+    const known = { right: 3, wrong: 0, streak: 3, helps: 0, lapsed: false, firstSeen: 0, lastSeen: 0 };
+    for (const id of Object.keys(course.words)) state.words[id] = { ...known };
+    state.place = "noodle_shop";
+    const core = createCore(course, state, { now: () => 0, rng: mulberry32(1) });
+    core.send({ type: "startScene", scene: "intro" });
+    const run = core.state.run!;
+    expect(run.mode).toBe("tiles");
+    const reply = course.scenes[0].exchanges[0].variants[""].reply;
+    expect(reply.text).toBe("mi bon!");
+    const used = new Set<number>();
+    const order = tilePieces(reply).map((p) => {
+      const i = run.tiles.findIndex((x, j) => x === p && !used.has(j));
+      used.add(i);
+      return i;
+    });
+    const ev = core.send({ type: "replyTiles", tiles: order });
+    expect(ev.find((e) => e.type === "actionPerformed")).toMatchObject({ tilesWrong: false });
   });
 });

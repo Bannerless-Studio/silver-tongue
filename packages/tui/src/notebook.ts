@@ -40,7 +40,7 @@ export function notebookLines(course: Course, state: GameState, t: Text, now: nu
       out.push([
         { text: `${MARK[wordState(rec, now)]} ` },
         { text: w.w, bold: true },
-        ...(w.pron ? [{ text: ` ${w.pron}`, color: "yellow" as const }] : []),
+        ...(w.readings?.length ? [{ text: ` ${w.readings.join(" ")}`, color: "yellow" as const }] : []),
         { text: ` — ${w.gloss}` },
       ]);
       // Saves from before 0.7.0 may hold the name's mark instead of the name.

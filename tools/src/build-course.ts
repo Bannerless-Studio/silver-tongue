@@ -108,7 +108,7 @@ export function buildCourse(root: string, courseId: string): BuildResult {
       w: w.w,
       lv: w.lv,
       gloss: glosses?.has(w.id) ? glosses.render(w.id) : "",
-      ...(w.pron ? { pron: w.pron } : {}),
+      ...(w.pron ? { readings: [w.pron] } : {}),
       ...(w.bonus ? { bonus: true } : {}),
     };
   }
@@ -283,6 +283,8 @@ export function buildCourse(root: string, courseId: string): BuildResult {
 
   const course: Course = {
     id: cfg.id,
+    learner: cfg.learner,
+    language: { code: meta.key, locale: meta.locale, tts: meta.tts, spaced: meta.spaced },
     typing: meta.typing !== null,
     words,
     concepts,

@@ -83,7 +83,8 @@ export function parseSave(raw: string, course: Course): ParseResult {
   if (!isObj(data)) return { ok: false, reason: "not-object" };
   if (typeof data.v === "number" && data.v > SAVE_VERSION) return { ok: false, reason: "newer-version" };
   if (data.v !== SAVE_VERSION) return { ok: false, reason: "version" };
-  if (data.course !== course.id) return { ok: false, reason: "other-course" };
+  if (data.course !== course.id && !(course.aliases ?? []).includes(data.course as string)) return { ok: false, reason: "other-course" };
+  data.course = course.id; // a save made under an old id is saved under the new one from now on
   if (!isCount(data.day)) return { ok: false, reason: "bad-day" };
   if (!isCount(data.slot) || data.slot > course.world.slotsPerDay) return { ok: false, reason: "bad-slot" };
   if (!isCount(data.wallet)) return { ok: false, reason: "bad-wallet" };

@@ -12,9 +12,9 @@ export function line(...parts: [string, string | null][]): RenderedLine {
   return { text, tokens };
 }
 
-const W: Record<string, [string, string, string?]> = {
-  w_ni: ["你", "you", "nǐ"],
-  w_hao: ["好", "good", "hǎo"],
+const W: Record<string, [string, string, string[]?]> = {
+  w_ni: ["你", "you", ["nǐ"]],
+  w_hao: ["好", "good", ["hǎo"]],
   w_cha: ["茶", "tea"],
   w_shui: ["水", "water"],
   w_san: ["三", "three"],
@@ -81,11 +81,13 @@ const order: Exchange = {
 export function fixtureCourse(): Course {
   return structuredClone({
     id: "test-course",
+    learner: "en",
+    language: { code: "zh", locale: "zh", tts: "zh-CN", spaced: false },
     typing: false,
     words: Object.fromEntries(
-      Object.entries(W).map(([id, [text, gloss, pron]]) => [
+      Object.entries(W).map(([id, [text, gloss, readings]]) => [
         id,
-        { id, w: text, lv: "1", gloss, ...(pron ? { pron } : {}), ...(id.startsWith("x_") ? { bonus: true } : {}) },
+        { id, w: text, lv: "1", gloss, ...(readings ? { readings } : {}), ...(id.startsWith("x_") ? { bonus: true } : {}) },
       ]),
     ),
     concepts: { tea: ["w_cha"], water: ["w_shui"], three: ["w_san"], four: ["w_si"] },
@@ -113,6 +115,61 @@ export function fixtureCourse(): Course {
     notes: [],
     needsName: false,
   } satisfies Course);
+}
+
+/** A made-up spaced language for the same two scenes: every word has a native and a plain reading. */
+const SPACED: Record<string, [string, string[]]> = {
+  w_ni: ["mi", ["mí", "mi"]],
+  w_hao: ["bon", ["bón", "bon"]],
+  w_cha: ["te", ["té", "te"]],
+  w_shui: ["akva", ["ákva", "akva"]],
+  w_san: ["tri", ["trí", "tri"]],
+  w_si: ["kvar", ["kvár", "kvar"]],
+  x_bei: ["tas", ["tás", "tas"]],
+  w_bu: ["ne", ["né", "ne"]],
+  w_shi: ["estas", ["éstas", "estas"]],
+  w_zhe: ["ci", ["cí", "ci"]],
+  w_ge: ["unu", ["únu", "unu"]],
+};
+const PUNCT: Record<string, string> = { "，": ",", "。": ".", "！": "!", "？": "?" };
+const ascii = (s: string) => [...s].map((c) => PUNCT[c] ?? c).join("");
+
+/** The same line in the spaced language: words swapped, a space before every word but the first. */
+function respace(l: RenderedLine): RenderedLine {
+  const parts: [string, string | null][] = [];
+  let at = 0;
+  for (const tk of l.tokens) {
+    const gap = ascii(l.text.slice(at, tk.start));
+    if (gap) parts.push([gap, null]);
+    if (parts.length) parts.push([" ", null]);
+    parts.push([SPACED[tk.word][0], tk.word]);
+    at = tk.end;
+  }
+  const tail = ascii(l.text.slice(at));
+  if (tail) parts.push([tail, null]);
+  return { ...l, ...line(...parts) };
+}
+
+/** The fixture course in a made-up spaced language, read in `learner`. */
+export function spacedCourse(learner = "en"): Course {
+  const c = fixtureCourse();
+  c.id = "xx-town";
+  c.learner = learner;
+  c.language = { code: "xx", locale: "en", tts: "en-US", spaced: true };
+  for (const [id, word] of Object.entries(c.words)) {
+    word.w = SPACED[id][0];
+    word.readings = SPACED[id][1];
+  }
+  for (const s of c.scenes)
+    for (const ex of s.exchanges)
+      for (const v of Object.values(ex.variants)) {
+        v.npc = respace(v.npc);
+        v.reply = respace(v.reply);
+        if (v.rephrase) v.rephrase = respace(v.rephrase);
+        if (v.alts) v.alts = v.alts.map(respace);
+      }
+  for (const [id, l] of Object.entries(c.reactions)) c.reactions[id] = respace(l);
+  return c;
 }
 
 /**
