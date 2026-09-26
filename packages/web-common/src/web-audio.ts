@@ -1,4 +1,4 @@
-import type { AudioOut, Speech } from "@silver-tongue/view";
+import { SLOW_RATE_FACTOR, SLOWEST_RATE, type AudioOut, type Speech } from "@silver-tongue/view";
 
 /** The part of HTMLAudioElement this uses. */
 export interface AudioLike {
@@ -19,17 +19,18 @@ export interface WebAudioDeps {
   /** undefined where the browser has no Audio */
   audio: AudioLike | undefined;
   wait: (ms: number, cb: () => void) => { cancel(): void };
+  /** how fast to play, asked for each clip so a change in settings takes at once */
+  rate?: () => number;
 }
 
 const BEAT_MS = 300;
-const SLOW_RATE = 0.8;
 /** Clips failing to load one after another: the clips aren't there (a page saved without its audio folder). */
 const FAILS_TO_GIVE_UP = 3;
 
 /**
- * Plays clips through one audio element, in order with a beat between them; a slow line plays at
- * 0.8 speed. A clip that won't load is skipped, and a play() the browser refuses (no key pressed
- * yet) is ignored: the text is on screen anyway.
+ * Plays clips through one audio element, in order with a beat between them, at the rate the page asks
+ * for (0.75× that for a slow line). A clip that won't load is skipped, and a play() the browser
+ * refuses (no key pressed yet) is ignored: the text is on screen anyway.
  */
 export function createWebAudio(deps: WebAudioDeps): AudioOut {
   const el = deps.audio;
@@ -37,15 +38,21 @@ export function createWebAudio(deps: WebAudioDeps): AudioOut {
   let timer: { cancel(): void } | undefined;
   let run = 0; // each play() or stop() starts a new run; events from an older one do nothing
   let fails = 0;
+  let speaking = false;
 
   const next = (mine: number) => {
     timer = undefined;
     if (mine !== run || !el) return;
     const item = queue.shift();
     if (!item) return;
+    speaking = true;
     const done = () => {
       if (mine !== run) return;
-      if (queue.length) timer = deps.wait(BEAT_MS, () => next(mine));
+      if (queue.length) {
+        timer = deps.wait(BEAT_MS, () => next(mine));
+        return;
+      }
+      speaking = false;
     };
     el.onended = () => {
       fails = 0;
@@ -56,7 +63,7 @@ export function createWebAudio(deps: WebAudioDeps): AudioOut {
       done();
     };
     el.src = `${deps.base}${item.clip}.mp3`;
-    el.defaultPlaybackRate = el.playbackRate = item.slow ? SLOW_RATE : 1;
+    el.defaultPlaybackRate = el.playbackRate = Math.max(SLOWEST_RATE, (deps.rate?.() ?? 1) * (item.slow ? SLOW_RATE_FACTOR : 1));
     // Refused (no key pressed yet): nothing will end, so go on as if it had.
     el.play().catch(() => done());
   };
@@ -64,6 +71,7 @@ export function createWebAudio(deps: WebAudioDeps): AudioOut {
   const stop = () => {
     run++;
     queue = [];
+    speaking = false;
     timer?.cancel();
     timer = undefined;
     el?.pause();
@@ -72,6 +80,9 @@ export function createWebAudio(deps: WebAudioDeps): AudioOut {
   return {
     get available() {
       return !!el && fails < FAILS_TO_GIVE_UP;
+    },
+    get busy() {
+      return speaking;
     },
     play(lines: Speech[]) {
       stop();

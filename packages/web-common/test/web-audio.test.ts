@@ -35,7 +35,7 @@ function timers() {
 }
 
 describe("createWebAudio", () => {
-  it("plays clips in order with a 300 ms beat, slow lines at 0.8", () => {
+  it("plays clips in order with a 300 ms beat, slow lines 0.75 slower", () => {
     const el = fakeEl();
     const { waits, wait } = timers();
     createWebAudio({ base: "audio/", audio: el, wait }).play([{ clips: ["x"] }, { clips: ["y"], slow: true }, { clips: ["z"] }]);
@@ -46,9 +46,50 @@ describe("createWebAudio", () => {
     waits[1].cb();
     expect(el.played).toEqual([
       { src: "audio/x.mp3", rate: 1 },
-      { src: "audio/y.mp3", rate: 0.8 },
+      { src: "audio/y.mp3", rate: 0.75 },
       { src: "audio/z.mp3", rate: 1 },
     ]);
+  });
+
+  it("plays at the speed the player chose, and a slow line 0.75 slower", () => {
+    const el = fakeEl();
+    const { waits, wait } = timers();
+    createWebAudio({ base: "audio/", audio: el, wait, rate: () => 0.7 }).play([{ clips: ["x"] }, { clips: ["y"], slow: true }]);
+    el.onended!();
+    expect(el.played).toEqual([{ src: "audio/x.mp3", rate: 0.7 }]);
+    waits[0].cb();
+    expect(el.played[1].rate).toBeCloseTo(0.525);
+  });
+
+  it("asks for the rate again for every clip, so a change takes at once", () => {
+    const el = fakeEl();
+    let rate = 0.7;
+    const { waits, wait } = timers();
+    createWebAudio({ base: "audio/", audio: el, wait, rate: () => rate }).play([{ clips: ["x", "y"] }]);
+    el.onended!();
+    rate = 1;
+    waits[0].cb();
+    expect(el.played.map((p) => p.rate)).toEqual([0.7, 1]);
+  });
+
+  it("is busy from play() until the last clip ends, never with no audio element", () => {
+    const el = fakeEl();
+    const { waits, wait } = timers();
+    const a = createWebAudio({ base: "audio/", audio: el, wait });
+    expect(a.busy).toBe(false);
+    a.play([{ clips: ["x", "y"] }]);
+    expect(a.busy).toBe(true);
+    el.onended!();
+    expect(a.busy).toBe(true); // the second clip is queued
+    waits[0].cb();
+    el.onended!();
+    expect(a.busy).toBe(false);
+    a.play([{ clips: ["x"] }]);
+    a.stop();
+    expect(a.busy).toBe(false);
+    const silent = createWebAudio({ base: "audio/", audio: undefined, wait: timers().wait });
+    silent.play([{ clips: ["x"] }]);
+    expect(silent.busy).toBe(false);
   });
 
   it("skips a clip that fails to load and goes on", () => {
