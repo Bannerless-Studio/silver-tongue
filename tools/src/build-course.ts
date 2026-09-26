@@ -1,8 +1,9 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   allCombos,
+  type CatalogEntry,
   comboKey,
   type Course,
   type Exchange,
@@ -21,11 +22,14 @@ import type { PackMeta, PackWord } from "./pack";
 import { buildLexicon, segment, type Lexicon } from "./segment";
 import { assignAudio, voiceProblems, type Clip, type Voices } from "./voices";
 
-interface CourseConfig {
+export interface CourseConfig {
   id: string;
   language: string;
   setting: string;
-  learner: string;
+  /** reading languages, the default first */
+  learners: string[];
+  /** earlier ids whose saves this course loads */
+  aliases?: string[];
   checks: { coverage: boolean; audio: boolean };
 }
 
@@ -51,7 +55,7 @@ const readJson = <T>(path: string): T => JSON.parse(readFileSync(path, "utf8")) 
 const readOptional = (path: string): string => (existsSync(path) ? readFileSync(path, "utf8") : "");
 
 /** Builds a course from content/. Never throws: every problem becomes an error line. */
-export function buildCourse(root: string, courseId: string): BuildResult {
+export function buildCourse(root: string, courseId: string, learnerCode?: string): BuildResult {
   const errors: string[] = [];
   /** Runs one step; a throw becomes an error named after the step. */
   const attempt = <T>(where: string, step: () => T): T | undefined => {
@@ -66,14 +70,27 @@ export function buildCourse(root: string, courseId: string): BuildResult {
 
   const cfg = attempt(`courses/${courseId}.json`, () => readJson<CourseConfig>(join(root, "courses", `${courseId}.json`)));
   if (!cfg) return stop();
+  if (cfg.id !== courseId) {
+    errors.push(`courses/${courseId}.json: id "${cfg.id}" must match the file name`);
+    return stop();
+  }
+  const learner = learnerCode ?? cfg.learners[0];
+  if (!cfg.learners.includes(learner)) {
+    errors.push(`courses/${courseId}.json: "${learner}" is not in learners`);
+    return stop();
+  }
   const langDir = join(root, "languages", cfg.language);
-  const learnerDir = join(root, "learner", cfg.learner);
+  const learnerDir = join(root, "learner", learner);
   const settingDir = join(root, "settings", cfg.setting);
 
   const meta = attempt("pack.json", () => readJson<PackMeta>(join(langDir, "pack.json")));
   if (!meta) return stop();
   if (meta.spaced) {
     errors.push(`language "${meta.key}" separates words with spaces; its tagger is not built yet`);
+    return stop();
+  }
+  if (meta.direction === "rtl") {
+    errors.push(`language "${meta.key}" is written right to left; no front end can show that yet`);
     return stop();
   }
   const packWords = attempt("words", () => {
@@ -99,16 +116,16 @@ export function buildCourse(root: string, courseId: string): BuildResult {
     f,
     readOptional(join(learnerDir, f)),
   ]);
-  const glosses = attempt("glosses", () => new Renderer(cfg.learner, glossSrc));
+  const glosses = attempt("glosses", () => new Renderer(learner, glossSrc));
   const words: Record<string, Word> = {};
   for (const w of packWords) {
-    if (glosses && !glosses.has(w.id)) errors.push(`glosses: no ${cfg.learner} gloss for ${w.id} "${w.w}"`);
+    if (glosses && !glosses.has(w.id)) errors.push(`glosses: no ${learner} gloss for ${w.id} "${w.w}"`);
     words[w.id] = {
       id: w.id,
       w: w.w,
       lv: w.lv,
       gloss: glosses?.has(w.id) ? glosses.render(w.id) : "",
-      ...(w.pron ? { readings: [w.pron] } : {}),
+      ...(w.readings ? { readings: w.readings } : w.pron ? { readings: [w.pron] } : {}),
       ...(w.bonus ? { bonus: true } : {}),
     };
   }
@@ -129,7 +146,7 @@ export function buildCourse(root: string, courseId: string): BuildResult {
 
   // Meanings: what each line says, in the learner's language. Concepts get learner-language
   // terms, and slots bind to them the same way as in the language being learned.
-  const meaningTermsName = `learner/${cfg.learner}/terms.ftl`;
+  const meaningTermsName = `learner/${learner}/terms.ftl`;
   const meaningTerms = attempt(meaningTermsName, () => {
     const src = readFileSync(join(learnerDir, "terms.ftl"), "utf8");
     parseFtl(src, meaningTermsName);
@@ -164,8 +181,8 @@ export function buildCourse(root: string, courseId: string): BuildResult {
     });
     if (linesSrc === undefined) continue;
     const meaningsPath = join(meaningsDir, `${sk.id}.ftl`);
-    const meaningsName = `learner/${cfg.learner}/lines-${cfg.language}/${sk.id}.ftl`;
-    if (!existsSync(meaningsPath)) errors.push(`${sk.id}: no ${cfg.learner} meanings (${meaningsPath})`);
+    const meaningsName = `learner/${learner}/lines-${cfg.language}/${sk.id}.ftl`;
+    if (!existsSync(meaningsPath)) errors.push(`${sk.id}: no ${learner} meanings (${meaningsPath})`);
     const meaningsSrc =
       meaningTerms === undefined || !existsSync(meaningsPath)
         ? undefined
@@ -212,8 +229,8 @@ export function buildCourse(root: string, courseId: string): BuildResult {
             variant.cost = numbers[combo[ex.cost.slice(1)]];
           }
           if (meaningsSrc === undefined || meaningTerms === undefined) return;
-          attempt(`${where} (${cfg.learner} meaning)`, () => {
-            const m = new Renderer(cfg.learner, [
+          attempt(`${where} (${learner} meaning)`, () => {
+            const m = new Renderer(learner, [
               [meaningTermsName, meaningTerms],
               ["slots", bindSlots(meaningTerms, combo, meaningsSrc, meaningsName, meaningTermsName)],
               [meaningsName, meaningsSrc],
@@ -236,13 +253,13 @@ export function buildCourse(root: string, courseId: string): BuildResult {
   attempt("reactions.ftl", () => {
     const src = readFileSync(join(langDir, "reactions.ftl"), "utf8");
     const r = new Renderer(meta.locale, [["terms.ftl", termsSrc], ["reactions.ftl", src]]);
-    const meaningsName = `learner/${cfg.learner}/reactions-${cfg.language}.ftl`;
-    const m = attempt(meaningsName, () => new Renderer(cfg.learner, [[meaningsName, readFileSync(join(learnerDir, `reactions-${cfg.language}.ftl`), "utf8")]]));
+    const meaningsName = `learner/${learner}/reactions-${cfg.language}.ftl`;
+    const m = attempt(meaningsName, () => new Renderer(learner, [[meaningsName, readFileSync(join(learnerDir, `reactions-${cfg.language}.ftl`), "utf8")]]));
     for (const id of messageIds(src, "reactions.ftl")) {
       const text = attempt(`reaction ${id}`, () => r.render(id));
       if (text === undefined) continue;
       reactions[id] = toLine(text, `reaction ${id}`);
-      if (m) attempt(`reaction ${id} (${cfg.learner} meaning)`, () => (reactions[id].meaning = m.render(id)));
+      if (m) attempt(`reaction ${id} (${learner} meaning)`, () => (reactions[id].meaning = m.render(id)));
     }
   });
 
@@ -251,7 +268,7 @@ export function buildCourse(root: string, courseId: string): BuildResult {
   if (meaningTerms !== undefined) {
     for (const name of Object.keys(concepts)) {
       const r = attempt(`${meaningTermsName} -${name}`, () =>
-        new Renderer(cfg.learner, [[meaningTermsName, meaningTerms], ["name", `name = { -${name} }`]]),
+        new Renderer(learner, [[meaningTermsName, meaningTerms], ["name", `name = { -${name} }`]]),
       );
       if (r) {
         try {
@@ -273,7 +290,7 @@ export function buildCourse(root: string, courseId: string): BuildResult {
   const notes = (existsSync(notesPath) && attempt("notes.json", () => readJson<Note[]>(notesPath))) || [];
 
   const learnerFtl =
-    attempt(`learner/${cfg.learner}`, () =>
+    attempt(`learner/${learner}`, () =>
       [
         readFileSync(join(learnerDir, "ui.ftl"), "utf8"),
         readFileSync(join(learnerDir, `narration-${cfg.setting}.ftl`), "utf8"),
@@ -283,7 +300,8 @@ export function buildCourse(root: string, courseId: string): BuildResult {
 
   const course: Course = {
     id: cfg.id,
-    learner: cfg.learner,
+    learner,
+    ...(cfg.aliases?.length ? { aliases: cfg.aliases } : {}),
     language: { code: meta.key, locale: meta.locale, tts: meta.tts, spaced: meta.spaced },
     typing: meta.typing !== null,
     words,
@@ -314,34 +332,94 @@ export function buildCourse(root: string, courseId: string): BuildResult {
     existsSync(audioDir) ? readdirSync(audioDir).filter((f) => f.endsWith(".mp3")).map((f) => f.slice(0, -".mp3".length)) : [],
   );
   const learnerIds = attempt("learner text", () => new Set(messageIds(learnerFtl, "learner files"))) ?? new Set<string>();
+  for (const id of ["learner-name", `language-${cfg.language}`]) {
+    if (!learnerIds.has(id)) errors.push(`learner/${learner}/ui.ftl: missing "${id}"`);
+  }
   errors.push(...checkCourse({ course, stages: meta.stages, checks: cfg.checks, learnerIds, requiredUi: [], audioFiles }));
-  errors.push(...uiTextProblems(learnerFtl, cfg.learner));
+  errors.push(...uiTextProblems(learnerFtl, learner));
   // Each action's narration gets the parameters its exchanges' `expect` gives it.
   const actions: Record<string, string[]> = {};
   for (const ex of scenes.flatMap((s) => s.exchanges)) {
     const name = ex.expect.action;
     if (name) actions[name] = [...new Set([...(actions[name] ?? []), ...Object.keys(ex.expect).filter((k) => k !== "action")])];
   }
-  errors.push(...narrationProblems(learnerFtl, cfg.learner, actions));
+  errors.push(...narrationProblems(learnerFtl, learner, actions));
   // Ship only the words the course uses: rank is the share of these that are known, and
   // the pack has far more words than one course needs. (The checks above see the whole pack.)
   course.words = Object.fromEntries(Object.entries(words).filter(([id]) => used.has(id)));
   return { course, errors, clips, audioDir };
 }
 
+/** Course ids: the config files in content/courses. */
+export function courseIds(root: string): string[] {
+  return readdirSync(join(root, "courses"))
+    .filter((f) => f.endsWith(".json"))
+    .map((f) => f.slice(0, -".json".length))
+    .sort();
+}
+
+export interface BuiltCourses {
+  catalog: CatalogEntry[];
+  builds: { course: string; learner: string; result: BuildResult }[];
+  /** every build's errors, each prefixed "<course>/<learner>: " */
+  errors: string[];
+}
+
+/** Builds every course (or only `only`) for each of its reading languages. */
+export function buildAll(root: string, only?: string): BuiltCourses {
+  const out: BuiltCourses = { catalog: [], builds: [], errors: [] };
+  for (const id of only ? [only] : courseIds(root)) {
+    let cfg: CourseConfig;
+    try {
+      cfg = readJson<CourseConfig>(join(root, "courses", `${id}.json`));
+    } catch (e) {
+      out.errors.push(`${id}: ${(e as Error).message}`);
+      continue;
+    }
+    const learnerNames: Record<string, string> = {};
+    for (const learner of cfg.learners ?? []) {
+      const result = buildCourse(root, id, learner);
+      out.builds.push({ course: id, learner, result });
+      out.errors.push(...result.errors.map((e) => `${id}/${learner}: ${e}`));
+      const name = result.course && learnerName(result.course.learnerFtl, learner);
+      if (name) learnerNames[learner] = name;
+    }
+    out.catalog.push({ id: cfg.id, language: cfg.language, setting: cfg.setting, learners: cfg.learners, learnerNames });
+  }
+  return out;
+}
+
+/** A reading language's own name, from its learner-name message. */
+function learnerName(ftl: string, locale: string): string | undefined {
+  try {
+    return new Renderer(locale, [["learner", ftl]]).render("learner-name");
+  } catch {
+    return undefined;
+  }
+}
+
 function main(): void {
-  const courseId = process.argv[2] ?? "zh-china-en";
+  const only = process.argv[2];
   const repo = resolve(fileURLToPath(new URL("../..", import.meta.url)));
-  const { course, errors } = buildCourse(join(repo, "content"), courseId);
-  if (!course || errors.length) {
+  const { catalog, builds, errors } = buildAll(join(repo, "content"), only);
+  if (errors.length || builds.some((b) => !b.result.course)) {
     for (const e of errors) console.error(`✗ ${e}`);
-    console.error(`${errors.length} error(s); course not written`);
+    console.error(`${errors.length} error(s); nothing written`);
     process.exit(1);
   }
-  const outDir = join(repo, "dist", "courses", courseId);
-  mkdirSync(outDir, { recursive: true });
-  writeFileSync(join(outDir, "course.json"), JSON.stringify(course));
-  console.log(`built ${courseId}: ${course.scenes.length} scenes -> ${join(outDir, "course.json")}`);
+  const out = join(repo, "dist", "courses");
+  // A full build replaces dist/courses, so a renamed course leaves nothing stale behind.
+  if (!only) rmSync(out, { recursive: true, force: true });
+  for (const { course, learner, result } of builds) {
+    mkdirSync(join(out, course), { recursive: true });
+    writeFileSync(join(out, course, `${learner}.json`), JSON.stringify(result.course));
+    console.log(`built ${course}/${learner}: ${result.course!.scenes.length} scenes`);
+  }
+  const index = join(out, "index.json");
+  const previous: CatalogEntry[] = only && existsSync(index) ? (JSON.parse(readFileSync(index, "utf8")) as CatalogEntry[]) : [];
+  const merged = [...previous.filter((e) => !catalog.some((c) => c.id === e.id)), ...catalog].sort((a, b) => a.id.localeCompare(b.id));
+  writeFileSync(index, JSON.stringify(merged, null, 2));
+  console.log(`catalog: ${merged.map((e) => e.id).join(", ")} -> ${index}`);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) main();

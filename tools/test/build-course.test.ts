@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, describe, expect, it } from "vitest";
 import { PLAYER_MARK } from "@silver-tongue/core";
-import { buildCourse } from "../src/build-course";
+import { buildAll, buildCourse } from "../src/build-course";
 import { clipId, type Voices } from "../src/voices";
 
 const CONTENT = fileURLToPath(new URL("../../content", import.meta.url));
@@ -14,8 +14,8 @@ afterAll(() => {
   for (const dir of temps) rmSync(dir, { recursive: true, force: true });
 });
 
-/** Builds a copy of the real content after `change` edits it. */
-function buildChanged(change: (dir: string) => void) {
+/** A copy of the real content after `change` edits it. */
+function copyContent(change: (dir: string) => void): string {
   const dir = mkdtempSync(join(tmpdir(), "st-content-"));
   temps.push(dir);
   // The clips are ~10 MB: link them instead of copying them for every test.
@@ -23,13 +23,18 @@ function buildChanged(change: (dir: string) => void) {
   cpSync(CONTENT, dir, { recursive: true, filter: (src) => src !== audio });
   if (existsSync(audio)) symlinkSync(audio, join(dir, "audio"));
   change(dir);
-  return buildCourse(dir, "zh-china-en");
+  return dir;
+}
+
+/** Builds a copy of the real content after `change` edits it. */
+function buildChanged(change: (dir: string) => void) {
+  return buildCourse(copyContent(change), "zh-china");
 }
 
 const INTRO = "languages/zh/lines/noodle-intro.ftl";
 
 describe("build-course (real content)", () => {
-  const { course, errors } = buildCourse(CONTENT, "zh-china-en");
+  const { course, errors } = buildCourse(CONTENT, "zh-china");
   const voices = JSON.parse(readFileSync(join(CONTENT, "languages/zh/voices.json"), "utf8")) as Voices;
 
   it("gives every line, word and reaction its clips, in the speaker's voice", () => {
@@ -52,7 +57,7 @@ describe("build-course (real content)", () => {
     if (/\p{L}/u.test(after)) expect(named.line.audio).toEqual([clipId(voice, before), clipId(voice, after)]);
   });
 
-  it("builds zh-china-en with no errors", () => {
+  it("builds zh-china with no errors", () => {
     expect(errors).toEqual([]);
     expect(course!.scenes.map((s) => s.id)).toEqual(["class-break", "class-first", "class-read", "class-write", "delivery-hospital", "delivery-intro", "delivery-pickup", "delivery-school", "delivery-station", "hospital-checkup", "noodle-intro", "noodle-kitchen", "noodle-lunch", "noodle-shift", "room-hello", "room-phone", "room-rent", "shop-buy", "shop-intro", "stairs-family", "stairs-meet", "stairs-pets", "street-hello", "street-hungry", "street-numbers", "street-practice", "taxi-luggage", "taxi-visitor", "taxi-way", "tea-intro", "tea-shift", "tea-tv", "tea-weather", "warehouse-intro", "warehouse-shift"]);
   });
@@ -124,11 +129,11 @@ describe("build-course (real content)", () => {
   });
 
   it("turns the audio check on", () => {
-    expect(JSON.parse(readFileSync(join(CONTENT, "courses/zh-china-en.json"), "utf8")).checks.audio).toBe(true);
+    expect(JSON.parse(readFileSync(join(CONTENT, "courses/zh-china.json"), "utf8")).checks.audio).toBe(true);
   });
 
   it("turns the HSK 1 coverage check on", () => {
-    const cfg = JSON.parse(readFileSync(join(CONTENT, "courses", "zh-china-en.json"), "utf8"));
+    const cfg = JSON.parse(readFileSync(join(CONTENT, "courses", "zh-china.json"), "utf8"));
     expect(cfg.checks.coverage).toBe(true);
   });
 
@@ -225,14 +230,14 @@ describe("build-course (real content)", () => {
 
 describe("build-course (broken content)", () => {
   it("with audio on, fails on a missing clip file and passes when all exist", () => {
-    const { clips } = buildCourse(CONTENT, "zh-china-en");
+    const { clips } = buildCourse(CONTENT, "zh-china");
     expect(clips.length).toBeGreaterThan(500);
     const make = (skip: number) =>
       buildChanged((dir) => {
         unlinkSync(join(dir, "audio")); // the link to the real clips, never the clips themselves
         mkdirSync(join(dir, "audio", "zh"), { recursive: true });
         clips.forEach((c, i) => i !== skip && writeFileSync(join(dir, "audio", "zh", `${c.id}.mp3`), ""));
-        const cfgPath = join(dir, "courses", "zh-china-en.json");
+        const cfgPath = join(dir, "courses", "zh-china.json");
         const cfg = JSON.parse(readFileSync(cfgPath, "utf8"));
         writeFileSync(cfgPath, JSON.stringify({ ...cfg, checks: { ...cfg.checks, audio: true } }));
       });
@@ -253,7 +258,7 @@ describe("build-course (broken content)", () => {
   it("with audio on, needs voices.json", () => {
     const { errors } = buildChanged((dir) => {
       unlinkSync(join(dir, "languages", "zh", "voices.json"));
-      const cfgPath = join(dir, "courses", "zh-china-en.json");
+      const cfgPath = join(dir, "courses", "zh-china.json");
       const cfg = JSON.parse(readFileSync(cfgPath, "utf8"));
       writeFileSync(cfgPath, JSON.stringify({ ...cfg, checks: { ...cfg.checks, audio: true } }));
     });
@@ -335,5 +340,75 @@ describe("build-course (broken content)", () => {
     const bad = buildChanged((d) => writeFileSync(join(d, "languages/zh/terms.ftl"), "-tea = {\n"));
     expect(bad.course).toBeUndefined();
     expect(bad.errors[0]).toMatch(/^terms.ftl: terms.ftl: Fluent syntax error/);
+  });
+});
+
+describe("courses and the catalog", () => {
+  it("builds the course for its reading language with its profile and old ids", () => {
+    const { course } = buildCourse(CONTENT, "zh-china");
+    expect(course!.id).toBe("zh-china");
+    expect(course!.learner).toBe("en");
+    expect(course!.language).toEqual({ code: "zh", locale: "zh", tts: "zh-CN", spaced: false });
+    expect(course!.aliases).toEqual(["zh-china-en"]);
+    expect(Object.values(course!.words).find((w) => w.w === "你")!.readings).toEqual(["nǐ"]);
+  });
+
+  it("lists every course and its reading languages by name", () => {
+    const { catalog, errors } = buildAll(CONTENT);
+    expect(errors).toEqual([]);
+    expect(catalog).toEqual([{ id: "zh-china", language: "zh", setting: "china-city", learners: ["en"], learnerNames: { en: "English" } }]);
+  });
+
+  it("builds one file per reading language and names the course and reading language in errors", () => {
+    const dir = copyContent((d) => {
+      cpSync(join(d, "learner/en"), join(d, "learner/fr"), { recursive: true });
+      const cfgPath = join(d, "courses/zh-china.json");
+      writeFileSync(cfgPath, JSON.stringify({ ...JSON.parse(readFileSync(cfgPath, "utf8")), learners: ["en", "fr"] }));
+      const ui = join(d, "learner/fr/ui.ftl");
+      writeFileSync(ui, readFileSync(ui, "utf8").replace(/^learner-name = .*$/m, ""));
+    });
+    const { builds, errors } = buildAll(dir);
+    expect(builds.map((b) => [b.course, b.learner])).toEqual([["zh-china", "en"], ["zh-china", "fr"]]);
+    expect(builds[1].result.course!.learner).toBe("fr");
+    expect(errors).toEqual(['zh-china/fr: learner/fr/ui.ftl: missing "learner-name"']);
+  });
+
+  it("fails a reading language that can't name the language", () => {
+    const { errors } = buildChanged((d) => {
+      const p = join(d, "learner/en/ui.ftl");
+      writeFileSync(p, readFileSync(p, "utf8").replace(/^language-zh = .*$/m, ""));
+    });
+    expect(errors).toContain('learner/en/ui.ftl: missing "language-zh"');
+  });
+
+  it("refuses a right-to-left language", () => {
+    const { course, errors } = buildChanged((d) => {
+      const p = join(d, "languages/zh/pack.json");
+      writeFileSync(p, JSON.stringify({ ...JSON.parse(readFileSync(p, "utf8")), direction: "rtl" }));
+    });
+    expect(course).toBeUndefined();
+    expect(errors).toEqual(['language "zh" is written right to left; no front end can show that yet']);
+  });
+
+  it("refuses a reading language the course doesn't list", () => {
+    expect(buildCourse(CONTENT, "zh-china", "fr").errors).toEqual(['courses/zh-china.json: "fr" is not in learners']);
+  });
+
+  it("refuses a config whose id isn't its file name", () => {
+    const { errors } = buildChanged((d) => {
+      const p = join(d, "courses/zh-china.json");
+      writeFileSync(p, JSON.stringify({ ...JSON.parse(readFileSync(p, "utf8")), id: "other" }));
+    });
+    expect(errors).toEqual(['courses/zh-china.json: id "other" must match the file name']);
+  });
+
+  it("prefers a word's own readings to its pack pronunciation", () => {
+    const { course } = buildChanged((d) => {
+      const p = join(d, "languages/zh/words.json");
+      const words = JSON.parse(readFileSync(p, "utf8")) as { w: string; readings?: string[] }[];
+      words.find((w) => w.w === "你")!.readings = ["nǐ", "ni"];
+      writeFileSync(p, JSON.stringify(words));
+    });
+    expect(Object.values(course!.words).find((w) => w.w === "你")!.readings).toEqual(["nǐ", "ni"]);
   });
 });

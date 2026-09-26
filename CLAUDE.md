@@ -10,7 +10,7 @@ flowchart LR
   L --> B[tools: build-course + checker]
   S[content/settings] --> B
   LR[content/learner] --> B
-  B -- dist/courses/&lt;id&gt;/course.json --> C[packages/core]
+  B -- dist/courses/&lt;id&gt;/&lt;learner&gt;.json --> C[packages/core]
   C -- events --> T[packages/tui]
   T -- inputs --> C
   T --> N[packages/tui-node: terminal + npx bundle]
@@ -27,10 +27,10 @@ flowchart LR
 ```sh
 npm test                 # vitest, all packages
 npm run typecheck        # tsc
-npm run build:course     # content -> dist/courses/zh-china-en/course.json (fails on any checker error)
+npm run build:course     # content -> dist/courses/<course>/<learner>.json + index.json (fails on any checker error); one course: npm run build:course -- zh-china
 npm run play             # play from source in this terminal
 npm run import:zh        # re-import the zh pack from vendor/vocab-engine
-npm run audio            # make missing clips with edge-tts (pipx install edge-tts) + ffmpeg trim, delete unused ones
+npm run audio            # every course (or one: -- zh-china): make missing clips with edge-tts (pipx install edge-tts) + ffmpeg trim, delete unused ones
 npm run bundle -w silver-tongue   # build packages/tui-node/dist for npm/npx
 ```
 

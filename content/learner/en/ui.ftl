@@ -114,3 +114,7 @@ reject-bad-name = That name won't work. Use 1 to 20 letters.
 reject-no-name = Tell us your name first.
 name-prompt = Before anything else: what's your name?
 keys-name = type your name · [enter] done · [⌫] delete
+
+## Languages, by code, for the settings screen and the start list
+learner-name = English
+language-zh = Chinese

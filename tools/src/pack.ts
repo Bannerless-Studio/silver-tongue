@@ -14,6 +14,8 @@ export interface PackMeta {
   typing: Record<string, unknown> | null;
   /** true when the script separates words with spaces */
   spaced: boolean;
+  /** "rtl" for a right-to-left script; absent means left to right */
+  direction?: "ltr" | "rtl";
 }
 
 export interface PackWord {
@@ -22,6 +24,8 @@ export interface PackWord {
   lv: string;
   alt?: string[];
   pron?: string;
+  /** readings, most native first; overrides pron */
+  readings?: string[];
   pos?: string;
   bonus?: boolean;
 }
@@ -45,5 +49,7 @@ export interface VocabWordJson {
   lv: string;
   alt?: string[];
   pron?: string;
+  /** readings, most native first; overrides pron */
+  readings?: string[];
   pos?: string;
 }

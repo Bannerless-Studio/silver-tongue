@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, renameSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildCourse } from "./build-course";
+import { buildCourse, courseIds } from "./build-course";
 import type { Clip } from "./voices";
 
 /**
@@ -56,15 +56,29 @@ function say(clip: Clip, file: string): boolean {
 }
 
 function main(): void {
-  const courseId = process.argv.slice(2).find((a) => !a.startsWith("--")) ?? "zh-china-en";
   const repo = resolve(fileURLToPath(new URL("../..", import.meta.url)));
-  const { course, errors, clips, audioDir } = buildCourse(join(repo, "content"), courseId);
-  // Missing clip files are what this script is for; any other error stops it.
-  const other = errors.filter((e) => !e.startsWith("audio: no file for clip "));
-  if (!course || !audioDir || other.length) {
-    for (const e of other) console.error(`✗ ${e}`);
-    process.exit(1);
+  const content = join(repo, "content");
+  const given = process.argv.slice(2).find((a) => !a.startsWith("--"));
+  // Clips don't depend on the reading language, and courses of one language share a folder: collect
+  // each folder's clips from every course first, so unused-clip deletion sees them all.
+  const byDir = new Map<string, Clip[]>();
+  for (const id of given ? [given] : courseIds(content)) {
+    const { course, errors, clips, audioDir } = buildCourse(content, id);
+    // Missing clip files are what this script is for; any other error stops it.
+    const other = errors.filter((e) => !e.startsWith("audio: no file for clip "));
+    if (!course || !audioDir || other.length) {
+      for (const e of other) console.error(`✗ ${id}: ${e}`);
+      process.exit(1);
+    }
+    const had = byDir.get(audioDir) ?? [];
+    const seen = new Set(had.map((c) => c.id));
+    byDir.set(audioDir, [...had, ...clips.filter((c) => !seen.has(c.id))]);
   }
+  for (const [audioDir, clips] of byDir) makeClips(audioDir, clips);
+}
+
+/** Makes the missing clips in one folder, deletes the ones nothing needs, and trims on --retrim. */
+function makeClips(audioDir: string, clips: Clip[]): void {
   mkdirSync(audioDir, { recursive: true });
   const { missing, unused } = planAudio(clips, readdirSync(audioDir));
   const retrim = process.argv.includes("--retrim");
