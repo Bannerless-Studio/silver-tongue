@@ -46,6 +46,8 @@ export interface BotReport {
   endWallet: number;
   /** inputs the core refused; a sensible player never sends one */
   rejected: number;
+  /** parcels delivered */
+  errands: number;
 }
 
 const HOUR = 3_600_000;
@@ -96,6 +98,8 @@ interface Goal {
   rank: number;
   place: string;
   input: Input;
+  /** times done already: among equal ranks the bot tries what it has done least, so every job gets played */
+  done: number;
 }
 
 /**
@@ -105,14 +109,15 @@ interface Goal {
 function goals(course: Course, state: GameState): Goal[] {
   const out: Goal[] = availableSceneIds(course, state).map((id) => {
     const scene = course.scenes.find((s) => s.id === id)!;
-    const rank = !scene.repeatable ? 0 : scene.exchanges.some((ex) => ex.pay > 0) ? 2 : 3;
-    return { rank, place: scene.place, input: { type: "startScene", scene: id } };
+    // A parcel in hand comes first; a pickup is paid work, since the trip pays at the other end.
+    const rank = scene.endsErrand ? 1 : !scene.repeatable ? 0 : scene.startsErrand || scene.exchanges.some((ex) => ex.pay > 0) ? 2 : 3;
+    return { rank, place: scene.place, input: { type: "startScene", scene: id }, done: state.scenesDone[id] ?? 0 };
   });
   const m = course.world.mentor;
   if (m && state.notes.ready.length && (state.scenesDone[m.after] ?? 0) > 0) {
-    out.push({ rank: 1, place: course.world.npcs[m.npc].place, input: { type: "visitMentor" } });
+    out.push({ rank: 1, place: course.world.npcs[m.npc].place, input: { type: "visitMentor" }, done: 0 });
   }
-  return out.sort((a, b) => a.rank - b.rank);
+  return out.sort((a, b) => a.rank - b.rank || a.done - b.done);
 }
 
 /**
@@ -135,10 +140,11 @@ export function runBot(course: Course, bot: Bot, opts: { days: number; seed: num
     wordsKnown: 0,
     endWallet: 0,
     rejected: 0,
+    errands: 0,
   };
   const paying = (id: string) => {
     const s = course.scenes.find((x) => x.id === id)!;
-    return s.repeatable && s.exchanges.some((ex) => ex.pay > 0);
+    return s.repeatable && (s.startsErrand !== undefined || s.exchanges.some((ex) => ex.pay > 0));
   };
   let dayChecked = 0;
   if (course.needsName) core.send({ type: "setName", name: "Bot" });
@@ -179,6 +185,7 @@ export function runBot(course: Course, bot: Bot, opts: { days: number; seed: num
         report.minWallet = Math.min(report.minWallet, e.wallet);
         report.maxWallet = Math.max(report.maxWallet, e.wallet);
       }
+      if (e.type === "errandEnded") report.errands += 1;
       if (e.type === "sceneEnded" && !course.scenes.find((x) => x.id === e.scene)!.repeatable) {
         report.firstDone[e.scene] ??= core.state.day;
       }
@@ -202,7 +209,7 @@ function main(): void {
   for (const [name, bot] of Object.entries(BOTS)) {
     const r = runBot(course, bot, { days, seed: 7 });
     const done = oneOff.map((id) => `${id}:${r.firstDone[id] ?? "-"}`).join(" ");
-    console.log(`${name.padEnd(8)} wallet ${r.minWallet}..${r.maxWallet} (end ${r.endWallet}) · words ${r.wordsKnown} known / ${r.wordsHeard} heard · notes ${r.notesRead}/${course.notes.length} · dead-end days ${r.deadEndDays} · broke without work ${r.brokeWithoutWork} · rejected ${r.rejected}`);
+    console.log(`${name.padEnd(8)} wallet ${r.minWallet}..${r.maxWallet} (end ${r.endWallet}) · words ${r.wordsKnown} known / ${r.wordsHeard} heard · notes ${r.notesRead}/${course.notes.length} · dead-end days ${r.deadEndDays} · broke without work ${r.brokeWithoutWork} · rejected ${r.rejected} · errands ${r.errands}`);
     console.log(`         ${done}`);
   }
 }

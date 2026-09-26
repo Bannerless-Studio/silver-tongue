@@ -166,6 +166,31 @@ export function checkCourse(input: CheckInput): string[] {
     }
   }
 
+  // Errands: a pickup's slot names the place the parcel goes; each such place has exactly one
+  // drop-off, and every drop-off is somewhere a pickup can send you.
+  const dropsAt = new Map<string, string[]>();
+  for (const s of course.scenes) if (s.endsErrand) dropsAt.set(s.place, [...(dropsAt.get(s.place) ?? []), s.id]);
+  const destinations = new Set<string>();
+  for (const s of course.scenes) {
+    if (s.startsErrand === undefined) continue;
+    const slot = s.startsErrand.startsWith("$") ? s.startsErrand.slice(1) : "";
+    const ex = s.exchanges.find((e) => slot && slot in e.slots);
+    if (!ex) {
+      errors.push(`${s.id}: startsErrand "${s.startsErrand}" is not a slot of any exchange`);
+      continue;
+    }
+    for (const to of course.groups[ex.slots[slot]] ?? []) {
+      destinations.add(to);
+      const n = dropsAt.get(to)?.length ?? 0;
+      if (!world.places[to]) errors.push(`${s.id}: errand goes to "${to}", which is not a place`);
+      else if (n === 0) errors.push(`${s.id}: errand goes to "${to}", which has no scene that ends an errand`);
+      else if (n > 1) errors.push(`${s.id}: errand goes to "${to}", which has ${n} scenes that end an errand; needs 1`);
+    }
+  }
+  for (const [place, ids] of dropsAt) {
+    if (!destinations.has(place)) for (const id of ids) errors.push(`${id}: ends an errand, but no errand goes to "${place}"`);
+  }
+
   const allowed = (stage: number): Set<string> => {
     const lv = new Set<string>();
     for (let i = 1; i <= stage; i++) for (const l of stages[String(i)] ?? []) lv.add(l);
