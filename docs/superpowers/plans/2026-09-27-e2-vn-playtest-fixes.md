@@ -432,36 +432,37 @@ Expected: FAIL — `a.busy` is `undefined`, so `toBe(true)` fails.
 
 - [ ] **Step 3: Implement it in `packages/tui-node/src/node-audio.ts`**
 
-Add `let speaking = false;` after `let proc: Proc | undefined;`, set `speaking = false` in `breakDown()` and in `stop()`, and set it in `next()`:
-```ts
-    const clip = queue.shift();
-    if (!clip) return;
-    speaking = true;
-```
-then, in the exit handler, clear it when nothing is left:
-```ts
-      p.on("exit", (code) => {
-        if (mine !== run) return; // killed by stop(): not a failure
-        proc = undefined;
-        fails = code === 0 ? 0 : fails + 1;
-        if (fails >= FAILS_TO_GIVE_UP) return breakDown();
-        if (queue.length) timer = deps.wait(BEAT_MS, () => next(mine));
-        else speaking = false;
-      });
-```
-and add the getter next to `available` in the returned object:
+This player already holds both facts a `busy` needs, so the getter reads them rather than adding a flag that could drift: `proc` is set while a clip runs and cleared on exit and in `stop()`; `timer` covers the 300 ms beat and is cleared in `next()` and `stop()`. Copy the public shape from `packages/web-common/src/web-audio.ts`, not the mechanism — a separate `speaking` flag would be a third copy of the same truth to keep in step.
+
+Add the getter next to `available` in the returned object, and nothing else:
 ```ts
     get busy() {
-      return !broken && speaking;
+      return !broken && (proc !== undefined || timer !== undefined);
     },
+```
+Check the existing test double first: `fakes()` returns `{ spawned, waits, spawn, wait }` and its `waits` entries already carry a `cancelled` flag, so `stop()` during the beat is assertable. Add that one case too, mirroring `packages/tui-web`'s existing sibling coverage:
+
+```ts
+  it("stops dead in the beat between clips: the next clip never starts", () => {
+    const f = fakes();
+    const a = createNodeAudio({ dir: "/a", player, ...f });
+    a.play([{ clips: ["x", "y"] }]);
+    f.spawned[0].proc.exit();
+    a.stop();
+    expect(a.busy).toBe(false);
+    expect(f.waits[0].cancelled).toBe(true);
+    f.waits[0].cb(); // a timer that fires anyway does nothing
+    f.spawned[0].proc.exit();
+    expect(f.spawned).toHaveLength(1);
+  });
 ```
 
 - [ ] **Step 4: Run the tests**
 
 ```bash
-npx vitest run packages/tui-node/test/node-audio.test.ts && npm test
+npx vitest run packages/tui-node/test/node-audio.test.ts && npm test && npm run typecheck
 ```
-Expected: PASS, whole suite green.
+Expected: PASS, whole suite green, types clean.
 
 - [ ] **Step 5: Commit**
 
@@ -992,7 +993,7 @@ Expected: PASS. Then `npm run build:course` also passes with no errors (the clip
 
 - [ ] **Step 5: Own the preferences in `packages/vn-web/src/main.tsx`**
 
-Add to the `@silver-tongue/web-common` import: `updateWebSettings` (drop `saveWebSettings` if it is no longer used in the file). Import `nextSpeed` and `type SpeechSpeed` from `@silver-tongue/view` (it is already imported there — extend the list).
+Add to the `@silver-tongue/web-common` import: `updateWebSettings` (drop `saveWebSettings` if it is no longer used in the file). Extend the `@silver-tongue/view` import (line 1) with `playbackRate`, `nextSpeed` and `type SpeechSpeed`.
 
 Add beside `let current: {...} | undefined;`:
 ```ts
@@ -1002,6 +1003,10 @@ let prefs = { speed: "slow" as SpeechSpeed, autoAdvance: true };
 In `boot()`, after `const settings = loadWebSettings(kv);`:
 ```ts
   prefs = { speed: settings.speed ?? "slow", autoAdvance: settings.autoAdvance ?? true };
+```
+In `load()`, add one line to this page's own `createWebAudio` call (line 51) so a clip on **this** page honours the speed row — without it the visual novel, the one page with the setting, would play at the old rate:
+```ts
+      rate: () => playbackRate(prefs.speed),
 ```
 In `play(opened)`, add `autoAdvance: prefs.autoAdvance,` to the `createVn({ … })` call, and add these two lines to the `page` object:
 ```ts
