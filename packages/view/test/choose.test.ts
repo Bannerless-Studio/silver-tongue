@@ -20,6 +20,7 @@ describe("player settings", () => {
     expect(parseSettings('{"speed":"normal","autoAdvance":false}')).toEqual({ speed: "normal", autoAdvance: false });
     expect(parseSettings('{"speed":"quick"}')).toEqual({});
     expect(parseSettings('{"autoAdvance":"no"}')).toEqual({});
+    expect(parseSettings('{"course":"zh-china","speed":"quick","autoAdvance":true}')).toEqual({ course: "zh-china", autoAdvance: true });
   });
 });
 
