@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { makeText, uiTextProblems } from "../src/text";
 
 describe("text", () => {
-  const t = makeText("hello = Hello, { $name }!\n");
+  const t = makeText("hello = Hello, { $name }!\n", "en");
 
   it("formats messages and shows the id for a missing one", () => {
     expect(t("hello", { name: "Mei" })).toBe("Hello, Mei!");
@@ -24,5 +24,9 @@ describe("text", () => {
     const problems = uiTextProblems(broken, "en");
     expect(problems).toContain('learner text "hud": Unknown variable: $dya');
     expect(problems).toContain('learner text: missing "menu-title"');
+  });
+  it("formats numbers in the reading language's locale", () => {
+    const t = makeText("n = { $n }", "de");
+    expect(t("n", { n: 1234.5 })).toBe("1.234,5");
   });
 });

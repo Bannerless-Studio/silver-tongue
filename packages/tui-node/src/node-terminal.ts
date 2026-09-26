@@ -17,7 +17,9 @@ export function createNodeTerminal(input = process.stdin, output = process.stdou
   if (input.isTTY) input.setRawMode(true);
   input.resume(); // a readline prompt before the game (--resume) leaves stdin paused
   output.write("\x1b[?1049h\x1b[?25l"); // alternate screen, hide cursor
+  // One app at a time: switching course starts a new app, which takes the keys and resizes over.
   const handlers: ((k: Key) => void)[] = [];
+  let resized: (() => void) | undefined;
   input.on("keypress", (str: string | undefined, key: NodeKey | undefined) => {
     const name = keyName(str, key);
     // The typed character, case kept, for text entry (a name); not for control keys.
@@ -42,9 +44,11 @@ export function createNodeTerminal(input = process.stdin, output = process.stdou
       output.write("\x1b[H\x1b[2J" + lines.map(toAnsi).join("\r\n") + place);
     },
     onKey(handler) {
-      handlers.push(handler);
+      handlers.splice(0, handlers.length, handler);
     },
     onResize(handler) {
+      if (resized) output.off("resize", resized);
+      resized = handler;
       output.on("resize", handler);
     },
     size() {

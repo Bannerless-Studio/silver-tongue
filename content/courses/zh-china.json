@@ -1,7 +1,8 @@
 {
-  "id": "zh-china-en",
+  "id": "zh-china",
   "language": "zh",
   "setting": "china-city",
-  "learner": "en",
+  "learners": ["en"],
+  "aliases": ["zh-china-en"],
   "checks": { "coverage": true, "audio": true }
 }

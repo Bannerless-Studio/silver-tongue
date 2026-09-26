@@ -3,7 +3,7 @@ import { newGame, PLAYER_MARK, type WordRecord } from "@silver-tongue/core";
 import { notebookLines } from "../src/notebook";
 import { plain } from "../src/terminal";
 import { makeText } from "../src/text";
-import { fixtureWithText } from "./fake-terminal";
+import { fixtureWithText, spacedWithText } from "./fake-terminal";
 
 const T0 = 1_000_000;
 const rec = (patch: Partial<WordRecord>): WordRecord => ({
@@ -13,7 +13,15 @@ const rec = (patch: Partial<WordRecord>): WordRecord => ({
 describe("notebook", () => {
   const course = fixtureWithText();
   course.notes = [{ id: "hao", trigger: { word: "w_hao" } }];
-  const t = makeText(course.learnerFtl);
+  const t = makeText(course.learnerFtl, "en");
+
+  it("shows every reading of a word", () => {
+    const spaced = spacedWithText();
+    const state = newGame(spaced);
+    state.words = { w_ni: rec({ first: { line: "mi bon!", place: "noodle_shop" } }) };
+    const lines = notebookLines(spaced, state, t, T0).map(plain).join("\n");
+    expect(lines).toContain("mi mí mi — you");
+  });
 
   it("counts progress on the stage list, groups words by where they were first heard, and lists read notes", () => {
     const state = newGame(course);

@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { parseSave, type Course, type GameState } from "@silver-tongue/core";
 
@@ -53,4 +53,33 @@ export function migrateLegacySave(configRoot: string, courseId: string): void {
   const dir = sessionsDir(configRoot, courseId);
   mkdirSync(dir, { recursive: true });
   renameSync(legacy, newSessionPath(dir, statSync(legacy).mtimeMs));
+}
+
+/** `<dir>/<name>`, or with -2, -3, … before `.json` (or at the end) when that is taken. */
+function freeName(dir: string, name: string): string {
+  const [base, ext] = name.endsWith(".json") ? [name.slice(0, -".json".length), ".json"] : [name, ""];
+  let path = join(dir, name);
+  for (let n = 2; existsSync(path); n++) path = join(dir, `${base}-${n}${ext}`);
+  return path;
+}
+
+/**
+ * A course's saves under its earlier ids come with it: the old single-save files and every file in
+ * the old sessions folders (backups too) move into its sessions folder, keeping their times.
+ */
+export function migrateCourseSessions(configRoot: string, course: { id: string; aliases?: string[] }): void {
+  migrateLegacySave(configRoot, course.id);
+  const dir = sessionsDir(configRoot, course.id);
+  for (const alias of course.aliases ?? []) {
+    const legacy = join(configRoot, "silver-tongue", `${alias}.json`);
+    if (existsSync(legacy)) {
+      mkdirSync(dir, { recursive: true });
+      renameSync(legacy, newSessionPath(dir, statSync(legacy).mtimeMs));
+    }
+    const old = sessionsDir(configRoot, alias);
+    if (!existsSync(old)) continue;
+    mkdirSync(dir, { recursive: true });
+    for (const file of readdirSync(old)) renameSync(join(old, file), freeName(dir, file));
+    rmdirSync(old);
+  }
 }

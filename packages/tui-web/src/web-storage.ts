@@ -1,4 +1,5 @@
 import { newGame, parseSave, serialize, type Course, type GameState } from "@silver-tongue/core";
+import { parseSettings, type PlayerSettings } from "@silver-tongue/tui";
 
 /** The part of localStorage the game uses; `keys` lists every stored key. */
 export interface KeyValue {
@@ -56,14 +57,7 @@ export class WebSessions {
   }
 
   private meta(): Meta {
-    try {
-      const m = JSON.parse(this.kv.getItem(`${this.prefix}meta`) ?? "null") as Meta | null;
-      return m && typeof m === "object" && m.played && typeof m.played === "object" && !Array.isArray(m.played)
-        ? m
-        : { played: {} };
-    } catch {
-      return { played: {} };
-    }
+    return readMeta(this.kv, `${this.prefix}meta`);
   }
 
   private newId(): string {
@@ -145,6 +139,85 @@ export class WebSessions {
       return this.save(id, state) ? id : null;
     } catch {
       return null;
+    }
+  }
+}
+
+/** Where the player's settings live, apart from every course's games. */
+export const SETTINGS_KEY = "silver-tongue:settings";
+
+/** The player's settings; missing, unreadable or blocked storage means none. */
+export function loadWebSettings(kv: KeyValue): PlayerSettings {
+  try {
+    return parseSettings(kv.getItem(SETTINGS_KEY));
+  } catch {
+    return {};
+  }
+}
+
+export function saveWebSettings(kv: KeyValue, settings: PlayerSettings): boolean {
+  try {
+    kv.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** A meta entry as stored, or an empty one. */
+function readMeta(kv: KeyValue, key: string): Meta {
+  try {
+    const m = JSON.parse(kv.getItem(key) ?? "null") as Meta | null;
+    return m && typeof m === "object" && m.played && typeof m.played === "object" && !Array.isArray(m.played) ? m : { played: {} };
+  } catch {
+    return { played: {} };
+  }
+}
+
+/**
+ * Games saved under a course's earlier ids move to its own: sessions (renamed -2, -3, … on a clash),
+ * backups, and which game was played last and when. If storage refuses, what couldn't move stays.
+ */
+export function migrateWebAliases(kv: KeyValue, course: { id: string; aliases?: string[] }): void {
+  const to = `silver-tongue:${course.id}:`;
+  for (const alias of course.aliases ?? []) {
+    const from = `silver-tongue:${alias}:`;
+    try {
+      const keys = kv.keys().filter((k) => k.startsWith(from));
+      if (!keys.length) continue;
+      const oldMeta = readMeta(kv, `${from}meta`);
+      const meta = readMeta(kv, `${to}meta`);
+      // Whichever game was played last, under either id, stays the one played last.
+      const at = (m: Meta, id?: string) => (id === undefined ? -1 : (m.played[id] ?? 0));
+      const lastWins = oldMeta.last !== undefined && at(oldMeta, oldMeta.last) >= at(meta, meta.last);
+      for (const key of keys) {
+        const rest = key.slice(from.length);
+        if (rest === "meta") continue;
+        let target = `${to}${rest}`;
+        if (rest.startsWith("session:")) {
+          const id = rest.slice("session:".length);
+          let newId = id;
+          for (let n = 2; kv.getItem(`${to}session:${newId}`) !== null; n++) newId = `${id}-${n}`;
+          target = `${to}session:${newId}`;
+          kv.setItem(target, kv.getItem(key) ?? "");
+          // The new meta is written with each game, so storage filling up midway loses no play times.
+          if (oldMeta.played[id] !== undefined) meta.played[newId] = oldMeta.played[id];
+          if (lastWins && id === oldMeta.last) meta.last = newId;
+          try {
+            kv.setItem(`${to}meta`, JSON.stringify(meta));
+          } catch (e) {
+            kv.removeItem(target); // not moved after all: it stays under the old id for next time
+            throw e;
+          }
+        } else {
+          for (let n = 2; kv.getItem(target) !== null; n++) target = `${to}${rest}-${n}`;
+          kv.setItem(target, kv.getItem(key) ?? "");
+        }
+        kv.removeItem(key);
+      }
+      kv.removeItem(`${from}meta`);
+    } catch {
+      // storage refused: the old games stay where they are and move next time
     }
   }
 }

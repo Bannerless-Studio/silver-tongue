@@ -7,7 +7,7 @@ export type Text = ((id: string, args?: Record<string, FluentVariable>) => strin
 };
 
 /** Learner-language text. A missing message shows its id, so gaps are visible, never fatal. */
-export function makeText(ftl: string, locale = "en"): Text {
+export function makeText(ftl: string, locale: string): Text {
   const bundle = new FluentBundle(locale, { useIsolating: false });
   bundle.addResource(new FluentResource(ftl));
   const t = (id: string, args?: Record<string, FluentVariable>) => {
@@ -21,6 +21,8 @@ export function makeText(ftl: string, locale = "en"): Text {
 /**
  * Message ids the TUI uses, with the variables it passes to each.
  * The course build fails a learner language that lacks any of them or uses other variables.
+ * Not listed, because they depend on the catalog: `language-<code>` for every course's language,
+ * which the build checks against the catalog (tools/src/build-course.ts languageNameProblems).
  */
 export const UI_KEYS: Record<string, string[]> = {
   hud: ["day", "slot", "slots", "currency", "wallet", "rank", "parcel", "rentLate"],
@@ -76,6 +78,21 @@ export const UI_KEYS: Record<string, string[]> = {
   "notice-bad-save": [],
   "notice-read-only": [],
   "resume-title": [],
+  "settings-title": [],
+  "settings-learning": ["language"],
+  "settings-reading": ["learner"],
+  "settings-sound": ["sound"],
+  "settings-sound-on": [],
+  "settings-sound-off": [],
+  "settings-sound-none": [],
+  "settings-pick-course": [],
+  "settings-pick-reading": [],
+  "settings-current": [],
+  "keys-settings": ["keys"],
+  "keys-settings-pick": ["keys"],
+  "keys-o": [],
+  "start-title": [],
+  "start-ask": [],
   "resume-item": ["name", "day", "place", "currency", "wallet", "done", "date"],
   "resume-ask": [],
   "resume-none": [],
@@ -83,7 +100,7 @@ export const UI_KEYS: Record<string, string[]> = {
   "import-bad": ["reason"],
   "import-done": ["game"],
   ...Object.fromEntries(
-    ["new", "games", "games-none", "export", "export-hint", "copy", "copied", "import", "import-hint", "import-go", "close", "saved", "tap-to-type"].map(
+    ["new", "games", "games-none", "export", "export-hint", "copy", "copied", "import", "import-hint", "import-go", "close", "saved", "tap-to-type", "load-failed"].map(
       (k) => [`web-${k}`, []],
     ),
   ),

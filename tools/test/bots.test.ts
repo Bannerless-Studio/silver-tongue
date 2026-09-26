@@ -8,7 +8,7 @@ import { buildCourse } from "../src/build-course";
 const CONTENT = fileURLToPath(new URL("../../content", import.meta.url));
 
 describe("course bots (real content)", () => {
-  const { course } = buildCourse(CONTENT, "zh-china-en");
+  const { course } = buildCourse(CONTENT, "zh-china");
   const oneOff = course!.scenes.filter((s) => !s.repeatable).map((s) => s.id);
   const reports = Object.fromEntries(Object.entries(BOTS).map(([name, bot]) => [name, runBot(course!, bot, { days: 14, seed: 7 })]));
 

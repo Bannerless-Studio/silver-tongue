@@ -1,15 +1,15 @@
 {
   "name": "silver-tongue",
-  "version": "0.12.2",
+  "version": "0.13.0",
   "description": "Learn a language by living in it: a text game for the terminal.",
   "type": "module",
-  "repository": { "type": "git", "url": "git+https://github.com/jamil314/silver-tongue.git", "directory": "packages/tui-node" },
+  "repository": { "type": "git", "url": "git+https://github.com/Bannerless-Studio/silver-tongue.git", "directory": "packages/tui-node" },
   "license": "MIT",
   "engines": { "node": ">=22" },
   "bin": { "silver-tongue": "dist/silver-tongue.mjs" },
   "files": ["dist"],
   "scripts": {
-    "bundle": "esbuild src/main.ts --bundle --platform=node --format=esm --outfile=dist/silver-tongue.mjs --banner:js=\"#!/usr/bin/env node\" && mkdir -p dist/courses/zh-china-en && cp ../../dist/courses/zh-china-en/course.json dist/courses/zh-china-en/ && rm -rf dist/courses/zh-china-en/audio && mkdir dist/courses/zh-china-en/audio && cp ../../content/audio/zh/*.mp3 dist/courses/zh-china-en/audio/"
+    "bundle": "esbuild src/main.ts --bundle --platform=node --format=esm --outfile=dist/silver-tongue.mjs --banner:js=\"#!/usr/bin/env node\" && node bundle-courses.mjs"
   },
   "devDependencies": {
     "@silver-tongue/core": "*",

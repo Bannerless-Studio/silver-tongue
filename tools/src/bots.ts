@@ -10,6 +10,7 @@ import {
   sceneCost,
   tilePieces,
   wordState,
+  type CatalogEntry,
   type Course,
   type GameState,
   type Input,
@@ -255,10 +256,13 @@ export function runBot(course: Course, bot: Bot, opts: { days: number; seed: num
 }
 
 function main(): void {
-  const courseId = process.argv[2] ?? "zh-china-en";
+  const courseId = process.argv[2] ?? "zh-china";
   const days = Number(process.argv[3] ?? 14);
   const repo = resolve(fileURLToPath(new URL("../..", import.meta.url)));
-  const course = JSON.parse(readFileSync(join(repo, "dist", "courses", courseId, "course.json"), "utf8")) as Course;
+  const catalog = JSON.parse(readFileSync(join(repo, "dist", "courses", "index.json"), "utf8")) as CatalogEntry[];
+  const learner = catalog.find((e) => e.id === courseId)?.learners[0];
+  if (!learner) throw new Error(`no course "${courseId}" in dist/courses/index.json; run npm run build:course`);
+  const course = JSON.parse(readFileSync(join(repo, "dist", "courses", courseId, `${learner}.json`), "utf8")) as Course;
   const oneOff = course.scenes.filter((s) => !s.repeatable).map((s) => s.id);
   console.log(`${courseId}, ${days} days. One-off scenes: day first finished.\n`);
   for (const [name, bot] of Object.entries(BOTS)) {

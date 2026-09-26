@@ -1,16 +1,14 @@
-// Builds dist/index.html: the app, xterm.js with its CSS, and the built course in one file,
-// so the page works from GitHub Pages, a shared link or straight from disk. The clips go in
-// dist/audio/ beside it (without them the game plays silently).
+// Builds dist/index.html (the app, xterm.js and its CSS in one file) and dist/courses/: the catalog,
+// each course file and each course's clips. The page fetches the course it plays, so it needs a web
+// server (GitHub Pages, npx serve); it no longer works opened straight from disk.
 import { build } from "esbuild";
-import { cpSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = join(here, "..", "..");
-const courseId = process.argv[2] ?? "zh-china-en";
-const course = readFileSync(join(repo, "dist", "courses", courseId, "course.json"), "utf8");
 const xtermDir = dirname(createRequire(import.meta.url).resolve("@xterm/xterm/package.json"));
 
 const result = await build({
@@ -21,7 +19,6 @@ const result = await build({
   minify: true,
   write: false,
   define: {
-    __COURSE__: course,
     __VERSION__: JSON.stringify(JSON.parse(readFileSync(join(repo, "packages", "tui-node", "package.json"), "utf8")).version),
   },
   legalComments: "none",
@@ -34,7 +31,20 @@ const html = readFileSync(join(here, "src", "index.html"), "utf8")
   .replace("/*JS*/", () => js);
 mkdirSync(join(here, "dist"), { recursive: true });
 writeFileSync(join(here, "dist", "index.html"), html);
-const audioOut = join(here, "dist", "audio");
-rmSync(audioOut, { recursive: true, force: true });
-cpSync(join(repo, "content", "audio", "zh"), audioOut, { recursive: true, filter: (f) => !f.endsWith(".part") });
-console.log(`built packages/tui-web/dist/index.html (${Math.round(html.length / 1024)} KB) and ${readdirSync(audioOut).length} clips in dist/audio/`);
+const coursesOut = join(here, "dist", "courses");
+rmSync(join(here, "dist", "audio"), { recursive: true, force: true }); // where 0.12 kept the clips
+rmSync(coursesOut, { recursive: true, force: true });
+cpSync(join(repo, "dist", "courses"), coursesOut, { recursive: true });
+let clips = 0;
+for (const entry of JSON.parse(readFileSync(join(coursesOut, "index.json"), "utf8"))) {
+  const src = join(repo, "content", "audio", entry.language);
+  if (!existsSync(src)) continue;
+  const out = join(coursesOut, entry.id, "audio");
+  mkdirSync(out, { recursive: true });
+  // Only finished clips, as the npm bundle copies (bundle-courses.mjs).
+  for (const f of readdirSync(src).filter((f) => f.endsWith(".mp3"))) {
+    cpSync(join(src, f), join(out, f));
+    clips++;
+  }
+}
+console.log(`built packages/tui-web/dist/index.html (${Math.round(html.length / 1024)} KB) and dist/courses/ with ${clips} clips`);

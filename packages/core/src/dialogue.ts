@@ -57,6 +57,11 @@ export function tilePieces(line: RenderedLine): string[] {
   return [...words, ...names].sort((a, b) => a.at - b.at).map((p) => p.text);
 }
 
+/** Tiles as the player reads them: with spaces between them in a spaced language. */
+export function joinTiles(course: Course, pieces: string[]): string {
+  return pieces.join(course.language.spaced ? " " : "");
+}
+
 function sceneById(ctx: Ctx, id: string): Scene | undefined {
   return ctx.course.scenes.find((s) => s.id === id);
 }
@@ -241,7 +246,7 @@ function resolve(
   });
   const hinges = hingeWords(ctx, ex, run.combo);
   if (matched) {
-    // The reply's own words count too: saying them right is how a player learns 不客气.
+    // The reply's own words count too: saying them right is how a player learns a set phrase.
     const reply = ex.variants[comboKey(run.combo)].reply;
     for (const w of new Set([...hinges, ...reply.tokens.map((t) => t.word)])) setWord(ctx, w, recordRight);
     for (const t of reply.tokens) {
@@ -342,7 +347,7 @@ export function replyTiles(ctx: Ctx, tiles: number[]): void {
   const reply = cur.ex.variants[comboKey(run.combo)].reply;
   // Judged by what the player sees: a name that looks like a word is as good as that word.
   const name = nameOf(ctx.state);
-  const shown = (pieces: string[]) => pieces.map((x) => (x === PLAYER_MARK ? name : x)).join("");
+  const shown = (pieces: string[]) => joinTiles(ctx.course, pieces.map((x) => (x === PLAYER_MARK ? name : x)));
   const target = shown(tilePieces(reply));
   // Words of the reply the player placed count as said; the rest were missed.
   const said = reply.tokens.filter((t) => chosen.includes(reply.text.slice(t.start, t.end))).map((t) => t.word);

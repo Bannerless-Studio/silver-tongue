@@ -7,9 +7,11 @@ import {
   tilePieces,
   sceneCost,
   describeRun,
+  joinTiles,
   mentorAvailable,
   MAX_NAME_LENGTH,
   rankFor,
+  type CatalogEntry,
   type Core,
   type Course,
   type GameEvent,
@@ -39,10 +41,21 @@ export interface AppOptions {
   version?: string;
   /** sound out; without it the game is silent and says "no audio" */
   audio?: AudioOut;
+  /** Switching course and reading language from [o]; without it there is no [o]. */
+  settings?: {
+    /** the catalog; the course and reading language being played are course.id and course.learner */
+    courses: CatalogEntry[];
+    /**
+     * The player chose another course or reading language: the app has saved (if it can) and hands
+     * over the game as played, for a reading-language switch to go on with even when saving failed.
+     */
+    switchTo(course: string, learner: string, state: GameState): void;
+  };
 }
 
 type MenuItem = { label: string; input?: Input; quit?: true };
-type Mode = "explore" | "scene" | "help" | "notebook" | "name";
+type Mode = "explore" | "scene" | "help" | "notebook" | "name" | "settings" | "settings-course" | "settings-reading";
+const SETTINGS_MODES: Mode[] = ["settings", "settings-course", "settings-reading"];
 
 export interface App {
   press(key: Key): void;
@@ -53,7 +66,7 @@ const LOG_LIMIT = 200;
 
 export function startApp(opts: AppOptions): App {
   const { course, core, term } = opts;
-  const t: Text = makeText(course.learnerFtl);
+  const t: Text = makeText(course.learnerFtl, course.learner);
   const wordIds = Object.keys(course.words);
 
   let mode: Mode = "explore";
@@ -65,6 +78,8 @@ export function startApp(opts: AppOptions): App {
   let lastLine: RenderedLine | null = null;
   let notebookFrom: Mode = "explore"; // where closing the notebook returns to
   let notebookTop = 0; // first notebook line on screen
+  let settingsFrom: Mode = "explore"; // where closing settings returns to
+  let handedOver = false; // another course or reading language took over: this app is done
   let resuming = false;
   let nameInput = ""; // replaying a scene saved half-way: it has already been introduced
   let lastSlow = false; // the last line was a slow repeat, so r says it slowly too
@@ -260,6 +275,48 @@ export function startApp(opts: AppOptions): App {
     return false;
   }
 
+  const catalogEntry = () => opts.settings?.courses.find((c) => c.id === course.id);
+  const languageName = (code: string) => (t.has(`language-${code}`) ? t(`language-${code}`) : code);
+  const learnerName = (code: string) => catalogEntry()?.learnerNames[code] ?? code;
+  const soundLabel = () =>
+    !opts.audio?.available ? t("settings-sound-none") : core.state.sound === false ? t("settings-sound-off") : t("settings-sound-on");
+  const current = (yes: boolean) => (yes ? ` ${t("settings-current")}` : "");
+
+  /** The rows the settings screen shows, and what choosing each one does. */
+  function settingsRows(): { label: string; choose: () => void }[] {
+    if (mode === "settings-course") {
+      return opts.settings!.courses.map((c) => ({
+        label: languageName(c.language) + current(c.id === course.id),
+        choose: () => {
+          if (c.id === course.id) mode = "settings";
+          else switchTo(c.id, c.learners.includes(course.learner) ? course.learner : c.learners[0]);
+        },
+      }));
+    }
+    if (mode === "settings-reading") {
+      return (catalogEntry()?.learners ?? [course.learner]).map((code) => ({
+        label: learnerName(code) + current(code === course.learner),
+        choose: () => {
+          if (code === course.learner) mode = "settings";
+          else switchTo(course.id, code);
+        },
+      }));
+    }
+    return [
+      { label: t("settings-learning", { language: languageName(course.language.code) }), choose: () => void (mode = "settings-course") },
+      { label: t("settings-reading", { learner: learnerName(course.learner) }), choose: () => void (mode = "settings-reading") },
+      { label: t("settings-sound", { sound: soundLabel() }), choose: () => void soundKey("m") },
+    ];
+  }
+
+  /** Saves, stops any sound, and hands over to the front end, which starts the app again. */
+  function switchTo(courseId: string, learner: string) {
+    opts.audio?.stop();
+    persist();
+    handedOver = true;
+    opts.settings!.switchTo(courseId, learner, core.state);
+  }
+
   /** The right reply for the exchange being played. */
   function rightReply(): RenderedLine | undefined {
     const run = core.state.run;
@@ -308,6 +365,10 @@ export function startApp(opts: AppOptions): App {
     if (mode === "name") {
       return [[{ text: t("name-prompt"), bold: true }], [{ text: "> " }, { text: nameInput, bold: true }, { text: "_", dim: true }]];
     }
+    if (SETTINGS_MODES.includes(mode)) {
+      const title = mode === "settings" ? "settings-title" : mode === "settings-course" ? "settings-pick-course" : "settings-pick-reading";
+      return [[{ text: t(title), dim: true }], ...settingsRows().map((r, i) => [{ text: `${i + 1}) ${r.label}` }])];
+    }
     if (mode === "explore") {
       // The status line's parcel marker is cut off on narrow screens; this line wraps instead.
       const parcel: StyledLine[] = core.state.errand ? [[{ text: t("errand-carrying"), color: "cyan" }]] : [];
@@ -344,7 +405,7 @@ export function startApp(opts: AppOptions): App {
         width,
         " ",
       ),
-      [{ text: `${t("tiles-answer")} `, dim: true }, { text: tileInput.map((i) => tiles[i]).join(""), bold: true }],
+      [{ text: `${t("tiles-answer")} `, dim: true }, { text: joinTiles(course, tileInput.map((i) => tiles[i])), bold: true }],
     ];
   }
 
@@ -361,6 +422,7 @@ export function startApp(opts: AppOptions): App {
   }
 
   function render() {
+    if (handedOver) return;
     const s = core.state;
     const { cols, rows } = term.size();
     const hud = t("hud", {
@@ -383,7 +445,11 @@ export function startApp(opts: AppOptions): App {
       return;
     }
     const [footerId, count] =
-      mode === "name"
+      mode === "settings"
+        ? ["keys-settings", 3]
+        : SETTINGS_MODES.includes(mode)
+        ? ["keys-settings-pick", settingsRows().length]
+        : mode === "name"
         ? ["keys-name", 0]
         : mode === "explore"
         ? ["keys-explore", menu().length]
@@ -392,7 +458,9 @@ export function startApp(opts: AppOptions): App {
           : replyMode === "pick"
             ? ["keys-pick", pickOptions.length]
             : ["keys-tiles", tiles.length];
-    const footer = t(footerId, { keys: keyRange(count) });
+    // [o] is listed last, so a narrow screen drops it first.
+    const keys = t(footerId, { keys: keyRange(count) });
+    const footer = opts.settings && ["explore", "scene", "help"].includes(mode) ? `${keys} · ${t("keys-o")}` : keys;
     term.write(
       renderScreen({ title: t(`place-${s.place}`), hud, log, prompt: prompt(cols - 4), footer, footerRight: footerRight(footer, cols) }, cols, rows),
       // Typing a name: the cursor sits after the text, where a phone keyboard shows what's being composed.
@@ -401,6 +469,7 @@ export function startApp(opts: AppOptions): App {
   }
 
   function press(key: Key) {
+    if (handedOver) return;
     if (key.name === "ctrl-c") return opts.quit();
     if (mode === "name") {
       const ch = key.text ?? ([...key.name].length === 1 ? key.name : undefined);
@@ -417,6 +486,18 @@ export function startApp(opts: AppOptions): App {
       if (key.name === "escape" || key.name === "n") mode = notebookFrom;
       else if (key.name === "down") notebookTop += 1;
       else if (key.name === "up") notebookTop = Math.max(0, notebookTop - 1);
+      return render();
+    }
+    if (SETTINGS_MODES.includes(mode)) {
+      const rows = settingsRows();
+      const n = /^[1-9]$/.test(key.name) ? Number(key.name) - 1 : -1;
+      if (key.name === "escape") mode = mode === "settings" ? settingsFrom : "settings";
+      else if (n >= 0 && n < rows.length) rows[n].choose();
+      return render();
+    }
+    if (key.name === "o" && opts.settings && (mode === "explore" || mode === "scene" || mode === "help")) {
+      settingsFrom = mode;
+      mode = "settings";
       return render();
     }
     if (key.name === "n" && mode !== "help") {
@@ -441,7 +522,7 @@ export function startApp(opts: AppOptions): App {
         send({ type: "helpWord", word: word.word });
         push([
           { text: w.w, bold: true },
-          ...(w.pron ? [{ text: ` ${w.pron}`, color: "yellow" as const }] : []),
+          ...(w.readings?.length ? [{ text: ` ${w.readings.join(" ")}`, color: "yellow" as const }] : []),
           { text: ` — ${w.gloss}` },
         ]);
       }
@@ -455,10 +536,10 @@ export function startApp(opts: AppOptions): App {
         flush();
         // Reading the whole line is not logged as help on each word: the words still have to be
         // recognised in the reply.
-        const pron = lastLine.tokens.flatMap((tk) => course.words[tk.word]?.pron ?? []).join(" ");
+        const reading = lastLine.tokens.flatMap((tk) => course.words[tk.word]?.readings?.at(-1) ?? []).join(" ");
         push([
           { text: lastLine.text, bold: true },
-          ...(pron ? [{ text: ` ${pron}`, color: "yellow" as const }] : []),
+          ...(reading ? [{ text: ` ${reading}`, color: "yellow" as const }] : []),
           { text: ` — ${lastLine.meaning}` },
         ]);
       }
@@ -477,10 +558,10 @@ export function startApp(opts: AppOptions): App {
       tileInput = tileInput.slice(0, -1);
     } else if (key.name === "return" && tileInput.length) {
       // Tiles that make the right reply are shown as the reply itself, punctuation and all.
-      const placed = tileInput.map((i) => tiles[i]).join("");
+      const placed = joinTiles(course, tileInput.map((i) => tiles[i]));
       const reply = rightReply();
       const name = core.state.player ?? "";
-      const right = !!reply && tilePieces(reply).map((x) => (x === PLAYER_MARK ? name : x)).join("") === placed;
+      const right = !!reply && joinTiles(course, tilePieces(reply).map((x) => (x === PLAYER_MARK ? name : x))) === placed;
       echo(right ? personalize(reply!, name).text : placed);
       tileReply = reply?.audio ?? [];
       send({ type: "replyTiles", tiles: tileInput });

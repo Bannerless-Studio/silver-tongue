@@ -9,7 +9,8 @@ export const PLAYER_MARK = "\uE000";
 export interface Word {
   id: WordId;
   w: string;
-  pron?: string;
+  /** how to say it, most native first; the last is the one sentence help shows */
+  readings?: string[];
   lv: string;
   gloss: string;
   bonus?: boolean;
@@ -109,9 +110,37 @@ export interface Note {
   trigger: { word: WordId } | { scene: string };
 }
 
+/** What the engine needs to know about the language being learned. */
+export interface LanguageProfile {
+  /** the language pack's code */
+  code: string;
+  /** Fluent/Intl locale for lines in this language */
+  locale: string;
+  /** speech locale */
+  tts: string;
+  /** true when words are written with spaces between them */
+  spaced: boolean;
+}
+
+/** One course in dist/courses/index.json. */
+export interface CatalogEntry {
+  id: string;
+  language: string;
+  setting: string;
+  /** reading languages, the default first */
+  learners: string[];
+  /** reading language code -> its own name, from its `learner-name` */
+  learnerNames: Record<string, string>;
+}
+
 /** Built course output: everything the game loads. */
 export interface Course {
   id: string;
+  /** the reading language this file was built for */
+  learner: string;
+  language: LanguageProfile;
+  /** earlier ids of this course, whose saves it still loads */
+  aliases?: string[];
   typing: boolean;
   words: Record<WordId, Word>;
   /** concept -> the word ids its base form is made of */

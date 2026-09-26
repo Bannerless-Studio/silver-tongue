@@ -8,7 +8,7 @@ The first course is Mandarin (HSK 1), in a Chinese city, explained in English.
 
 ## Play in the browser
 
-https://jamil314.github.io/silver-tongue/ — the same game, with an on-screen key bar on phones. Games save in the browser; Export and Import move a game between the browser and the terminal.
+https://bannerless-studio.github.io/silver-tongue/ — the same game, with an on-screen key bar on phones. Games save in the browser; Export and Import move a game between the browser and the terminal.
 
 ## Play in the terminal
 
@@ -19,6 +19,8 @@ npx silver-tongue --resume   # choose one of your saved games
 npx silver-tongue --export   # print the game you played last as one line of text
 npx silver-tongue --import <line>   # add a game exported elsewhere (nothing is overwritten)
 npx silver-tongue --import - < game.txt   # the same, reading the line from a file or a paste
+npx silver-tongue --learn zh  # choose what to learn (a language or course id); remembered
+npx silver-tongue --read en   # choose the language the game is written in; remembered
 ```
 
 | Key | Does |
@@ -27,12 +29,13 @@ npx silver-tongue --import - < game.txt   # the same, reading the line from a fi
 | `w` | word help: look up a word from the last line or the replies; `s` explains the whole sentence |
 | `enter` / `⌫` | say / undo, when building a reply from tiles |
 | `n` | notebook: every word you've heard, where you first heard it, and Old Wang's notes |
+| `o` | settings: what you learn, what the game is written in, and sound |
 | `esc` | back |
 | `q` | save and quit (from the menu) |
 
 Progress saves automatically. Each game is one file in `~/.config/silver-tongue/sessions/<course>/` (or under `$XDG_CONFIG_HOME`, or `%APPDATA%` on Windows); a save from 0.2.0 or earlier is moved there on first run. If a save can't be read, it is kept next to it as `<name>.json.invalid-backup` and a new game starts. If saving fails, the game says so and plays on without saving.
 
-Needs Node 22 or newer. Source, issues and other ways to play: https://github.com/jamil314/silver-tongue
+Needs Node 22 or newer. Source, issues and other ways to play: https://github.com/Bannerless-Studio/silver-tongue
 
 ## License
 

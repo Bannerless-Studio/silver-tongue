@@ -38,7 +38,7 @@ describe("cli", () => {
         { lastPlayed: 5, state: { ...newGame(course), place: "noodle_shop", scenesDone: { intro: 1, shift: 4 } } },
       ],
       course,
-      makeText(ui + "place-street = The street\nplace-noodle_shop = Noodle shop\n"),
+      makeText(ui + "place-street = The street\nplace-noodle_shop = Noodle shop\n", "en"),
       (ms) => `T${ms}`,
     );
     expect(lines).toEqual([
@@ -54,5 +54,16 @@ describe("cli", () => {
     expect(pickAnswer("q", 3)).toBe("cancel");
     expect(pickAnswer("4", 3)).toBe("again");
     expect(pickAnswer("x", 3)).toBe("again");
+  });
+
+  it("refuses --learn or --read with a course file, which has only one of each", () => {
+    expect(parseFlags(["course.json", "--learn", "zh"])).toMatchObject({ mode: "error" });
+    expect(parseFlags(["course.json", "--read", "en"])).toMatchObject({ mode: "error" });
+  });
+
+  it("takes --learn and --read with any mode", () => {
+    expect(parseFlags(["--learn", "zh", "--read", "en"])).toEqual({ mode: "continue", learn: "zh", read: "en" });
+    expect(parseFlags(["--new", "--learn", "zh-china"])).toEqual({ mode: "new", learn: "zh-china" });
+    expect(parseFlags(["--export", "--learn", "zh"])).toEqual({ mode: "export", learn: "zh" });
   });
 });
