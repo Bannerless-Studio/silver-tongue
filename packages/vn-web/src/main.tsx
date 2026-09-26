@@ -2,7 +2,7 @@ import { render } from "preact";
 import { createCore, mulberry32, type CatalogEntry, type Course, type GameState } from "@silver-tongue/core";
 import { chooseStart, courseLabels, decodeSave, encodeSave, learnerFor, makeText, sessionLines, type Text } from "@silver-tongue/view";
 import {
-  coursesBase, createWebAudio, fetchJson, fromLocalStorage, loadWebSettings, metaContent, migrateWebAliases, saveWebSettings, WebSessions,
+  coursesBase, createWebAudio, fetchJson, fromLocalStorage, loadWebSettings, metaContent, migrateWebAliases, updateWebSettings, WebSessions,
   type KeyValue, type Opened,
 } from "@silver-tongue/web-common";
 import { loadArt, type Art } from "./art";
@@ -64,7 +64,7 @@ function use(l: Loaded, remember: boolean) {
   loaded?.audio.stop();
   loaded = l;
   document.documentElement.lang = l.course.learner;
-  if (remember) saveWebSettings(kv, { course: l.course.id, learner: l.course.learner });
+  if (remember) updateWebSettings(kv, { course: l.course.id, learner: l.course.learner });
 }
 
 function play(opened: Opened) {

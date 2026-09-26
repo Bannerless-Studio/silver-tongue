@@ -164,6 +164,16 @@ export function saveWebSettings(kv: KeyValue, settings: PlayerSettings): boolean
   }
 }
 
+/**
+ * The settings with a few fields changed. Both pages remember a course here, which used to
+ * replace the whole object and lose the speech speed and the auto-advance choice.
+ */
+export function updateWebSettings(kv: KeyValue, patch: Partial<PlayerSettings>): PlayerSettings {
+  const settings = { ...loadWebSettings(kv), ...patch };
+  saveWebSettings(kv, settings);
+  return settings;
+}
+
 /** A meta entry as stored, or an empty one. */
 function readMeta(kv: KeyValue, key: string): Meta {
   try {

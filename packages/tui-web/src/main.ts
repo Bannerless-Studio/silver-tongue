@@ -23,7 +23,7 @@ import {
   loadWebSettings,
   metaContent,
   migrateWebAliases,
-  saveWebSettings,
+  updateWebSettings,
   WebSessions,
   type KeyValue,
   type Opened,
@@ -151,7 +151,7 @@ function use(loaded: Loaded, remember: boolean) {
   audio?.stop();
   ({ course, t, sessions, audio } = loaded);
   document.documentElement.lang = course.learner;
-  if (remember) saveWebSettings(kv, { course: course.id, learner: course.learner });
+  if (remember) updateWebSettings(kv, { course: course.id, learner: course.learner });
   for (const [sel, id] of controls) $(sel).textContent = tx(id);
   $("#dialog-close").textContent = tx("web-close");
   // The visual novel's address, set when both pages are served together (tools/src/site.ts).
