@@ -14,3 +14,4 @@ jobs:
       - run: npm run build:course
       - run: npm test
       - run: npm run build:web
+      - run: npm run build:vn
