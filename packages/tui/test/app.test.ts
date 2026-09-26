@@ -618,6 +618,16 @@ asked-deliver = They wanted it taken to the { $place }.
       expect(term.screen().at(-1)).toContain("no audio");
     });
 
+    it("the whole sentence is said too, and p says it again", () => {
+      const { term, calls } = withAudio();
+      term.press("1", "1", "w", "s");
+      expect(calls.at(-1)).toEqual([{ clips: ["你好！"] }]);
+      const n = calls.length;
+      term.press("p");
+      expect(calls.length).toBe(n + 1);
+      expect(calls.at(-1)).toEqual([{ clips: ["你好！"] }]);
+    });
+
     it("r says nothing once the scene is over", () => {
       const { term, core, calls } = withAudio();
       term.press("1", "1");

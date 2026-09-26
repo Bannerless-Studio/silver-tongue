@@ -65,7 +65,7 @@ export function startApp(opts: AppOptions): App {
   let resuming = false;
   let nameInput = ""; // replaying a scene saved half-way: it has already been introduced
   let lastSlow = false; // the last line was a slow repeat, so r says it slowly too
-  let lastWord: string[] = []; // the clips of the word last looked up, for p
+  let lastHelp: string[] = []; // the clips of the word or sentence last looked up, for p
   let tileReply: string[] = []; // the right reply's clips, said if the tiles match
   let queue: Speech[] = []; // what this key press has people say, in order
 
@@ -433,8 +433,8 @@ export function startApp(opts: AppOptions): App {
       const word = n >= 0 ? helpWords()[n] : undefined;
       if (word) {
         const w = course.words[word.word];
-        lastWord = w.audio ?? [];
-        hear(lastWord);
+        lastHelp = w.audio ?? [];
+        hear(lastHelp);
         send({ type: "helpWord", word: word.word });
         push([
           { text: w.w, bold: true },
@@ -443,10 +443,13 @@ export function startApp(opts: AppOptions): App {
         ]);
       }
       if (key.name === "p") {
-        hear(lastWord);
+        hear(lastHelp);
         flush();
       }
       if (key.name === "s" && lastLine?.meaning) {
+        lastHelp = lastLine.audio ?? [];
+        hear(lastHelp, lastSlow);
+        flush();
         // Reading the whole line is not logged as help on each word: the words still have to be
         // recognised in the reply.
         const pron = lastLine.tokens.flatMap((tk) => course.words[tk.word]?.pron ?? []).join(" ");
