@@ -1,4 +1,5 @@
 import type { CatalogEntry } from "@silver-tongue/core";
+import { SPEEDS, type SpeechSpeed } from "./audio";
 import type { Text } from "./text";
 
 /** What the player chose, kept apart from any course's saves. */
@@ -7,6 +8,10 @@ export interface PlayerSettings {
   course?: string;
   /** the reading language */
   learner?: string;
+  /** how fast clips play, on either web page */
+  speed?: SpeechSpeed;
+  /** the visual novel moves on by itself */
+  autoAdvance?: boolean;
 }
 
 /** Settings from their stored text; anything unreadable is left unset, never an error. */
@@ -22,6 +27,8 @@ export function parseSettings(raw: string | null | undefined): PlayerSettings {
   const out: PlayerSettings = {};
   if (typeof d.course === "string") out.course = d.course;
   if (typeof d.learner === "string") out.learner = d.learner;
+  if (typeof d.speed === "string" && (SPEEDS as readonly string[]).includes(d.speed)) out.speed = d.speed as SpeechSpeed;
+  if (typeof d.autoAdvance === "boolean") out.autoAdvance = d.autoAdvance;
   return out;
 }
 
