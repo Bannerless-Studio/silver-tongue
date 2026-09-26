@@ -1,4 +1,4 @@
-import type { AudioOut, Speech } from "@silver-tongue/tui";
+import type { AudioOut, Speech } from "@silver-tongue/view";
 
 /** The part of HTMLAudioElement this uses. */
 export interface AudioLike {

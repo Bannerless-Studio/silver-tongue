@@ -14,17 +14,20 @@ import {
   type Text,
 } from "@silver-tongue/tui";
 import { forBrowser } from "./keys";
-import { createWebAudio } from "./web-audio";
 import { createWebTerminal, type WebTerminal } from "./web-terminal";
 import {
+  coursesBase,
+  createWebAudio,
+  fetchJson,
   fromLocalStorage,
   loadWebSettings,
+  metaContent,
   migrateWebAliases,
   saveWebSettings,
   WebSessions,
   type KeyValue,
   type Opened,
-} from "./web-storage";
+} from "@silver-tongue/web-common";
 
 /** The game's version (packages/tui-node/package.json), put in by the build. */
 declare const __VERSION__: string;
@@ -104,11 +107,8 @@ function status(text: string) {
   $("#status").textContent = text;
 }
 
-async function fetchJson<T>(path: string): Promise<T> {
-  const res = await fetch(path);
-  if (!res.ok) throw new Error(`${path}: ${res.status}`);
-  return (await res.json()) as T;
-}
+/** Where the catalog, course files and clips are (the site build points it at the shared folder). */
+const base = coursesBase(document);
 
 // Page controls, labelled in the reading language once a course is loaded.
 const controls: [string, string, () => void][] = [
@@ -128,7 +128,7 @@ interface Loaded {
 
 /** Fetches a course file and moves its old games; nothing on the page changes until it is used. */
 async function fetchCourse(entry: CatalogEntry, learner: string): Promise<Loaded> {
-  const course = await fetchJson<Course>(`courses/${entry.id}/${learner}.json`);
+  const course = await fetchJson<Course>(`${base}${entry.id}/${learner}.json`);
   migrateWebAliases(kv, course);
   return {
     course,
@@ -136,7 +136,7 @@ async function fetchCourse(entry: CatalogEntry, learner: string): Promise<Loaded
     sessions: new WebSessions(kv, course, Date.now),
     // One audio element per course; its clips sit in courses/<course>/audio/.
     audio: createWebAudio({
-      base: `courses/${entry.id}/audio/`,
+      base: `${base}${entry.id}/audio/`,
       audio: typeof Audio === "undefined" ? undefined : new Audio(),
       wait: (ms, cb) => {
         const h = setTimeout(cb, ms);
@@ -154,6 +154,12 @@ function use(loaded: Loaded, remember: boolean) {
   if (remember) saveWebSettings(kv, { course: course.id, learner: course.learner });
   for (const [sel, id] of controls) $(sel).textContent = tx(id);
   $("#dialog-close").textContent = tx("web-close");
+  // The visual novel's address, set when both pages are served together (tools/src/site.ts).
+  const vn = metaContent(document, "st-vn");
+  const link = $<HTMLAnchorElement>("#vn-link");
+  link.hidden = !vn;
+  link.href = vn;
+  link.textContent = tx("vn-play-visual");
 }
 
 /** Another course or reading language, chosen on the settings screen. */
@@ -300,7 +306,7 @@ $("#version").textContent = `v${__VERSION__}`;
 async function boot() {
   const settings = loadWebSettings(kv);
   try {
-    catalog = await fetchJson<CatalogEntry[]>("courses/index.json");
+    catalog = await fetchJson<CatalogEntry[]>(`${base}index.json`);
     const picked = chooseStart(catalog, settings);
     if ("error" in picked) throw new Error(picked.error);
     if (!picked.ask) {

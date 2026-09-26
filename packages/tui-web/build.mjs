@@ -2,10 +2,11 @@
 // each course file and each course's clips. The page fetches the course it plays, so it needs a web
 // server (GitHub Pages, npx serve); it no longer works opened straight from disk.
 import { build } from "esbuild";
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { copyCourses } from "../web-common/copy-courses.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = join(here, "..", "..");
@@ -31,20 +32,6 @@ const html = readFileSync(join(here, "src", "index.html"), "utf8")
   .replace("/*JS*/", () => js);
 mkdirSync(join(here, "dist"), { recursive: true });
 writeFileSync(join(here, "dist", "index.html"), html);
-const coursesOut = join(here, "dist", "courses");
 rmSync(join(here, "dist", "audio"), { recursive: true, force: true }); // where 0.12 kept the clips
-rmSync(coursesOut, { recursive: true, force: true });
-cpSync(join(repo, "dist", "courses"), coursesOut, { recursive: true });
-let clips = 0;
-for (const entry of JSON.parse(readFileSync(join(coursesOut, "index.json"), "utf8"))) {
-  const src = join(repo, "content", "audio", entry.language);
-  if (!existsSync(src)) continue;
-  const out = join(coursesOut, entry.id, "audio");
-  mkdirSync(out, { recursive: true });
-  // Only finished clips, as the npm bundle copies (bundle-courses.mjs).
-  for (const f of readdirSync(src).filter((f) => f.endsWith(".mp3"))) {
-    cpSync(join(src, f), join(out, f));
-    clips++;
-  }
-}
+const clips = copyCourses(repo, join(here, "dist", "courses"));
 console.log(`built packages/tui-web/dist/index.html (${Math.round(html.length / 1024)} KB) and dist/courses/ with ${clips} clips`);
