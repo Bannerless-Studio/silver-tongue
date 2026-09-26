@@ -43,6 +43,7 @@ reason-wages = wages
 reason-mixup = mix-up
 reason-food = food
 reason-rent = rent
+reason-shopping = shopping
 trust-up = { $npc } trusts you a little more ({ $trust }).
 scene-done = { $earned ->
     [0] Done.

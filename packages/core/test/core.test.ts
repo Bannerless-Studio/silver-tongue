@@ -5,7 +5,7 @@ import { createCore, LOG_LIMIT, newGame, type Core } from "../src/core";
 import { recordRight } from "../src/learner";
 import { mulberry32 } from "../src/rng";
 import { addErrand, fixtureCourse, line } from "../src/testing/fixture";
-import { availableSceneIds } from "../src/life";
+import { availableSceneIds, sceneCost } from "../src/life";
 import type { GameEvent, WordRecord } from "../src/types";
 
 const T0 = 1_000_000;
@@ -401,5 +401,62 @@ describe("errands", () => {
     tired.send({ type: "sleep" });
     tired.send({ type: "goTo", place: "school" });
     expect(types(tired.send({ type: "startScene", scene: "drop" }))).toContain("sceneStarted");
+  });
+});
+
+describe("prices", () => {
+  /** The fixture with the intro's greeting costing 3. */
+  const priced = () => {
+    const c = fixtureCourse();
+    c.scenes[0].exchanges[0].variants[""].cost = 3;
+    return c;
+  };
+  const at = (c: ReturnType<typeof fixtureCourse>, patch: Partial<ReturnType<typeof newGame>> = {}) =>
+    createCore(c, { ...newGame(c), place: "noodle_shop", ...patch }, { now: () => T0, rng: mulberry32(1) });
+
+  it("a right reply pays the price, as shopping", () => {
+    const core = at(priced());
+    core.send({ type: "startScene", scene: "intro" });
+    const ev = core.send({ type: "reply", choice: core.state.run!.options.indexOf(comboKey(core.state.run!.combo)) });
+    expect(find(ev, "walletChanged")).toEqual({ type: "walletChanged", wallet: 17, delta: -3, reason: "shopping" });
+  });
+
+  it("a wrong reply buys nothing", () => {
+    const core = at(priced());
+    core.send({ type: "startScene", scene: "intro" });
+    const wrong = core.state.run!.options.findIndex((k) => k !== comboKey(core.state.run!.combo));
+    const ev = core.send({ type: "reply", choice: wrong });
+    expect(ev.filter((e) => e.type === "walletChanged" && e.reason === "shopping")).toEqual([]);
+    expect(core.state.wallet).toBe(20);
+  });
+
+  it("sums a scene's highest price per exchange", () => {
+    const c = priced();
+    const menu = c.scenes[0].exchanges[1];
+    menu.variants[comboKey({ item: "tea" })].cost = 2;
+    menu.variants[comboKey({ item: "water" })].cost = 4;
+    expect(sceneCost(c.scenes[0])).toBe(7);
+    expect(sceneCost(c.scenes[1])).toBe(0);
+  });
+
+  it("isn't offered when the wallet can't cover the most it could cost", () => {
+    const c = priced();
+    expect(availableSceneIds(c, { ...newGame(c), wallet: 2 })).not.toContain("intro");
+    expect(availableSceneIds(c, { ...newGame(c), wallet: 3 })).toContain("intro");
+    expect(at(c, { wallet: 2 }).send({ type: "startScene", scene: "intro" })).toEqual([{ type: "inputRejected", reason: "locked" }]);
+  });
+
+  it("a repeatable scene played before is not announced again when it reopens", () => {
+    const c = fixtureCourse();
+    // The shift costs more than the wallet holds; a paid odd job makes it affordable again.
+    for (const v of Object.values(c.scenes[1].exchanges[0].variants)) v.cost = 21;
+    c.scenes.push({ ...structuredClone(c.scenes[0]), id: "odd", repeatable: true, exchanges: [{ ...structuredClone(c.scenes[0].exchanges[0]), pay: 5 }] });
+    const core = at(c, { scenesDone: { intro: 1, shift: 1 }, trust: { cook: 2 }, wallet: 20 });
+    expect(availableSceneIds(c, core.state)).not.toContain("shift");
+    core.send({ type: "startScene", scene: "odd" });
+    const ev: GameEvent[] = [];
+    while (core.state.run) ev.push(...core.send({ type: "reply", choice: core.state.run.options.indexOf(comboKey(core.state.run.combo)) }));
+    expect(availableSceneIds(c, core.state)).toContain("shift");
+    expect(ev.filter((e) => e.type === "unlocked")).toEqual([]);
   });
 });
