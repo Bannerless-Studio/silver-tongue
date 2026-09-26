@@ -2,6 +2,9 @@ import type { Course, GameEvent, GameState, Scene, WalletReason } from "./types"
 
 export function isAvailable(scene: Scene, state: GameState): boolean {
   if (!scene.repeatable && (state.scenesDone[scene.id] ?? 0) > 0) return false;
+  // One parcel at a time; a drop-off is there only while the parcel is for its place.
+  if (scene.startsErrand && state.errand) return false;
+  if (scene.endsErrand && state.errand?.to !== scene.place) return false;
   if (!scene.after.every((id) => (state.scenesDone[id] ?? 0) > 0)) return false;
   const trust = scene.requires.trust ?? {};
   return Object.entries(trust).every(([npc, min]) => (state.trust[npc] ?? 0) >= min);

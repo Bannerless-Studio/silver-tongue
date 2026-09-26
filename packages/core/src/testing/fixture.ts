@@ -114,3 +114,40 @@ export function fixtureCourse(): Course {
     needsName: false,
   } satisfies Course);
 }
+
+/**
+ * Adds a delivery: a repeatable pickup at the noodle shop whose `to` slot names the school (a new
+ * place off the street), and a repeatable drop-off at the school that ends the errand and pays 4.
+ */
+export function addErrand(course: Course): Course {
+  course.world.places.street.links.push("school");
+  course.world.places.school = { links: ["street"] };
+  course.world.npcs.teacher = { place: "school" };
+  course.concepts.school = ["w_zhe"];
+  course.conceptNames.school = "school";
+  course.groups.dests = ["school"];
+  const hello = structuredClone(course.scenes[0].exchanges[0]);
+  course.scenes.push(
+    {
+      id: "pickup", place: "noodle_shop", npc: "cook", stage: 1, after: ["intro"], requires: {}, repeatable: true, trustGain: 1,
+      startsErrand: "$to",
+      exchanges: [
+        {
+          id: "parcel", slots: { to: "dests" }, expect: { action: "deliver", to: "$to" }, hinges: ["$to"], pay: 0, missCost: 1,
+          variants: {
+            [comboKey({ to: "school" })]: {
+              npc: line(["这", "w_zhe"], ["。", null]),
+              reply: line(["好", "w_hao"], ["，", null], ["这", "w_zhe"], ["。", null]),
+              alts: [line(["你", "w_ni"], ["好", "w_hao"], ["！", null])],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "drop", place: "school", npc: "teacher", stage: 1, after: ["pickup"], requires: {}, repeatable: true, trustGain: 1,
+      endsErrand: true, exchanges: [{ ...hello, pay: 4 }],
+    },
+  );
+  return course;
+}

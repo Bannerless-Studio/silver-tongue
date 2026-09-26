@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createCore, newGame } from "../src/core";
 import { parseSave, serialize } from "../src/save";
-import { fixtureCourse, line } from "../src/testing/fixture";
+import { addErrand, fixtureCourse, line } from "../src/testing/fixture";
 import { PLAYER_MARK, type GameState } from "../src/types";
 
 describe("save", () => {
@@ -107,5 +107,30 @@ describe("save", () => {
     const run = { ...core.state.run!, mode: "tiles" as const, options: [], tiles: ["x"] };
     const stale: GameState = { ...core.state, run };
     expect(parseSave(serialize(stale), course)).toEqual({ ok: true, state: { ...stale, run: null } });
+  });
+
+  it("keeps an errand, drops one to a place the course no longer has, and rejects a malformed one", () => {
+    const c = addErrand(fixtureCourse());
+    const carrying = { ...newGame(c), errand: { to: "school" } };
+    expect(parseSave(serialize(carrying), c)).toEqual({ ok: true, state: carrying });
+    const gone = parseSave(serialize({ ...newGame(c), errand: { to: "moon" } }), c);
+    expect(gone.ok && gone.state.errand).toBeUndefined();
+    expect(parseSave(JSON.stringify({ ...newGame(c), errand: "school" }), c)).toEqual({ ok: false, reason: "bad-errand" });
+  });
+
+  it("loads a save from before errands with none", () => {
+    const old = parseSave(serialize(newGame(course)), course);
+    expect(old.ok && old.state.errand).toBeUndefined();
+  });
+
+  it("keeps a pickup's destination through a save mid-scene, and drops one that is no longer a place", () => {
+    const c = addErrand(fixtureCourse());
+    const core = createCore(c, { ...newGame(c), place: "noodle_shop", scenesDone: { intro: 1 } }, { now: () => 0, rng: () => 0 });
+    core.send({ type: "startScene", scene: "pickup" });
+    expect(core.state.run!.errandTo).toBe("school");
+    const kept = parseSave(serialize(core.state), c);
+    expect(kept.ok && kept.state.run?.errandTo).toBe("school");
+    const moved = parseSave(serialize({ ...core.state, run: { ...core.state.run!, errandTo: "moon" } }), c);
+    expect(moved.ok && moved.state.run?.errandTo).toBeUndefined();
   });
 });

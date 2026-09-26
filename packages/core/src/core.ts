@@ -72,7 +72,8 @@ export function createCore(course: Course, initial: GameState, deps: CoreDeps): 
       ctx.state.log = [...ctx.state.log, { t: now, day: state.day, slot: state.slot, input }].slice(-LOG_LIMIT);
       const before = new Set(availableSceneIds(course, state));
       for (const id of availableSceneIds(course, ctx.state)) {
-        if (!before.has(id)) ctx.ev.push({ type: "unlocked", scene: id });
+        // A drop-off opens with every pickup; errandStarted says so, without naming the place.
+        if (!before.has(id) && !course.scenes.find((s) => s.id === id)?.endsErrand) ctx.ev.push({ type: "unlocked", scene: id });
       }
       for (const note of newlyTriggered(course, ctx.state)) {
         ctx.state.notes.ready.push(note);
