@@ -1,4 +1,4 @@
-import { SLOW_RATE_FACTOR, SLOWEST_RATE, type AudioOut, type Speech } from "@silver-tongue/view";
+import { clipRate, type AudioOut, type Speech } from "@silver-tongue/view";
 
 /** The part of HTMLAudioElement this uses. */
 export interface AudioLike {
@@ -63,7 +63,7 @@ export function createWebAudio(deps: WebAudioDeps): AudioOut {
       done();
     };
     el.src = `${deps.base}${item.clip}.mp3`;
-    el.defaultPlaybackRate = el.playbackRate = Math.max(SLOWEST_RATE, (deps.rate?.() ?? 1) * (item.slow ? SLOW_RATE_FACTOR : 1));
+    el.defaultPlaybackRate = el.playbackRate = clipRate(deps.rate?.() ?? 1, item.slow);
     // Refused (no key pressed yet): nothing will end, so go on as if it had.
     el.play().catch(() => done());
   };

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createWebAudio, type AudioLike } from "../src/web-audio";
 
-type FakeEl = AudioLike & { played: { src: string; rate: number }[]; paused: number; reject: boolean };
+type FakeEl = AudioLike & { played: { src: string; rate: number; defaultPlaybackRate: number }[]; paused: number; reject: boolean };
 
 function fakeEl(): FakeEl {
   return {
@@ -14,8 +14,7 @@ function fakeEl(): FakeEl {
     paused: 0,
     reject: false,
     play() {
-      expect(this.defaultPlaybackRate).toBe(this.playbackRate);
-      this.played.push({ src: this.src, rate: this.playbackRate });
+      this.played.push({ src: this.src, rate: this.playbackRate, defaultPlaybackRate: this.defaultPlaybackRate });
       return this.reject ? Promise.reject(new Error("NotAllowedError")) : Promise.resolve();
     },
     pause() {
@@ -44,10 +43,11 @@ describe("createWebAudio", () => {
     waits[0].cb();
     el.onended!();
     waits[1].cb();
+    // Both rate fields, because a browser resets playbackRate to defaultPlaybackRate on a new src.
     expect(el.played).toEqual([
-      { src: "audio/x.mp3", rate: 1 },
-      { src: "audio/y.mp3", rate: 0.75 },
-      { src: "audio/z.mp3", rate: 1 },
+      { src: "audio/x.mp3", rate: 1, defaultPlaybackRate: 1 },
+      { src: "audio/y.mp3", rate: 0.75, defaultPlaybackRate: 0.75 },
+      { src: "audio/z.mp3", rate: 1, defaultPlaybackRate: 1 },
     ]);
   });
 
@@ -56,7 +56,7 @@ describe("createWebAudio", () => {
     const { waits, wait } = timers();
     createWebAudio({ base: "audio/", audio: el, wait, rate: () => 0.7 }).play([{ clips: ["x"] }, { clips: ["y"], slow: true }]);
     el.onended!();
-    expect(el.played).toEqual([{ src: "audio/x.mp3", rate: 0.7 }]);
+    expect(el.played).toMatchObject([{ src: "audio/x.mp3", rate: 0.7 }]);
     waits[0].cb();
     expect(el.played[1].rate).toBeCloseTo(0.525);
   });
@@ -70,6 +70,13 @@ describe("createWebAudio", () => {
     rate = 1;
     waits[0].cb();
     expect(el.played.map((p) => p.rate)).toEqual([0.7, 1]);
+  });
+
+  it("never plays a clip slower than the floor, even if a page asks for it", () => {
+    const el = fakeEl();
+    const { wait } = timers();
+    createWebAudio({ base: "audio/", audio: el, wait, rate: () => 0.2 }).play([{ clips: ["x"], slow: true }]);
+    expect(el.played).toEqual([{ src: "audio/x.mp3", rate: 0.5, defaultPlaybackRate: 0.5 }]);
   });
 
   it("is busy from play() until the last clip ends, never with no audio element", () => {
@@ -87,18 +94,23 @@ describe("createWebAudio", () => {
     a.play([{ clips: ["x"] }]);
     a.stop();
     expect(a.busy).toBe(false);
+    a.play([]); // nothing was said, so there is nothing to wait for
+    expect(a.busy).toBe(false);
     const silent = createWebAudio({ base: "audio/", audio: undefined, wait: timers().wait });
     silent.play([{ clips: ["x"] }]);
     expect(silent.busy).toBe(false);
   });
 
-  it("skips a clip that fails to load and goes on", () => {
+  it("skips a clip that fails to load and goes on, and is not busy once the last one fails too", () => {
     const el = fakeEl();
     const { waits, wait } = timers();
-    createWebAudio({ base: "audio/", audio: el, wait }).play([{ clips: ["x", "y"] }]);
+    const a = createWebAudio({ base: "audio/", audio: el, wait });
+    a.play([{ clips: ["x", "y"] }]);
     el.onerror!();
     waits[0].cb();
     expect(el.played.map((p) => p.src)).toEqual(["audio/x.mp3", "audio/y.mp3"]);
+    el.onerror!(); // the last one fails as well, so there is nothing left to say
+    expect(a.busy).toBe(false);
   });
 
   it("ignores a play() the browser refuses, stays available, and goes on to the next clip", async () => {
@@ -140,6 +152,20 @@ describe("createWebAudio", () => {
     el.onended?.();
     expect(el.paused).toBeGreaterThan(0);
     expect(waits).toHaveLength(0);
+    expect(el.played).toHaveLength(1);
+  });
+
+  it("stops dead in the beat between clips: the next clip never starts", () => {
+    const el = fakeEl();
+    const { waits, wait } = timers();
+    const a = createWebAudio({ base: "audio/", audio: el, wait });
+    a.play([{ clips: ["x", "y"] }]);
+    el.onended!();
+    a.stop();
+    expect(a.busy).toBe(false);
+    expect(waits[0].cancelled).toBe(true);
+    waits[0].cb(); // a timer that fires anyway does nothing
+    el.onended?.();
     expect(el.played).toHaveLength(1);
   });
 

@@ -24,9 +24,14 @@ export const SLOW_RATE_FACTOR = 0.75;
 /** No clip plays slower than this, however the choices add up. */
 export const SLOWEST_RATE = 0.5;
 
+/** The rate a clip plays at, for a caller that already knows its base rate. */
+export function clipRate(base: number, slow = false): number {
+  return Math.max(SLOWEST_RATE, base * (slow ? SLOW_RATE_FACTOR : 1));
+}
+
 /** The rate a clip plays at: the player's speed, or that much slower for a line marked slow. */
 export function playbackRate(speed: SpeechSpeed, slow = false): number {
-  return Math.max(SLOWEST_RATE, SPEED_RATES[speed] * (slow ? SLOW_RATE_FACTOR : 1));
+  return clipRate(SPEED_RATES[speed], slow);
 }
 
 /** The next speed along, wrapping round: the settings row cycles with it. */
