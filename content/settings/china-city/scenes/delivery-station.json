@@ -17,7 +17,7 @@
         "action": "who"
       },
       "hinges": [],
-      "pay": 2,
+      "pay": 3,
       "missCost": 0
     },
     {
@@ -27,7 +27,7 @@
         "action": "beijing"
       },
       "hinges": [],
-      "pay": 2,
+      "pay": 3,
       "missCost": 0
     },
     {
@@ -42,7 +42,7 @@
       "hinges": [
         "$hour"
       ],
-      "pay": 2,
+      "pay": 3,
       "missCost": 1
     },
     {
@@ -52,7 +52,7 @@
         "action": "bye"
       },
       "hinges": [],
-      "pay": 2,
+      "pay": 9,
       "missCost": 0
     }
   ],

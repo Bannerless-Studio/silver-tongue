@@ -17,7 +17,7 @@
         "action": "who"
       },
       "hinges": [],
-      "pay": 2,
+      "pay": 3,
       "missCost": 0
     },
     {
@@ -27,7 +27,7 @@
         "action": "doctor"
       },
       "hinges": [],
-      "pay": 2,
+      "pay": 3,
       "missCost": 0
     },
     {
@@ -37,7 +37,7 @@
         "action": "bye"
       },
       "hinges": [],
-      "pay": 4,
+      "pay": 12,
       "missCost": 0
     }
   ],

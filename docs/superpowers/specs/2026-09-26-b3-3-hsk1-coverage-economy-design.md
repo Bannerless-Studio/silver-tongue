@@ -80,10 +80,33 @@ exported from core and tested directly. No new events, inputs or state.
 
 ### Numbers
 
-Rent stays ¥50 a week, food ¥5 a day, start wallet ¥20. Pay rises from about ¥4–5 per slot to about
-¥6 per slot; the tea-house shift and the luggage job pay the same rate. Exact per-exchange pay is
-tuned with the bots until the CI rules below pass, and the final figures are recorded in this spec
-before release.
+Rent stays ¥50 a week, food ¥5 a day, start wallet ¥20. Pay was tuned with the bots until the CI
+rules below passed; ¥6 a slot (the first guess) and ¥8 left the right bot ¥7–19 after rent, so the
+final rate is ¥9 a job slot, and a delivery pays ¥18 for its two slots (pickup and drop-off):
+
+| Scene | Exchange pay | Total |
+|---|---|---|
+| warehouse-shift | carry 6, pick 3 | 9 |
+| noodle-shift | drink 2, order 7 | 9 |
+| noodle-kitchen | cups 5, lunch 2, out 2 | 9 |
+| tea-shift | pour 5, table 2, busy 2 | 9 |
+| taxi-luggage | bags 5, train 2, phone 1, pay 1 | 9 |
+| delivery-hospital | who 3, doctor 3, bye 12 | 18 |
+| delivery-school | who 3, teacher 3, books 3, bye 9 | 18 |
+| delivery-station | who 3, beijing 3, time 3, bye 9 | 18 |
+
+Bots, 14 days, seed 7:
+
+| Bot | End wallet | Rent late (nights) | Earned | Spent at shop | Lowest after rent |
+|---|---|---|---|---|---|
+| right | 102 | 0 | 261 | 9 (2 buys) | 30 |
+| wrong | 0 | 8 | 0 | 0 | never paid |
+| random | 28 | 6 | 173 | 4 | 5 |
+| learner (70% right) | 8 | 4 | 191 | 4 | 7 |
+
+Tuning needed three bot strategy changes, each a sensible player's habit: work when rent is due
+within two nights and the wallet is short of rent plus a week's food; shopping with money to spare
+takes turns with paid work; and a job never tried counts as story (later scenes may come after it).
 
 ### Bot report
 

@@ -120,11 +120,12 @@ export interface Goal {
 export function goals(course: Course, state: GameState): Goal[] {
   const { rentPerWeek, foodPerDay } = course.world;
   // Rent comes at the end of every 7th day. With it due tonight or tomorrow night and not enough
-  // money for it plus food, a sensible player works before following the story. Rent that is
+  // money for it plus a week's food (a cushion, not just tonight's meal), a sensible player works
+  // before following the story. Rent that is
   // already late doesn't count: the landlord waits, and a player who can't earn (the wrong bot
   // earns nothing) would otherwise never see the story again.
   const rentClose = state.day % 7 === 0 || state.day % 7 === 6;
-  const workFirst = rentClose && state.wallet < rentPerWeek + 2 * foodPerDay;
+  const workFirst = rentClose && state.wallet < rentPerWeek + 7 * foodPerDay;
   const out: Goal[] = availableSceneIds(course, state)
     // Repeat shopping never eats into tonight's food or the rent money, and waits while rent is
     // late; a first visit is the story, so it's taken.
@@ -138,7 +139,12 @@ export function goals(course: Course, state: GameState): Goal[] {
     const scene = course.scenes.find((s) => s.id === id)!;
     // A parcel in hand comes first; a pickup is paid work, since the trip pays at the other end.
     const paid = scene.repeatable && (scene.startsErrand !== undefined || scene.exchanges.some((ex) => ex.pay > 0));
-    const rank = scene.endsErrand ? 1 : !scene.repeatable ? (workFirst ? 2 : 0) : paid ? (workFirst ? 0 : 2) : 3;
+    // Shopping the filter above let through is money to spare: it takes turns with paid work.
+    const shopping = scene.repeatable && sceneCost(scene) > 0;
+    // A job never tried is news, like a story scene (the menu says "New:"), and later scenes may
+    // come after it.
+    const fresh = scene.repeatable && !scene.endsErrand && !(state.scenesDone[id] ?? 0);
+    const rank = scene.endsErrand ? 1 : !scene.repeatable || fresh ? (workFirst ? 2 : 0) : paid ? (workFirst ? 0 : 2) : shopping && !workFirst ? 2 : 3;
     return { rank, place: scene.place, input: { type: "startScene", scene: id }, done: state.scenesDone[id] ?? 0 };
   });
   const m = course.world.mentor;

@@ -13,7 +13,7 @@
       "slots": { "amount": "numbers_3_10", "item": "furniture" },
       "expect": { "action": "carry", "amount": "$amount", "item": "$item" },
       "hinges": ["$amount", "$item"],
-      "pay": 3,
+      "pay": 6,
       "missCost": 1
     },
     {
@@ -21,7 +21,7 @@
       "slots": { "size": "sizes", "item": "furniture" },
       "expect": { "action": "pick", "size": "$size", "item": "$item" },
       "hinges": ["$size", "$item"],
-      "pay": 2,
+      "pay": 3,
       "missCost": 1
     }
   ]
