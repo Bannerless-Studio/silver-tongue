@@ -9,7 +9,9 @@ import {
   encodeSave,
   learnerFor,
   makeText,
+  playbackRate,
   sessionLines,
+  type SpeechSpeed,
   startApp,
   type Text,
 } from "@silver-tongue/tui";
@@ -57,6 +59,8 @@ let course: Course;
 let t: Text | undefined;
 let sessions: WebSessions | undefined;
 let audio: ReturnType<typeof createWebAudio> | undefined;
+/** How fast clips play, from the player's settings; the audio asks for it per clip. */
+let speed: SpeechSpeed = "slow";
 /** The reading-language text; only called once a course has loaded. */
 const tx: Text = Object.assign((id: string, args?: Parameters<Text>[1]) => (t ? t(id, args) : id), { has: (id: string) => !!t?.has(id) });
 
@@ -142,6 +146,7 @@ async function fetchCourse(entry: CatalogEntry, learner: string): Promise<Loaded
         const h = setTimeout(cb, ms);
         return { cancel: () => clearTimeout(h) };
       },
+      rate: () => playbackRate(speed),
     }),
   };
 }
@@ -305,6 +310,7 @@ $("#version").textContent = `v${__VERSION__}`;
 /** The catalog, then the course the settings name (or the only one), or a list to choose from. */
 async function boot() {
   const settings = loadWebSettings(kv);
+  speed = settings.speed ?? "slow";
   try {
     catalog = await fetchJson<CatalogEntry[]>(`${base}index.json`);
     const picked = chooseStart(catalog, settings);
