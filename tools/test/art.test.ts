@@ -20,6 +20,21 @@ describe("svg rules", () => {
     expect(svgProblems("street.svg", withIds("sky"), PLACE_VIEWBOX, "street")).toEqual([`street.svg: id "sky" must start with "street-"`]);
   });
 
+  it("lets through only plain shapes and gradients, however an unsafe part is written", () => {
+    const bad = (inner: string) => svgProblems("a.svg", place.replace("<rect", `${inner}<rect`), PLACE_VIEWBOX);
+    expect(bad(`<a href=javascript:alert(1)><circle r="1"/></a>`)).toContain("a.svg: no <a>");
+    expect(bad(`<a href=javascript:alert(1)><circle r="1"/></a>`)).toContain("a.svg: no links outside the file");
+    expect(bad(`<set attributeName="href" to="javascript:x()"/>`)).toContain("a.svg: no <set>");
+    expect(bad(`<animate attributeName="href" values="javascript:x()"/>`)).toContain("a.svg: no <animate>");
+    expect(bad(`<rect/onclick="x()"/>`)).toContain("a.svg: no event attributes (onclick)");
+    expect(bad(`<rect x="a>" onclick="x()"/>`)).toContain("a.svg: no event attributes (onclick)");
+    expect(bad(`<style>@import url(https://x/y.css)</style>`)).toContain("a.svg: no <style>");
+    expect(bad(`<rect fill="url(https://x/y.svg#g)"/>`)).toContain("a.svg: no links outside the file");
+    expect(bad(`<rect style="fill:red"/>`)).toContain("a.svg: no style attribute");
+    expect(bad(`<text>hi</text>`)).toContain("a.svg: no <text>");
+    expect(bad(`<![CDATA[x]]>`)).toContain("a.svg: no <! or <? declarations");
+  });
+
   it("refuses a wrong viewBox, scripts, event attributes, outside links, images and oversize files", () => {
     expect(svgProblems("a.svg", place, NPC_VIEWBOX)).toEqual([`a.svg: viewBox must be "${NPC_VIEWBOX}"`]);
     expect(svgProblems("a.svg", place.replace("</svg>", "<script>x()</script></svg>"), PLACE_VIEWBOX)).toContain("a.svg: no <script>");

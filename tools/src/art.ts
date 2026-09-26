@@ -19,20 +19,40 @@ export interface ArtJson {
 
 const HEX = /^#[0-9a-fA-F]{3,8}$/;
 
+/** The parts a drawing may use: plain shapes, groups and gradients. Anything else (links, animation, styles, text) is refused. */
+const ELEMENTS = new Set(["svg", "g", "defs", "use", "path", "rect", "circle", "ellipse", "line", "polyline", "polygon", "linearGradient", "radialGradient", "stop", "clipPath", "title", "desc"]);
+const ATTRIBUTES = new Set([
+  "xmlns", "viewBox", "width", "height", "id", "x", "y", "x1", "y1", "x2", "y2", "cx", "cy", "r", "rx", "ry", "fx", "fy", "d", "points",
+  "fill", "fill-rule", "fill-opacity", "stroke", "stroke-width", "stroke-linecap", "stroke-linejoin", "stroke-opacity", "stroke-dasharray",
+  "opacity", "offset", "stop-color", "stop-opacity", "transform", "gradientUnits", "gradientTransform", "spreadMethod", "clip-path", "clip-rule",
+  "preserveAspectRatio", "href", "xlink:href", "xmlns:xlink",
+]);
+/** A tag, with quoted values that may hold ">". */
+const TAG = /<([a-zA-Z][\w:.-]*)((?:[^>"']|"[^"]*"|'[^']*')*)>/g;
+/** One attribute: a name, then a quoted or bare value; "/" also separates attributes, as browsers read it. */
+const ATTR = /([^\s"'/=>]+)(?:\s*=\s*("[^"]*"|'[^']*'|[^\s>]+))?/g;
+
 /** What makes an SVG unsafe or unfit to inline in the page. Ids start with `prefix-` so drawings inlined together never clash. */
 export function svgProblems(name: string, svg: string, viewBox: string, prefix?: string): string[] {
-  const out: string[] = [];
+  const out = new Set<string>();
   const bytes = Buffer.byteLength(svg);
-  if (bytes > MAX_ART_BYTES) out.push(`${name}: ${Math.ceil(bytes / 1024)} KB, over 40 KB`);
+  if (bytes > MAX_ART_BYTES) out.add(`${name}: ${Math.ceil(bytes / 1024)} KB, over 40 KB`);
   const root = /<svg\b[^>]*>/.exec(svg)?.[0] ?? "";
-  if (/\bviewBox="([^"]*)"/.exec(root)?.[1] !== viewBox) out.push(`${name}: viewBox must be "${viewBox}"`);
-  if (/<script\b/i.test(svg)) out.push(`${name}: no <script>`);
-  const on = /\s(on[a-z]+)\s*=/i.exec(svg);
-  if (on) out.push(`${name}: no event attributes (${on[1]})`);
-  if (/\b(?:xlink:)?href\s*=\s*["'](?!#)/i.test(svg)) out.push(`${name}: no links outside the file`);
-  if (/<(image|foreignObject)\b/i.test(svg)) out.push(`${name}: no <image> or <foreignObject>`);
-  if (prefix) for (const [, id] of svg.matchAll(/\sid="([^"]*)"/g)) if (!id.startsWith(`${prefix}-`)) out.push(`${name}: id "${id}" must start with "${prefix}-"`);
-  return out;
+  if (/\bviewBox="([^"]*)"/.exec(root)?.[1] !== viewBox) out.add(`${name}: viewBox must be "${viewBox}"`);
+  if (/<(?!!--)[!?]/.test(svg)) out.add(`${name}: no <! or <? declarations`);
+  for (const [, el, attrs] of svg.matchAll(TAG)) {
+    if (/^script$/i.test(el)) out.add(`${name}: no <script>`);
+    else if (/^(image|foreignObject)$/i.test(el)) out.add(`${name}: no <image> or <foreignObject>`);
+    else if (!ELEMENTS.has(el)) out.add(`${name}: no <${el}>`);
+    for (const [, attr, raw = ""] of attrs.matchAll(ATTR)) {
+      const value = raw.replace(/^["']|["']$/g, "");
+      if (/^on/i.test(attr)) out.add(`${name}: no event attributes (${attr})`);
+      else if (!ATTRIBUTES.has(attr)) out.add(`${name}: no ${attr} attribute`);
+      if (/href$/i.test(attr) ? !value.startsWith("#") : /url\(\s*["']?(?!#)/i.test(value)) out.add(`${name}: no links outside the file`);
+      if (prefix && attr === "id" && !value.startsWith(`${prefix}-`)) out.add(`${name}: id "${value}" must start with "${prefix}-"`);
+    }
+  }
+  return [...out];
 }
 
 /** Every problem with a setting's art: missing or unfit drawings, and art.json entries. */

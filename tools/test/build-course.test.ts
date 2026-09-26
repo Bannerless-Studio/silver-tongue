@@ -233,6 +233,18 @@ describe("build-course (real content)", () => {
 });
 
 describe("build-course (broken content)", () => {
+  it("with art off, ships no art at all, since nothing checked it", () => {
+    const { errors, artDir } = buildChanged((dir) => {
+      const f = join(dir, "courses/zh-china.json");
+      const c = JSON.parse(readFileSync(f, "utf8"));
+      c.checks.art = false;
+      writeFileSync(f, JSON.stringify(c));
+      writeFileSync(join(dir, "settings/china-city/art/npcs/wang.svg"), `<svg viewBox="0 0 400 900"><a href="javascript:x()"/></svg>`);
+    });
+    expect(errors).toEqual([]);
+    expect(artDir).toBeUndefined();
+  });
+
   it("with art on, fails on a missing drawing", () => {
     const { errors } = buildChanged((dir) => unlinkSync(join(dir, "settings/china-city/art/npcs/wang.svg")));
     expect(errors).toContain("settings/china-city/art/npcs/wang.svg: missing");

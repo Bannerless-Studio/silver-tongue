@@ -352,7 +352,8 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
   }
   errors.push(...narrationProblems(learnerFtl, learner, actions));
   if (cfg.checks.art) errors.push(...artProblems(settingDir, world).map((e) => `settings/${cfg.setting}/${e}`));
-  const artDir = existsSync(join(settingDir, "art")) ? settingDir : undefined;
+  // only checked art ships: the page inlines these drawings
+  const artDir = cfg.checks.art && existsSync(join(settingDir, "art")) ? settingDir : undefined;
   // Ship only the words the course uses: rank is the share of these that are known, and
   // the pack has far more words than one course needs. (The checks above see the whole pack.)
   course.words = Object.fromEntries(Object.entries(words).filter(([id]) => used.has(id)));
