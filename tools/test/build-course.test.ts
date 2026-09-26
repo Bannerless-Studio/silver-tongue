@@ -123,6 +123,10 @@ describe("build-course (real content)", () => {
     expect(note).toContain("张");
   });
 
+  it("turns the audio check on", () => {
+    expect(JSON.parse(readFileSync(join(CONTENT, "courses/zh-china-en.json"), "utf8")).checks.audio).toBe(true);
+  });
+
   it("turns the HSK 1 coverage check on", () => {
     const cfg = JSON.parse(readFileSync(join(CONTENT, "courses", "zh-china-en.json"), "utf8"));
     expect(cfg.checks.coverage).toBe(true);
