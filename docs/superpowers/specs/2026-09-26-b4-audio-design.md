@@ -65,8 +65,11 @@ alongside it.
 ### Clip ids and files
 
 - **Clip id:** the first 16 hex characters of `sha1("<voice>|<text>")`.
-- **File:** `content/audio/zh/<id>.mp3`, edge-tts's own mono MP3 output, which is 24 kHz and
-  48 kbit/s. There's no re-encoding and no ffmpeg dependency.
+- **File:** `content/audio/zh/<id>.mp3`, mono MP3 at 24 kHz and 48 kbit/s (edge-tts's format).
+- **Trimming (0.12.2):** edge-tts pads each clip with about a second of silence, which made long
+  gaps between clips. `npm run audio` now trims both ends with ffmpeg (keeping 0.05 s before and
+  0.1 s after), so making clips needs ffmpeg as well as edge-tts. `npm run audio -- --retrim` trims
+  clips made before this.
 - **Your name:** a line whose rendered text contains the player mark (U+E000) is split at the mark
   into the part before and the part after. Each non-empty part is spoken as its own clip, and the
   line's clip list holds both in order.

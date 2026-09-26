@@ -1,4 +1,4 @@
 node_modules/
 dist/
 *.tgz
-*.mp3.part
+*.part

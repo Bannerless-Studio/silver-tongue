@@ -30,7 +30,7 @@ npm run typecheck        # tsc
 npm run build:course     # content -> dist/courses/zh-china-en/course.json (fails on any checker error)
 npm run play             # play from source in this terminal
 npm run import:zh        # re-import the zh pack from vendor/vocab-engine
-npm run audio            # make missing clips with edge-tts (pipx install edge-tts), delete unused ones
+npm run audio            # make missing clips with edge-tts (pipx install edge-tts) + ffmpeg trim, delete unused ones
 npm run bundle -w silver-tongue   # build packages/tui-node/dist for npm/npx
 ```
 
