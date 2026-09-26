@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clipRate, nextSpeed, playbackRate, SLOW_RATE_FACTOR, SLOWEST_RATE, SPEED_RATES, SPEEDS } from "../src/index";
+import { clipRate, DEFAULT_SPEED, nextSpeed, playbackRate, SLOW_RATE_FACTOR, SLOWEST_RATE, SPEED_RATES, SPEEDS } from "../src/index";
 
 describe("playbackRate", () => {
   it("plays at the speed the player chose", () => {
@@ -28,5 +28,15 @@ describe("clipRate", () => {
 describe("nextSpeed", () => {
   it("cycles slow, normal, fast and back to slow", () => {
     expect(SPEEDS.map((s) => nextSpeed(s))).toEqual(["normal", "fast", "slow"]);
+  });
+});
+
+describe("DEFAULT_SPEED", () => {
+  it("is slow, so a player who has never opened settings can still copy what they hear", () => {
+    expect(DEFAULT_SPEED).toBe("slow");
+  });
+
+  it("is the slowest of the rates, whatever order the cycle runs in", () => {
+    expect(SPEED_RATES[DEFAULT_SPEED]).toBe(Math.min(...SPEEDS.map((s) => SPEED_RATES[s])));
   });
 });

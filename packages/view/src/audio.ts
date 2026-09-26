@@ -19,6 +19,8 @@ export interface AudioOut {
 export const SPEEDS = ["slow", "normal", "fast"] as const;
 export type SpeechSpeed = (typeof SPEEDS)[number];
 export const SPEED_RATES: Record<SpeechSpeed, number> = { slow: 0.7, normal: 0.85, fast: 1 };
+/** What clips play at until the player says otherwise. */
+export const DEFAULT_SPEED: SpeechSpeed = "slow";
 /** A line marked slow plays this much slower than the speed the player chose. */
 export const SLOW_RATE_FACTOR = 0.75;
 /** No clip plays slower than this, however the choices add up. */
