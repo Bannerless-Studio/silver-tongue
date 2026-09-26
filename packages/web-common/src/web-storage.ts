@@ -165,8 +165,8 @@ export function saveWebSettings(kv: KeyValue, settings: PlayerSettings): boolean
 }
 
 /**
- * The settings with a few fields changed. Both pages remember a course here, which used to
- * replace the whole object and lose the speech speed and the auto-advance choice.
+ * The settings with a few fields changed, and the whole set written back. Only the fields in
+ * `patch` change, so remembering a course keeps the speed and the auto-advance choice.
  */
 export function updateWebSettings(kv: KeyValue, patch: Partial<PlayerSettings>): PlayerSettings {
   const settings = { ...loadWebSettings(kv), ...patch };

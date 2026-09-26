@@ -106,14 +106,11 @@ describe("settings and old course ids", () => {
 
   it("changes one setting without losing the others", () => {
     const kv = new FakeStorage();
-    saveWebSettings(kv, { course: "zh-china", learner: "en", speed: "slow", autoAdvance: true });
-    expect(updateWebSettings(kv, { course: "zh-other" })).toEqual({
-      course: "zh-other",
-      learner: "en",
-      speed: "slow",
-      autoAdvance: true,
-    });
-    expect(loadWebSettings(kv).speed).toBe("slow");
+    const kept = { course: "zh-other", learner: "en", speed: "slow", autoAdvance: true };
+    // A value the game does not understand is dropped rather than carried forward.
+    kv.setItem(SETTINGS_KEY, '{"course":"zh-china","learner":"en","speed":"slow","autoAdvance":true,"junk":1}');
+    expect(updateWebSettings(kv, { course: "zh-other" })).toEqual(kept);
+    expect(loadWebSettings(kv)).toEqual(kept);
   });
 
   it("moves alias keys and keeps the last game", () => {
