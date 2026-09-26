@@ -21,7 +21,7 @@ export interface Clip {
 export const clipId = (voice: string, text: string): string => createHash("sha1").update(`${voice}|${text}`).digest("hex").slice(0, 16);
 
 /** A part with no letter or digit ("，", "。") has nothing to say. */
-const speakable = (s: string) => /[\p{L}\p{N}]/u.test(s);
+export const speakable = (s: string) => /[\p{L}\p{N}]/u.test(s);
 
 /** The clips that say a line: one each side of the player's name, skipping a side with nothing to say. */
 export function lineClips(text: string, voice: string): Clip[] {

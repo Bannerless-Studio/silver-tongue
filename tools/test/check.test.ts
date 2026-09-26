@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { PLAYER_MARK } from "@silver-tongue/core";
 import { addErrand, fixtureCourse, line } from "@silver-tongue/core/testing";
-import { checkCourse, orderScenes, type CheckInput } from "../src/check";
+import { checkCourse, orderScenes, usedWords, type CheckInput } from "../src/check";
+import { assignAudio } from "../src/voices";
 
 const LEARNER = [
   "place-street", "place-street-desc", "place-noodle_shop", "place-noodle_shop-desc",
@@ -109,10 +110,48 @@ describe("checkCourse", () => {
     expect(errors).toContain('learner text: missing "hud"');
   });
 
-  it("enforces coverage and audio when the course turns them on", () => {
-    const errors = checkCourse(input({ checks: { coverage: true, audio: true } }));
+  it("enforces coverage when the course turns it on", () => {
+    const errors = checkCourse(input({ checks: { coverage: true, audio: false } }));
     expect(errors).toContain('coverage: "你" (stage 1) is in 1 scenes; needs 3');
-    expect(errors).toContain("intro/greet: npc line has no audio");
+  });
+
+  describe("audio", () => {
+    const AUDIO = { coverage: false, audio: true };
+    const voiced = () => {
+      const c = fixtureCourse();
+      const clips = assignAudio(c, { engine: "edge-tts", player: "P", words: "W", npcs: { cook: "C" } }, usedWords(c));
+      return { c, files: new Set(clips.map((x) => x.id)) };
+    };
+
+    it("reports lines, words and reactions without clips", () => {
+      const errors = checkCourse(input({ checks: AUDIO }));
+      expect(errors).toContain("intro/greet: npc line has no audio");
+      expect(errors).toContain("intro/greet: alt1 line has no audio");
+      expect(errors).toContain('word w_ni "你": no audio');
+      expect(errors).toContain("reaction wrong-generic: no audio for cook");
+    });
+
+    it("passes when every clip has a file, and names a clip without one", () => {
+      const { c, files } = voiced();
+      expect(checkCourse(input({ course: c, checks: AUDIO, audioFiles: files }))).toEqual([]);
+      const [gone] = files;
+      files.delete(gone);
+      expect(checkCourse(input({ course: c, checks: AUDIO, audioFiles: files }))).toEqual([`audio: no file for clip ${gone}`]);
+    });
+
+    it("lets a line that is only the player's name go without clips", () => {
+      const { c, files } = voiced();
+      const v = c.scenes[0].exchanges[0].variants[""];
+      v.alts![0] = { text: `${PLAYER_MARK}？`, tokens: [], audio: [] };
+      expect(checkCourse(input({ course: c, checks: AUDIO, audioFiles: files }))).toEqual([]);
+      v.alts![0] = { text: `${PLAYER_MARK}？`, tokens: [] };
+      expect(checkCourse(input({ course: c, checks: AUDIO, audioFiles: files }))).toEqual(["intro/greet: alt1 line has no audio"]);
+    });
+
+    it("counts the words of every line, reaction and concept as used", () => {
+      const c = fixtureCourse();
+      expect([...usedWords(c)].sort()).toEqual(["w_bu", "w_cha", "w_ge", "w_hao", "w_ni", "w_san", "w_shi", "w_shui", "w_si", "w_zhe", "x_bei"]);
+    });
   });
 
   it("doesn't count words from scenes that can be played in another order", () => {

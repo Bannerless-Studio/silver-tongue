@@ -15,10 +15,11 @@ import {
   type World,
 } from "@silver-tongue/core";
 import { narrationProblems, uiTextProblems } from "@silver-tongue/tui";
-import { checkCourse } from "./check";
+import { checkCourse, usedWords } from "./check";
 import { bindSlots, messageIds, parseFtl, Renderer, termNames, type FtlSource } from "./fluent";
 import type { PackMeta, PackWord } from "./pack";
 import { buildLexicon, segment, type Lexicon } from "./segment";
+import { assignAudio, voiceProblems, type Clip, type Voices } from "./voices";
 
 interface CourseConfig {
   id: string;
@@ -40,6 +41,10 @@ export interface BuildResult {
   /** undefined when a problem stopped the build before a course could be put together */
   course: Course | undefined;
   errors: string[];
+  /** every clip the course needs, once each */
+  clips: Clip[];
+  /** where the clip files live: content/audio/<language> */
+  audioDir: string | undefined;
 }
 
 const readJson = <T>(path: string): T => JSON.parse(readFileSync(path, "utf8")) as T;
@@ -57,7 +62,7 @@ export function buildCourse(root: string, courseId: string): BuildResult {
       return undefined;
     }
   };
-  const stop = (): BuildResult => ({ course: undefined, errors });
+  const stop = (): BuildResult => ({ course: undefined, errors, clips: [], audioDir: undefined });
 
   const cfg = attempt(`courses/${courseId}.json`, () => readJson<CourseConfig>(join(root, "courses", `${courseId}.json`)));
   if (!cfg) return stop();
@@ -295,8 +300,19 @@ export function buildCourse(root: string, courseId: string): BuildResult {
       ),
     ),
   };
+  // Clips: every line in its speaker's voice, and each word the course uses.
+  const voicesPath = join(langDir, "voices.json");
+  const voices = existsSync(voicesPath) ? attempt("voices.json", () => readJson<Voices>(voicesPath)) : undefined;
+  if (!existsSync(voicesPath) && cfg.checks.audio) errors.push("voices.json: missing (checks.audio is on)");
+  if (voices) errors.push(...voiceProblems(voices, world, scenes));
+  const used = usedWords(course);
+  const clips = voices ? assignAudio(course, voices, used) : [];
+  const audioDir = join(root, "audio", cfg.language);
+  const audioFiles = new Set(
+    existsSync(audioDir) ? readdirSync(audioDir).filter((f) => f.endsWith(".mp3")).map((f) => f.slice(0, -".mp3".length)) : [],
+  );
   const learnerIds = attempt("learner text", () => new Set(messageIds(learnerFtl, "learner files"))) ?? new Set<string>();
-  errors.push(...checkCourse({ course, stages: meta.stages, checks: cfg.checks, learnerIds, requiredUi: [] }));
+  errors.push(...checkCourse({ course, stages: meta.stages, checks: cfg.checks, learnerIds, requiredUi: [], audioFiles }));
   errors.push(...uiTextProblems(learnerFtl, cfg.learner));
   // Each action's narration gets the parameters its exchanges' `expect` gives it.
   const actions: Record<string, string[]> = {};
@@ -307,19 +323,8 @@ export function buildCourse(root: string, courseId: string): BuildResult {
   errors.push(...narrationProblems(learnerFtl, cfg.learner, actions));
   // Ship only the words the course uses: rank is the share of these that are known, and
   // the pack has far more words than one course needs. (The checks above see the whole pack.)
-  const used = new Set<string>([
-    ...Object.values(concepts).flat(),
-    ...Object.values(reactions).flatMap((l) => l.tokens.map((t) => t.word)),
-    ...scenes.flatMap((s) =>
-      s.exchanges.flatMap((ex) =>
-        Object.values(ex.variants).flatMap((v) =>
-          [v.npc, v.reply, v.rephrase, ...(v.alts ?? [])].flatMap((l) => l?.tokens.map((t) => t.word) ?? []),
-        ),
-      ),
-    ),
-  ]);
   course.words = Object.fromEntries(Object.entries(words).filter(([id]) => used.has(id)));
-  return { course, errors };
+  return { course, errors, clips, audioDir };
 }
 
 function main(): void {
