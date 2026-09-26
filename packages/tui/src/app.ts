@@ -7,6 +7,7 @@ import {
   tilePieces,
   sceneCost,
   describeRun,
+  joinTiles,
   mentorAvailable,
   MAX_NAME_LENGTH,
   rankFor,
@@ -53,7 +54,7 @@ const LOG_LIMIT = 200;
 
 export function startApp(opts: AppOptions): App {
   const { course, core, term } = opts;
-  const t: Text = makeText(course.learnerFtl);
+  const t: Text = makeText(course.learnerFtl, course.learner);
   const wordIds = Object.keys(course.words);
 
   let mode: Mode = "explore";
@@ -344,7 +345,7 @@ export function startApp(opts: AppOptions): App {
         width,
         " ",
       ),
-      [{ text: `${t("tiles-answer")} `, dim: true }, { text: tileInput.map((i) => tiles[i]).join(""), bold: true }],
+      [{ text: `${t("tiles-answer")} `, dim: true }, { text: joinTiles(course, tileInput.map((i) => tiles[i])), bold: true }],
     ];
   }
 
@@ -455,10 +456,10 @@ export function startApp(opts: AppOptions): App {
         flush();
         // Reading the whole line is not logged as help on each word: the words still have to be
         // recognised in the reply.
-        const pron = lastLine.tokens.flatMap((tk) => course.words[tk.word]?.readings?.at(-1) ?? []).join(" ");
+        const reading = lastLine.tokens.flatMap((tk) => course.words[tk.word]?.readings?.at(-1) ?? []).join(" ");
         push([
           { text: lastLine.text, bold: true },
-          ...(pron ? [{ text: ` ${pron}`, color: "yellow" as const }] : []),
+          ...(reading ? [{ text: ` ${reading}`, color: "yellow" as const }] : []),
           { text: ` — ${lastLine.meaning}` },
         ]);
       }
@@ -477,10 +478,10 @@ export function startApp(opts: AppOptions): App {
       tileInput = tileInput.slice(0, -1);
     } else if (key.name === "return" && tileInput.length) {
       // Tiles that make the right reply are shown as the reply itself, punctuation and all.
-      const placed = tileInput.map((i) => tiles[i]).join("");
+      const placed = joinTiles(course, tileInput.map((i) => tiles[i]));
       const reply = rightReply();
       const name = core.state.player ?? "";
-      const right = !!reply && tilePieces(reply).map((x) => (x === PLAYER_MARK ? name : x)).join("") === placed;
+      const right = !!reply && joinTiles(course, tilePieces(reply).map((x) => (x === PLAYER_MARK ? name : x))) === placed;
       echo(right ? personalize(reply!, name).text : placed);
       tileReply = reply?.audio ?? [];
       send({ type: "replyTiles", tiles: tileInput });

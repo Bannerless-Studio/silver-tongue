@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { fixtureCourse } from "@silver-tongue/core/testing";
+import { fixtureCourse, spacedCourse } from "@silver-tongue/core/testing";
 import type { Course } from "@silver-tongue/core";
 import { plain, type Key, type StyledLine, type Terminal } from "../src/terminal";
 
@@ -73,4 +73,10 @@ scene-shift = Serve drinks
 export function fixtureWithText(): Course {
   const ui = readFileSync(new URL("../../../content/learner/en/ui.ftl", import.meta.url), "utf8");
   return { ...fixtureCourse(), learnerFtl: ui + NARRATION };
+}
+
+/** The spaced test course with the real English UI text. */
+export function spacedWithText(): Course {
+  const ui = readFileSync(new URL("../../../content/learner/en/ui.ftl", import.meta.url), "utf8");
+  return { ...spacedCourse(), learnerFtl: ui + NARRATION };
 }

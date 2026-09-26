@@ -13,7 +13,7 @@ declare const __COURSE__: Course;
 /** The game's version (packages/tui-node/package.json), put in by the build. */
 declare const __VERSION__: string;
 const course = __COURSE__;
-const t = makeText(course.learnerFtl);
+const t = makeText(course.learnerFtl, course.learner);
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
 
 // Private windows and blocked site data make localStorage throw: play on without saving.

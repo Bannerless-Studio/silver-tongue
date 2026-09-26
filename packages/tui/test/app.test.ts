@@ -4,12 +4,12 @@ import { addErrand, line } from "@silver-tongue/core/testing";
 import { startApp } from "../src/app";
 import type { AudioOut, Speech } from "../src/audio";
 import { lineWidth } from "../src/width";
-import { FakeTerminal, fixtureWithText } from "./fake-terminal";
+import { FakeTerminal, fixtureWithText, spacedWithText } from "./fake-terminal";
 
 const T0 = 1_000_000;
 
-function setup(patch: (s: GameState) => void = () => {}, change: (c: Course) => void = () => {}) {
-  const course = fixtureWithText();
+function setup(patch: (s: GameState) => void = () => {}, change: (c: Course) => void = () => {}, make: () => Course = fixtureWithText) {
+  const course = make();
   change(course);
   const state = newGame(course);
   patch(state);
@@ -665,5 +665,45 @@ asked-deliver = They wanted it taken to the { $place }.
       none.term.press("1", "1");
       expect(none.calls).toEqual([]);
     });
+  });
+});
+
+describe("languages", () => {
+  const known = { right: 3, wrong: 0, streak: 3, helps: 0, lapsed: false, firstSeen: 0, lastSeen: 0 };
+  const allKnown = (s: GameState) => {
+    for (const id of Object.keys(spacedWithText().words)) s.words[id] = { ...known };
+    s.place = "noodle_shop";
+  };
+
+  it("shows tiles and the echo with spaces in a spaced language", () => {
+    const { term, core } = setup(allKnown, () => {}, spacedWithText);
+    term.resize(46, 20);
+    term.press("1"); // talk to the cook
+    expect(core.state.run!.mode).toBe("tiles");
+    const run = core.state.run!;
+    for (const p of ["mi", "bon"]) term.press(String(run.tiles.indexOf(p) + 1));
+    expect(term.screen().find((l) => l.includes("You say:"))).toContain("You say: mi bon");
+    term.press("return");
+    expect(term.screen().join("\n")).toContain("You: mi bon!");
+  });
+
+  it("echoes wrong tiles with spaces between them", () => {
+    const { term, core } = setup(allKnown, () => {}, spacedWithText);
+    term.resize(46, 20);
+    term.press("1");
+    const run = core.state.run!;
+    for (const p of ["bon", "mi"]) term.press(String(run.tiles.indexOf(p) + 1));
+    term.press("return");
+    expect(term.screen().join("\n")).toContain("You: bon mi");
+  });
+
+  it("shows every reading in word help, and the last one for the sentence", () => {
+    const { term } = setup((s) => (s.place = "noodle_shop"), () => {}, spacedWithText);
+    term.resize(46, 20);
+    term.press("1"); // talk to the cook
+    term.press("w", "1");
+    expect(term.screen().join("\n")).toContain("mi mí mi — you");
+    term.press("s");
+    expect(term.screen().join("\n")).toContain("mi bon! mi bon — Hello!");
   });
 });

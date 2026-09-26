@@ -38,7 +38,7 @@ describe("cli", () => {
         { lastPlayed: 5, state: { ...newGame(course), place: "noodle_shop", scenesDone: { intro: 1, shift: 4 } } },
       ],
       course,
-      makeText(ui + "place-street = The street\nplace-noodle_shop = Noodle shop\n"),
+      makeText(ui + "place-street = The street\nplace-noodle_shop = Noodle shop\n", "en"),
       (ms) => `T${ms}`,
     );
     expect(lines).toEqual([

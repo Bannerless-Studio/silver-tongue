@@ -60,7 +60,7 @@ function audioDir(): string {
 
 /** --export and --import work on the sessions folder and exit without starting the game. */
 async function exportOrImport(mode: "export" | "import", line: string): Promise<never> {
-  const t = makeText(course.learnerFtl);
+  const t = makeText(course.learnerFtl, course.learner);
   const root = configDir();
   const dir = sessionsDir(root, course.id);
   try {
@@ -108,7 +108,7 @@ async function chooseSave(): Promise<string> {
   const sessions = listSessions(dir, course);
   if (flags.mode !== "new" && flags.mode !== "resume") return sessions[0]?.path ?? newSessionPath(dir, Date.now());
   if (flags.mode === "new") return newSessionPath(dir, Date.now());
-  const t = makeText(course.learnerFtl);
+  const t = makeText(course.learnerFtl, course.learner);
   if (!sessions.length) {
     console.log(t("resume-none"));
     return newSessionPath(dir, Date.now());

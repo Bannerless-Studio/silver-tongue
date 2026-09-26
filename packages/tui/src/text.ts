@@ -7,7 +7,7 @@ export type Text = ((id: string, args?: Record<string, FluentVariable>) => strin
 };
 
 /** Learner-language text. A missing message shows its id, so gaps are visible, never fatal. */
-export function makeText(ftl: string, locale = "en"): Text {
+export function makeText(ftl: string, locale: string): Text {
   const bundle = new FluentBundle(locale, { useIsolating: false });
   bundle.addResource(new FluentResource(ftl));
   const t = (id: string, args?: Record<string, FluentVariable>) => {
