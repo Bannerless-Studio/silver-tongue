@@ -3,3 +3,4 @@ dist/
 *.tgz
 *.part
 site/
+.worktrees/
