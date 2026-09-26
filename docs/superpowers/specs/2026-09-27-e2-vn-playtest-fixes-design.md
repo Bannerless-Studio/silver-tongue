@@ -191,3 +191,6 @@ Each step leaves `main` green.
 - Auto-advance in the text game, which is a page of keys and lists.
 - A per-course default speed: one speed for the player, not per course.
 - Music, and any sound of its own for the auto-advance.
+- A speech speed in the terminal game: `packages/tui-node/src/main.ts` writes the whole settings
+  object on every launch, so those two writes have to become a merge before `speed` is stored
+  there. Nothing in the terminal game stores one yet.
