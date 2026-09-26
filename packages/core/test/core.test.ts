@@ -5,7 +5,7 @@ import { createCore, LOG_LIMIT, newGame, type Core } from "../src/core";
 import { recordRight } from "../src/learner";
 import { mulberry32 } from "../src/rng";
 import { addErrand, fixtureCourse, line } from "../src/testing/fixture";
-import { availableSceneIds, sceneCost } from "../src/life";
+import { availableSceneIds, moneyBlocked, sceneCost } from "../src/life";
 import type { GameEvent, WordRecord } from "../src/types";
 
 const T0 = 1_000_000;
@@ -458,5 +458,24 @@ describe("prices", () => {
     while (core.state.run) ev.push(...core.send({ type: "reply", choice: core.state.run.options.indexOf(comboKey(core.state.run.combo)) }));
     expect(availableSceneIds(c, core.state)).toContain("shift");
     expect(ev.filter((e) => e.type === "unlocked")).toEqual([]);
+  });
+
+  it("says when money is the only thing keeping a scene closed", () => {
+    const c = priced();
+    expect(moneyBlocked(c.scenes[0], { ...newGame(c), wallet: 2 })).toBe(true);
+    expect(moneyBlocked(c.scenes[0], { ...newGame(c), wallet: 3 })).toBe(false);
+    // the shift is closed by trust, not money
+    expect(moneyBlocked(c.scenes[1], { ...newGame(c), wallet: 0 })).toBe(false);
+  });
+
+  it("announces a priced scene never played once it becomes affordable", () => {
+    const c = fixtureCourse();
+    for (const v of Object.values(c.scenes[1].exchanges[0].variants)) v.cost = 21;
+    c.scenes.push({ ...structuredClone(c.scenes[0]), id: "odd", repeatable: true, exchanges: [{ ...structuredClone(c.scenes[0].exchanges[0]), pay: 5 }] });
+    const core = at(c, { scenesDone: { intro: 1 }, trust: { cook: 2 }, wallet: 20 });
+    core.send({ type: "startScene", scene: "odd" });
+    const ev: GameEvent[] = [];
+    while (core.state.run) ev.push(...core.send({ type: "reply", choice: core.state.run.options.indexOf(comboKey(core.state.run.combo)) }));
+    expect(ev).toContainEqual({ type: "unlocked", scene: "shift" });
   });
 });

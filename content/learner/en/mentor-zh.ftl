@@ -34,4 +34,4 @@ note-mei-title = 没有, there isn't
 note-mei = 没有 (méiyǒu) is "don't have" or "there isn't": 杯子没有了 is "we're out of cups". Most verbs take 不 for "not", but 有 always takes 没: 没有, never 不有.
 
 note-tai-title = 太…了, too much
-note-tai = 太 (tài) … 了 means "too …": 太多了 is "that's too much". The 了 at the end is part of the pattern.
+note-tai = 太 (tài) … 了 means "too …": 太多了 is "that's too much". The 了 at the end is part of the pattern. For prices people usually say 太贵了 (tài guì le), "too expensive".

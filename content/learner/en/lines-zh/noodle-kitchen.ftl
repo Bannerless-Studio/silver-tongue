@@ -8,5 +8,5 @@ lunch-rephrase = { -food(form: "cap") }, will you eat some?
 
 out = We're out of cups!
 out-reply = I'll go and buy cups.
-out-alt1 = I'm going now!
+out-alt1 = I like working.
 out-alt2 = OK, I'll eat noodles!

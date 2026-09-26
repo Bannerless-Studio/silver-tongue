@@ -489,5 +489,15 @@ asked-deliver = They wanted it taken to the { $place }.
     term.press(rightKey(core));
     expect(term.screen().join("\n")).toContain("-¥2 (shopping)");
   });
+
+  it("says when a scene here waits only for money, without offering it", () => {
+    const { term } = setup(
+      (s) => { s.place = "noodle_shop"; },
+      (c) => { c.scenes[0].exchanges[0].variants[""].cost = 30; },
+    );
+    const screen = term.screen().join("\n");
+    expect(screen).toContain("Cook: Say hello · needs ¥30");
+    expect(screen).not.toMatch(/\d\) Talk to Cook: Say hello/);
+  });
 });
 

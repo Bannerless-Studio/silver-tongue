@@ -76,9 +76,11 @@ describe("course bots (a world with a shop)", () => {
     const c = fixtureCourse();
     for (const v of Object.values(c.scenes[1].exchanges[0].variants)) v.cost = 1; // the shift now also buys something
     c.world.rentPerWeek = 1000; // nobody ever has a week's rent spare
+    expect(runBot(c, BOTS.right, { days: 3, seed: 1 }).shopping).toBe(0);
+    c.world.rentPerWeek = 0; // now there's always a week's rent spare
     const r = runBot(c, BOTS.right, { days: 3, seed: 1 });
+    expect(r.shopping).toBeGreaterThan(0);
     expect(r.rejected).toBe(0);
-    expect(r.minWallet).toBeGreaterThan(0);
   });
 
   it("still pays for a first visit that costs something, since it's the story", () => {

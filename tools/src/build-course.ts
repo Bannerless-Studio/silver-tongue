@@ -177,10 +177,10 @@ export function buildCourse(root: string, courseId: string): BuildResult {
         errors.push(`${sk.id}/${ex.id}: unknown group ${unknownGroups.map((g) => `"${g}"`).join(", ")}`);
         continue;
       }
-      if (typeof ex.cost === "string") {
-        const group = ex.cost.startsWith("$") ? ex.slots[ex.cost.slice(1)] : undefined;
+      if (ex.cost !== undefined && typeof ex.cost !== "number") {
+        const group = typeof ex.cost === "string" && ex.cost.startsWith("$") ? ex.slots[ex.cost.slice(1)] : undefined;
         if (!group || !groups[group].every((c) => c in numbers)) {
-          errors.push(`${sk.id}/${ex.id}: cost "${ex.cost}" must be a number or a slot whose values are all numbers`);
+          errors.push(`${sk.id}/${ex.id}: cost ${JSON.stringify(ex.cost)} must be a number or a slot whose values are all numbers`);
         }
       }
       for (const combo of allCombos(ex.slots, groups)) {
@@ -220,7 +220,9 @@ export function buildCourse(root: string, courseId: string): BuildResult {
           });
         });
       }
-      exchanges.push({ ...ex, variants });
+      // The course carries each variant's resolved cost, never the skeleton's "$slot".
+      const { cost: _cost, ...rest } = ex;
+      exchanges.push({ ...rest, variants });
     }
     scenes.push({ ...sk, exchanges });
   }

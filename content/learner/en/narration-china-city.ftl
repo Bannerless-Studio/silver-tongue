@@ -93,7 +93,7 @@ scene-delivery-station-end = She takes the parcel, pays you, and runs for her tr
 
 scene-noodle-kitchen = Wash dishes
 scene-noodle-kitchen-start = The sink is full, and the cook needs clean cups faster than you can wash them.
-scene-noodle-kitchen-end = The last cup is dry. The cook pays you and points you at the door: cups, from the shop.
+scene-noodle-kitchen-end = The last cup is dry, and the cook pays you.
 scene-shop-intro = Meet the shopkeeper
 scene-shop-intro-start = The shopkeeper looks up from her abacus as you come in.
 scene-shop-intro-end = You leave with one apple, and the feeling you paid too much anyway.
@@ -155,7 +155,7 @@ action-wash = You wash { $amount } cups.
 asked-wash = They wanted { $amount } cups.
 action-eat = You eat { $food }.
 asked-eat = They were offering you { $food }.
-asked-out = They're out of cups.
+asked-out = They were telling you they're out of cups.
 asked-browse = They wanted to know what you're buying.
 asked-fruit = They were showing you the fruit.
 asked-apples = They were saying the apples are good.

@@ -1,5 +1,7 @@
 import {
   availableSceneIds,
+  moneyBlocked,
+  sceneCost,
   describeRun,
   mentorAvailable,
   MAX_NAME_LENGTH,
@@ -256,7 +258,17 @@ export function startApp(opts: AppOptions): App {
     if (mode === "explore") {
       // The status line's parcel marker is cut off on narrow screens; this line wraps instead.
       const parcel: StyledLine[] = core.state.errand ? [[{ text: t("errand-carrying"), color: "cyan" }]] : [];
-      return [...parcel, [{ text: t("menu-title"), dim: true }], ...menu().map((m, i) => [{ text: `${i + 1}) ${m.label}` }])];
+      // Scenes here that wait only for money: shown, not offered, so an empty shop says why.
+      const s = core.state;
+      const waiting: StyledLine[] = course.scenes
+        .filter((x) => x.place === s.place && moneyBlocked(x, s))
+        .map((x) => [
+          {
+            text: t("menu-needs-money", { npc: npcName(x.npc), scene: t(`scene-${x.id}`), currency: course.world.currency, cost: sceneCost(x) }),
+            dim: true,
+          },
+        ]);
+      return [...parcel, ...waiting, [{ text: t("menu-title"), dim: true }], ...menu().map((m, i) => [{ text: `${i + 1}) ${m.label}` }])];
     }
     if (mode === "help") {
       const items = helpWords().map((w, i) => ({ ...w, label: `${i + 1}) ${w.text}` }));

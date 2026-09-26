@@ -10,5 +10,5 @@ lunch-rephrase = { -food }，你吃吗？
 
 out = 杯子没有了！
 out-reply = 我去买杯子。
-out-alt1 = 我现在去！
+out-alt1 = 我喜欢工作。
 out-alt2 = 好，我吃面条！

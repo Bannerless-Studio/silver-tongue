@@ -17,6 +17,7 @@ rank-4 = Silver Tongue
 menu-title = What now?
 menu-talk = Talk to { $npc }: { $scene }
 menu-go = Go to { $place }
+menu-needs-money = { $npc }: { $scene } · needs { $currency }{ $cost }
 menu-mentor = Ask { $npc } about the language
 cost-slot = { " · 1 slot" }
 menu-sleep = Sleep (end the day)

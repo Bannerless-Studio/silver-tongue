@@ -68,6 +68,12 @@ describe("checkCourse", () => {
     expect(checkCourse(input())).toEqual([]);
   });
 
+  it("needs every slot a reply is graded on to show in the reply", () => {
+    const c = fixtureCourse();
+    for (const v of Object.values(c.scenes[0].exchanges[1].variants)) v.reply = line(["好", "w_hao"], ["？", null]);
+    expect(checkCourse(input({ course: c }))).toContain('intro/menu: hinge "$item" doesn\'t change the reply, so a player can\'t get it wrong');
+  });
+
   it("needs a whole-number cost", () => {
     const c = fixtureCourse();
     c.scenes[0].exchanges[0].variants[""].cost = -1;

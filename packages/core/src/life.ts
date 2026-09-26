@@ -5,6 +5,11 @@ export function sceneCost(scene: Scene): number {
   return scene.exchanges.reduce((sum, ex) => sum + Math.max(0, ...Object.values(ex.variants).map((v) => v.cost ?? 0)), 0);
 }
 
+/** A scene that is closed only because the wallet can't cover it, so a front end can say so. */
+export function moneyBlocked(scene: Scene, state: GameState): boolean {
+  return !isAvailable(scene, state) && isAvailable(scene, { ...state, wallet: Infinity });
+}
+
 export function isAvailable(scene: Scene, state: GameState): boolean {
   if (!scene.repeatable && (state.scenesDone[scene.id] ?? 0) > 0) return false;
   // One parcel at a time; a drop-off is there only while the parcel is for its place.

@@ -128,6 +128,8 @@ describe("build-course (real content)", () => {
   it("the shop sells at the price you agreed, and the kitchen comes after deliveries", () => {
     const buy = course!.scenes.find((s) => s.id === "shop-buy")!;
     expect(buy.exchanges[0].variants["item=apple|price=four"].cost).toBe(4);
+    // the course carries only the resolved price per variant, never the skeleton's "$price"
+    expect(buy.exchanges[0].cost).toBeUndefined();
     const intro = course!.scenes.find((s) => s.id === "shop-intro")!;
     expect(intro.exchanges.find((ex) => ex.id === "less")!.variants[""].cost).toBe(4);
     expect(course!.scenes.find((s) => s.id === "noodle-kitchen")!.after).toEqual(["noodle-shift", "delivery-pickup"]);
@@ -211,6 +213,13 @@ describe("build-course (broken content)", () => {
     });
     expect(bad.errors).toContain('warehouse-shift/carry: cost "$item" must be a number or a slot whose values are all numbers');
     expect(bad.errors).toContain('warehouse-shift/pick: cost "$nope" must be a number or a slot whose values are all numbers');
+    const odd = buildChanged((d) => {
+      const f = join(d, "settings/china-city/scenes/warehouse-shift.json");
+      const sk = JSON.parse(readFileSync(f, "utf8"));
+      sk.exchanges[0].cost = true;
+      writeFileSync(f, JSON.stringify(sk));
+    });
+    expect(odd.errors).toContain("warehouse-shift/carry: cost true must be a number or a slot whose values are all numbers");
   });
 
   it("resolves a slot's cost into each variant", () => {
