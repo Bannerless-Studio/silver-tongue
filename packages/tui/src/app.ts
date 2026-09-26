@@ -1,16 +1,7 @@
 import {
-  availableSceneIds,
-  comboKey,
-  moneyBlocked,
-  personalize,
-  PLAYER_MARK,
-  tilePieces,
-  sceneCost,
   describeRun,
   joinTiles,
-  mentorAvailable,
   MAX_NAME_LENGTH,
-  rankFor,
   type CatalogEntry,
   type Core,
   type Course,
@@ -25,7 +16,10 @@ import { notebookLines } from "./notebook";
 import { lineSpans, renderScreen, wrapItems } from "./screen";
 import { strWidth, wrapLine } from "./width";
 import type { Key, StyledLine, Terminal } from "./terminal";
-import { makeText, type Text } from "@silver-tongue/view";
+import {
+  actionNarration, hudValues, introLines, makeText, placeMenu, sentenceCard, settingsRows, tileEcho, waitingForMoney, wordCard,
+  type SettingsScreen, type Text,
+} from "@silver-tongue/view";
 
 export interface AppOptions {
   course: Course;
@@ -67,7 +61,6 @@ const LOG_LIMIT = 200;
 export function startApp(opts: AppOptions): App {
   const { course, core, term } = opts;
   const t: Text = makeText(course.learnerFtl, course.learner);
-  const wordIds = Object.keys(course.words);
 
   let mode: Mode = "explore";
   let log: StyledLine[] = [];
@@ -117,28 +110,15 @@ export function startApp(opts: AppOptions): App {
 
   /** The opening story, for a game that hasn't started yet. Lines intro-1, intro-2, … */
   function tellIntro() {
-    const s = core.state;
-    const fresh =
-      s.day === 1 && s.slot === 0 && !s.run && s.place === course.world.start && !Object.keys(s.scenesDone).length && !Object.keys(s.words).length;
-    if (!fresh) return;
-    const args = { currency: course.world.currency, wallet: s.wallet, rent: course.world.rentPerWeek };
-    for (let i = 1; t.has(`intro-${i}`); i++) push([{ text: t(`intro-${i}`, args) }], []);
+    for (const line of introLines(course, core.state, t)) push([{ text: line }], []);
   }
 
-  /** An action's parameters as narration variables: concept values become learner-language names. */
-  const actionArgs = (a: Record<string, string>) =>
-    Object.fromEntries(Object.entries(a).map(([k, v]) => [k, course.conceptNames[v] ?? v]));
-
   /**
-   * What the reply did (action-<name>) and, on a mix-up, what was asked (asked-<name> of the asked
-   * action), falling back to the generic mismatch line. Wrong tiles did nothing recognisable, so only
-   * what was asked is narrated.
+   * What the reply did and, on a mix-up, what was asked (see actionNarration).
    */
   function narrateAction(action: Record<string, string>, expected: Record<string, string>, matched: boolean, tilesWrong: boolean) {
-    if (!tilesWrong && t.has(`action-${action.action}`)) push([{ text: t(`action-${action.action}`, actionArgs(action)), dim: true }]);
-    if (matched) return;
-    if (t.has(`asked-${expected.action}`)) push([{ text: t(`asked-${expected.action}`, actionArgs(expected)), color: "yellow" }]);
-    else push([{ text: t("mismatch"), color: "yellow" }]);
+    for (const n of actionNarration(course, t, { action, expected, matched, tilesWrong }))
+      push([n.tone === "warn" ? { text: n.text, color: "yellow" } : { text: n.text, dim: true }]);
   }
 
   function enterPlace(place: string) {
@@ -275,38 +255,20 @@ export function startApp(opts: AppOptions): App {
     return false;
   }
 
-  const catalogEntry = () => opts.settings?.courses.find((c) => c.id === course.id);
-  const languageName = (code: string) => (t.has(`language-${code}`) ? t(`language-${code}`) : code);
-  const learnerName = (code: string) => catalogEntry()?.learnerNames[code] ?? code;
-  const soundLabel = () =>
-    !opts.audio?.available ? t("settings-sound-none") : core.state.sound === false ? t("settings-sound-off") : t("settings-sound-on");
-  const current = (yes: boolean) => (yes ? ` ${t("settings-current")}` : "");
-
+  const settingsScreen = (): SettingsScreen => (mode === "settings-course" ? "course" : mode === "settings-reading" ? "reading" : "main");
   /** The rows the settings screen shows, and what choosing each one does. */
-  function settingsRows(): { label: string; choose: () => void }[] {
-    if (mode === "settings-course") {
-      return opts.settings!.courses.map((c) => ({
-        label: languageName(c.language) + current(c.id === course.id),
-        choose: () => {
-          if (c.id === course.id) mode = "settings";
-          else switchTo(c.id, c.learners.includes(course.learner) ? course.learner : c.learners[0]);
-        },
-      }));
-    }
-    if (mode === "settings-reading") {
-      return (catalogEntry()?.learners ?? [course.learner]).map((code) => ({
-        label: learnerName(code) + current(code === course.learner),
-        choose: () => {
-          if (code === course.learner) mode = "settings";
-          else switchTo(course.id, code);
-        },
-      }));
-    }
-    return [
-      { label: t("settings-learning", { language: languageName(course.language.code) }), choose: () => void (mode = "settings-course") },
-      { label: t("settings-reading", { learner: learnerName(course.learner) }), choose: () => void (mode = "settings-reading") },
-      { label: t("settings-sound", { sound: soundLabel() }), choose: () => void soundKey("m") },
-    ];
+  function settingsChoices(): { label: string; choose: () => void }[] {
+    const ctx = { course, catalog: opts.settings!.courses, state: core.state, t, audioAvailable: !!opts.audio?.available };
+    return settingsRows(settingsScreen(), ctx).map((r) => ({
+      label: r.label,
+      choose: () => {
+        const a = r.action;
+        if (a.kind === "open") mode = a.screen === "course" ? "settings-course" : "settings-reading";
+        else if (a.kind === "back") mode = "settings";
+        else if (a.kind === "switch") switchTo(a.course, a.learner);
+        else soundKey("m");
+      },
+    }));
   }
 
   /** Saves, stops any sound, and hands over to the front end, which starts the app again. */
@@ -317,33 +279,9 @@ export function startApp(opts: AppOptions): App {
     opts.settings!.switchTo(courseId, learner, core.state);
   }
 
-  /** The right reply for the exchange being played. */
-  function rightReply(): RenderedLine | undefined {
-    const run = core.state.run;
-    const ex = run && course.scenes.find((x) => x.id === run.scene)?.exchanges[run.exchange];
-    return run ? ex?.variants[comboKey(run.combo)]?.reply : undefined;
-  }
-
   function menu(): MenuItem[] {
-    const s = core.state;
-    const items: MenuItem[] = [];
-    for (const id of availableSceneIds(course, s)) {
-      const scene = course.scenes.find((x) => x.id === id)!;
-      if (scene.place !== s.place) continue;
-      items.push({
-        label: t("menu-talk", { npc: npcName(scene.npc), scene: t(`scene-${id}`) }) + t("cost-slot"),
-        input: { type: "startScene", scene: id },
-      });
-    }
-    // Offered only when there is something to explain, so a slot is never spent on nothing.
-    if (mentorAvailable(course, s) && s.notes.ready.length) {
-      items.push({ label: t("menu-mentor", { npc: npcName(course.world.mentor!.npc) }) + t("cost-slot"), input: { type: "visitMentor" } });
-    }
-    for (const p of course.world.places[s.place].links) {
-      items.push({ label: t("menu-go", { place: t(`place-${p}`) }), input: { type: "goTo", place: p } });
-    }
     // Sleep and quit always keep their keys; the content checker keeps places within 7 other items.
-    return [...items.slice(0, 7), { label: t("menu-sleep"), input: { type: "sleep" } }, { label: t("menu-quit"), quit: true }];
+    return [...placeMenu(course, core.state, t), { label: t("menu-quit"), quit: true }];
   }
 
   /**
@@ -367,21 +305,13 @@ export function startApp(opts: AppOptions): App {
     }
     if (SETTINGS_MODES.includes(mode)) {
       const title = mode === "settings" ? "settings-title" : mode === "settings-course" ? "settings-pick-course" : "settings-pick-reading";
-      return [[{ text: t(title), dim: true }], ...settingsRows().map((r, i) => [{ text: `${i + 1}) ${r.label}` }])];
+      return [[{ text: t(title), dim: true }], ...settingsChoices().map((r, i) => [{ text: `${i + 1}) ${r.label}` }])];
     }
     if (mode === "explore") {
       // The status line's parcel marker is cut off on narrow screens; this line wraps instead.
       const parcel: StyledLine[] = core.state.errand ? [[{ text: t("errand-carrying"), color: "cyan" }]] : [];
       // Scenes here that wait only for money: shown, not offered, so an empty shop says why.
-      const s = core.state;
-      const waiting: StyledLine[] = course.scenes
-        .filter((x) => x.place === s.place && moneyBlocked(x, s))
-        .map((x) => [
-          {
-            text: t("menu-needs-money", { npc: npcName(x.npc), scene: t(`scene-${x.id}`), currency: course.world.currency, cost: sceneCost(x) }),
-            dim: true,
-          },
-        ]);
+      const waiting: StyledLine[] = waitingForMoney(course, core.state, t).map((text) => [{ text, dim: true }]);
       return [...parcel, ...waiting, [{ text: t("menu-title"), dim: true }], ...menu().map((m, i) => [{ text: `${i + 1}) ${m.label}` }])];
     }
     if (mode === "help") {
@@ -425,15 +355,10 @@ export function startApp(opts: AppOptions): App {
     if (handedOver) return;
     const s = core.state;
     const { cols, rows } = term.size();
+    const h = hudValues(course, s, t, opts.now());
     const hud = t("hud", {
-      day: s.day,
-      slot: s.slot,
-      slots: course.world.slotsPerDay,
-      currency: course.world.currency,
-      wallet: s.wallet,
-      rank: t(`rank-${rankFor(s.words, wordIds, opts.now())}`),
-      parcel: s.errand ? "yes" : "no",
-      rentLate: s.rentLate ? "yes" : "no",
+      day: h.day, slot: h.slot, slots: h.slots, currency: h.currency, wallet: h.wallet,
+      rank: h.rankLabel, parcel: h.parcel ? "yes" : "no", rentLate: h.rentLate ? "yes" : "no",
     });
     if (mode === "notebook") {
       const lines = notebookLines(course, s, t, opts.now()).flatMap((l) => wrapLine(l, cols - 4));
@@ -448,7 +373,7 @@ export function startApp(opts: AppOptions): App {
       mode === "settings"
         ? ["keys-settings", 3]
         : SETTINGS_MODES.includes(mode)
-        ? ["keys-settings-pick", settingsRows().length]
+        ? ["keys-settings-pick", settingsChoices().length]
         : mode === "name"
         ? ["keys-name", 0]
         : mode === "explore"
@@ -489,7 +414,7 @@ export function startApp(opts: AppOptions): App {
       return render();
     }
     if (SETTINGS_MODES.includes(mode)) {
-      const rows = settingsRows();
+      const rows = settingsChoices();
       const n = /^[1-9]$/.test(key.name) ? Number(key.name) - 1 : -1;
       if (key.name === "escape") mode = mode === "settings" ? settingsFrom : "settings";
       else if (n >= 0 && n < rows.length) rows[n].choose();
@@ -516,31 +441,31 @@ export function startApp(opts: AppOptions): App {
     } else if (mode === "help") {
       const word = n >= 0 ? helpWords()[n] : undefined;
       if (word) {
-        const w = course.words[word.word];
-        lastHelp = w.audio ?? [];
+        const card = wordCard(course, word.word);
+        lastHelp = card.clips;
         hear(lastHelp);
         send({ type: "helpWord", word: word.word });
         push([
-          { text: w.w, bold: true },
-          ...(w.readings?.length ? [{ text: ` ${w.readings.join(" ")}`, color: "yellow" as const }] : []),
-          { text: ` — ${w.gloss}` },
+          { text: card.text, bold: true },
+          ...(card.readings.length ? [{ text: ` ${card.readings.join(" ")}`, color: "yellow" as const }] : []),
+          { text: ` — ${card.gloss}` },
         ]);
       }
       if (key.name === "p") {
         hear(lastHelp);
         flush();
       }
-      if (key.name === "s" && lastLine?.meaning) {
-        lastHelp = lastLine.audio ?? [];
+      const sentence = key.name === "s" && lastLine ? sentenceCard(course, lastLine) : undefined;
+      if (sentence) {
+        lastHelp = sentence.clips;
         hear(lastHelp, lastSlow);
         flush();
         // Reading the whole line is not logged as help on each word: the words still have to be
         // recognised in the reply.
-        const reading = lastLine.tokens.flatMap((tk) => course.words[tk.word]?.readings?.at(-1) ?? []).join(" ");
         push([
-          { text: lastLine.text, bold: true },
-          ...(reading ? [{ text: ` ${reading}`, color: "yellow" as const }] : []),
-          { text: ` — ${lastLine.meaning}` },
+          { text: sentence.text, bold: true },
+          ...(sentence.reading ? [{ text: ` ${sentence.reading}`, color: "yellow" as const }] : []),
+          { text: ` — ${sentence.meaning}` },
         ]);
       }
       if (key.name === "escape" || key.name === "w") mode = "scene";
@@ -557,13 +482,9 @@ export function startApp(opts: AppOptions): App {
     } else if (key.name === "backspace") {
       tileInput = tileInput.slice(0, -1);
     } else if (key.name === "return" && tileInput.length) {
-      // Tiles that make the right reply are shown as the reply itself, punctuation and all.
-      const placed = joinTiles(course, tileInput.map((i) => tiles[i]));
-      const reply = rightReply();
-      const name = core.state.player ?? "";
-      const right = !!reply && joinTiles(course, tilePieces(reply).map((x) => (x === PLAYER_MARK ? name : x))) === placed;
-      echo(right ? personalize(reply!, name).text : placed);
-      tileReply = reply?.audio ?? [];
+      const said = tileEcho(course, core.state, tiles, tileInput);
+      echo(said.line.text);
+      tileReply = said.clips;
       send({ type: "replyTiles", tiles: tileInput });
     }
     render();
