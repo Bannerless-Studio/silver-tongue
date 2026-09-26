@@ -86,28 +86,29 @@ exported from core and tested directly. No new events, inputs or state.
 ### Numbers
 
 Rent stays ¥50 a week, food ¥5 a day, start wallet ¥20. Pay was tuned with the bots until the CI
-rules below passed; ¥6 a slot (the first guess) and ¥8 left the right bot ¥7–19 after rent, so the
-final rate is ¥9 a job slot, and a delivery pays ¥18 for its two slots (pickup and drop-off):
+rules below passed; ¥6 a slot (the first guess) and ¥8 left the right bot ¥7–19 after rent, and ¥9
+passed. After release the user raised it to ¥10 a job slot to ease things for a player who gets
+most, not all, replies right; a delivery pays ¥20 for its two slots (pickup and drop-off):
 
 | Scene | Exchange pay | Total |
 |---|---|---|
-| warehouse-shift | carry 6, pick 3 | 9 |
-| noodle-shift | drink 2, order 7 | 9 |
-| noodle-kitchen | cups 5, lunch 2, out 2 | 9 |
-| tea-shift | pour 5, table 2, busy 2 | 9 |
-| taxi-luggage | bags 5, train 2, phone 1, pay 1 | 9 |
-| delivery-hospital | who 3, doctor 3, bye 12 | 18 |
-| delivery-school | who 3, teacher 3, books 3, bye 9 | 18 |
-| delivery-station | who 3, beijing 3, time 3, bye 9 | 18 |
+| warehouse-shift | carry 7, pick 3 | 10 |
+| noodle-shift | drink 2, order 8 | 10 |
+| noodle-kitchen | cups 6, lunch 2, out 2 | 10 |
+| tea-shift | pour 6, table 2, busy 2 | 10 |
+| taxi-luggage | bags 6, train 2, phone 1, pay 1 | 10 |
+| delivery-hospital | who 3, doctor 3, bye 14 | 20 |
+| delivery-school | who 3, teacher 3, books 3, bye 11 | 20 |
+| delivery-station | who 3, beijing 3, time 3, bye 11 | 20 |
 
 Bots, 14 days, seed 7:
 
 | Bot | End wallet | Rent late (nights) | Earned | Spent at shop | Lowest after rent |
 |---|---|---|---|---|---|
-| right | 102 | 0 | 261 | 9 (2 buys) | 30 |
+| right | 133 | 0 | 290 | 7 (2 buys) | 28 |
 | wrong | 0 | 8 | 0 | 0 | never paid |
-| random | 28 | 6 | 173 | 4 | 5 |
-| learner (70% right) | 8 | 4 | 191 | 4 | 7 |
+| random | 7 | 5 | 199 | 4 | 7 |
+| learner (70% right) | 25 | 3 | 216 | 4 | 6 |
 
 Tuning needed three bot strategy changes, each a sensible player's habit: work when rent is due
 within two nights and the wallet is short of rent plus a week's food; shopping with money to spare

@@ -21,7 +21,7 @@
       "slots": { "item": "drinks", "count": "numbers_3_5" },
       "expect": { "action": "serve", "item": "$item", "count": "$count" },
       "hinges": ["$item", "$count"],
-      "pay": 7,
+      "pay": 8,
       "missCost": 2
     }
   ]
