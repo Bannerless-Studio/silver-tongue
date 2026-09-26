@@ -1,7 +1,7 @@
 dog = Look! Our dog! Three years old!
 dog-reply = A dog! So pretty!
 dog-alt1 = Her clothes are pretty.
-dog-alt2 = Five people!
+dog-alt2 = Six people!
 
 sorry = Sorry! Sorry!
 sorry-reply = That's all right!
@@ -16,7 +16,7 @@ love-alt2 = Very pretty!
 seen = Have you seen my daughter's cat?
 seen-reply = I haven't seen it.
 seen-alt1 = That's all right!
-seen-alt2 = Five people!
+seen-alt2 = Six people!
 
 sleep = Her cat's asleep over there. Look!
 sleep-reply = The cat's asleep!

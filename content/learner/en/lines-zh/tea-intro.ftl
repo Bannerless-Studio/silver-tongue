@@ -9,7 +9,7 @@ names-alt1 = My name is Big Liu.
 names-alt2 = How are you?
 
 meet = I'm glad to meet you!
-meet-reply = I'm glad too!
+meet-reply = I'm glad!
 meet-alt1 = I want to work.
 meet-alt2 = In front of the hospital.
 
@@ -24,11 +24,11 @@ china-alt1 = Yes! Thank you.
 china-alt2 = My name is Big Liu.
 
 job = What work do you do?
-job-reply = I work behind the hospital.
-job-alt1 = I'm glad too!
+job-reply = I work for Big Liu.
+job-alt1 = I'm glad!
 job-alt2 = How are you?
 
 come = Come and work on Saturday!
 come-reply = OK! I want to work!
-come-alt1 = I'm glad too!
+come-alt1 = I'm glad!
 come-alt2 = My name is Big Liu.

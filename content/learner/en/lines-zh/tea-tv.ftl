@@ -23,7 +23,7 @@ sorry-reply = How is your mother?
 sorry-alt1 = We all watch!
 sorry-alt2 = OK, television on!
 
-see = Do you see that dog?
+see = Did you see that dog?
 see-reply = I see it! It's big!
 see-alt1 = How is your mother?
 see-alt2 = We all watch!

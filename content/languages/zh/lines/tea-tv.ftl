@@ -15,7 +15,7 @@ all-reply = 我们都看！
 all-alt1 = 天气很冷。
 all-alt2 = 十分钟。
 
-phone = 喂？……我打电话。
+phone = 喂？……我在打电话。
 phone-reply = 好！
 phone-alt1 = 我们都看！
 phone-alt2 = 中午来。
@@ -25,7 +25,7 @@ sorry-reply = 你妈妈好吗？
 sorry-alt1 = 我们都看！
 sorry-alt2 = 好，开电视！
 
-see = 你看见那个狗吗？
+see = 你看见那个狗了吗？
 see-reply = 看见了！很大！
 see-alt1 = 你妈妈好吗？
 see-alt2 = 我们都看！

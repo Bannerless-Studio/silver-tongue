@@ -15,7 +15,7 @@ rice-reply = 我去商店买米饭。
 rice-alt1 = 很多！
 rice-alt2 = 我饿了。
 
-see = 你看见那个先生吗？
+see = 你看见那个先生了吗？
 see-reply = 看见了！
 see-alt1 = 我去商店买米饭。
 see-alt2 = 中午了！
@@ -25,7 +25,7 @@ these-reply = 好，这些菜。
 these-alt1 = 看见了！
 these-alt2 = 很多！
 
-price = 那个小姐：多少钱？
+price = 那个小姐想吃菜，多少钱？
 price-reply = 她？十块钱。
 price-alt1 = 好，这些菜。
 price-alt2 = 我饿了。

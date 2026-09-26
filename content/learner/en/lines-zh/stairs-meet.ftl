@@ -19,7 +19,7 @@ years-alt1 = Ten kuai!
 years-alt2 = My flat is two-oh-eight.
 
 son = My son and I live here.
-son-reply = Your son is big!
+son-reply = Your son's lovely!
 son-alt1 = I live here.
 son-alt2 = How much is it?
 

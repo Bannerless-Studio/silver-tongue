@@ -8,7 +8,7 @@ train = { -hour }点，去北京！
 train-reply = 好，{ -hour }点去北京。
 train-rephrase = 几点？{ -hour }点！去北京！
 
-phone = 喂？……好，我打电话。
+phone = 喂？……好，我在打电话。
 phone-reply = 你打电话，我工作！
 phone-alt1 = 太多了！
 phone-alt2 = 多少钱？

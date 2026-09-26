@@ -3,7 +3,7 @@
 dog = 你看！我们的狗！三岁！
 dog-reply = 狗！很漂亮！
 dog-alt1 = 她的衣服很漂亮。
-dog-alt2 = 五个人！
+dog-alt2 = 六个人！
 
 sorry = 对不起！对不起！
 sorry-reply = 没关系！
@@ -15,10 +15,10 @@ love-reply = 狗很好！
 love-alt1 = 她十岁。
 love-alt2 = 很漂亮！
 
-seen = 你看见我女儿的猫吗？
+seen = 你看见我女儿的猫了吗？
 seen-reply = 没看见。
 seen-alt1 = 没关系！
-seen-alt2 = 五个人！
+seen-alt2 = 六个人！
 
 sleep = 她的猫在那里睡觉。你看！
 sleep-reply = 猫在睡觉！

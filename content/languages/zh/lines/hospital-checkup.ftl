@@ -5,12 +5,12 @@ sit-reply = 谢谢，医生。
 sit-alt1 = 我叫老王。
 sit-alt2 = 我现在去！
 
-sick = 你怎么了？你很热！你冷吗？
+sick = 你怎么了？你太热了！
 sick-reply = 是，我很冷。
 sick-alt1 = 谢谢，医生。
 sick-alt2 = 在医院前面。
 
-clothes = 你衣服很少！
+clothes = 你衣服太少了！
 clothes-reply = 是，天气很冷。
 clothes-alt1 = 是，我很冷。
 clothes-alt2 = 我想工作。

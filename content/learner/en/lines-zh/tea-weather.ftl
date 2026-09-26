@@ -5,7 +5,7 @@ cold-alt2 = I'm hungry.
 
 weather = What's the weather like?
 weather-reply = The weather's cold.
-weather-alt1 = I'm glad too!
+weather-alt1 = I'm glad!
 weather-alt2 = Thank you!
 
 rain = It rained yesterday, and it's raining today!
@@ -14,7 +14,7 @@ rain-alt1 = Come and work on Saturday!
 rain-alt2 = How are you?
 
 hot = Will you have tea? It's hot.
-hot-reply = Thank you! I like hot tea.
+hot-reply = No, thank you!
 hot-alt1 = The weather's cold.
 hot-alt2 = I want to work.
 
@@ -28,7 +28,7 @@ when-reply = At noon.
 when-alt1 = Three o'clock.
 when-alt2 = Very cold!
 
-minutes = No work. Tea. Ten minutes.
+minutes = Sit down, have some tea. Ten minutes.
 minutes-reply = OK, ten minutes.
 minutes-alt1 = At noon.
 minutes-alt2 = The weather's cold.

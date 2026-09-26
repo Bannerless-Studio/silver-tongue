@@ -13,7 +13,7 @@
     { "id": "love", "slots": {}, "expect": { "action": "loves" }, "hinges": [], "pay": 0, "missCost": 0 },
     { "id": "seen", "slots": {}, "expect": { "action": "seen" }, "hinges": [], "pay": 0, "missCost": 0 },
     { "id": "sleep", "slots": {}, "expect": { "action": "asleep" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "fruit", "slots": {}, "expect": { "action": "fruit" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "fruit", "slots": {}, "expect": { "action": "offerfruit" }, "hinges": [], "pay": 0, "missCost": 0 },
     { "id": "bye", "slots": {}, "expect": { "action": "bye" }, "hinges": [], "pay": 0, "missCost": 0 }
   ]
 }

@@ -3,14 +3,14 @@ sit-reply = Thank you, doctor.
 sit-alt1 = My name is Old Wang.
 sit-alt2 = I'm going now!
 
-sick = What's wrong? You're hot! Do you feel cold?
-sick-reply = Yes, I feel very cold.
+sick = What's wrong? You're burning up!
+sick-reply = Yes, and I feel cold.
 sick-alt1 = Thank you, doctor.
 sick-alt2 = In front of the hospital.
 
-clothes = You're not wearing much!
+clothes = You're not wearing enough!
 clothes-reply = Yes, and the weather's cold.
-clothes-alt1 = Yes, I feel very cold.
+clothes-alt1 = Yes, and I feel cold.
 clothes-alt2 = I want to work.
 
 when = Since when? This morning?

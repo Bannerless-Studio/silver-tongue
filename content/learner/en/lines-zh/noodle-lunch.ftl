@@ -13,7 +13,7 @@ rice-reply = I'll go to the shop for rice.
 rice-alt1 = So many!
 rice-alt2 = I'm hungry.
 
-see = Do you see that man?
+see = Did you see that man?
 see-reply = I see him!
 see-alt1 = I'll go to the shop for rice.
 see-alt2 = It's noon!
@@ -23,7 +23,7 @@ these-reply = OK, these dishes.
 these-alt1 = I see him!
 these-alt2 = So many!
 
-price = That young woman wants to know how much.
+price = That young woman wants vegetables. How much?
 price-reply = Her? Ten kuai.
 price-alt1 = OK, these dishes.
 price-alt2 = I'm hungry.
@@ -33,7 +33,7 @@ eat-reply = Yes! Thanks!
 eat-alt1 = Her? Ten kuai.
 eat-alt2 = So many!
 
-taste = How are the vegetables?
+taste = How's the food?
 taste-reply = Great!
 taste-alt1 = Yes! Thanks!
 taste-alt2 = I'll go and buy cups.

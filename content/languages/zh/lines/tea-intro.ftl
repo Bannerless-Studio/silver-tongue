@@ -26,7 +26,7 @@ china-alt1 = 喝！谢谢。
 china-alt2 = 我叫大刘。
 
 job = 你做什么工作？
-job-reply = 我在医院后面工作。
+job-reply = 我在大刘那里工作。
 job-alt1 = 我很高兴！
 job-alt2 = 你好吗？
 

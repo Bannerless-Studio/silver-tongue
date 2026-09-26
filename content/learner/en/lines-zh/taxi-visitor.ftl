@@ -1,9 +1,9 @@
 who = That man! Do you know him?
 who-reply = I don't know him.
 who-alt1 = Hello, Old Ma!
-who-alt2 = Too much!
+who-alt2 = That's too much!
 
-china = He's just off the plane. He's come to China to work.
+china = He's come to China to work.
 china-reply = He must be happy!
 china-alt1 = I don't know him.
 china-alt2 = Thank you, Old Ma!
@@ -23,17 +23,22 @@ daughter-reply = In Beijing!
 daughter-alt1 = The afternoon!
 daughter-alt2 = He must be happy!
 
+year = His daughter came to Beijing in twenty twenty-five.
+year-reply = Twenty twenty-five!
+year-alt1 = In Beijing!
+year-alt2 = Yesterday morning?
+
+date = On the first of September his daughter starts school.
+date-reply = The first of September!
+date-alt1 = Twenty twenty-five!
+date-alt2 = I don't know him.
+
 how = He has so much luggage! How will he get to Beijing?
-how-reply = By taxi!
-how-alt1 = In Beijing!
+how-reply = By plane!
+how-alt1 = The first of September!
 how-alt2 = Yesterday morning?
 
-date = The twenty-sixth of September.
-date-reply = The twenty-sixth of September!
-date-alt1 = By taxi!
-date-alt2 = Yesterday morning?
-
-year = Twenty twenty-six! He's getting in the taxi.
-year-reply = Goodbye, sir!
-year-alt1 = The twenty-sixth of September!
-year-alt2 = I don't know him.
+bye = Right! He's getting in the taxi.
+bye-reply = Goodbye, sir!
+bye-alt1 = By plane!
+bye-alt2 = I don't know him.

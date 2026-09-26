@@ -21,7 +21,7 @@ years-alt1 = 十块！
 years-alt2 = 我家是二零八。
 
 son = 我和我儿子住这里。
-son-reply = 你儿子很大！
+son-reply = 你儿子很好！
 son-alt1 = 我住这里。
 son-alt2 = 多少钱？
 

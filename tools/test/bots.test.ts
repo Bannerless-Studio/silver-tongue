@@ -43,6 +43,7 @@ describe("course bots (real content)", () => {
     expect(reports.right.rentLateNights).toBe(0);
     expect(reports.right.minAfterRent).toBeGreaterThanOrEqual(20);
     expect(reports.right.shopping).toBeGreaterThanOrEqual(2);
+    expect(reports.right.shoppingSpent).toBeGreaterThanOrEqual(reports.right.shopping); // every buy costs at least ¥1
   });
 
   it("wrong answers leave you short", () => {
@@ -138,9 +139,32 @@ describe("course bots (money)", () => {
     const c = fixtureCourse();
     c.scenes.push({ ...structuredClone(c.scenes[1]), id: "buy", requires: {}, exchanges: [{ ...structuredClone(c.scenes[1].exchanges[0]), pay: 0 }] });
     for (const v of Object.values(c.scenes[2].exchanges[0].variants)) v.cost = 1;
+    c.world.rentPerWeek = 50;
+    c.world.foodPerDay = 5;
+    const state = { ...newGame(c), place: "noodle_shop", scenesDone: { intro: 1, shift: 2, buy: 1 }, trust: { cook: 2 }, day: 2, wallet: 100 };
+    const ranks = (s: typeof state) => Object.fromEntries(goals(c, s).map((g) => [(g.input as { scene: string }).scene, g.rank]));
+    expect(ranks(state)).toEqual({ shift: 2, buy: 2 });
+    expect((goals(c, state)[0].input as { scene: string }).scene).toBe("buy"); // done less often
+    // Rent due tomorrow night and no week's food to spare: work first, shopping last.
+    expect(ranks({ ...state, day: 6, wallet: 70 })).toEqual({ shift: 0, buy: 3 });
+  });
+
+  it("puts work first only in worlds that charge rent", () => {
+    const c = fixtureCourse();
+    c.scenes.push({ ...structuredClone(c.scenes[0]), id: "chat", after: ["intro"] });
     c.world.rentPerWeek = 0;
-    const state = { ...newGame(c), place: "noodle_shop", scenesDone: { intro: 1, shift: 1 }, trust: { cook: 2 }, wallet: 50 };
-    expect((goals(c, state)[0].input as { scene: string }).scene).toBe("buy");
+    const state = { ...newGame(c), place: "noodle_shop", scenesDone: { intro: 1, shift: 1 }, trust: { cook: 2 }, day: 6, wallet: 0 };
+    expect((goals(c, state)[0].input as { scene: string }).scene).toBe("chat");
+  });
+
+  it("a job never tried is still work first when rent is close", () => {
+    const c = fixtureCourse();
+    c.scenes.push({ ...structuredClone(c.scenes[0]), id: "chat", after: ["intro"] });
+    c.world.rentPerWeek = 50;
+    c.world.foodPerDay = 5;
+    const state = { ...newGame(c), place: "noodle_shop", scenesDone: { intro: 1 }, trust: { cook: 2 }, day: 6, wallet: 5 };
+    const ranks = Object.fromEntries(goals(c, state).map((g) => [(g.input as { scene: string }).scene, g.rank]));
+    expect(ranks).toEqual({ shift: 0, chat: 2 });
   });
 
   it("tries every new job once, as story: later scenes may need it", () => {
