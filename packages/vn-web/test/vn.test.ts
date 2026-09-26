@@ -14,7 +14,8 @@ function setup(patch: (s: GameState) => void = () => {}, change: (c: Course) => 
   patch(state);
   const core = createCore(course, state, { now: () => T0, rng: mulberry32(1) });
   const saves: GameState[] = [];
-  const vn = createVn({ course, core, now: () => T0, save: (s) => saves.push(s) > 0, ...extra });
+  let clock = T0;
+  const vn = createVn({ course, core, now: () => (clock += 1000), save: (s) => saves.push(s) > 0, ...extra });
   return { course, core, vn, saves };
 }
 /** Taps through every beat. */
@@ -196,6 +197,33 @@ describe("visual novel controller", () => {
     expect(s.vn.setName("Mei")).toBe(true);
     expect(s.core.state.player).toBe("Mei");
     expect(s.vn.view().phase.kind).toBe("beat");
+  });
+
+  it("a second tap right after moving on does nothing on the new screen", () => {
+    let t = T0;
+    const s = setup(undefined, undefined, { now: () => t });
+    skip(s.vn);
+    t += 1000;
+    s.vn.choose(0); // go to the noodle shop
+    s.vn.choose(0); // the same tap again, now over "talk to the cook"
+    s.vn.talkTo("cook");
+    expect(s.core.state.place).toBe("noodle_shop");
+    expect(s.core.state.run).toBeNull();
+    t += 1000;
+    s.vn.choose(0);
+    expect(s.core.state.run?.scene).toBe("intro");
+  });
+
+  it("the tap that closes the new day does not also start a scene", () => {
+    let t = T0;
+    const s = setup((st) => (st.place = "noodle_shop"), undefined, { now: () => t });
+    skip(s.vn);
+    t += 1000;
+    const p = s.vn.view().phase;
+    if (p.kind === "explore") s.vn.choose(p.menu.findIndex((m) => m.kind === "sleep"));
+    skip(s.vn); // the last tap closes "Day 2"
+    s.vn.talkTo("cook");
+    expect(s.core.state.run).toBeNull();
   });
 
   it("talking to a silhouette starts that NPC's scene", () => {

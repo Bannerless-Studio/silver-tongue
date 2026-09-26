@@ -74,6 +74,8 @@ export interface Vn {
 }
 
 export const BACKLOG_LIMIT = 200;
+/** A menu or reply shown less than this long ago ignores taps: the second half of a double tap lands on the new screen. */
+export const SETTLE_MS = 350;
 const TOAST_LIMIT = 4;
 
 /**
@@ -118,6 +120,9 @@ export function createVn(opts: VnOptions): Vn {
   };
 
   /** Shows the next beat, or, when there is none, lets the NPC leave or listen. */
+  let shownAt = -Infinity;
+  const settled = () => opts.now() - shownAt >= SETTLE_MS;
+
   function show() {
     current = queue.shift();
     if (current) {
@@ -131,6 +136,7 @@ export function createVn(opts: VnOptions): Vn {
       leaving = false;
     }
     if (reply) cue = "listen";
+    shownAt = opts.now();
   }
 
   function apply(events: GameEvent[]) {
@@ -272,6 +278,7 @@ export function createVn(opts: VnOptions): Vn {
       changed();
     },
     choose(n) {
+      if (!settled()) return;
       const p = phase();
       if (p.kind === "explore") {
         const item = p.menu[n];
@@ -283,7 +290,7 @@ export function createVn(opts: VnOptions): Vn {
     },
     talkTo(who) {
       const p = phase();
-      if (p.kind !== "explore") return;
+      if (p.kind !== "explore" || !settled()) return;
       const item = p.menu.find((m) => (m.kind === "talk" || m.kind === "mentor") && m.npc === who);
       if (item) send(item.input);
     },
