@@ -8,17 +8,24 @@ Language-learning life game. Design: `docs/superpowers/specs/2026-09-25-silver-t
 flowchart LR
   VE[vendor/vocab-engine pack] -- import:zh --> L[content/languages]
   L --> B[tools: build-course + checker]
-  S[content/settings] --> B
+  S[content/settings + art] --> B
   LR[content/learner] --> B
-  B -- dist/courses/&lt;id&gt;/&lt;learner&gt;.json --> C[packages/core]
-  C -- events --> T[packages/tui]
-  T -- inputs --> C
+  B -- dist/courses/&lt;id&gt;/ --> C[packages/core]
+  C -- events --> V[packages/view]
+  V --> T[packages/tui]
+  V --> VN[packages/vn-web: visual novel]
   T --> N[packages/tui-node: terminal + npx bundle]
+  T --> W[packages/tui-web: text page]
+  WC[packages/web-common] --> W
+  WC --> VN
 ```
 
 - `packages/core`: all game rules. `core.send(input) → events`. No DOM, no Node APIs, no rendering. Randomness and time are injected.
 - `packages/tui`: text front end written against the `Terminal` interface. It never keeps game state; everything comes from core events and `core.state`.
 - `packages/tui-node`: the Node `Terminal` backend and the `silver-tongue` CLI bundle.
+- `packages/view`: presentation logic both front ends share (menus, narration, help cards, notebook, settings, text). Pure: no terminal, no DOM, no I/O.
+- `packages/web-common`: browser sessions, settings, audio and course fetching, shared by both web pages.
+- `packages/vn-web`: the visual novel page (Preact). `vn.ts` turns core events into beats; components only draw.
 - `tools`: pack import, content build (Fluent → rendered, tagged lines) and the content checker.
 - Scenes are language-neutral skeletons that name concepts; each language supplies Fluent lines. Slot values are bound by copying a concept's term under the slot's name (`tools/src/fluent.ts` `bindSlots`).
 
@@ -32,6 +39,8 @@ npm run play             # play from source in this terminal
 npm run import:zh        # re-import the zh pack from vendor/vocab-engine
 npm run audio            # every course (or one: -- zh-china): make missing clips with edge-tts (pipx install edge-tts) + ffmpeg trim, delete unused ones
 npm run bundle -w silver-tongue   # build packages/tui-node/dist for npm/npx
+npm run build:vn         # the visual novel page -> packages/vn-web/dist
+npm run build:site       # both pages into site/, as GitHub Pages serves them (visual novel at /, text game at /text/)
 ```
 
 ## Rules
@@ -40,6 +49,8 @@ npm run bundle -w silver-tongue   # build packages/tui-node/dist for npm/npx
 - Always run `npm run build:course` after changing anything under `content/`; never ship a course with checker errors. A changed line needs its clip: run `npm run audio` and commit `content/audio/`.
 - Never edit generated files: `content/languages/zh/words.json`, `content/languages/zh/pack.json` (except `stages`), `content/learner/en/glosses-zh.ftl`, `content/audio/`, `dist/`. Re-run the import or the build instead.
 - Bonus (off-list) words go in `content/languages/<lang>/extra-words.json` with glosses in `content/learner/<l>/glosses-<lang>-extra.ftl`.
-- Every UI string the TUI uses must be listed in `packages/tui/src/text.ts` `UI_KEYS`.
+- Every UI string the TUI uses must be listed in `packages/view/src/text.ts` `UI_KEYS`.
+- Every UI string the visual novel uses must be listed in `packages/view/src/text.ts` `VN_UI_KEYS`.
+- A new place or NPC needs its drawing (`content/settings/<setting>/art/places|npcs/<id>.svg`) and its `art.json` entry. Characters are faceless silhouettes in `currentColor`; no text in art. Ids inside a drawing start with its file name.
 - Code ported from vocab-engine is used with its author's consent; note the origin in a comment.
 - Every release adds its `CHANGELOG.md` entry (newest first, `## <version> (<date>)`, plain words for players) before the `release:` commit.

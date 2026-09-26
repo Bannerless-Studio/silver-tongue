@@ -2,6 +2,12 @@
 
 Every release of Silver Tongue, newest first.
 
+## 0.14.0 (2026-09-26)
+
+- A new way to play in the browser: a visual novel. Each place is drawn, the people you talk to stand in front of you as silhouettes, and their lines appear one at a time. Tap any word to look it up.
+- The game's web address now opens the visual novel. The text version is at /text/, and your games are the same in both, so you can switch at any point.
+- Play it on a phone held sideways.
+
 ## 0.13.0 (2026-09-26)
 
 - Ready for more languages: each course keeps its own games, and [o] opens settings to switch what you learn, what you read the game in, and sound.
