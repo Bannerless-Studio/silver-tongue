@@ -74,6 +74,10 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
     errors.push(`courses/${courseId}.json: id "${cfg.id}" must match the file name`);
     return stop();
   }
+  if (!hasLearners(cfg)) {
+    errors.push(`courses/${courseId}.json: ${NO_LEARNERS}`);
+    return stop();
+  }
   const learner = learnerCode ?? cfg.learners[0];
   if (!cfg.learners.includes(learner)) {
     errors.push(`courses/${courseId}.json: "${learner}" is not in learners`);
@@ -350,6 +354,10 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
   return { course, errors, clips, audioDir };
 }
 
+const NO_LEARNERS = "learners must list at least one reading language";
+const hasLearners = (cfg: CourseConfig) =>
+  Array.isArray(cfg.learners) && cfg.learners.length > 0 && cfg.learners.every((l) => typeof l === "string" && l !== "");
+
 /** Course ids: the config files in content/courses. */
 export function courseIds(root: string): string[] {
   return readdirSync(join(root, "courses"))
@@ -376,8 +384,12 @@ export function buildAll(root: string, only?: string): BuiltCourses {
       out.errors.push(`${id}: ${(e as Error).message}`);
       continue;
     }
+    if (!hasLearners(cfg)) {
+      out.errors.push(`${id}: courses/${id}.json: ${NO_LEARNERS}`);
+      continue;
+    }
     const learnerNames: Record<string, string> = {};
-    for (const learner of cfg.learners ?? []) {
+    for (const learner of cfg.learners) {
       const result = buildCourse(root, id, learner);
       out.builds.push({ course: id, learner, result });
       out.errors.push(...result.errors.map((e) => `${id}/${learner}: ${e}`));
@@ -386,7 +398,23 @@ export function buildAll(root: string, only?: string): BuiltCourses {
     }
     out.catalog.push({ id: cfg.id, language: cfg.language, setting: cfg.setting, learners: cfg.learners, learnerNames });
   }
+  // The settings screen names every course in the catalog, in whichever language the game is read in.
+  const texts = out.builds.flatMap((b) => (b.result.course ? [{ course: b.course, learner: b.learner, ftl: b.result.course.learnerFtl }] : []));
+  out.errors.push(...languageNameProblems(out.catalog, texts));
   return out;
+}
+
+/** Each reading language's text must name the language of every course in the catalog (`language-<code>`). */
+export function languageNameProblems(catalog: CatalogEntry[], texts: { course: string; learner: string; ftl: string }[]): string[] {
+  const problems: string[] = [];
+  for (const { course, learner, ftl } of texts) {
+    const ids = new Set(messageIds(ftl, "learner files"));
+    for (const entry of catalog) {
+      if (entry.id !== course && !ids.has(`language-${entry.language}`))
+        problems.push(`${course}/${learner}: learner/${learner}/ui.ftl: missing "language-${entry.language}" (${entry.id} is in the catalog)`);
+    }
+  }
+  return problems;
 }
 
 /** A reading language's own name, from its learner-name message. */
@@ -407,9 +435,15 @@ function main(): void {
     console.error(`${errors.length} error(s); nothing written`);
     process.exit(1);
   }
-  const out = join(repo, "dist", "courses");
-  // A full build replaces dist/courses, so a renamed course leaves nothing stale behind.
-  if (!only) rmSync(out, { recursive: true, force: true });
+  writeCourses(join(repo, "dist", "courses"), builds, catalog, only);
+}
+
+/**
+ * Writes the built files and the catalog. A full build replaces the folder and a one-course build
+ * that course's folder, so a renamed course or a dropped reading language leaves nothing behind.
+ */
+export function writeCourses(out: string, builds: BuiltCourses["builds"], catalog: CatalogEntry[], only?: string): void {
+  rmSync(only ? join(out, only) : out, { recursive: true, force: true });
   for (const { course, learner, result } of builds) {
     mkdirSync(join(out, course), { recursive: true });
     writeFileSync(join(out, course, `${learner}.json`), JSON.stringify(result.course));

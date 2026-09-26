@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, describe, expect, it } from "vitest";
 import { PLAYER_MARK } from "@silver-tongue/core";
-import { buildAll, buildCourse } from "../src/build-course";
+import { buildAll, buildCourse, languageNameProblems, writeCourses } from "../src/build-course";
 import { clipId, type Voices } from "../src/voices";
 
 const CONTENT = fileURLToPath(new URL("../../content", import.meta.url));
@@ -379,6 +379,44 @@ describe("courses and the catalog", () => {
       writeFileSync(p, readFileSync(p, "utf8").replace(/^language-zh = .*$/m, ""));
     });
     expect(errors).toContain('learner/en/ui.ftl: missing "language-zh"');
+  });
+
+  it("fails a config without reading languages instead of cataloguing it", () => {
+    const dir = copyContent((d) => {
+      const p = join(d, "courses/zh-china.json");
+      const { learners: _, ...cfg } = JSON.parse(readFileSync(p, "utf8"));
+      writeFileSync(p, JSON.stringify({ ...cfg, learner: "en" }));
+    });
+    const message = 'courses/zh-china.json: learners must list at least one reading language';
+    expect(buildCourse(dir, "zh-china").errors).toEqual([message]);
+    const { catalog, errors } = buildAll(dir);
+    expect(errors).toEqual([`zh-china: ${message}`]);
+    expect(catalog).toEqual([]);
+  });
+
+  it("needs each reading language to name the language of every course in the catalog", () => {
+    const entry = (id: string, language: string) => ({ id, language, setting: "s", learners: ["en"], learnerNames: { en: "English" } });
+    const texts = [{ course: "zh-china", learner: "en", ftl: "learner-name = English\nlanguage-zh = Chinese\n" }];
+    expect(languageNameProblems([entry("zh-china", "zh")], texts)).toEqual([]);
+    expect(languageNameProblems([entry("zh-china", "zh"), entry("ja-tokyo", "ja")], texts)).toEqual([
+      'zh-china/en: learner/en/ui.ftl: missing "language-ja" (ja-tokyo is in the catalog)',
+    ]);
+  });
+
+  it("a one-course build replaces that course's files and keeps the others", () => {
+    const out = mkdtempSync(join(tmpdir(), "st-dist-"));
+    mkdirSync(join(out, "zh-china"), { recursive: true });
+    mkdirSync(join(out, "other"), { recursive: true });
+    writeFileSync(join(out, "zh-china", "fr.json"), "{}"); // a reading language since removed
+    writeFileSync(join(out, "other", "en.json"), "{}");
+    writeFileSync(join(out, "index.json"), JSON.stringify([{ id: "other", language: "xx", setting: "s", learners: ["en"], learnerNames: {} }]));
+    const { catalog, builds } = buildAll(CONTENT);
+    writeCourses(out, builds, catalog, "zh-china");
+    expect(existsSync(join(out, "zh-china", "fr.json"))).toBe(false);
+    expect(existsSync(join(out, "zh-china", "en.json"))).toBe(true);
+    expect(existsSync(join(out, "other", "en.json"))).toBe(true);
+    expect(JSON.parse(readFileSync(join(out, "index.json"), "utf8")).map((e: { id: string }) => e.id)).toEqual(["other", "zh-china"]);
+    rmSync(out, { recursive: true, force: true });
   });
 
   it("refuses a right-to-left language", () => {

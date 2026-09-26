@@ -21,6 +21,8 @@ export function makeText(ftl: string, locale: string): Text {
 /**
  * Message ids the TUI uses, with the variables it passes to each.
  * The course build fails a learner language that lacks any of them or uses other variables.
+ * Not listed, because they depend on the catalog: `language-<code>` for every course's language,
+ * which the build checks against the catalog (tools/src/build-course.ts languageNameProblems).
  */
 export const UI_KEYS: Record<string, string[]> = {
   hud: ["day", "slot", "slots", "currency", "wallet", "rank", "parcel", "rentLate"],
