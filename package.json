@@ -10,6 +10,7 @@
     "import:zh": "tsx tools/src/import-vocab-pack.ts vendor/vocab-engine/packs/zh content/languages/zh content/learner/en/glosses-zh.ftl",
     "build:course": "tsx tools/src/build-course.ts",
     "bots": "tsx tools/src/bots.ts",
+    "audio": "tsx tools/src/audio.ts",
     "build:web": "npm run build -w @silver-tongue/tui-web",
     "play": "tsx packages/tui-node/src/main.ts"
   },

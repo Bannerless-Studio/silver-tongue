@@ -47,6 +47,10 @@ function handle(ctx: Ctx, input: Input): void {
     }
     case "visitMentor":
       return visitMentor(ctx);
+    case "setSound":
+      state.sound = input.on;
+      ctx.ev.push({ type: "soundSet", on: input.on });
+      return;
     case "sleep":
       if (state.run) return reject(ctx, "in-scene");
       if (course.world.home && state.place !== course.world.home) return reject(ctx, "not-home");
@@ -69,7 +73,8 @@ export function createCore(course: Course, initial: GameState, deps: CoreDeps): 
       const ctx: Ctx = { course, state: structuredClone(state), now, rng: deps.rng, ev: [] };
       handle(ctx, input);
       if (ctx.ev.some((e) => e.type === "inputRejected")) return ctx.ev;
-      ctx.state.log = [...ctx.state.log, { t: now, day: state.day, slot: state.slot, input }].slice(-LOG_LIMIT);
+      // The sound setting isn't play: it stays out of the log (and older versions can load the save).
+      if (input.type !== "setSound") ctx.state.log = [...ctx.state.log, { t: now, day: state.day, slot: state.slot, input }].slice(-LOG_LIMIT);
       const before = new Set(availableSceneIds(course, state));
       for (const id of availableSceneIds(course, ctx.state)) {
         // A drop-off opens with every pickup; errandStarted says so, without naming the place.

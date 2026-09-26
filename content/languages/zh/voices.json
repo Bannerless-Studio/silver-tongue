@@ -1,0 +1,20 @@
+{
+  "engine": "edge-tts",
+  "player": "zh-CN-YunxiNeural",
+  "words": "zh-CN-XiaoxiaoNeural",
+  "npcs": {
+    "wang": "zh-CN-YunyangNeural",
+    "cook": "zh-CN-XiaoxiaoNeural",
+    "landlord": "zh-CN-YunjianNeural",
+    "foreman": "zh-CN-YunjianNeural",
+    "dispatcher": "zh-CN-XiaoyiNeural",
+    "doctor": "zh-CN-YunyangNeural",
+    "teacher": "zh-CN-XiaoxiaoNeural",
+    "traveller": "zh-CN-XiaoyiNeural",
+    "shopkeeper": "zh-CN-XiaoxiaoNeural",
+    "teaboss": "zh-CN-YunyangNeural",
+    "neighbour": "zh-CN-XiaoyiNeural",
+    "classmate": "zh-CN-YunxiaNeural",
+    "driver": "zh-CN-YunjianNeural"
+  }
+}

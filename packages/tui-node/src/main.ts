@@ -1,9 +1,11 @@
 import { existsSync, readFileSync } from "node:fs";
 import { createInterface } from "node:readline/promises";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createCore, mulberry32, type Course } from "@silver-tongue/core";
 import { decodeSave, encodeSave, makeText, sessionLines, startApp } from "@silver-tongue/tui";
 import { parseFlags, pickAnswer, USAGE } from "./cli";
+import { createNodeAudio, nodeAudioDeps } from "./node-audio";
 import { createNodeTerminal } from "./node-terminal";
 import pkg from "../package.json" with { type: "json" };
 import { listSessions, migrateLegacySave, newSessionPath, sessionsDir } from "./sessions";
@@ -46,7 +48,15 @@ if (flags.mode === "error") {
   process.exit(2);
 }
 
-const course = JSON.parse(readFileSync(coursePath(flags.coursePath), "utf8")) as Course;
+const courseFile = coursePath(flags.coursePath);
+const course = JSON.parse(readFileSync(courseFile, "utf8")) as Course;
+
+/** Clips: in audio/ next to the course when installed; the repo's content/audio/zh when run from source. */
+function audioDir(): string {
+  const beside = join(dirname(courseFile), "audio");
+  const source = fileURLToPath(new URL("../../../content/audio/zh", import.meta.url));
+  return existsSync(beside) || !existsSync(source) ? beside : source;
+}
 
 /** --export and --import work on the sessions folder and exit without starting the game. */
 async function exportOrImport(mode: "export" | "import", line: string): Promise<never> {
@@ -121,9 +131,11 @@ const savePath = await chooseSave();
 const { state, notice, readOnly } = loadSave(course, savePath);
 const core = createCore(course, state, { now: Date.now, rng: mulberry32(Date.now() >>> 0) });
 const term = createNodeTerminal();
+const audio = createNodeAudio(nodeAudioDeps(audioDir()));
 
 // Whatever happens, give the player their terminal back.
 const bail = (code: number, error?: unknown) => {
+  audio.stop(); // or a player would keep talking after the game has gone
   term.close();
   if (error) console.error(error);
   process.exit(code);
@@ -140,6 +152,7 @@ startApp({
   now: Date.now,
   notice,
   version: pkg.version,
+  audio,
   save: readOnly ? undefined : (s) => writeSave(savePath, s),
   quit: () => bail(0),
 });

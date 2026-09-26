@@ -1,9 +1,11 @@
-import { cpSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, describe, expect, it } from "vitest";
+import { PLAYER_MARK } from "@silver-tongue/core";
 import { buildCourse } from "../src/build-course";
+import { clipId, type Voices } from "../src/voices";
 
 const CONTENT = fileURLToPath(new URL("../../content", import.meta.url));
 
@@ -16,7 +18,10 @@ afterAll(() => {
 function buildChanged(change: (dir: string) => void) {
   const dir = mkdtempSync(join(tmpdir(), "st-content-"));
   temps.push(dir);
-  cpSync(CONTENT, dir, { recursive: true });
+  // The clips are ~10 MB: link them instead of copying them for every test.
+  const audio = join(CONTENT, "audio");
+  cpSync(CONTENT, dir, { recursive: true, filter: (src) => src !== audio });
+  if (existsSync(audio)) symlinkSync(audio, join(dir, "audio"));
   change(dir);
   return buildCourse(dir, "zh-china-en");
 }
@@ -25,6 +30,27 @@ const INTRO = "languages/zh/lines/noodle-intro.ftl";
 
 describe("build-course (real content)", () => {
   const { course, errors } = buildCourse(CONTENT, "zh-china-en");
+  const voices = JSON.parse(readFileSync(join(CONTENT, "languages/zh/voices.json"), "utf8")) as Voices;
+
+  it("gives every line, word and reaction its clips, in the speaker's voice", () => {
+    const v = course!.scenes.find((s) => s.id === "noodle-shift")!.exchanges[1].variants["count=four|item=water"];
+    expect(v.npc.audio).toEqual([clipId("zh-CN-XiaoxiaoNeural", "四杯水。")]);
+    expect(v.rephrase!.audio).toEqual([clipId("zh-CN-XiaoxiaoNeural", "水。四杯。")]);
+    expect(v.reply.audio).toEqual([clipId("zh-CN-YunxiNeural", "好，四杯水。")]);
+    expect(Object.values(course!.words).every((w) => w.audio?.length === 1)).toBe(true);
+    expect(course!.reactionAudio!["wrong-generic"].wang).toEqual([clipId("zh-CN-YunyangNeural", course!.reactions["wrong-generic"].text)]);
+    expect(Object.keys(course!.reactionAudio!["wrong-generic"]).sort()).toEqual([...new Set(course!.scenes.map((s) => s.npc))].sort());
+  });
+
+  it("says a line with the player's name as the part before it and the part after it", () => {
+    const named = course!.scenes.flatMap((s) =>
+      s.exchanges.flatMap((ex) => Object.values(ex.variants).map((v) => ({ npc: s.npc, line: v.npc }))),
+    ).find(({ line }) => line.text.includes(PLAYER_MARK) && !line.text.startsWith(PLAYER_MARK))!;
+    const [before, after] = named.line.text.split(PLAYER_MARK);
+    const voice = voices.npcs[named.npc];
+    expect(named.line.audio![0]).toBe(clipId(voice, before));
+    if (/\p{L}/u.test(after)) expect(named.line.audio).toEqual([clipId(voice, before), clipId(voice, after)]);
+  });
 
   it("builds zh-china-en with no errors", () => {
     expect(errors).toEqual([]);
@@ -95,6 +121,10 @@ describe("build-course (real content)", () => {
     const note = course!.learnerFtl.match(/^note-ge = (.*)$/m)![1];
     expect(note).toContain("把");
     expect(note).toContain("张");
+  });
+
+  it("turns the audio check on", () => {
+    expect(JSON.parse(readFileSync(join(CONTENT, "courses/zh-china-en.json"), "utf8")).checks.audio).toBe(true);
   });
 
   it("turns the HSK 1 coverage check on", () => {
@@ -194,6 +224,42 @@ describe("build-course (real content)", () => {
 });
 
 describe("build-course (broken content)", () => {
+  it("with audio on, fails on a missing clip file and passes when all exist", () => {
+    const { clips } = buildCourse(CONTENT, "zh-china-en");
+    expect(clips.length).toBeGreaterThan(500);
+    const make = (skip: number) =>
+      buildChanged((dir) => {
+        unlinkSync(join(dir, "audio")); // the link to the real clips, never the clips themselves
+        mkdirSync(join(dir, "audio", "zh"), { recursive: true });
+        clips.forEach((c, i) => i !== skip && writeFileSync(join(dir, "audio", "zh", `${c.id}.mp3`), ""));
+        const cfgPath = join(dir, "courses", "zh-china-en.json");
+        const cfg = JSON.parse(readFileSync(cfgPath, "utf8"));
+        writeFileSync(cfgPath, JSON.stringify({ ...cfg, checks: { ...cfg.checks, audio: true } }));
+      });
+    expect(make(-1).errors).toEqual([]);
+    expect(make(0).errors).toEqual([`audio: no file for clip ${clips[0].id}`]);
+  });
+
+  it("reports voice-map problems", () => {
+    const { errors } = buildChanged((dir) => {
+      const p = join(dir, "languages", "zh", "voices.json");
+      const v = JSON.parse(readFileSync(p, "utf8"));
+      delete v.npcs.cook;
+      writeFileSync(p, JSON.stringify(v));
+    });
+    expect(errors).toContain('voices: npc "cook" has no voice');
+  });
+
+  it("with audio on, needs voices.json", () => {
+    const { errors } = buildChanged((dir) => {
+      unlinkSync(join(dir, "languages", "zh", "voices.json"));
+      const cfgPath = join(dir, "courses", "zh-china-en.json");
+      const cfg = JSON.parse(readFileSync(cfgPath, "utf8"));
+      writeFileSync(cfgPath, JSON.stringify({ ...cfg, checks: { ...cfg.checks, audio: true } }));
+    });
+    expect(errors).toContain("voices.json: missing (checks.audio is on)");
+  });
+
   it("reports characters that are not in the word list", () => {
     const bad = buildChanged((d) => writeFileSync(join(d, INTRO), "greet = 你好！\ngreet-reply = 喵。\njob = 工作，好吗？\njob-reply = 好。\n"));
     expect(bad.errors).toContain('noodle-intro/greet: "喵。" has characters outside the word list: 喵');

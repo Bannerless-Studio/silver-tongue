@@ -13,6 +13,8 @@ export interface Word {
   lv: string;
   gloss: string;
   bonus?: boolean;
+  /** clip ids that say the word */
+  audio?: string[];
 }
 
 /** A word's position in a line. Offsets are UTF-16 indices, `end` exclusive. */
@@ -25,7 +27,8 @@ export interface Token {
 export interface RenderedLine {
   text: string;
   tokens: Token[];
-  audio?: string;
+  /** clip ids, said in order with a beat between (a line with the player's name has one each side) */
+  audio?: string[];
   /** what the whole line means, in the learner's language */
   meaning?: string;
 }
@@ -118,6 +121,8 @@ export interface Course {
   world: World;
   scenes: Scene[];
   reactions: Record<string, RenderedLine>;
+  /** reaction id -> npc id -> clip ids: each NPC says a reaction in their own voice */
+  reactionAudio?: Record<string, Record<string, string[]>>;
   /** learner-language Fluent source: UI text, narration and mentor notes */
   learnerFtl: string;
   /** concept -> its name in the learner's language, for narration ("tea") */
@@ -190,6 +195,8 @@ export interface GameState {
   notes: { ready: string[]; read: string[] };
   /** the last accepted inputs, newest last */
   log: LogEntry[];
+  /** false when the player turned sound off; absent means on */
+  sound?: boolean;
 }
 
 /** Why the core refused an input. Front ends show a translated message for each. */
@@ -226,7 +233,9 @@ export type Input =
   | { type: "helpWord"; word: WordId }
   | { type: "visitMentor" }
   | { type: "setName"; name: string }
-  | { type: "sleep" };
+  | { type: "sleep" }
+  /** turns sound on or off; allowed anywhere, even mid-scene, and uses no slot */
+  | { type: "setSound"; on: boolean };
 
 export type GameEvent =
   | { type: "placeEntered"; place: string }
@@ -264,4 +273,5 @@ export type GameEvent =
   | { type: "mentorVisited"; npc: string; notes: string[] }
   | { type: "errandStarted"; to: string }
   | { type: "errandEnded"; to: string }
-  | { type: "inputRejected"; reason: RejectReason };
+  | { type: "inputRejected"; reason: RejectReason }
+  | { type: "soundSet"; on: boolean };

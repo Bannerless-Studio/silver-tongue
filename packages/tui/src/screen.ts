@@ -36,10 +36,19 @@ export function wrapItems(items: string[], width: number, gap = "  "): StyledLin
   return lines.map((text) => [{ text }]);
 }
 
-function border(left: string, label: string, right: string, fill: string, cols: number, rightLabel = ""): StyledLine {
+/** A label shortened to `width`: whole " · " parts dropped from the end first, then cut. */
+function shorten(label: string, width: number): string {
+  let parts = label.split(" · ");
+  while (parts.length > 1 && strWidth(parts.join(" · ")) > width) parts = parts.slice(0, -1);
+  const text = parts.join(" · ");
+  return strWidth(text) <= width ? text : fitLine([{ text }], width).map((sp) => sp.text).join("");
+}
+
+/** keepRight: the right label stays whole and the left one gives way (else the right is cut). */
+function border(left: string, label: string, right: string, fill: string, cols: number, rightLabel = "", keepRight = false): StyledLine {
   const inner = cols - 2;
-  const l = label ? ` ${label} ` : "";
   const r = rightLabel ? ` ${rightLabel} ` : "";
+  const l = !label ? "" : keepRight ? ` ${shorten(label, Math.max(0, inner - strWidth(r) - 2))} ` : ` ${label} `;
   const gap = Math.max(0, inner - strWidth(l) - strWidth(r));
   return fitLine(
     [
@@ -69,6 +78,7 @@ export function renderScreen(m: ScreenModel, cols: number, rows: number): Styled
   return [
     border("┌", m.title, "┐", "─", cols, m.hud),
     ...body.map((l) => [{ text: "│ ", dim: true }, ...fitLine(l, inner), { text: " │", dim: true }]),
-    border("└", m.footer, "┘", "─", cols, m.footerRight),
+    // The bottom right says whether sound works; the key hints give way to it.
+    border("└", m.footer, "┘", "─", cols, m.footerRight, true),
   ];
 }

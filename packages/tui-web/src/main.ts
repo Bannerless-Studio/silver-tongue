@@ -4,6 +4,7 @@ import { Terminal as XTerm } from "@xterm/xterm";
 import { createCore, mulberry32, type Core, type Course } from "@silver-tongue/core";
 import { decodeSave, encodeSave, makeText, sessionLines, startApp } from "@silver-tongue/tui";
 import { forBrowser } from "./keys";
+import { createWebAudio } from "./web-audio";
 import { createWebTerminal, type WebTerminal } from "./web-terminal";
 import { fromLocalStorage, WebSessions, type KeyValue, type Opened } from "./web-storage";
 
@@ -75,6 +76,15 @@ document.addEventListener("keydown", () => {
 });
 
 let current: { term: WebTerminal; core: Core; id: string } | undefined;
+// One audio element for the page; the clips sit in audio/ next to it.
+const audio = createWebAudio({
+  base: "audio/",
+  audio: typeof Audio === "undefined" ? undefined : new Audio(),
+  wait: (ms, cb) => {
+    const h = setTimeout(cb, ms);
+    return { cancel: () => clearTimeout(h) };
+  },
+});
 const touch = window.matchMedia("(pointer: coarse)").matches;
 
 function status(text: string) {
@@ -82,6 +92,7 @@ function status(text: string) {
 }
 
 function play(opened: Opened) {
+  audio.stop();
   current?.term.dispose();
   xterm.reset();
   const term = createWebTerminal(xterm, fit, window, {
@@ -100,7 +111,11 @@ function play(opened: Opened) {
     now: Date.now,
     notice: opened.notice,
     save: opened.readOnly ? undefined : (s) => sessions.save(opened.id, s),
-    quit: () => status(t("web-saved")),
+    audio,
+    quit: () => {
+      audio.stop();
+      status(t("web-saved"));
+    },
   });
   if (!touch) xterm.focus();
 }

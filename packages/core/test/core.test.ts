@@ -28,6 +28,27 @@ function playIntro(core: Core) {
 }
 
 describe("core", () => {
+  it("turns sound off and on, even mid-scene, without using a slot", () => {
+    const core = setup();
+    core.send({ type: "goTo", place: "noodle_shop" });
+    core.send({ type: "startScene", scene: "intro" });
+    const slot = core.state.slot;
+    expect(core.send({ type: "setSound", on: false })).toEqual([{ type: "soundSet", on: false }]);
+    expect(core.state.sound).toBe(false);
+    expect(core.state.slot).toBe(slot);
+    expect(core.state.run).not.toBeNull();
+    core.send({ type: "setSound", on: true });
+    expect(core.state.sound).toBe(true);
+  });
+
+  it("keeps the sound setting out of the play log, so older versions can still load the save", () => {
+    const core = setup();
+    core.send({ type: "goTo", place: "noodle_shop" });
+    const log = core.state.log;
+    core.send({ type: "setSound", on: false });
+    expect(core.state.log).toEqual(log);
+  });
+
   it("moves between linked places only", () => {
     const core = setup();
     expect(core.send({ type: "goTo", place: "nowhere" })).toEqual([{ type: "inputRejected", reason: "not-linked" }]);

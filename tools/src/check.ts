@@ -1,4 +1,5 @@
-import { tilePieces, type Course, type RenderedLine, type Scene, type WordId } from "@silver-tongue/core";
+import { PLAYER_MARK, tilePieces, type Course, type RenderedLine, type Scene, type Variant, type WordId } from "@silver-tongue/core";
+import { speakable } from "./voices";
 
 export interface CheckInput {
   course: Course;
@@ -9,6 +10,8 @@ export interface CheckInput {
   learnerIds: Set<string>;
   /** message ids the front ends need */
   requiredUi: string[];
+  /** clip ids that have a file (checked when checks.audio is on) */
+  audioFiles?: Set<string>;
 }
 
 export const MAX_NEW_PER_EXCHANGE = 2;
@@ -59,6 +62,52 @@ function reaches(places: Course["world"]["places"], from: string, to: string): b
 }
 
 const lineWords = (l: RenderedLine | undefined): WordId[] => (l ? l.tokens.map((t) => t.word) : []);
+
+/** Every scene line: the NPC's, the rephrase, the reply and the written wrong replies. */
+const variantLines = (v: Variant): [string, RenderedLine | undefined][] => [
+  ["npc", v.npc],
+  ["rephrase", v.rephrase],
+  ["reply", v.reply],
+  ...(v.alts ?? []).map((a, i): [string, RenderedLine] => [`alt${i + 1}`, a]),
+];
+
+/** The words a course uses: in its lines, its reactions and its concepts. */
+export function usedWords(course: Course): Set<WordId> {
+  return new Set([
+    ...Object.values(course.concepts).flat(),
+    ...Object.values(course.reactions).flatMap(lineWords),
+    ...course.scenes.flatMap((s) =>
+      s.exchanges.flatMap((ex) => Object.values(ex.variants).flatMap((v) => variantLines(v).flatMap(([, l]) => lineWords(l)))),
+    ),
+  ]);
+}
+
+/** Lines, words and reactions without clips, and clips without a file. */
+function audioProblems(course: Course, files: Set<string>): string[] {
+  const errors: string[] = [];
+  const clips = new Set<string>();
+  const need = (ids: string[] | undefined, problem: string, text?: string) => {
+    // A line that is only the player's name ("\uE000？") has nothing to say, so no clips is right.
+    const silent = text !== undefined && !speakable(text.split(PLAYER_MARK).join(""));
+    if (ids === undefined || (!ids.length && !silent)) errors.push(problem);
+    for (const id of ids ?? []) clips.add(id);
+  };
+  for (const s of course.scenes) {
+    for (const ex of s.exchanges) {
+      for (const [key, v] of Object.entries(ex.variants)) {
+        const where = `${s.id}/${ex.id}${key ? `[${key}]` : ""}`;
+        for (const [name, l] of variantLines(v)) if (l) need(l.audio, `${where}: ${name} line has no audio`, l.text);
+      }
+    }
+  }
+  const speakers = [...new Set(course.scenes.map((s) => s.npc))].sort();
+  for (const id of Object.keys(course.reactions)) {
+    for (const npc of speakers) need(course.reactionAudio?.[id]?.[npc], `reaction ${id}: no audio for ${npc}`);
+  }
+  for (const w of [...usedWords(course)].sort()) need(course.words[w]?.audio, `word ${w} "${course.words[w]?.w ?? ""}": no audio`);
+  for (const id of [...clips].sort()) if (!files.has(id)) errors.push(`audio: no file for clip ${id}`);
+  return errors;
+}
 
 /** Every scene each scene comes after, directly or not. */
 function ancestors(scenes: Scene[]): Map<string, Set<string>> {
@@ -282,9 +331,6 @@ export function checkCourse(input: CheckInput): string[] {
             errors.push(`${where}: the ${name} line has ${l.tokens.length} words; at most ${MAX_LINE_WORDS}`);
           }
         }
-        if (checks.audio) {
-          for (const [name, l] of Object.entries(v)) if (l && !l.audio) errors.push(`${where}: ${name} line has no audio`);
-        }
         for (const w of words) {
           exWords.add(w);
           if (!scenesUsing.has(w)) scenesUsing.set(w, new Set());
@@ -300,7 +346,6 @@ export function checkCourse(input: CheckInput): string[] {
   const minStage = Math.min(...course.scenes.map((s) => s.stage), Infinity);
   for (const [id, l] of Object.entries(course.reactions)) {
     checkLevels(`reaction ${id}`, lineWords(l), Number.isFinite(minStage) ? minStage : 1);
-    if (checks.audio && !l.audio) errors.push(`reaction ${id}: no audio`);
   }
   if (!course.reactions["wrong-generic"]) errors.push(`reactions: "wrong-generic" is required`);
   // A wrong-<slot> reaction is chosen by slot name alone, anywhere in the course, so every exchange
@@ -356,6 +401,7 @@ export function checkCourse(input: CheckInput): string[] {
     ...course.scenes.map((s) => `scene-${s.id}`),
   ];
   for (const id of need) if (!learnerIds.has(id)) errors.push(`learner text: missing "${id}"`);
+  if (checks.audio) errors.push(...audioProblems(course, input.audioFiles ?? new Set()));
 
   return errors;
 }
