@@ -1,14 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { comboKey, createCore, mulberry32, newGame, PLAYER_MARK, type Course, type GameState } from "@silver-tongue/core";
+import { comboKey, createCore, mulberry32, newGame, PLAYER_MARK, type CatalogEntry, type Course, type GameState } from "@silver-tongue/core";
 import { addErrand, line } from "@silver-tongue/core/testing";
-import { startApp } from "../src/app";
+import { startApp, type AppOptions } from "../src/app";
 import type { AudioOut, Speech } from "../src/audio";
 import { lineWidth } from "../src/width";
 import { FakeTerminal, fixtureWithText, spacedWithText } from "./fake-terminal";
 
 const T0 = 1_000_000;
 
-function setup(patch: (s: GameState) => void = () => {}, change: (c: Course) => void = () => {}, make: () => Course = fixtureWithText) {
+function setup(
+  patch: (s: GameState) => void = () => {},
+  change: (c: Course) => void = () => {},
+  make: () => Course = fixtureWithText,
+  settings?: AppOptions["settings"],
+  audio?: AudioOut,
+) {
   const course = make();
   change(course);
   const state = newGame(course);
@@ -17,7 +23,7 @@ function setup(patch: (s: GameState) => void = () => {}, change: (c: Course) => 
   const term = new FakeTerminal();
   const saves: GameState[] = [];
   let quit = false;
-  startApp({ course, core, term, now: () => T0, save: (s) => saves.push(s) > 0, quit: () => (quit = true) });
+  startApp({ course, core, term, now: () => T0, save: (s) => saves.push(s) > 0, quit: () => (quit = true), settings, audio });
   return { course, core, term, saves, quitted: () => quit };
 }
 
@@ -705,5 +711,102 @@ describe("languages", () => {
     expect(term.screen().join("\n")).toContain("mi mí mi — you");
     term.press("s");
     expect(term.screen().join("\n")).toContain("mi bon! mi bon — Hello!");
+  });
+});
+
+describe("settings screen", () => {
+  const catalog: CatalogEntry[] = [
+    { id: "test-course", language: "zh", setting: "s", learners: ["en", "fr"], learnerNames: { en: "English", fr: "Français" } },
+    { id: "xx-town", language: "xx", setting: "s", learners: ["en"], learnerNames: { en: "English" } },
+  ];
+  const names = (c: Course) => (c.learnerFtl += "\nlanguage-zh = Chinese\nlanguage-xx = Testish\n");
+  const withSettings = (audio?: AudioOut) => {
+    const calls: [string, string][] = [];
+    const s = setup(() => {}, names, fixtureWithText, { courses: catalog, switchTo: (course, learner) => void calls.push([course, learner]) }, audio);
+    s.term.resize(46, 20);
+    return { ...s, calls };
+  };
+  const screen = (term: FakeTerminal) => term.screen().join("\n");
+
+  it("lists what is learned, the reading language and sound, at 46 columns", () => {
+    const { term } = withSettings();
+    term.press("o");
+    expect(screen(term)).toContain("Settings");
+    expect(screen(term)).toContain("1) Learning: Chinese");
+    expect(screen(term)).toContain("2) Reading: English");
+    expect(screen(term)).toContain("3) Sound: no audio");
+    expect(screen(term)).toContain("[1-3] change");
+    for (const l of term.frames.at(-1)!) expect(lineWidth(l)).toBe(46);
+    term.press("escape");
+    expect(screen(term)).not.toContain("Settings");
+  });
+
+  it("switches course, keeping the reading language when the other course has it", () => {
+    const { term, calls, saves } = withSettings();
+    const before = saves.length;
+    term.press("o", "1");
+    expect(screen(term)).toContain("1) Chinese (now)");
+    expect(screen(term)).toContain("2) Testish");
+    term.press("2");
+    expect(calls).toEqual([["xx-town", "en"]]);
+    expect(saves.length).toBe(before + 1); // saves before switching
+  });
+
+  it("draws nothing more once it has handed over to another course", () => {
+    let framesAtSwitch = -1;
+    const s = setup(() => {}, names, fixtureWithText, {
+      courses: catalog,
+      switchTo: () => void (framesAtSwitch = s.term.frames.length),
+    });
+    s.term.press("o", "1", "2");
+    expect(s.term.frames.length).toBe(framesAtSwitch);
+    s.term.press("1");
+    expect(s.term.frames.length).toBe(framesAtSwitch);
+  });
+
+  it("switches reading language", () => {
+    const { term, calls } = withSettings();
+    term.press("o", "2");
+    expect(screen(term)).toContain("2) Français");
+    term.press("2");
+    expect(calls).toEqual([["test-course", "fr"]]);
+  });
+
+  it("does nothing when the current entry is chosen", () => {
+    const { term, calls } = withSettings();
+    term.press("o", "1", "1");
+    expect(calls).toEqual([]);
+    expect(screen(term)).toContain("1) Learning: Chinese");
+  });
+
+  it("opens from help and goes back there", () => {
+    const { term } = withSettings();
+    term.press("1", "1"); // to the noodle shop, then talk to the cook
+    term.press("w", "o");
+    expect(screen(term)).toContain("Settings");
+    term.press("escape");
+    expect(screen(term)).toContain("Which word?"); // back in help, not explore
+  });
+
+  it("toggles sound from the settings screen", () => {
+    const audio: AudioOut = { available: true, play: () => {}, stop: () => {} };
+    const { term, core } = withSettings(audio);
+    term.press("o", "3");
+    expect(core.state.sound).toBe(false);
+    expect(screen(term)).toContain("3) Sound: off");
+  });
+
+  it("has no [o] without settings", () => {
+    const { term } = setup();
+    term.resize(120, 20);
+    term.press("o");
+    expect(screen(term)).not.toContain("Settings");
+    expect(screen(term)).not.toContain("[o]");
+  });
+
+  it("lists [o] in the footer when there is room", () => {
+    const { term } = withSettings();
+    term.resize(120, 20);
+    expect(term.screen().at(-1)).toContain("[o] settings");
   });
 });

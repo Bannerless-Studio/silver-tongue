@@ -118,3 +118,22 @@ keys-name = type your name · [enter] done · [⌫] delete
 ## Languages, by code, for the settings screen and the start list
 learner-name = English
 language-zh = Chinese
+
+## Settings ([o])
+settings-title = Settings
+settings-learning = Learning: { $language }
+settings-reading = Reading: { $learner }
+settings-sound = Sound: { $sound }
+settings-sound-on = on
+settings-sound-off = off
+settings-sound-none = no audio
+settings-pick-course = Learn:
+settings-pick-reading = Read the game in:
+settings-current = (now)
+keys-settings = [{ $keys }] change · [esc] back
+keys-settings-pick = [{ $keys }] choose · [esc] back
+keys-o = [o] settings
+
+## Choosing a course before the game starts
+start-title = What do you want to learn?
+start-ask = Number (enter to quit):
