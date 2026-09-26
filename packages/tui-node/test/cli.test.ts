@@ -56,6 +56,11 @@ describe("cli", () => {
     expect(pickAnswer("x", 3)).toBe("again");
   });
 
+  it("refuses --learn or --read with a course file, which has only one of each", () => {
+    expect(parseFlags(["course.json", "--learn", "zh"])).toMatchObject({ mode: "error" });
+    expect(parseFlags(["course.json", "--read", "en"])).toMatchObject({ mode: "error" });
+  });
+
   it("takes --learn and --read with any mode", () => {
     expect(parseFlags(["--learn", "zh", "--read", "en"])).toEqual({ mode: "continue", learn: "zh", read: "en" });
     expect(parseFlags(["--new", "--learn", "zh-china"])).toEqual({ mode: "new", learn: "zh-china" });

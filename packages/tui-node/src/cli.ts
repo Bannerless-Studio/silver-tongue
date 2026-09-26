@@ -52,6 +52,8 @@ export function parseFlags(args: string[]): Flags {
     ...(values.learn !== undefined ? { learn: values.learn } : {}),
     ...(values.read !== undefined ? { read: values.read } : {}),
   };
+  if (positionals[0] && (values.learn !== undefined || values.read !== undefined))
+    return { mode: "error", message: "a course file has one language and one reading language: leave out --learn and --read" };
   if (values.import !== undefined) return { mode: "import", line: values.import, ...course };
   const mode = chosen[0] === "new" || chosen[0] === "resume" || chosen[0] === "export" ? chosen[0] : "continue";
   return { mode, ...course };

@@ -14,8 +14,17 @@ export function coursesDir(env: NodeJS.ProcessEnv = process.env): string | undef
     .find((p) => existsSync(join(p, "index.json")));
 }
 
-export function readCatalog(dir: string): CatalogEntry[] {
-  return JSON.parse(readFileSync(join(dir, "index.json"), "utf8")) as CatalogEntry[];
+/** The catalog, or nothing when index.json is missing, unreadable or lists no playable course. */
+export function readCatalog(dir: string): CatalogEntry[] | undefined {
+  try {
+    const list: unknown = JSON.parse(readFileSync(join(dir, "index.json"), "utf8"));
+    const str = (x: unknown) => typeof x === "string" && x !== "";
+    const ok = (e: Partial<CatalogEntry>) =>
+      str(e?.id) && str(e.language) && Array.isArray(e.learners) && e.learners.length > 0 && e.learners.every(str);
+    return Array.isArray(list) && list.length > 0 && list.every(ok) ? (list as CatalogEntry[]) : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 /** A course's file for one reading language. */

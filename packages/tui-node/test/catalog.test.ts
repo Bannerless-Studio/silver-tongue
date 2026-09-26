@@ -20,8 +20,17 @@ describe("catalog", () => {
   it("reads the index and names course files", () => {
     const dir = tempDir();
     writeFileSync(join(dir, "index.json"), JSON.stringify([{ id: "a", language: "zh", setting: "s", learners: ["en"], learnerNames: { en: "English" } }]));
-    expect(readCatalog(dir).map((e) => e.id)).toEqual(["a"]);
+    expect(readCatalog(dir)?.map((e) => e.id)).toEqual(["a"]);
     expect(courseFile(dir, "a", "en")).toBe(join(dir, "a", "en.json"));
+  });
+
+  it("calls a damaged, empty or missing index nothing", () => {
+    const dir = tempDir();
+    expect(readCatalog(dir)).toBeUndefined();
+    for (const text of ["{oops", "[]", "{}", JSON.stringify([{ id: "a", language: "zh", setting: "s" }]), JSON.stringify([{ id: "a", language: "zh", learners: [] }])]) {
+      writeFileSync(join(dir, "index.json"), text);
+      expect(readCatalog(dir), text).toBeUndefined();
+    }
   });
 
   it("finds clips beside the course when bundled", () => {

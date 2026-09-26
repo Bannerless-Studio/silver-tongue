@@ -54,7 +54,19 @@ interface Chosen {
   dir?: string;
 }
 
+const DAMAGED = "The installed courses are damaged. Reinstall silver-tongue, or run: npm run build:course";
+
 const readCourse = (path: string) => JSON.parse(readFileSync(path, "utf8")) as Course;
+
+/** Before the game starts, a course file that won't read ends with a message rather than a stack. */
+function orExit<T>(read: () => T, message: string): T {
+  try {
+    return read();
+  } catch {
+    console.error(message);
+    process.exit(1);
+  }
+}
 
 function loadCourse(dir: string, entry: CatalogEntry, learner: string, catalog: CatalogEntry[]): Chosen {
   return { course: readCourse(courseFile(dir, entry.id, learner)), clips: clipsDir(dir, entry), catalog, dir };
@@ -64,7 +76,9 @@ function loadCourse(dir: string, entry: CatalogEntry, learner: string, catalog: 
 async function start(): Promise<Chosen> {
   if (game.coursePath) {
     // A course built from source: no catalog, no settings, no switching.
-    return { course: readCourse(game.coursePath), clips: join(dirname(game.coursePath), "audio"), catalog: [] };
+    const path = game.coursePath;
+    const course = orExit(() => readCourse(path), `silver-tongue: can't read the course file ${path}`);
+    return { course, clips: join(dirname(path), "audio"), catalog: [] };
   }
   const dir = coursesDir();
   if (!dir) {
@@ -72,23 +86,33 @@ async function start(): Promise<Chosen> {
     process.exit(1);
   }
   const catalog = readCatalog(dir);
+  if (!catalog) {
+    console.error(DAMAGED);
+    process.exit(1);
+  }
   const settings = loadSettings(root);
   const picked = chooseStart(catalog, settings, { learn: game.learn, read: game.read });
   if ("error" in picked) {
     console.error(`silver-tongue: ${picked.error}\n\n${USAGE}`);
     process.exit(2);
   }
+  // Asking needs a player at the keyboard, and --export/--import keep stdin and stdout for the save line.
+  if (picked.ask && (game.mode === "export" || game.mode === "import" || !process.stdin.isTTY)) {
+    console.error(`silver-tongue: there are several courses; choose one with --learn\n\n${USAGE}`);
+    process.exit(2);
+  }
   const entry = picked.ask ? await askCourse(dir, catalog, settings) : picked.course;
   const learner = picked.ask ? learnerFor(entry, game.read, settings.learner) : picked.learner;
+  const chosen = orExit(() => loadCourse(dir, entry, learner, catalog), DAMAGED);
   saveSettings(root, { course: entry.id, learner });
-  return loadCourse(dir, entry, learner, catalog);
+  return chosen;
 }
 
 /** A numbered list of courses, named in the saved reading language when a course has it. */
 async function askCourse(dir: string, catalog: CatalogEntry[], settings: PlayerSettings): Promise<CatalogEntry> {
   const labelled = catalog.find((e) => settings.learner !== undefined && e.learners.includes(settings.learner)) ?? catalog[0];
   const code = learnerFor(labelled, settings.learner);
-  const t = makeText(readCourse(courseFile(dir, labelled.id, code)).learnerFtl, code);
+  const t = makeText(orExit(() => readCourse(courseFile(dir, labelled.id, code)), DAMAGED).learnerFtl, code);
   console.log(t("start-title"));
   for (const line of courseLabels(catalog, t)) console.log(line);
   const rl = createInterface({ input: process.stdin, output: process.stdout });
