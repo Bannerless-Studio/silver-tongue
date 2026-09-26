@@ -133,6 +133,11 @@ describe("build-course (real content)", () => {
     expect(course!.scenes.find((s) => s.id === "noodle-kitchen")!.after).toEqual(["noodle-shift", "delivery-pickup"]);
   });
 
+  it("the staff lunch names 菜 as vegetables, not dishes (you're washing the dishes)", () => {
+    expect(course!.groups.foods).toEqual(["rice", "vegetables", "noodles"]);
+    expect(course!.conceptNames.vegetables).toBe("vegetables");
+  });
+
   it("the cook offers work only once Old Wang has taught you to count", () => {
     // Otherwise she hands you an apron and no shift appears, with nothing to say why.
     expect(course!.scenes.find((s) => s.id === "noodle-intro")!.after).toContain("street-numbers");

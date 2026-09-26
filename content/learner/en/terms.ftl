@@ -94,9 +94,9 @@
     [cap] Rice
    *[base] rice
 }
--dishes = { $form ->
-    [cap] Dishes
-   *[base] dishes
+-vegetables = { $form ->
+    [cap] Vegetables
+   *[base] vegetables
 }
 -noodles = { $form ->
     [cap] Noodles

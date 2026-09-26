@@ -45,7 +45,7 @@
 -school = 学校
 -station = 火车站
 -rice = 米饭
--dishes = 菜
+-vegetables = 菜
 -noodles = 面条
 -apple = 苹果
 -cup = 杯子

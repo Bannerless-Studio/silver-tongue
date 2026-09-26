@@ -8,7 +8,7 @@
     "furniture": ["table", "chair"],
     "sizes": ["big", "small"],
     "destinations": ["hospital", "school", "station"],
-    "foods": ["rice", "dishes", "noodles"],
+    "foods": ["rice", "vegetables", "noodles"],
     "goods": ["apple", "cup", "book"]
   },
   "numbers": {
