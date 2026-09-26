@@ -173,7 +173,8 @@ describe("tui app", () => {
     expect(term.screen().join("\n")).toContain("That's not what they asked for.");
     expect(term.screen().at(-2)).toMatch(/You say: +│$/);
     term.press(right, "return");
-    expect(term.screen().join("\n")).toContain(`You: ${want}`);
+    // A right answer is shown as the reply itself, punctuation and all.
+    expect(term.screen().join("\n")).toContain(`You: ${want}？`);
     expect(term.screen().join("\n")).toContain("Done.");
   });
 
@@ -213,7 +214,7 @@ describe("tui app", () => {
     expect(term.screen().join("\n")).toContain("Jamil");
     const tiles = core.state.run!.tiles;
     term.press(...["你", "好", PLAYER_MARK].map((p) => String(tiles.indexOf(p) + 1)), "return");
-    expect(term.screen().join("\n")).toContain("You: 你好Jamil");
+    expect(term.screen().join("\n")).toContain("You: 你好，Jamil！");
   });
 
   it("won't sleep away from home, and says so", () => {

@@ -2,6 +2,9 @@ import {
   availableSceneIds,
   comboKey,
   moneyBlocked,
+  personalize,
+  PLAYER_MARK,
+  tilePieces,
   sceneCost,
   describeRun,
   mentorAvailable,
@@ -257,11 +260,11 @@ export function startApp(opts: AppOptions): App {
     return false;
   }
 
-  /** The right reply's clips for the exchange being played, said when the tiles match. */
-  function rightReplyClips(): string[] {
+  /** The right reply for the exchange being played. */
+  function rightReply(): RenderedLine | undefined {
     const run = core.state.run;
     const ex = run && course.scenes.find((x) => x.id === run.scene)?.exchanges[run.exchange];
-    return (run && ex?.variants[comboKey(run.combo)]?.reply.audio) ?? [];
+    return run ? ex?.variants[comboKey(run.combo)]?.reply : undefined;
   }
 
   function menu(): MenuItem[] {
@@ -473,8 +476,13 @@ export function startApp(opts: AppOptions): App {
     } else if (key.name === "backspace") {
       tileInput = tileInput.slice(0, -1);
     } else if (key.name === "return" && tileInput.length) {
-      echo(tileInput.map((i) => tiles[i]).join(""));
-      tileReply = rightReplyClips();
+      // Tiles that make the right reply are shown as the reply itself, punctuation and all.
+      const placed = tileInput.map((i) => tiles[i]).join("");
+      const reply = rightReply();
+      const name = core.state.player ?? "";
+      const right = !!reply && tilePieces(reply).map((x) => (x === PLAYER_MARK ? name : x)).join("") === placed;
+      echo(right ? personalize(reply!, name).text : placed);
+      tileReply = reply?.audio ?? [];
       send({ type: "replyTiles", tiles: tileInput });
     }
     render();
