@@ -1,0 +1,76 @@
+{
+  "id": "shop-intro",
+  "place": "shop",
+  "npc": "shopkeeper",
+  "stage": 1,
+  "after": [
+    "noodle-kitchen",
+    "room-rent"
+  ],
+  "requires": {},
+  "repeatable": false,
+  "trustGain": 1,
+  "exchanges": [
+    {
+      "id": "greet",
+      "slots": {},
+      "expect": {
+        "action": "browse"
+      },
+      "hinges": [],
+      "pay": 0,
+      "missCost": 0
+    },
+    {
+      "id": "fruit",
+      "slots": {},
+      "expect": {
+        "action": "fruit"
+      },
+      "hinges": [],
+      "pay": 0,
+      "missCost": 0
+    },
+    {
+      "id": "apples",
+      "slots": {},
+      "expect": {
+        "action": "apples"
+      },
+      "hinges": [],
+      "pay": 0,
+      "missCost": 0
+    },
+    {
+      "id": "price",
+      "slots": {},
+      "expect": {
+        "action": "haggle"
+      },
+      "hinges": [],
+      "pay": 0,
+      "missCost": 0
+    },
+    {
+      "id": "less",
+      "slots": {},
+      "expect": {
+        "action": "less"
+      },
+      "hinges": [],
+      "pay": 0,
+      "missCost": 0,
+      "cost": 4
+    },
+    {
+      "id": "bye",
+      "slots": {},
+      "expect": {
+        "action": "bye"
+      },
+      "hinges": [],
+      "pay": 0,
+      "missCost": 0
+    }
+  ]
+}

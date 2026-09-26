@@ -1,0 +1,47 @@
+{
+  "id": "shop-buy",
+  "place": "shop",
+  "npc": "shopkeeper",
+  "stage": 1,
+  "after": [
+    "shop-intro"
+  ],
+  "requires": {
+    "trust": {
+      "shopkeeper": 1
+    }
+  },
+  "repeatable": true,
+  "trustGain": 1,
+  "exchanges": [
+    {
+      "id": "buy",
+      "slots": {
+        "item": "goods",
+        "price": "numbers_3_5"
+      },
+      "expect": {
+        "action": "buy",
+        "item": "$item",
+        "price": "$price"
+      },
+      "hinges": [
+        "$item",
+        "$price"
+      ],
+      "pay": 0,
+      "missCost": 0,
+      "cost": "$price"
+    },
+    {
+      "id": "bye",
+      "slots": {},
+      "expect": {
+        "action": "bye"
+      },
+      "hinges": [],
+      "pay": 0,
+      "missCost": 0
+    }
+  ]
+}

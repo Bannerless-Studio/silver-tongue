@@ -109,10 +109,11 @@ interface Goal {
  */
 function goals(course: Course, state: GameState): Goal[] {
   const out: Goal[] = availableSceneIds(course, state)
-    // Shopping never eats into the rent money.
+    // Repeat shopping never eats into the rent money; a first visit is the story, so it's taken.
     .filter((id) => {
-      const cost = sceneCost(course.scenes.find((s) => s.id === id)!);
-      return cost === 0 || state.wallet - cost >= course.world.rentPerWeek;
+      const scene = course.scenes.find((s) => s.id === id)!;
+      const cost = sceneCost(scene);
+      return cost === 0 || !scene.repeatable || state.wallet - cost >= course.world.rentPerWeek;
     })
     .map((id) => {
     const scene = course.scenes.find((s) => s.id === id)!;

@@ -80,4 +80,12 @@ describe("course bots (a world with a shop)", () => {
     expect(r.rejected).toBe(0);
     expect(r.minWallet).toBeGreaterThan(0);
   });
+
+  it("still pays for a first visit that costs something, since it's the story", () => {
+    const c = fixtureCourse();
+    c.scenes[0].exchanges[0].variants[""].cost = 1; // meeting the cook costs ¥1
+    c.world.rentPerWeek = 1000;
+    const r = runBot(c, BOTS.right, { days: 2, seed: 1 });
+    expect(r.firstDone.intro).toBe(1);
+  });
 });

@@ -1,0 +1,59 @@
+{
+  "id": "noodle-kitchen",
+  "place": "noodle_shop",
+  "npc": "cook",
+  "stage": 1,
+  "after": [
+    "noodle-shift",
+    "delivery-pickup"
+  ],
+  "requires": {
+    "trust": {
+      "cook": 2
+    }
+  },
+  "repeatable": true,
+  "trustGain": 1,
+  "exchanges": [
+    {
+      "id": "cups",
+      "slots": {
+        "amount": "numbers_3_10"
+      },
+      "expect": {
+        "action": "wash",
+        "amount": "$amount"
+      },
+      "hinges": [
+        "$amount"
+      ],
+      "pay": 2,
+      "missCost": 1
+    },
+    {
+      "id": "lunch",
+      "slots": {
+        "food": "foods"
+      },
+      "expect": {
+        "action": "eat",
+        "food": "$food"
+      },
+      "hinges": [
+        "$food"
+      ],
+      "pay": 1,
+      "missCost": 1
+    },
+    {
+      "id": "out",
+      "slots": {},
+      "expect": {
+        "action": "out"
+      },
+      "hinges": [],
+      "pay": 2,
+      "missCost": 0
+    }
+  ]
+}

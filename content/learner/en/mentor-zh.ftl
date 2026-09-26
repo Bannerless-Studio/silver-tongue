@@ -29,3 +29,9 @@ note-de = 的 (de) joins an owner to a thing: 高小姐的朋友 is "Miss Gao's 
 
 note-dian-title = 点, o'clock
 note-dian = 点 (diǎn) after a number gives the hour: 三点 is three o'clock, and 现在几点？ asks "what time is it?". The 了 in 三点了 means "it's three already".
+
+note-mei-title = 没有, there isn't
+note-mei = 没有 (méiyǒu) is "don't have" or "there isn't": 杯子没有了 is "we're out of cups". Most verbs take 不 for "not", but 有 always takes 没: 没有, never 不有.
+
+note-tai-title = 太…了, too much
+note-tai = 太 (tài) … 了 means "too …": 太多了 is "that's too much". The 了 at the end is part of the pattern.
