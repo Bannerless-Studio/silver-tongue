@@ -19,8 +19,8 @@ export interface ArtJson {
 
 const HEX = /^#[0-9a-fA-F]{3,8}$/;
 
-/** What makes an SVG unsafe or unfit to inline in the page. */
-export function svgProblems(name: string, svg: string, viewBox: string): string[] {
+/** What makes an SVG unsafe or unfit to inline in the page. Ids start with `prefix-` so drawings inlined together never clash. */
+export function svgProblems(name: string, svg: string, viewBox: string, prefix?: string): string[] {
   const out: string[] = [];
   const bytes = Buffer.byteLength(svg);
   if (bytes > MAX_ART_BYTES) out.push(`${name}: ${Math.ceil(bytes / 1024)} KB, over 40 KB`);
@@ -31,6 +31,7 @@ export function svgProblems(name: string, svg: string, viewBox: string): string[
   if (on) out.push(`${name}: no event attributes (${on[1]})`);
   if (/\b(?:xlink:)?href\s*=\s*["'](?!#)/i.test(svg)) out.push(`${name}: no links outside the file`);
   if (/<(image|foreignObject)\b/i.test(svg)) out.push(`${name}: no <image> or <foreignObject>`);
+  if (prefix) for (const [, id] of svg.matchAll(/\sid="([^"]*)"/g)) if (!id.startsWith(`${prefix}-`)) out.push(`${name}: id "${id}" must start with "${prefix}-"`);
   return out;
 }
 
@@ -48,7 +49,7 @@ export function artProblems(settingDir: string, world: World): string[] {
       const rel = `art/${kind}/${id}.svg`;
       const path = join(settingDir, rel);
       if (!existsSync(path)) out.push(`${rel}: missing`);
-      else out.push(...svgProblems(rel, readFileSync(path, "utf8"), viewBox));
+      else out.push(...svgProblems(rel, readFileSync(path, "utf8"), viewBox, id));
     }
     const dir = join(settingDir, "art", kind);
     const extra = existsSync(dir) && statSync(dir).isDirectory() ? readdirSync(dir).filter((f) => f.endsWith(".svg") && !ids.includes(f.slice(0, -4))) : [];

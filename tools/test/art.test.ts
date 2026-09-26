@@ -14,6 +14,12 @@ describe("svg rules", () => {
     expect(svgProblems("a.svg", withGradient, PLACE_VIEWBOX)).toEqual([]);
   });
 
+  it("wants ids that start with the drawing's own name, since several drawings share one page", () => {
+    const withIds = (id: string) => place.replace("<rect", `<defs><linearGradient id="${id}"/></defs><rect fill="url(#${id})"`);
+    expect(svgProblems("street.svg", withIds("street-sky"), PLACE_VIEWBOX, "street")).toEqual([]);
+    expect(svgProblems("street.svg", withIds("sky"), PLACE_VIEWBOX, "street")).toEqual([`street.svg: id "sky" must start with "street-"`]);
+  });
+
   it("refuses a wrong viewBox, scripts, event attributes, outside links, images and oversize files", () => {
     expect(svgProblems("a.svg", place, NPC_VIEWBOX)).toEqual([`a.svg: viewBox must be "${NPC_VIEWBOX}"`]);
     expect(svgProblems("a.svg", place.replace("</svg>", "<script>x()</script></svg>"), PLACE_VIEWBOX)).toContain("a.svg: no <script>");
