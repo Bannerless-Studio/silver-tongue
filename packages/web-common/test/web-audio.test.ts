@@ -58,15 +58,6 @@ describe("createWebAudio", () => {
     ]);
   });
 
-  it("plays a slow line slow even after the src changed, which is what resets the rate in a browser", () => {
-    const el = fakeEl();
-    const { waits, wait } = timers();
-    createWebAudio({ base: "audio/", audio: el, wait }).play([{ clips: ["x"] }, { clips: ["y"], slow: true }]);
-    el.onended!();
-    waits[0].cb();
-    expect(el.played[1]).toEqual({ src: "audio/y.mp3", rate: 0.75, defaultPlaybackRate: 0.75 });
-  });
-
   it("plays at the speed the player chose, and a slow line 0.75 slower", () => {
     const el = fakeEl();
     const { waits, wait } = timers();

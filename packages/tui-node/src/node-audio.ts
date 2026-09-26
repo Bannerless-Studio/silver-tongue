@@ -104,7 +104,7 @@ export function createNodeAudio(deps: NodeAudioDeps): AudioOut {
       return !broken;
     },
     get busy() {
-      // A broken player will never fire another exit, so only what is still running counts.
+      // Broken drops the queue for good, so there is nothing left to wait for, whatever proc still says.
       return !broken && (proc !== undefined || timer !== undefined);
     },
     play(lines: Speech[]) {

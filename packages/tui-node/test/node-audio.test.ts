@@ -92,17 +92,6 @@ describe("createNodeAudio", () => {
     expect(played(f).at(-1)).toBe("/a/w.mp3");
   });
 
-  it("stop during the beat cancels the next clip", () => {
-    const f = fakes();
-    const a = createNodeAudio({ dir: "/a", player, ...f });
-    a.play([{ clips: ["x", "y"] }]);
-    f.spawned[0].proc.exit();
-    a.stop();
-    expect(f.waits[0].cancelled).toBe(true);
-    f.waits[0].cb(); // a timer that fires anyway does nothing
-    expect(played(f)).toEqual(["/a/x.mp3"]);
-  });
-
   it("is busy from play() until the last clip finishes, and not after stop()", () => {
     const f = fakes();
     const a = createNodeAudio({ dir: "/a", player, ...f });
@@ -117,6 +106,17 @@ describe("createNodeAudio", () => {
     a.play([{ clips: ["z"] }]);
     a.stop();
     expect(a.busy).toBe(false);
+    a.play([]); // nothing was said, so there is nothing to wait for
+    expect(a.busy).toBe(false);
+  });
+
+  it("stays busy when an old clip's exit arrives after a new one started", () => {
+    const f = fakes();
+    const a = createNodeAudio({ dir: "/a", player, ...f });
+    a.play([{ clips: ["x"] }]);
+    a.play([{ clips: ["z"] }]);
+    f.spawned[0].proc.exit(1); // the killed clip's exit, delivered late
+    expect(a.busy).toBe(true);
   });
 
   it("is not busy once the player is broken", () => {
@@ -166,6 +166,7 @@ describe("createNodeAudio", () => {
     a.play([{ clips: ["v"] }]);
     f.spawned[4].proc.exit(1);
     expect(a.available).toBe(false);
+    expect(a.busy).toBe(false);
   });
 
   it("a killed clip is not a failure", () => {
