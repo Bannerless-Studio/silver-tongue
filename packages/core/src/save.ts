@@ -30,7 +30,7 @@ function isRunShape(x: unknown): x is SceneRun {
   return ["exchange", "misses", "earned", "mixups"].every((k) => isCount(x[k]));
 }
 
-const INPUT_TYPES = new Set(["goTo", "startScene", "reply", "replyTiles", "helpWord", "visitMentor", "setName", "sleep"]);
+const INPUT_TYPES = new Set(["goTo", "startScene", "reply", "replyTiles", "helpWord", "visitMentor", "setName", "sleep", "setSound"]);
 
 function isLogEntry(x: unknown): boolean {
   return isObj(x) && isCount(x.t) && isCount(x.day) && isCount(x.slot) && isObj(x.input) && INPUT_TYPES.has(x.input.type as string);
@@ -97,6 +97,7 @@ export function parseSave(raw: string, course: Course): ParseResult {
     return { ok: false, reason: "bad-player" };
   }
   if (data.errand !== undefined && !(isObj(data.errand) && typeof data.errand.to === "string")) return { ok: false, reason: "bad-errand" };
+  if (data.sound !== undefined && typeof data.sound !== "boolean") return { ok: false, reason: "bad-sound" };
   // A parcel nowhere takes any more (the place or its drop-off is gone) is dropped, so the pickup opens again.
   const deliverable = (to: unknown) => course.scenes.some((s) => s.endsErrand && s.place === to);
   if (isObj(data.errand) && !deliverable(data.errand.to)) delete data.errand;

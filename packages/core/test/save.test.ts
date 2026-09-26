@@ -14,6 +14,19 @@ describe("save", () => {
     return core;
   };
 
+  it("keeps the sound setting, and loads a save with setSound in its log", () => {
+    const core = inScene();
+    core.send({ type: "setSound", on: false });
+    expect(parseSave(serialize(core.state), course)).toEqual({ ok: true, state: core.state });
+    expect(core.state.sound).toBe(false);
+  });
+
+  it("loads an old save without sound as sound on (absent), and rejects a sound that isn't true or false", () => {
+    const r = parseSave(serialize(newGame(course)), course);
+    expect(r.ok && r.state.sound).toBeUndefined();
+    expect(bad({ ...newGame(course), sound: "yes" })).toEqual({ ok: false, reason: "bad-sound" });
+  });
+
   it("round-trips a game", () => {
     const s = newGame(course);
     expect(parseSave(serialize(s), course)).toEqual({ ok: true, state: s });
