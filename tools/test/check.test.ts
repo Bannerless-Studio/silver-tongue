@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PLAYER_MARK } from "@silver-tongue/core";
-import { fixtureCourse, line } from "@silver-tongue/core/testing";
+import { addErrand, fixtureCourse, line } from "@silver-tongue/core/testing";
 import { checkCourse, orderScenes, type CheckInput } from "../src/check";
 
 const LEARNER = [
@@ -21,6 +21,49 @@ function input(patch: Partial<CheckInput> = {}): CheckInput {
 }
 
 describe("checkCourse", () => {
+  describe("errands", () => {
+    const ERRAND_IDS = ["scene-pickup", "scene-drop", "scene-drop2", "place-school", "place-school-desc", "npc-teacher", "asked-deliver"];
+    const run = (change: (c: ReturnType<typeof fixtureCourse>) => void = () => {}) => {
+      const c = addErrand(fixtureCourse());
+      change(c);
+      return checkCourse(input({ course: c, learnerIds: new Set([...LEARNER, ...ERRAND_IDS]) }));
+    };
+
+    it("passes a pickup with one drop-off at each place it can name", () => {
+      expect(run()).toEqual([]);
+    });
+
+    it("rejects an errand slot that names something other than a place", () => {
+      expect(run((c) => (c.scenes[2].startsErrand = "$nope"))).toContain('pickup: startsErrand "$nope" is not a slot of any exchange');
+      expect(
+        run((c) => {
+          c.groups.dests = ["school", "tea"];
+          const ex = c.scenes[2].exchanges[0];
+          ex.variants["to=tea"] = structuredClone(ex.variants["to=school"]);
+        }),
+      ).toContain('pickup: errand goes to "tea", which is not a place');
+    });
+
+    it("needs exactly one drop-off at each destination, and no drop-off nobody sends parcels to", () => {
+      expect(run((c) => void c.scenes.pop())).toContain('pickup: errand goes to "school", which has no scene that ends an errand');
+      expect(run((c) => void c.scenes.push({ ...structuredClone(c.scenes[3]), id: "drop2" }))).toContain(
+        'pickup: errand goes to "school", which has 2 scenes that end an errand; needs 1',
+      );
+      expect(run((c) => void delete c.scenes[2].startsErrand)).toContain('drop: ends an errand, but no errand goes to "school"');
+    });
+
+    it("keeps a parcel deliverable: pickups and drop-offs repeat, and a drop-off needs nothing the pickup doesn't", () => {
+      expect(run((c) => void (c.scenes[3].repeatable = false))).toContain("drop: ends an errand, so it must be repeatable");
+      expect(run((c) => void (c.scenes[2].repeatable = false))).toContain("pickup: starts an errand, so it must be repeatable");
+      expect(run((c) => void (c.scenes[3].requires = { trust: { teacher: 1 } }))).toContain(
+        "drop: ends an errand, so it may not require trust (a parcel could never be delivered)",
+      );
+      expect(run((c) => void (c.scenes[3].after = ["pickup", "shift"]))).toContain(
+        'drop: comes after "shift", which a parcel from pickup doesn\'t need; a parcel could never be delivered',
+      );
+    });
+  });
+
   it("passes the fixture course", () => {
     expect(checkCourse(input())).toEqual([]);
   });

@@ -23,7 +23,7 @@ export function makeText(ftl: string, locale = "en"): Text {
  * The course build fails a learner language that lacks any of them or uses other variables.
  */
 export const UI_KEYS: Record<string, string[]> = {
-  hud: ["day", "slot", "slots", "currency", "wallet", "rank", "rentLate"],
+  hud: ["day", "slot", "slots", "currency", "wallet", "rank", "parcel", "rentLate"],
   "rank-0": [],
   "rank-1": [],
   "rank-2": [],
@@ -64,6 +64,9 @@ export const UI_KEYS: Record<string, string[]> = {
   "trust-up": ["npc", "trust"],
   "scene-done": ["currency", "earned"],
   unlocked: ["scene"],
+  "errand-started": [],
+  "errand-ended": [],
+  "errand-carrying": [],
   "rank-up": ["rank"],
   "day-ended": ["day"],
   "notice-bad-save": [],

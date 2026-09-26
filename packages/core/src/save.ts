@@ -26,6 +26,7 @@ function isRunShape(x: unknown): x is SceneRun {
   if (!isObj(x) || typeof x.scene !== "string" || !isObj(x.combo) || !allValues(x.combo, (v) => typeof v === "string"))
     return false;
   if (!["pick", "tiles", "type"].includes(x.mode as string) || !isStrings(x.options) || !isStrings(x.tiles)) return false;
+  if (x.errandTo !== undefined && typeof x.errandTo !== "string") return false;
   return ["exchange", "misses", "earned", "mixups"].every((k) => isCount(x[k]));
 }
 
@@ -95,6 +96,11 @@ export function parseSave(raw: string, course: Course): ParseResult {
   if (data.player !== undefined && (typeof data.player !== "string" || cleanName(data.player) !== data.player)) {
     return { ok: false, reason: "bad-player" };
   }
+  if (data.errand !== undefined && !(isObj(data.errand) && typeof data.errand.to === "string")) return { ok: false, reason: "bad-errand" };
+  // A parcel nowhere takes any more (the place or its drop-off is gone) is dropped, so the pickup opens again.
+  const deliverable = (to: unknown) => course.scenes.some((s) => s.endsErrand && s.place === to);
+  if (isObj(data.errand) && !deliverable(data.errand.to)) delete data.errand;
+  if (isObj(data.run) && typeof data.run.errandTo === "string" && !deliverable(data.run.errandTo)) delete data.run.errandTo;
   // notes and log came later: a save without them gets empty ones (but null is malformed).
   if (!("notes" in data)) data.notes = { ready: [], read: [] };
   if (!("log" in data)) data.log = [];

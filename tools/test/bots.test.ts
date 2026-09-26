@@ -1,6 +1,6 @@
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { fixtureCourse } from "@silver-tongue/core/testing";
+import { addErrand, fixtureCourse } from "@silver-tongue/core/testing";
 import { BOTS, runBot } from "../src/bots";
 import { buildCourse } from "../src/build-course";
 
@@ -30,6 +30,10 @@ describe("course bots (real content)", () => {
     }
   });
 
+  it("the always-right player delivers parcels", () => {
+    expect(reports.right.errands).toBeGreaterThan(0);
+  });
+
   it("the core never refuses a bot's input", () => {
     for (const [name, r] of Object.entries(reports)) expect(r.rejected, name).toBe(0);
   });
@@ -55,5 +59,14 @@ describe("course bots (a world with a home)", () => {
     c.world.places.attic = { links: [] };
     c.world.home = "attic";
     expect(runBot(c, BOTS.right, { days: 3, seed: 7 }).rejected).toBe(1);
+  });
+});
+
+describe("course bots (a world with an errand)", () => {
+  it("walks a parcel to where it goes, and counts it", () => {
+    const c = addErrand(fixtureCourse());
+    const r = runBot(c, BOTS.right, { days: 3, seed: 1 });
+    expect(r.errands).toBeGreaterThan(0);
+    expect(r.rejected).toBe(0);
   });
 });

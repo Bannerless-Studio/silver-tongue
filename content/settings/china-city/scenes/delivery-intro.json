@@ -1,0 +1,85 @@
+{
+  "id": "delivery-intro",
+  "place": "market",
+  "npc": "dispatcher",
+  "stage": 1,
+  "after": [
+    "warehouse-shift",
+    "room-hello"
+  ],
+  "requires": {},
+  "repeatable": false,
+  "trustGain": 1,
+  "exchanges": [
+    {
+      "id": "greet",
+      "slots": {},
+      "expect": {
+        "action": "dispatcher"
+      },
+      "hinges": [],
+      "pay": 0,
+      "missCost": 0
+    },
+    {
+      "id": "hospital",
+      "slots": {},
+      "expect": {
+        "action": "places"
+      },
+      "hinges": [],
+      "pay": 0,
+      "missCost": 0
+    },
+    {
+      "id": "school",
+      "slots": {},
+      "expect": {
+        "action": "places"
+      },
+      "hinges": [],
+      "pay": 0,
+      "missCost": 0
+    },
+    {
+      "id": "station",
+      "slots": {},
+      "expect": {
+        "action": "places"
+      },
+      "hinges": [],
+      "pay": 0,
+      "missCost": 0
+    },
+    {
+      "id": "where",
+      "slots": {},
+      "expect": {
+        "action": "where"
+      },
+      "hinges": [],
+      "pay": 0,
+      "missCost": 0
+    },
+    {
+      "id": "job",
+      "slots": {},
+      "expect": {
+        "action": "job"
+      },
+      "hinges": [],
+      "pay": 0,
+      "missCost": 0
+    },
+    {
+      "id": "bye",
+      "slots": {},
+      "expect": {
+        "action": "bye"
+      },
+      "hinges": [],
+      "pay": 0,
+      "missCost": 0
+    }
+  ]
+}

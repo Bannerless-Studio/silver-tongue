@@ -20,3 +20,12 @@ note-ge = 个 (gè) is the measure word you can use for almost anything: 八个�
 
 note-kuai-title = 块, money
 note-kuai = Prices on a sign say 元 (yuán), but people say 块 (kuài): 五十块 is fifty yuan. 多少钱？ is "how much?", literally "how much money?"
+
+note-nali-title = 哪里, 那里, 这里
+note-nali = 哪里 (nǎli) is "where", 那里 (nàli) "there" and 这里 (zhèli) "here": 学校在哪里？ is "where is the school?". In the north people say 哪儿, 那儿 and 这儿 (nǎr, nàr, zhèr). They mean the same.
+
+note-de-title = 的, whose
+note-de = 的 (de) joins an owner to a thing: 高小姐的朋友 is "Miss Gao's friend", and 医院的东西 is "the hospital's things".
+
+note-dian-title = 点, o'clock
+note-dian = 点 (diǎn) after a number gives the hour: 三点 is three o'clock, and 现在几点？ asks "what time is it?". The 了 in 三点了 means "it's three already".

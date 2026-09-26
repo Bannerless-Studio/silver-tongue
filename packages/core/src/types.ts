@@ -61,6 +61,10 @@ export interface Scene {
   requires: { trust?: Record<string, number> };
   repeatable: boolean;
   trustGain: number;
+  /** "$<slot>": finishing this scene starts an errand to the place that slot named (its value is a place id). */
+  startsErrand?: string;
+  /** Finishing this scene delivers the errand. It is offered only while the errand is for this scene's place. */
+  endsErrand?: boolean;
   exchanges: Exchange[];
 }
 
@@ -150,6 +154,8 @@ export interface SceneRun {
   misses: number;
   earned: number;
   mixups: number;
+  /** the place a scene with startsErrand named, once its slot has been drawn */
+  errandTo?: string;
 }
 
 /** One accepted input, for play-tests. */
@@ -169,6 +175,8 @@ export interface GameState {
   slot: number;
   wallet: number;
   rentLate: boolean;
+  /** the parcel being carried, and where it goes; absent when there is none */
+  errand?: { to: string };
   place: string;
   trust: Record<string, number>;
   words: Record<WordId, WordRecord>;
@@ -250,4 +258,6 @@ export type GameEvent =
   | { type: "playerNamed"; name: string }
   /** notes: the notes explained on this visit, in order; empty when there was nothing new */
   | { type: "mentorVisited"; npc: string; notes: string[] }
+  | { type: "errandStarted"; to: string }
+  | { type: "errandEnded"; to: string }
   | { type: "inputRejected"; reason: RejectReason };

@@ -178,6 +178,8 @@ function beginExchange(ctx: Ctx, scene: Scene, index: number): void {
   const run = ctx.state.run!;
   const ex = scene.exchanges[index];
   const combo = chooseCombo(ctx, ex);
+  const errandSlot = scene.startsErrand?.slice(1);
+  if (errandSlot && errandSlot in combo) run.errandTo = combo[errandSlot];
   speak(ctx, scene.npc, ex.variants[comboKey(combo)].npc);
   // A word got wrong but never yet right is still new to the player: keep picking for it.
   // Tiles are for words the player has known at some point.
@@ -204,6 +206,15 @@ function finishScene(ctx: Ctx, scene: Scene): void {
   ctx.state.run = null;
   ctx.state.scenesDone[scene.id] = (ctx.state.scenesDone[scene.id] ?? 0) + 1;
   ctx.ev.push({ type: "sceneEnded", scene: scene.id, earned: run.earned });
+  if (scene.startsErrand && run.errandTo) {
+    ctx.state.errand = { to: run.errandTo };
+    ctx.ev.push({ type: "errandStarted", to: run.errandTo });
+  }
+  if (scene.endsErrand && ctx.state.errand) {
+    const { to } = ctx.state.errand;
+    delete ctx.state.errand;
+    ctx.ev.push({ type: "errandEnded", to });
+  }
   ctx.ev.push(...changeWallet(ctx.state, run.earned, "wages"));
   ctx.ev.push(...addTrust(ctx.state, scene.npc, scene.trustGain + (run.mixups === 0 ? 1 : 0)));
 }

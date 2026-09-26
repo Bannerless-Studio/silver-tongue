@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { comboKey } from "../src/combo";
-import { describeRun } from "../src/dialogue";
+import { describeRun, tilePieces } from "../src/dialogue";
 import { createCore, LOG_LIMIT, newGame, type Core } from "../src/core";
 import { recordRight } from "../src/learner";
 import { mulberry32 } from "../src/rng";
-import { fixtureCourse, line } from "../src/testing/fixture";
+import { addErrand, fixtureCourse, line } from "../src/testing/fixture";
+import { availableSceneIds } from "../src/life";
 import type { GameEvent, WordRecord } from "../src/types";
 
 const T0 = 1_000_000;
@@ -297,3 +298,108 @@ describe("core", () => {
   });
 });
 
+
+describe("errands", () => {
+  const c = addErrand(fixtureCourse());
+  const start = () => createCore(c, newGame(c), { now: () => T0, rng: mulberry32(1) });
+  /** Answers the current exchange right, in pick or tiles mode. */
+  const answer = (core: Core) => {
+    const run = core.state.run!;
+    if (run.mode === "pick") return core.send({ type: "reply", choice: run.options.indexOf(comboKey(run.combo)) });
+    const ex = c.scenes.find((s) => s.id === run.scene)!.exchanges[run.exchange];
+    const used = new Set<number>();
+    const tiles = tilePieces(ex.variants[comboKey(run.combo)].reply).map((p) => {
+      const i = run.tiles.findIndex((t, j) => t === p && !used.has(j));
+      used.add(i);
+      return i;
+    });
+    return core.send({ type: "replyTiles", tiles });
+  };
+  const play = (core: Core, scene: string) => {
+    const ev = [...core.send({ type: "startScene", scene })];
+    while (core.state.run) ev.push(...answer(core));
+    return ev;
+  };
+  const pickedUp = () => {
+    const core = start();
+    core.send({ type: "goTo", place: "noodle_shop" });
+    play(core, "intro");
+    const ev = play(core, "pickup");
+    return { core, ev };
+  };
+  const walkToSchool = (core: Core) => {
+    core.send({ type: "goTo", place: "street" });
+    core.send({ type: "goTo", place: "school" });
+  };
+
+  it("a pickup starts an errand to the place its slot named, with no unlock line for the drop-off", () => {
+    const { core, ev } = pickedUp();
+    expect(core.state.errand).toEqual({ to: "school" });
+    expect(find(ev, "errandStarted")).toEqual({ type: "errandStarted", to: "school" });
+    expect(ev.filter((e) => e.type === "unlocked")).toEqual([]);
+  });
+
+  it("a wrong reply at pickup still sends the parcel where she said", () => {
+    const core = start();
+    core.send({ type: "goTo", place: "noodle_shop" });
+    play(core, "intro");
+    core.send({ type: "startScene", scene: "pickup" });
+    const wrong = core.state.run!.options.findIndex((k) => k !== comboKey(core.state.run!.combo));
+    expect(types(core.send({ type: "reply", choice: wrong }))).toContain("npcReacted");
+    while (core.state.run) answer(core);
+    expect(core.state.errand).toEqual({ to: "school" });
+  });
+
+  it("carries one parcel at a time", () => {
+    const { core } = pickedUp();
+    expect(availableSceneIds(c, core.state)).not.toContain("pickup");
+    expect(core.send({ type: "startScene", scene: "pickup" })).toEqual([{ type: "inputRejected", reason: "locked" }]);
+  });
+
+  it("offers the drop-off only while a parcel is for its place", () => {
+    const empty = start();
+    empty.send({ type: "goTo", place: "noodle_shop" });
+    play(empty, "intro");
+    expect(availableSceneIds(c, empty.state)).not.toContain("drop");
+    const { core } = pickedUp();
+    expect(availableSceneIds(c, core.state)).toContain("drop");
+  });
+
+  it("delivering pays, ends the errand, and opens the pickup again", () => {
+    const { core } = pickedUp();
+    walkToSchool(core);
+    const wallet = core.state.wallet;
+    const ev = play(core, "drop");
+    expect(find(ev, "errandEnded")).toEqual({ type: "errandEnded", to: "school" });
+    expect(core.state.errand).toBeUndefined();
+    expect(core.state.wallet).toBeGreaterThan(wallet);
+    expect(availableSceneIds(c, core.state)).toContain("pickup");
+    expect(availableSceneIds(c, core.state)).not.toContain("drop");
+  });
+
+  it("announces the pickup once, not again after every delivery", () => {
+    const { core } = pickedUp();
+    walkToSchool(core);
+    expect(play(core, "drop").filter((e) => e.type === "unlocked")).toEqual([]);
+  });
+
+  it("keeps the parcel overnight", () => {
+    const { core } = pickedUp();
+    core.send({ type: "sleep" });
+    expect(core.state.day).toBe(2);
+    expect(core.state.errand).toEqual({ to: "school" });
+    walkToSchool(core);
+    expect(types(core.send({ type: "startScene", scene: "drop" }))).toContain("sceneStarted");
+  });
+
+  it("with no slots left, the drop-off waits until the next day", () => {
+    const { core } = pickedUp();
+    walkToSchool(core);
+    const tired = createCore(c, { ...core.state, slot: c.world.slotsPerDay }, { now: () => T0, rng: mulberry32(1) });
+    expect(tired.send({ type: "startScene", scene: "drop" })).toEqual([{ type: "inputRejected", reason: "no-slots" }]);
+    tired.send({ type: "goTo", place: "street" });
+    tired.send({ type: "sleep" });
+    tired.send({ type: "goTo", place: "school" });
+    expect(types(tired.send({ type: "startScene", scene: "drop" }))).toContain("sceneStarted");
+  });
+});

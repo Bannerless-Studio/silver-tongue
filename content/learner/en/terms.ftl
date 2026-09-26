@@ -78,3 +78,15 @@
     [cap] Small
    *[base] small
 }
+-hospital = { $form ->
+    [cap] Hospital
+   *[base] hospital
+}
+-school = { $form ->
+    [cap] School
+   *[base] school
+}
+-station = { $form ->
+    [cap] Train station
+   *[base] train station
+}

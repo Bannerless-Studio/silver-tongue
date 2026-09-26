@@ -5,5 +5,8 @@
   { "id": "bukeqi", "trigger": { "word": "w0141" } },
   { "id": "bei", "trigger": { "word": "x0001" } },
   { "id": "ge", "trigger": { "word": "w0012" } },
-  { "id": "kuai", "trigger": { "scene": "room-rent" } }
+  { "id": "kuai", "trigger": { "scene": "room-rent" } },
+  { "id": "nali", "trigger": { "scene": "delivery-intro" } },
+  { "id": "de", "trigger": { "word": "w0125" } },
+  { "id": "dian", "trigger": { "word": "w0115" } }
 ]
