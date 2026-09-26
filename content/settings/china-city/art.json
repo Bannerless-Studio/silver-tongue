@@ -1,0 +1,88 @@
+{
+  "places": {
+    "street": {
+      "tint": "#15171d",
+      "rim": "#e8d9b0",
+      "spots": {
+        "wang": 0.5
+      }
+    },
+    "noodle_shop": {
+      "tint": "#15171d",
+      "rim": "#e8d9b0",
+      "spots": {
+        "cook": 0.5
+      }
+    },
+    "market": {
+      "tint": "#15171d",
+      "rim": "#e8d9b0",
+      "spots": {
+        "dispatcher": 0.5
+      }
+    },
+    "room": {
+      "tint": "#15171d",
+      "rim": "#e8d9b0",
+      "spots": {
+        "landlord": 0.5
+      }
+    },
+    "warehouse": {
+      "tint": "#15171d",
+      "rim": "#e8d9b0",
+      "spots": {
+        "foreman": 0.5
+      }
+    },
+    "station_road": {
+      "tint": "#15171d",
+      "rim": "#e8d9b0",
+      "spots": {}
+    },
+    "school": {
+      "tint": "#15171d",
+      "rim": "#e8d9b0",
+      "spots": {
+        "teacher": 0.33,
+        "classmate": 0.67
+      }
+    },
+    "hospital": {
+      "tint": "#15171d",
+      "rim": "#e8d9b0",
+      "spots": {
+        "doctor": 0.5
+      }
+    },
+    "station": {
+      "tint": "#15171d",
+      "rim": "#e8d9b0",
+      "spots": {
+        "traveller": 0.33,
+        "driver": 0.67
+      }
+    },
+    "shop": {
+      "tint": "#15171d",
+      "rim": "#e8d9b0",
+      "spots": {
+        "shopkeeper": 0.5
+      }
+    },
+    "tea_house": {
+      "tint": "#15171d",
+      "rim": "#e8d9b0",
+      "spots": {
+        "teaboss": 0.5
+      }
+    },
+    "stairs": {
+      "tint": "#15171d",
+      "rim": "#e8d9b0",
+      "spots": {
+        "neighbour": 0.5
+      }
+    }
+  }
+}
