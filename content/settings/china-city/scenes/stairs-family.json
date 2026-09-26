@@ -1,0 +1,20 @@
+{
+  "id": "stairs-family",
+  "place": "stairs",
+  "npc": "neighbour",
+  "stage": 1,
+  "after": ["stairs-meet"],
+  "requires": {},
+  "repeatable": false,
+  "trustGain": 1,
+  "exchanges": [
+    { "id": "photo", "slots": {}, "expect": { "action": "photo" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "people", "slots": {}, "expect": { "action": "people" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "parents", "slots": {}, "expect": { "action": "parents" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "doctor", "slots": {}, "expect": { "action": "jobs" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "daughter", "slots": {}, "expect": { "action": "daughter" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "pretty", "slots": {}, "expect": { "action": "pretty" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "clothes", "slots": {}, "expect": { "action": "clothes" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "love", "slots": {}, "expect": { "action": "love" }, "hinges": [], "pay": 0, "missCost": 0 }
+  ]
+}

@@ -8,8 +8,8 @@ teacher-reply = Hello, teacher!
 teacher-alt1 = Goodbye, Miss Gao!
 teacher-alt2 = I want to work.
 
-books = Are these books?
-books-reply = Yes, they're books.
+books = Here are ten books.
+books-reply = OK, ten books.
 books-alt1 = I'm going now!
 books-alt2 = Hello, teacher!
 

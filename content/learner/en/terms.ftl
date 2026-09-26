@@ -114,3 +114,11 @@
     [cap] Book
    *[base] book
 }
+-board = { $form ->
+    [cap] Into
+   *[base] into
+}
+-alight = { $form ->
+    [cap] Out of
+   *[base] out of
+}

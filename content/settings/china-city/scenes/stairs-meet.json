@@ -1,0 +1,20 @@
+{
+  "id": "stairs-meet",
+  "place": "stairs",
+  "npc": "neighbour",
+  "stage": 1,
+  "after": ["room-rent"],
+  "requires": {},
+  "repeatable": false,
+  "trustGain": 1,
+  "exchanges": [
+    { "id": "greet", "slots": {}, "expect": { "action": "greet" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "name", "slots": {}, "expect": { "action": "name" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "home", "slots": {}, "expect": { "action": "flat" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "years", "slots": {}, "expect": { "action": "years" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "son", "slots": {}, "expect": { "action": "son" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "age", "slots": {}, "expect": { "action": "age" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "work", "slots": {}, "expect": { "action": "work" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "bye", "slots": {}, "expect": { "action": "bye" }, "hinges": [], "pay": 0, "missCost": 0 }
+  ]
+}

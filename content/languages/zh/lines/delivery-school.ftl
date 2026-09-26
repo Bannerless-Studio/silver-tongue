@@ -8,8 +8,8 @@ teacher-reply = 你好，老师！
 teacher-alt1 = 再见，高小姐！
 teacher-alt2 = 我想工作。
 
-books = 这是书吗？
-books-reply = 是，是书。
+books = 这是十本书。
+books-reply = 好，十本书。
 books-alt1 = 我现在去！
 books-alt2 = 你好，老师！
 

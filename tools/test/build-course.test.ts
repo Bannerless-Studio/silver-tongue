@@ -28,7 +28,7 @@ describe("build-course (real content)", () => {
 
   it("builds zh-china-en with no errors", () => {
     expect(errors).toEqual([]);
-    expect(course!.scenes.map((s) => s.id)).toEqual(["delivery-hospital", "delivery-intro", "delivery-pickup", "delivery-school", "delivery-station", "noodle-intro", "noodle-kitchen", "noodle-shift", "room-hello", "room-rent", "shop-buy", "shop-intro", "street-hello", "street-hungry", "street-numbers", "street-practice", "warehouse-intro", "warehouse-shift"]);
+    expect(course!.scenes.map((s) => s.id)).toEqual(["class-break", "class-first", "class-read", "class-write", "delivery-hospital", "delivery-intro", "delivery-pickup", "delivery-school", "delivery-station", "hospital-checkup", "noodle-intro", "noodle-kitchen", "noodle-lunch", "noodle-shift", "room-hello", "room-phone", "room-rent", "shop-buy", "shop-intro", "stairs-family", "stairs-meet", "stairs-pets", "street-hello", "street-hungry", "street-numbers", "street-practice", "taxi-luggage", "taxi-visitor", "taxi-way", "tea-intro", "tea-shift", "tea-tv", "tea-weather", "warehouse-intro", "warehouse-shift"]);
   });
 
   it("renders every slot combination and tags its words", () => {
@@ -53,7 +53,7 @@ describe("build-course (real content)", () => {
     expect(course!.conceptNames.tea).toBe("tea");
     expect(course!.conceptNames.thanks).toBe("Thank you");
     expect(course!.stageWords["1"]).toHaveLength(150);
-    expect(course!.notes.map((n) => n.id)).toEqual(["hao-ma", "lao-xiao", "le", "bukeqi", "bei", "ge", "kuai", "nali", "de", "dian", "mei", "tai"]);
+    expect(course!.notes.map((n) => n.id)).toEqual(["hao-ma", "lao-xiao", "le", "bukeqi", "bei", "ge", "kuai", "nali", "de", "dian", "mei", "tai", "hui-neng", "zai"]);
     expect(course!.world.mentor).toEqual({ npc: "wang", after: "street-hello" });
     expect(course!.learnerFtl).toContain("note-bei-title");
   });
@@ -97,11 +97,36 @@ describe("build-course (real content)", () => {
     expect(note).toContain("张");
   });
 
+  it("turns the HSK 1 coverage check on", () => {
+    const cfg = JSON.parse(readFileSync(join(CONTENT, "courses", "zh-china-en.json"), "utf8"));
+    expect(cfg.checks.coverage).toBe(true);
+  });
+
+  it("adds the tea house off Station Road and the stairwell off your room", () => {
+    const { places, npcs } = course!.world;
+    expect(places.tea_house.links).toEqual(["station_road"]);
+    expect(places.station_road.links).toContain("tea_house");
+    expect(places.stairs.links).toEqual(["room"]);
+    expect(npcs.teaboss.place).toBe("tea_house");
+    expect(npcs.neighbour.place).toBe("stairs");
+    expect(npcs.classmate.place).toBe("school");
+    expect(npcs.driver.place).toBe("station");
+  });
+
+  it("pays for the new jobs, and the luggage goes into or out of the taxi", () => {
+    const tea = course!.scenes.find((s) => s.id === "tea-shift")!;
+    const taxi = course!.scenes.find((s) => s.id === "taxi-luggage")!;
+    expect(tea.repeatable && taxi.repeatable).toBe(true);
+    expect(tea.exchanges.reduce((n, ex) => n + ex.pay, 0)).toBeGreaterThan(0);
+    expect(taxi.exchanges[0].variants["amount=three|way=board"].reply.text).toContain("上出租车");
+    expect(taxi.exchanges[0].variants["amount=three|way=alight"].reply.text).toContain("下出租车");
+  });
+
   it("puts your room and the warehouse on Market Street, and keeps Main Street's menu at 7", () => {
     const { places, npcs, mentor } = course!.world;
     expect([...places.market.links].sort()).toEqual(["room", "shop", "station_road", "street", "warehouse"]);
     expect(places.market.links.length + course!.scenes.filter((s) => s.place === "market").length).toBe(7);
-    expect(places.room.links).toEqual(["market"]);
+    expect(places.room.links).toEqual(["market", "stairs"]);
     expect(places.street.links).toContain("market");
     const mentorHere = mentor && npcs[mentor.npc].place === "street" ? 1 : 0;
     expect(places.street.links.length + course!.scenes.filter((s) => s.place === "street").length + mentorHere).toBe(7);

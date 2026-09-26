@@ -9,7 +9,8 @@
     "sizes": ["big", "small"],
     "destinations": ["hospital", "school", "station"],
     "foods": ["rice", "vegetables", "noodles"],
-    "goods": ["apple", "cup", "book"]
+    "goods": ["apple", "cup", "book"],
+    "ways": ["board", "alight"]
   },
   "numbers": {
     "two": 2,
