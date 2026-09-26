@@ -1,0 +1,13 @@
+{
+  "name": "@silver-tongue/vn-web",
+  "private": true,
+  "type": "module",
+  "scripts": { "build": "node build.mjs" },
+  "dependencies": {
+    "@silver-tongue/core": "*",
+    "@silver-tongue/view": "*",
+    "@silver-tongue/web-common": "*",
+    "preact": "^10.26.0"
+  },
+  "devDependencies": { "esbuild": "^0.28.2" }
+}

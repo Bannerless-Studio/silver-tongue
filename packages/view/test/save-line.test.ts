@@ -2,7 +2,7 @@ import { deflateRawSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 import { newGame, serialize } from "@silver-tongue/core";
 import { fixtureCourse } from "@silver-tongue/core/testing";
-import { decodeSave, encodeSave } from "../src/save-line";
+import { decodeSave, encodeSave } from "../src/index";
 
 describe("save line", () => {
   const course = fixtureCourse();

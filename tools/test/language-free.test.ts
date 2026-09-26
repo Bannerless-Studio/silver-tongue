@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 const REPO = fileURLToPath(new URL("../..", import.meta.url));
 const PACKAGES = join(REPO, "packages");
-const FIXTURES = join(PACKAGES, "core", "src", "testing");
+const FIXTURES = [join(PACKAGES, "core", "src", "testing"), join(PACKAGES, "view", "src", "testing.ts")];
 
 /** Every file under packages/<name>/src, test fixtures left out. */
 function sources(): string[] {
@@ -13,7 +13,7 @@ function sources(): string[] {
   const walk = (dir: string) => {
     for (const f of readdirSync(dir)) {
       const p = join(dir, f);
-      if (p === FIXTURES) continue;
+      if (FIXTURES.includes(p)) continue;
       if (statSync(p).isDirectory()) walk(p);
       else out.push(p);
     }

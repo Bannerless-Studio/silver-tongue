@@ -36,3 +36,4 @@ dialog p { color: var(--muted); }
 dialog textarea { width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 0.5rem; font: 13px ui-monospace, monospace; word-break: break-all; }
 #dialog-body { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.8rem; }
 #dialog-body button.game { text-align: left; }
+#vn-link { color: var(--accent); font-size: 0.9rem; }

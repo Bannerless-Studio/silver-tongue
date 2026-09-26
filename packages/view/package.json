@@ -1,0 +1,7 @@
+{
+  "name": "@silver-tongue/view",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts", "./testing": "./src/testing.ts" },
+  "dependencies": { "@fluent/bundle": "^0.18.0", "@silver-tongue/core": "*" }
+}

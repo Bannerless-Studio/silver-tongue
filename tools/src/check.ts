@@ -5,7 +5,7 @@ export interface CheckInput {
   course: Course;
   /** stage number -> pack levels it covers */
   stages: Record<string, string[]>;
-  checks: { coverage: boolean; audio: boolean };
+  checks: { coverage: boolean; audio: boolean; art?: boolean };
   /** message ids available in the learner-language files */
   learnerIds: Set<string>;
   /** message ids the front ends need */

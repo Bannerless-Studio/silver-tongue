@@ -1,5 +1,5 @@
 name: pages
-# Builds the browser game (packages/tui-web) and deploys it to GitHub Pages on every push to main.
+# Builds the site (the visual novel at /, the text game at /text/) and deploys it to GitHub Pages on every push to main.
 # Needs Pages turned on for the repository with "GitHub Actions" as the source.
 
 on:
@@ -27,10 +27,10 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build:course
-      - run: npm run build:web
+      - run: npm run build:site
       - uses: actions/upload-pages-artifact@v4
         with:
-          path: packages/tui-web/dist
+          path: site
 
   deploy:
     needs: build

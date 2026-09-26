@@ -8,7 +8,11 @@ The first course is Mandarin (HSK 1), in a Chinese city, explained in English.
 
 ## Play in the browser
 
-https://bannerless-studio.github.io/silver-tongue/ — the same game, with an on-screen key bar on phones. Games save in the browser; Export and Import move a game between the browser and the terminal.
+https://bannerless-studio.github.io/silver-tongue/ — the same game as a visual novel: drawn places, the people you talk to as silhouettes, and any word a tap away. Play it on a phone held sideways.
+
+https://bannerless-studio.github.io/silver-tongue/text/ — the text version, with an on-screen key bar on phones.
+
+Games save in the browser and are the same in both pages; Export and Import move a game between the browser and the terminal.
 
 ## Play in the terminal
 
@@ -43,11 +47,11 @@ Needs Node 22 or newer.
 npm install
 npm run build:course
 npm run play        # the terminal game
-npm run build:web   # the browser game in packages/tui-web/dist (serve it: npx serve packages/tui-web/dist)
+npm run build:site  # both browser pages in site/: the visual novel at /, the text game at /text/ (serve it: npx serve site)
 npm run bots        # scripted players through the course
 ```
 
-The browser page fetches its course files, so it needs a web server; opening `index.html` straight from disk no longer works.
+The browser pages fetch their course files, so it needs a web server; opening `index.html` straight from disk no longer works.
 
 ## License
 

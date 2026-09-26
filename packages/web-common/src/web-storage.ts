@@ -1,5 +1,5 @@
 import { newGame, parseSave, serialize, type Course, type GameState } from "@silver-tongue/core";
-import { parseSettings, type PlayerSettings } from "@silver-tongue/tui";
+import { parseSettings, type PlayerSettings } from "@silver-tongue/view";
 
 /** The part of localStorage the game uses; `keys` lists every stored key. */
 export interface KeyValue {

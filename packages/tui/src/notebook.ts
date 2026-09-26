@@ -1,56 +1,29 @@
-import { PLAYER_MARK, wordState, type Course, type GameState, type WordState } from "@silver-tongue/core";
+import type { Course, GameState, WordState } from "@silver-tongue/core";
+import { notebookEntries, type Text } from "@silver-tongue/view";
 import type { StyledLine } from "./terminal";
-import type { Text } from "./text";
 
 const MARK: Record<WordState, string> = { unseen: " ", met: "○", shaky: "◐", known: "●" };
 
-/**
- * The notebook: progress on each stage's word list, the words heard so far grouped by the place
- * they were first heard (in world order), and the mentor notes already explained.
- */
+/** The notebook as terminal lines (see notebookEntries for what it holds). */
 export function notebookLines(course: Course, state: GameState, t: Text, now: number): StyledLine[] {
-  const out: StyledLine[] = [];
-  const stages = [...new Set(course.scenes.map((s) => String(s.stage)))].sort();
-  for (const stage of stages) {
-    const list = course.stageWords[stage] ?? [];
-    const states = list.map((w) => wordState(state.words[w], now));
-    out.push([
-      {
-        text: t("notebook-progress", {
-          stage,
-          known: states.filter((s) => s === "known").length,
-          total: list.length,
-          heard: states.filter((s) => s !== "unseen").length,
-        }),
-        bold: true,
-      },
-    ]);
-  }
-
-  const heard = Object.keys(state.words).filter((w) => course.words[w]);
-  if (!heard.length) out.push([], [{ text: t("notebook-empty"), dim: true }]);
-  const places = [...Object.keys(course.world.places), ""];
-  for (const place of places) {
-    const words = heard.filter((w) => (state.words[w].first?.place ?? "") === place);
-    if (!words.length) continue;
-    out.push([], [{ text: place ? t(`place-${place}`) : t("notebook-elsewhere"), color: "cyan", bold: true }]);
-    for (const id of words) {
-      const w = course.words[id];
-      const rec = state.words[id];
+  const nb = notebookEntries(course, state, t, now);
+  const out: StyledLine[] = nb.progress.map((text) => [{ text, bold: true }]);
+  if (nb.empty) out.push([], [{ text: t("notebook-empty"), dim: true }]);
+  for (const g of nb.groups) {
+    out.push([], [{ text: g.title, color: "cyan", bold: true }]);
+    for (const w of g.words) {
       out.push([
-        { text: `${MARK[wordState(rec, now)]} ` },
-        { text: w.w, bold: true },
-        ...(w.readings?.length ? [{ text: ` ${w.readings.join(" ")}`, color: "yellow" as const }] : []),
+        { text: `${MARK[w.state]} ` },
+        { text: w.text, bold: true },
+        ...(w.readings.length ? [{ text: ` ${w.readings.join(" ")}`, color: "yellow" as const }] : []),
         { text: ` — ${w.gloss}` },
       ]);
-      // Saves from before 0.7.0 may hold the name's mark instead of the name.
-      if (rec.first) out.push([{ text: `    ${rec.first.line.split(PLAYER_MARK).join(state.player ?? "")}`, dim: true }]);
+      if (w.first !== undefined) out.push([{ text: `    ${w.first}`, dim: true }]);
     }
   }
-
-  if (state.notes.read.length) {
+  if (nb.notes.length) {
     out.push([], [{ text: t("notebook-notes"), color: "cyan", bold: true }]);
-    for (const id of state.notes.read) out.push([{ text: t(`note-${id}-title`), bold: true }], [{ text: t(`note-${id}`) }], []);
+    for (const n of nb.notes) out.push([{ text: n.title, bold: true }], [{ text: n.text }], []);
   }
   return out;
 }

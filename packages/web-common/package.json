@@ -1,0 +1,7 @@
+{
+  "name": "@silver-tongue/web-common",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": { "@silver-tongue/core": "*", "@silver-tongue/view": "*" }
+}

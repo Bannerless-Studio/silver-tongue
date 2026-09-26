@@ -107,12 +107,40 @@ export const UI_KEYS: Record<string, string[]> = {
   ...Object.fromEntries(REJECT_REASONS.map((c) => [`reject-${c}`, []])),
 };
 
+/** Message ids the visual novel uses, with their variables; checked like UI_KEYS. */
+export const VN_UI_KEYS: Record<string, string[]> = {
+  "vn-tagline": [],
+  "vn-continue": [],
+  "vn-new-game": [],
+  "vn-tap": [],
+  "vn-notebook": [],
+  "vn-backlog": [],
+  "vn-settings": [],
+  "vn-games": [],
+  "vn-menu": [],
+  "vn-play-text": [],
+  "vn-play-visual": [],
+  "vn-replay": [],
+  "vn-slow": [],
+  "vn-meaning": [],
+  "vn-undo": [],
+  "vn-send": [],
+  "vn-name-go": [],
+  "vn-sound": [],
+  "vn-day": ["day"],
+  "vn-parcel": [],
+  "vn-rent-late": [],
+  "vn-turn-phone": [],
+  "vn-dismiss": [],
+  "vn-play-word": [],
+};
+
 /** Every UI message that is missing or can't be formatted with the variables the TUI passes. */
 export function uiTextProblems(ftl: string, locale: string): string[] {
   const bundle = new FluentBundle(locale, { useIsolating: false });
   bundle.addResource(new FluentResource(ftl));
   const problems: string[] = [];
-  for (const [id, vars] of Object.entries(UI_KEYS)) {
+  for (const [id, vars] of Object.entries({ ...UI_KEYS, ...VN_UI_KEYS })) {
     const msg = bundle.getMessage(id);
     if (!msg?.value) {
       problems.push(`learner text: missing "${id}"`);

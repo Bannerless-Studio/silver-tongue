@@ -138,3 +138,29 @@ keys-o = [o] settings
 ## Choosing a course before the game starts
 start-title = What do you want to learn?
 start-ask = Number (enter to quit):
+
+# Visual novel
+vn-tagline = You arrive speaking pidgin; you leave with a silver tongue.
+vn-continue = Continue
+vn-new-game = New game
+vn-tap = Tap to continue
+vn-notebook = Notebook
+vn-backlog = What was said
+vn-settings = Settings
+vn-games = Games
+vn-menu = Menu
+vn-play-text = Play as text
+vn-play-visual = Visual novel
+vn-replay = Say it again
+vn-slow = Say it slowly
+vn-meaning = What does it mean?
+vn-undo = Take back a tile
+vn-send = Say it
+vn-name-go = That's me
+vn-sound = Sound
+vn-day = Day { $day }
+vn-parcel = Carrying a parcel
+vn-rent-late = Rent is late
+vn-turn-phone = Turn your phone sideways for a bigger view.
+vn-dismiss = Got it
+vn-play-word = Hear it

@@ -128,6 +128,10 @@ describe("build-course (real content)", () => {
     expect(note).toContain("张");
   });
 
+  it("turns the art check on", () => {
+    expect(JSON.parse(readFileSync(join(CONTENT, "courses/zh-china.json"), "utf8")).checks.art).toBe(true);
+  });
+
   it("turns the audio check on", () => {
     expect(JSON.parse(readFileSync(join(CONTENT, "courses/zh-china.json"), "utf8")).checks.audio).toBe(true);
   });
@@ -229,6 +233,11 @@ describe("build-course (real content)", () => {
 });
 
 describe("build-course (broken content)", () => {
+  it("with art on, fails on a missing drawing", () => {
+    const { errors } = buildChanged((dir) => unlinkSync(join(dir, "settings/china-city/art/npcs/wang.svg")));
+    expect(errors).toContain("settings/china-city/art/npcs/wang.svg: missing");
+  });
+
   it("with audio on, fails on a missing clip file and passes when all exist", () => {
     const { clips } = buildCourse(CONTENT, "zh-china");
     expect(clips.length).toBeGreaterThan(500);
@@ -344,6 +353,16 @@ describe("build-course (broken content)", () => {
 });
 
 describe("courses and the catalog", () => {
+  it("copies the setting's art next to the course", () => {
+    const out = mkdtempSync(join(tmpdir(), "st-out-"));
+    temps.push(out);
+    const built = buildAll(CONTENT, "zh-china");
+    writeCourses(out, built.builds, built.catalog, "zh-china");
+    expect(existsSync(join(out, "zh-china/art/art.json"))).toBe(true);
+    expect(existsSync(join(out, "zh-china/art/places/street.svg"))).toBe(true);
+    expect(existsSync(join(out, "zh-china/art/npcs/wang.svg"))).toBe(true);
+  });
+
   it("builds the course for its reading language with its profile and old ids", () => {
     const { course } = buildCourse(CONTENT, "zh-china");
     expect(course!.id).toBe("zh-china");
