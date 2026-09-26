@@ -19,6 +19,8 @@ npx silver-tongue --resume   # choose one of your saved games
 npx silver-tongue --export   # print the game you played last as one line of text
 npx silver-tongue --import <line>   # add a game exported elsewhere (nothing is overwritten)
 npx silver-tongue --import - < game.txt   # the same, reading the line from a file or a paste
+npx silver-tongue --learn zh  # choose what to learn (a language or course id); remembered
+npx silver-tongue --read en   # choose the language the game is written in; remembered
 ```
 
 | Key | Does |
@@ -27,6 +29,7 @@ npx silver-tongue --import - < game.txt   # the same, reading the line from a fi
 | `w` | word help: look up a word from the last line or the replies; `s` explains the whole sentence |
 | `enter` / `⌫` | say / undo, when building a reply from tiles |
 | `n` | notebook: every word you've heard, where you first heard it, and Old Wang's notes |
+| `o` | settings: what you learn, what the game is written in, and sound |
 | `esc` | back |
 | `q` | save and quit (from the menu) |
 

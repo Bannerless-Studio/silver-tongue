@@ -55,4 +55,10 @@ describe("cli", () => {
     expect(pickAnswer("4", 3)).toBe("again");
     expect(pickAnswer("x", 3)).toBe("again");
   });
+
+  it("takes --learn and --read with any mode", () => {
+    expect(parseFlags(["--learn", "zh", "--read", "en"])).toEqual({ mode: "continue", learn: "zh", read: "en" });
+    expect(parseFlags(["--new", "--learn", "zh-china"])).toEqual({ mode: "new", learn: "zh-china" });
+    expect(parseFlags(["--export", "--learn", "zh"])).toEqual({ mode: "export", learn: "zh" });
+  });
 });

@@ -1,32 +1,25 @@
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { createInterface } from "node:readline/promises";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-import { createCore, mulberry32, type Course } from "@silver-tongue/core";
-import { decodeSave, encodeSave, makeText, sessionLines, startApp } from "@silver-tongue/tui";
+import { createCore, mulberry32, type CatalogEntry, type Course } from "@silver-tongue/core";
+import {
+  chooseStart,
+  courseLabels,
+  decodeSave,
+  encodeSave,
+  learnerFor,
+  makeText,
+  sessionLines,
+  startApp,
+  type PlayerSettings,
+} from "@silver-tongue/tui";
+import { clipsDir, courseFile, coursesDir, readCatalog } from "./catalog";
 import { parseFlags, pickAnswer, USAGE } from "./cli";
 import { createNodeAudio, nodeAudioDeps } from "./node-audio";
 import { createNodeTerminal } from "./node-terminal";
 import pkg from "../package.json" with { type: "json" };
-import { listSessions, migrateLegacySave, newSessionPath, sessionsDir } from "./sessions";
-import { configDir, loadSave, writeSave } from "./storage";
-
-const COURSE = "zh-china-en";
-
-/** Next to the bundle when installed; the repo's dist/ when run from source. */
-function coursePath(given?: string): string {
-  if (given) return given;
-  const candidates = [
-    new URL(`./courses/${COURSE}/course.json`, import.meta.url),
-    new URL(`../../../dist/courses/${COURSE}/course.json`, import.meta.url),
-  ].map((u) => fileURLToPath(u));
-  const found = candidates.find((p) => existsSync(p));
-  if (!found) {
-    console.error(`No built course found. Run: npm run build:course`);
-    process.exit(1);
-  }
-  return found;
-}
+import { listSessions, migrateCourseSessions, newSessionPath, sessionsDir } from "./sessions";
+import { configDir, loadSave, loadSettings, saveSettings, writeSave } from "./storage";
 
 const [major] = process.versions.node.split(".").map(Number);
 if (major < 22) {
@@ -47,27 +40,83 @@ if (flags.mode === "error") {
   console.error(`silver-tongue: ${flags.message}\n\n${USAGE}`);
   process.exit(2);
 }
+/** The flags of a game to play (help, version and errors have exited above). */
+const game = flags;
 
-const courseFile = coursePath(flags.coursePath);
-const course = JSON.parse(readFileSync(courseFile, "utf8")) as Course;
+const root = configDir();
 
-/** Clips: in audio/ next to the course when installed; the repo's content/audio/zh when run from source. */
-function audioDir(): string {
-  const beside = join(dirname(courseFile), "audio");
-  const source = fileURLToPath(new URL("../../../content/audio/zh", import.meta.url));
-  return existsSync(beside) || !existsSync(source) ? beside : source;
+/** A course to play: its file, its clips, and where it sits in the catalog (none for a course file given by path). */
+interface Chosen {
+  course: Course;
+  clips: string;
+  catalog: CatalogEntry[];
+  /** the catalog's folder; absent for a course file given by path, which can't switch */
+  dir?: string;
+}
+
+const readCourse = (path: string) => JSON.parse(readFileSync(path, "utf8")) as Course;
+
+function loadCourse(dir: string, entry: CatalogEntry, learner: string, catalog: CatalogEntry[]): Chosen {
+  return { course: readCourse(courseFile(dir, entry.id, learner)), clips: clipsDir(dir, entry), catalog, dir };
+}
+
+/** The course: a file given by path, else the one --learn, the settings or the player choose. */
+async function start(): Promise<Chosen> {
+  if (game.coursePath) {
+    // A course built from source: no catalog, no settings, no switching.
+    return { course: readCourse(game.coursePath), clips: join(dirname(game.coursePath), "audio"), catalog: [] };
+  }
+  const dir = coursesDir();
+  if (!dir) {
+    console.error("No built courses found. Run: npm run build:course");
+    process.exit(1);
+  }
+  const catalog = readCatalog(dir);
+  const settings = loadSettings(root);
+  const picked = chooseStart(catalog, settings, { learn: game.learn, read: game.read });
+  if ("error" in picked) {
+    console.error(`silver-tongue: ${picked.error}\n\n${USAGE}`);
+    process.exit(2);
+  }
+  const entry = picked.ask ? await askCourse(dir, catalog, settings) : picked.course;
+  const learner = picked.ask ? learnerFor(entry, game.read, settings.learner) : picked.learner;
+  saveSettings(root, { course: entry.id, learner });
+  return loadCourse(dir, entry, learner, catalog);
+}
+
+/** A numbered list of courses, named in the saved reading language when a course has it. */
+async function askCourse(dir: string, catalog: CatalogEntry[], settings: PlayerSettings): Promise<CatalogEntry> {
+  const labelled = catalog.find((e) => settings.learner !== undefined && e.learners.includes(settings.learner)) ?? catalog[0];
+  const code = learnerFor(labelled, settings.learner);
+  const t = makeText(readCourse(courseFile(dir, labelled.id, code)).learnerFtl, code);
+  console.log(t("start-title"));
+  for (const line of courseLabels(catalog, t)) console.log(line);
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    for (;;) {
+      const pick = pickAnswer(await rl.question(`${t("start-ask")} `), catalog.length);
+      if (pick === "cancel") process.exit(0);
+      if (pick !== "again") return catalog[pick];
+    }
+  } finally {
+    rl.close();
+  }
+}
+
+/** The course's sessions folder, with saves made under its earlier ids moved in. */
+function sessionsFor(course: Course): string {
+  try {
+    migrateCourseSessions(root, course);
+  } catch {
+    // can't move them: the folder is probably unwritable too, and loadSave will say so
+  }
+  return sessionsDir(root, course.id);
 }
 
 /** --export and --import work on the sessions folder and exit without starting the game. */
-async function exportOrImport(mode: "export" | "import", line: string): Promise<never> {
+async function exportOrImport({ course }: Chosen, mode: "export" | "import", line: string): Promise<never> {
   const t = makeText(course.learnerFtl, course.learner);
-  const root = configDir();
-  const dir = sessionsDir(root, course.id);
-  try {
-    migrateLegacySave(root, course.id);
-  } catch {
-    // listed below as no saves, or the write fails and says so
-  }
+  const dir = sessionsFor(course);
   if (mode === "export") {
     const last = listSessions(dir, course)[0];
     if (!last) {
@@ -92,22 +141,21 @@ async function exportOrImport(mode: "export" | "import", line: string): Promise<
   console.log(t("import-done", { game: summary.replace(/^1\) /, "") }));
   process.exit(0);
 }
-if (flags.mode === "export" || flags.mode === "import") await exportOrImport(flags.mode, flags.mode === "import" ? flags.line : "");
+
+/** The course's most recent session, or a new one. */
+function lastOrNew(course: Course): string {
+  const dir = sessionsFor(course);
+  return listSessions(dir, course)[0]?.path ?? newSessionPath(dir, Date.now());
+}
 
 /** Which save file to play: the last session, a new one, or one the player picks. */
-async function chooseSave(): Promise<string> {
+async function chooseSave({ course }: Chosen): Promise<string> {
   // SILVER_TONGUE_SAVE pins one save file (for tests and scripts); sessions don't apply.
   if (process.env.SILVER_TONGUE_SAVE) return process.env.SILVER_TONGUE_SAVE;
-  const root = configDir();
-  const dir = sessionsDir(root, course.id);
-  try {
-    migrateLegacySave(root, course.id);
-  } catch {
-    // can't move it: the sessions folder is probably unwritable too, and loadSave will say so
-  }
+  if (game.mode !== "new" && game.mode !== "resume") return lastOrNew(course);
+  const dir = sessionsFor(course);
+  if (game.mode === "new") return newSessionPath(dir, Date.now());
   const sessions = listSessions(dir, course);
-  if (flags.mode !== "new" && flags.mode !== "resume") return sessions[0]?.path ?? newSessionPath(dir, Date.now());
-  if (flags.mode === "new") return newSessionPath(dir, Date.now());
   const t = makeText(course.learnerFtl, course.learner);
   if (!sessions.length) {
     console.log(t("resume-none"));
@@ -127,15 +175,16 @@ async function chooseSave(): Promise<string> {
   }
 }
 
-const savePath = await chooseSave();
-const { state, notice, readOnly } = loadSave(course, savePath);
-const core = createCore(course, state, { now: Date.now, rng: mulberry32(Date.now() >>> 0) });
+const chosen = await start();
+if (game.mode === "export" || game.mode === "import") await exportOrImport(chosen, game.mode, game.mode === "import" ? game.line : "");
+const firstSave = await chooseSave(chosen);
+
 const term = createNodeTerminal();
-const audio = createNodeAudio(nodeAudioDeps(audioDir()));
+let audio: ReturnType<typeof createNodeAudio> | undefined;
 
 // Whatever happens, give the player their terminal back.
 const bail = (code: number, error?: unknown) => {
-  audio.stop(); // or a player would keep talking after the game has gone
+  audio?.stop(); // or a player would keep talking after the game has gone
   term.close();
   if (error) console.error(error);
   process.exit(code);
@@ -145,14 +194,35 @@ process.on("unhandledRejection", (e) => bail(1, e));
 process.on("SIGTERM", () => bail(143));
 process.on("SIGHUP", () => bail(129));
 
-startApp({
-  course,
-  core,
-  term,
-  now: Date.now,
-  notice,
-  version: pkg.version,
-  audio,
-  save: readOnly ? undefined : (s) => writeSave(savePath, s),
-  quit: () => bail(0),
-});
+function play(session: Chosen, savePath: string) {
+  audio?.stop();
+  const { state, notice, readOnly } = loadSave(session.course, savePath);
+  const core = createCore(session.course, state, { now: Date.now, rng: mulberry32(Date.now() >>> 0) });
+  audio = createNodeAudio(nodeAudioDeps(session.clips));
+  const { dir } = session;
+  startApp({
+    course: session.course,
+    core,
+    term,
+    now: Date.now,
+    notice,
+    version: pkg.version,
+    audio,
+    save: readOnly ? undefined : (s) => writeSave(savePath, s),
+    quit: () => bail(0),
+    settings: dir
+      ? {
+          courses: session.catalog,
+          switchTo: (id, learner) => {
+            const entry = session.catalog.find((e) => e.id === id)!;
+            saveSettings(root, { course: id, learner });
+            const next = loadCourse(dir, entry, learner, session.catalog);
+            // Another reading language keeps the game; another course continues its last one.
+            play(next, id === session.course.id ? savePath : lastOrNew(next.course));
+          },
+        }
+      : undefined,
+  });
+}
+
+play(chosen, firstSave);

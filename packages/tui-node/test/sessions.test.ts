@@ -1,10 +1,10 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import { newGame, serialize } from "@silver-tongue/core";
 import { fixtureCourse } from "@silver-tongue/core/testing";
-import { listSessions, migrateLegacySave, newSessionPath, sessionsDir } from "../src/sessions";
+import { listSessions, migrateCourseSessions, migrateLegacySave, newSessionPath, sessionsDir } from "../src/sessions";
 
 const course = fixtureCourse();
 const temps: string[] = [];
@@ -70,5 +70,35 @@ describe("sessions", () => {
     migrateLegacySave(root, course.id); // nothing left to move
     expect(listSessions(sessionsDir(root, course.id), course)).toHaveLength(1);
     expect(readFileSync(only.path, "utf8")).toContain('"day":4');
+  });
+
+  it("moves every alias file, renaming clashes and keeping times", () => {
+    const root = tempRoot();
+    const oldDir = sessionsDir(root, "old");
+    const newDir = sessionsDir(root, "new");
+    mkdirSync(oldDir, { recursive: true });
+    mkdirSync(newDir, { recursive: true });
+    writeFileSync(join(oldDir, "2026-09-25-100000.json"), "a");
+    writeFileSync(join(oldDir, "2026-09-25-100000.json.invalid-backup"), "b");
+    writeFileSync(join(newDir, "2026-09-25-100000.json"), "c");
+    utimesSync(join(oldDir, "2026-09-25-100000.json"), 1000, 1000);
+    writeFileSync(join(root, "silver-tongue", "old.json"), "legacy");
+    utimesSync(join(root, "silver-tongue", "old.json"), 2000, 2000);
+    migrateCourseSessions(root, { id: "new", aliases: ["old"] });
+    const files = readdirSync(newDir).sort();
+    expect(files).toHaveLength(4);
+    expect(readFileSync(join(newDir, "2026-09-25-100000.json"), "utf8")).toBe("c");
+    expect(readFileSync(join(newDir, "2026-09-25-100000-2.json"), "utf8")).toBe("a");
+    expect(statSync(join(newDir, "2026-09-25-100000-2.json")).mtimeMs).toBe(1_000_000);
+    expect(readFileSync(join(newDir, "2026-09-25-100000.json.invalid-backup"), "utf8")).toBe("b");
+    expect(readFileSync(join(newDir, "1970-01-01-003320.json"), "utf8")).toBe("legacy");
+    expect(existsSync(oldDir)).toBe(false);
+    expect(existsSync(join(root, "silver-tongue", "old.json"))).toBe(false);
+  });
+
+  it("leaves things as they are when there is nothing to move", () => {
+    const root = tempRoot();
+    migrateCourseSessions(root, { id: "new", aliases: ["old"] });
+    expect(existsSync(sessionsDir(root, "new"))).toBe(false);
   });
 });

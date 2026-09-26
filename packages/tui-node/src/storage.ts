@@ -2,6 +2,7 @@ import { closeSync, existsSync, fsyncSync, mkdirSync, openSync, readFileSync, re
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { newGame, parseSave, serialize, type Course, type GameState } from "@silver-tongue/core";
+import { parseSettings, type PlayerSettings } from "@silver-tongue/tui";
 
 /** Where saves live: $XDG_CONFIG_HOME or ~/.config, and %APPDATA% on Windows. */
 export function configDir(env: NodeJS.ProcessEnv = process.env, platform = process.platform, home = homedir()): string {
@@ -40,17 +41,14 @@ export function loadSave(course: Course, path: string): Loaded {
   }
 }
 
-/**
- * Writes the save so that a crash or power loss leaves the old save or the new one, never
- * half of one. Returns false if it couldn't be written.
- */
-export function writeSave(path: string, state: GameState): boolean {
+/** Writes a file so that a crash or power loss leaves the old one or the new one, never half of one. False if it couldn't. */
+export function writeFileAtomic(path: string, text: string): boolean {
   try {
     mkdirSync(dirname(path), { recursive: true });
     const tmp = `${path}.tmp`;
     const fd = openSync(tmp, "w");
     try {
-      writeSync(fd, serialize(state));
+      writeSync(fd, text);
       fsyncSync(fd);
     } finally {
       closeSync(fd);
@@ -60,4 +58,25 @@ export function writeSave(path: string, state: GameState): boolean {
   } catch {
     return false;
   }
+}
+
+/** Writes the save atomically. Returns false if it couldn't be written. */
+export function writeSave(path: string, state: GameState): boolean {
+  return writeFileAtomic(path, serialize(state));
+}
+
+/** The player's settings file, apart from every course's saves. */
+export const settingsPath = (configRoot: string) => join(configRoot, "silver-tongue", "settings.json");
+
+/** The player's settings; a missing or unreadable file means none. */
+export function loadSettings(configRoot: string): PlayerSettings {
+  try {
+    return parseSettings(readFileSync(settingsPath(configRoot), "utf8"));
+  } catch {
+    return {};
+  }
+}
+
+export function saveSettings(configRoot: string, settings: PlayerSettings): boolean {
+  return writeFileAtomic(settingsPath(configRoot), JSON.stringify(settings));
 }

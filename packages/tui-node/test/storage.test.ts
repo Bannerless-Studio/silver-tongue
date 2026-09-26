@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import { newGame, serialize } from "@silver-tongue/core";
 import { fixtureCourse } from "@silver-tongue/core/testing";
-import { configDir, loadSave, writeSave } from "../src/storage";
+import { configDir, loadSave, loadSettings, saveSettings, settingsPath, writeSave } from "../src/storage";
 
 const course = fixtureCourse();
 const root = mkdtempSync(join(tmpdir(), "st-save-"));
@@ -50,5 +50,20 @@ describe("storage", () => {
     const blocked = join(root, "file");
     writeFileSync(blocked, serialize(newGame(course)));
     expect(writeSave(join(blocked, "game.json"), newGame(course))).toBe(false);
+  });
+
+  it("saves settings and reads them back", () => {
+    const dir = mkdtempSync(join(root, "settings-"));
+    expect(saveSettings(dir, { course: "zh-china", learner: "en" })).toBe(true);
+    expect(loadSettings(dir)).toEqual({ course: "zh-china", learner: "en" });
+    expect(readdirSync(join(dir, "silver-tongue"))).toEqual(["settings.json"]);
+  });
+
+  it("reads a missing or broken settings file as no settings", () => {
+    const dir = mkdtempSync(join(root, "settings-"));
+    expect(loadSettings(dir)).toEqual({});
+    mkdirSync(join(dir, "silver-tongue"), { recursive: true });
+    writeFileSync(settingsPath(dir), "{oops");
+    expect(loadSettings(dir)).toEqual({});
   });
 });
