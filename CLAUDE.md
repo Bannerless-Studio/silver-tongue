@@ -42,3 +42,4 @@ npm run bundle -w silver-tongue   # build packages/tui-node/dist for npm/npx
 - Bonus (off-list) words go in `content/languages/<lang>/extra-words.json` with glosses in `content/learner/<l>/glosses-<lang>-extra.ftl`.
 - Every UI string the TUI uses must be listed in `packages/tui/src/text.ts` `UI_KEYS`.
 - Code ported from vocab-engine is used with its author's consent; note the origin in a comment.
+- Every release adds its `CHANGELOG.md` entry (newest first, `## <version> (<date>)`, plain words for players) before the `release:` commit.

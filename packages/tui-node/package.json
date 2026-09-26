@@ -3,7 +3,7 @@
   "version": "0.12.2",
   "description": "Learn a language by living in it: a text game for the terminal.",
   "type": "module",
-  "repository": { "type": "git", "url": "git+https://github.com/jamil314/silver-tongue.git", "directory": "packages/tui-node" },
+  "repository": { "type": "git", "url": "git+https://github.com/Bannerless-Studio/silver-tongue.git", "directory": "packages/tui-node" },
   "license": "MIT",
   "engines": { "node": ">=22" },
   "bin": { "silver-tongue": "dist/silver-tongue.mjs" },

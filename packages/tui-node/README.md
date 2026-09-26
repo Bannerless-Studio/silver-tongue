@@ -8,7 +8,7 @@ The first course is Mandarin (HSK 1), in a Chinese city, explained in English.
 
 ## Play in the browser
 
-https://jamil314.github.io/silver-tongue/ — the same game, with an on-screen key bar on phones. Games save in the browser; Export and Import move a game between the browser and the terminal.
+https://bannerless-studio.github.io/silver-tongue/ — the same game, with an on-screen key bar on phones. Games save in the browser; Export and Import move a game between the browser and the terminal.
 
 ## Play in the terminal
 
@@ -32,7 +32,7 @@ npx silver-tongue --import - < game.txt   # the same, reading the line from a fi
 
 Progress saves automatically. Each game is one file in `~/.config/silver-tongue/sessions/<course>/` (or under `$XDG_CONFIG_HOME`, or `%APPDATA%` on Windows); a save from 0.2.0 or earlier is moved there on first run. If a save can't be read, it is kept next to it as `<name>.json.invalid-backup` and a new game starts. If saving fails, the game says so and plays on without saving.
 
-Needs Node 22 or newer. Source, issues and other ways to play: https://github.com/jamil314/silver-tongue
+Needs Node 22 or newer. Source, issues and other ways to play: https://github.com/Bannerless-Studio/silver-tongue
 
 ## License
 

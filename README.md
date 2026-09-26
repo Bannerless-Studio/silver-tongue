@@ -8,7 +8,7 @@ The first course is Mandarin (HSK 1), in a Chinese city, explained in English.
 
 ## Play in the browser
 
-https://jamil314.github.io/silver-tongue/ — the same game, with an on-screen key bar on phones. Games save in the browser; Export and Import move a game between the browser and the terminal.
+https://bannerless-studio.github.io/silver-tongue/ — the same game, with an on-screen key bar on phones. Games save in the browser; Export and Import move a game between the browser and the terminal.
 
 ## Play in the terminal
 
