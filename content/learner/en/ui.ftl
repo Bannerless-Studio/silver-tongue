@@ -24,10 +24,10 @@ menu-sleep = Sleep (end the day)
 menu-quit = Save and quit
 
 keys-explore = [{ $keys }] choose · [n] notebook · [q] quit
-keys-pick = [{ $keys }] reply · [w] word help · [n] notebook
-keys-tiles = [{ $keys }] add · [⌫] undo · [enter] say · [w] help · [n] notebook
-keys-help = [{ $keys }] look up · [esc] back
-keys-help-sentence = [{ $keys }] look up · [s] whole sentence · [esc] back
+keys-pick = [{ $keys }] reply · [w] word help · [r] again · [n] notebook
+keys-tiles = [{ $keys }] add · [⌫] undo · [enter] say · [w] help · [r] again
+keys-help = [{ $keys }] look up · [p] play · [esc] back
+keys-help-sentence = [{ $keys }] look up · [s] whole sentence · [p] play · [esc] back
 
 help-title = Which word?
 help-sentence = The whole sentence
@@ -39,6 +39,10 @@ you = You
 
 mismatch = That's not what they asked for.
 rephrased = (slower)
+# Bottom border, right: sound playing, turned off with m, or no way to play it here.
+sound-on = ♪ [m]
+sound-off = ♪ off [m]
+sound-none = no audio
 wallet-change = { $sign }{ $currency }{ $amount } ({ $reason })
 reason-wages = wages
 reason-mixup = mix-up

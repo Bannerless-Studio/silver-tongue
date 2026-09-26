@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { comboKey, createCore, mulberry32, newGame, PLAYER_MARK, type Course, type GameState } from "@silver-tongue/core";
 import { addErrand, line } from "@silver-tongue/core/testing";
 import { startApp } from "../src/app";
+import type { AudioOut, Speech } from "../src/audio";
 import { lineWidth } from "../src/width";
 import { FakeTerminal, fixtureWithText } from "./fake-terminal";
 
@@ -415,7 +416,11 @@ describe("tui app", () => {
     const core = createCore(course, newGame(course), { now: () => T0, rng: mulberry32(1) });
     const term = new FakeTerminal();
     startApp({ course, core, term, now: () => T0, quit: () => {}, version: "0.5.0" });
-    expect(term.screen().at(-1)).toMatch(/Silver Tongue v0\.5\.0 ┘$/);
+    expect(term.screen().at(-1)).toMatch(/no audio · v0\.5\.0 ┘$/);
+    term.resize(90, 20);
+    expect(term.screen().at(-1)).toMatch(/no audio · Silver Tongue v0\.5\.0 ┘$/);
+    term.resize(46, 20);
+    expect(term.screen().at(-1)).toMatch(/^└ \[1-3\] choose · \[n\] notebook ─* no audio ┘$/);
   });
 
   const ERRAND_TEXT = `
@@ -499,5 +504,127 @@ asked-deliver = They wanted it taken to the { $place }.
     expect(screen).toContain("Cook: Say hello · needs ¥30");
     expect(screen).not.toMatch(/\d\) Talk to Cook: Say hello/);
   });
-});
 
+  describe("sound", () => {
+    /** Each line, word and reaction gets one clip named after its text, so calls read as text. */
+    function voice(c: Course) {
+      const set = (l: { text: string; audio?: string[] } | undefined) => l && (l.audio = [l.text]);
+      for (const s of c.scenes)
+        for (const ex of s.exchanges)
+          for (const v of Object.values(ex.variants)) [v.npc, v.reply, v.rephrase, ...(v.alts ?? [])].forEach(set);
+      for (const w of Object.values(c.words)) w.audio = [w.w];
+      c.reactionAudio = Object.fromEntries(Object.entries(c.reactions).map(([id, l]) => [id, { cook: [`cook:${l.text}`] }]));
+    }
+
+    function withAudio(available = true, patch: (s: GameState) => void = () => {}) {
+      const calls: Speech[][] = [];
+      let stops = 0;
+      const audio: AudioOut = { available, play: (l) => void calls.push(l), stop: () => void stops++ };
+      const course = fixtureWithText();
+      voice(course);
+      const state = newGame(course);
+      patch(state);
+      const core = createCore(course, state, { now: () => T0, rng: mulberry32(1) });
+      const term = new FakeTerminal();
+      const saves: GameState[] = [];
+      startApp({ course, core, term, now: () => T0, save: (s) => saves.push(s) > 0, quit: () => {}, audio, version: "0.12.0" });
+      return { core, term, calls, saves, stops: () => stops };
+    }
+    const npcText = (core: ReturnType<typeof withAudio>["core"]) => {
+      const run = core.state.run!;
+      return fixtureWithText().scenes.find((s) => s.id === run.scene)!.exchanges[run.exchange].variants[comboKey(run.combo)].npc.text;
+    };
+
+    it("says the NPC's line when a scene starts", () => {
+      const { term, calls } = withAudio();
+      term.press("1", "1");
+      expect(calls.at(-1)).toEqual([{ clips: ["你好！"] }]);
+    });
+
+    it("says your reply, then the NPC's next line, as one queue", () => {
+      const { term, core, calls } = withAudio();
+      term.press("1", "1");
+      term.press(rightKey(core));
+      expect(calls.at(-1)).toEqual([{ clips: ["你好！"] }, { clips: [npcText(core)] }]);
+    });
+
+    it("says the right reply when the tiles match, and no reply when they don't", () => {
+      const shaky = { right: 1, wrong: 1, streak: 0, helps: 0, lapsed: true, firstSeen: 0, lastSeen: 0 };
+      const { term, core, calls } = withAudio(true, (s) => {
+        s.words.w_cha = { ...shaky };
+        s.words.w_shui = { ...shaky };
+      });
+      term.press("1", "1");
+      term.press(rightKey(core));
+      const tiles = core.state.run!.tiles;
+      const want = core.state.run!.combo.item === "tea" ? "茶" : "水";
+      term.press(String(tiles.findIndex((x) => x !== want) + 1), "return");
+      expect(calls.at(-1)![0]).toEqual({ clips: ["cook:不是这个。"] });
+      term.press(String(tiles.indexOf(want) + 1), "return");
+      expect(calls.at(-1)![0]).toEqual({ clips: [`${want}？`] });
+    });
+
+    it("says your wrong reply and the NPC's reaction, and a line repeated with no rephrase slowly", () => {
+      const { term, core, calls } = withAudio();
+      term.press("1", "1");
+      term.press(rightKey(core));
+      const asked = npcText(core);
+      const wrongKey = () => String(core.state.run!.options.findIndex((k) => k !== comboKey(core.state.run!.combo)) + 1);
+      term.press(wrongKey());
+      expect(calls.at(-1)!.slice(0, 2)).toEqual([{ clips: [asked === "茶。" ? "水？" : "茶？"] }, { clips: ["cook:不是这个。"] }]);
+      term.press(wrongKey());
+      expect(calls.at(-1)).toContainEqual({ clips: [asked], slow: true });
+    });
+
+    it("r says the last line again; m turns sound off, and then nothing plays, and m turns it back on", () => {
+      const { term, core, calls, stops, saves } = withAudio();
+      term.press("1", "1");
+      const n = calls.length;
+      term.press("r");
+      expect(calls.length).toBe(n + 1);
+      expect(calls.at(-1)).toEqual([{ clips: ["你好！"] }]);
+      term.press("m");
+      expect(core.state.sound).toBe(false);
+      expect(saves.at(-1)!.sound).toBe(false);
+      expect(stops()).toBeGreaterThan(0);
+      term.press("r");
+      term.press(rightKey(core));
+      expect(calls.length).toBe(n + 1);
+      term.press("m");
+      expect(core.state.sound).toBe(true);
+      term.press("r");
+      expect(calls.length).toBe(n + 2);
+    });
+
+    it("looking up a word says it, and p says it again", () => {
+      const { term, calls } = withAudio();
+      term.press("1", "1", "w", "1");
+      expect(calls.at(-1)).toEqual([{ clips: ["你"] }]);
+      const n = calls.length;
+      term.press("p");
+      expect(calls.length).toBe(n + 1);
+      expect(calls.at(-1)).toEqual([{ clips: ["你"] }]);
+    });
+
+    it("shows ♪, ♪ off or no audio in the bottom border", () => {
+      const on = withAudio();
+      expect(on.term.screen().at(-1)).toMatch(/♪ \[m\] · v0\.12\.0 ┘$/);
+      on.term.press("m");
+      expect(on.term.screen().at(-1)).toContain("♪ off [m]");
+      expect(withAudio(false).term.screen().at(-1)).toContain("no audio");
+      const course = fixtureWithText();
+      const term = new FakeTerminal();
+      startApp({ course, core: createCore(course, newGame(course), { now: () => T0, rng: mulberry32(1) }), term, now: () => T0, quit: () => {} });
+      expect(term.screen().at(-1)).toContain("no audio");
+    });
+
+    it("plays nothing while sound is off or unavailable", () => {
+      const off = withAudio(true, (s) => (s.sound = false));
+      off.term.press("1", "1");
+      expect(off.calls).toEqual([]);
+      const none = withAudio(false);
+      none.term.press("1", "1");
+      expect(none.calls).toEqual([]);
+    });
+  });
+});

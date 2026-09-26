@@ -1,5 +1,6 @@
 import {
   availableSceneIds,
+  comboKey,
   moneyBlocked,
   sceneCost,
   describeRun,
@@ -14,6 +15,7 @@ import {
   type RenderedLine,
   type WordId,
 } from "@silver-tongue/core";
+import type { AudioOut, Speech } from "./audio";
 import { notebookLines } from "./notebook";
 import { lineSpans, renderScreen, wrapItems } from "./screen";
 import { strWidth, wrapLine } from "./width";
@@ -32,6 +34,8 @@ export interface AppOptions {
   notice?: string;
   /** the game's version, shown in the bottom border ("Silver Tongue v0.5.0") */
   version?: string;
+  /** sound out; without it the game is silent and says "no audio" */
+  audio?: AudioOut;
 }
 
 type MenuItem = { label: string; input?: Input; quit?: true };
@@ -60,6 +64,20 @@ export function startApp(opts: AppOptions): App {
   let notebookTop = 0; // first notebook line on screen
   let resuming = false;
   let nameInput = ""; // replaying a scene saved half-way: it has already been introduced
+  let lastSlow = false; // the last line was a slow repeat, so r says it slowly too
+  let lastWord: string[] = []; // the clips of the word last looked up, for p
+  let tileReply: string[] = []; // the right reply's clips, said if the tiles match
+  let queue: Speech[] = []; // what this key press has people say, in order
+
+  const soundOn = () => !!opts.audio?.available && core.state.sound !== false;
+  const hear = (clips: string[] | undefined, slow = false) => {
+    if (clips?.length) queue.push(slow ? { clips, slow } : { clips });
+  };
+  /** Says everything this key press queued, unless sound is off. */
+  const flush = () => {
+    if (queue.length && soundOn()) opts.audio!.play(queue);
+    queue = [];
+  };
 
   const push = (...lines: StyledLine[]) => {
     log = [...log, ...lines].slice(-LOG_LIMIT);
@@ -126,6 +144,8 @@ export function startApp(opts: AppOptions): App {
           break;
         case "lineSpoken":
           lastLine = e.line;
+          lastSlow = false;
+          hear(e.line.audio);
           push(say(e.npc, e.line, fresh));
           break;
         case "replyOptions":
@@ -135,14 +155,18 @@ export function startApp(opts: AppOptions): App {
           else tiles = e.tiles;
           break;
         case "actionPerformed":
+          if (replyMode === "tiles" && !e.tilesWrong) hear(tileReply);
           narrateAction(e.action, e.expected, e.matched, e.tilesWrong);
           break;
         case "npcReacted":
           // Word help keeps offering the request the player got wrong, not the reaction.
+          hear(course.reactionAudio?.[e.reaction]?.[e.npc]);
           push(say(e.npc, e.line, fresh));
           break;
         case "lineRephrased":
           lastLine = e.line;
+          lastSlow = e.slow;
+          hear(e.line.audio, e.slow);
           push(say(e.npc, e.line, fresh, ` ${t("rephrased")}`));
           break;
         case "walletChanged":
@@ -211,7 +235,31 @@ export function startApp(opts: AppOptions): App {
   function send(input: Input) {
     const events = core.send(input);
     apply(events);
+    flush();
     if (!events.some((e) => e.type === "inputRejected")) persist();
+  }
+
+  /** Keys that work wherever a line or word can be heard: r says the last line again, m turns sound on or off. */
+  function soundKey(name: string): boolean {
+    if (name === "m") {
+      const on = core.state.sound === false;
+      if (!on) opts.audio?.stop();
+      send({ type: "setSound", on });
+      return true;
+    }
+    if (name === "r") {
+      hear(lastLine?.audio, lastSlow);
+      flush();
+      return true;
+    }
+    return false;
+  }
+
+  /** The right reply's clips for the exchange being played, said when the tiles match. */
+  function rightReplyClips(): string[] {
+    const run = core.state.run;
+    const ex = run && course.scenes.find((x) => x.id === run.scene)?.exchanges[run.exchange];
+    return (run && ex?.variants[comboKey(run.combo)]?.reply.audio) ?? [];
   }
 
   function menu(): MenuItem[] {
@@ -295,7 +343,17 @@ export function startApp(opts: AppOptions): App {
     ];
   }
 
-  const footerRight = opts.version ? `Silver Tongue v${opts.version}` : undefined;
+  /**
+   * ♪ [m] while sound plays, ♪ off [m] when turned off, "no audio" when there's none here; then the
+   * version, shortened or left out when the key hints on the left leave no room.
+   */
+  function footerRight(footer: string, cols: number): string {
+    const sound = !opts.audio?.available ? t("sound-none") : core.state.sound === false ? t("sound-off") : t("sound-on");
+    const room = cols - 2 - (strWidth(footer) + 2) - 2;
+    const v = opts.version;
+    const choices = v ? [`${sound} · Silver Tongue v${v}`, `${sound} · v${v}`, sound] : [sound];
+    return choices.find((c) => strWidth(c) <= room) ?? sound;
+  }
 
   function render() {
     const s = core.state;
@@ -316,7 +374,7 @@ export function startApp(opts: AppOptions): App {
       notebookTop = Math.max(0, Math.min(notebookTop, lines.length - bodyRows));
       const page = lines.slice(notebookTop, notebookTop + bodyRows);
       const prompt = [...page, ...Array(bodyRows - page.length).fill([])];
-      term.write(renderScreen({ title: t(`place-${s.place}`), hud, log: [], prompt, footer: t("keys-notebook"), footerRight }, cols, rows));
+      term.write(renderScreen({ title: t(`place-${s.place}`), hud, log: [], prompt, footer: t("keys-notebook"), footerRight: footerRight(t("keys-notebook"), cols) }, cols, rows));
       return;
     }
     const [footerId, count] =
@@ -331,7 +389,7 @@ export function startApp(opts: AppOptions): App {
             : ["keys-tiles", tiles.length];
     const footer = t(footerId, { keys: keyRange(count) });
     term.write(
-      renderScreen({ title: t(`place-${s.place}`), hud, log, prompt: prompt(cols - 4), footer, footerRight }, cols, rows),
+      renderScreen({ title: t(`place-${s.place}`), hud, log, prompt: prompt(cols - 4), footer, footerRight: footerRight(footer, cols) }, cols, rows),
       // Typing a name: the cursor sits after the text, where a phone keyboard shows what's being composed.
       mode === "name" ? { row: rows - 2, col: Math.min(cols - 3, 4 + strWidth(nameInput)) } : undefined,
     );
@@ -363,20 +421,28 @@ export function startApp(opts: AppOptions): App {
       return render();
     }
     const n = /^[1-9]$/.test(key.name) ? Number(key.name) - 1 : -1;
-    if (mode === "explore") {
+    if (soundKey(key.name)) {
+      // handled: r and m mean the same everywhere but the name prompt and the notebook
+    } else if (mode === "explore") {
       const item = n >= 0 ? menu()[n] : undefined;
       if (key.name === "q" || item?.quit) return opts.quit();
       if (item?.input) send(item.input);
     } else if (mode === "help") {
       const word = n >= 0 ? helpWords()[n] : undefined;
       if (word) {
-        send({ type: "helpWord", word: word.word });
         const w = course.words[word.word];
+        lastWord = w.audio ?? [];
+        hear(lastWord);
+        send({ type: "helpWord", word: word.word });
         push([
           { text: w.w, bold: true },
           ...(w.pron ? [{ text: ` ${w.pron}`, color: "yellow" as const }] : []),
           { text: ` — ${w.gloss}` },
         ]);
+      }
+      if (key.name === "p") {
+        hear(lastWord);
+        flush();
       }
       if (key.name === "s" && lastLine?.meaning) {
         // Reading the whole line is not logged as help on each word: the words still have to be
@@ -394,6 +460,7 @@ export function startApp(opts: AppOptions): App {
     } else if (replyMode === "pick") {
       if (n >= 0 && n < pickOptions.length) {
         echo(pickOptions[n].text);
+        hear(pickOptions[n].audio);
         send({ type: "reply", choice: n });
       }
     } else if (n >= 0 && n < tiles.length && !tileInput.includes(n)) {
@@ -402,6 +469,7 @@ export function startApp(opts: AppOptions): App {
       tileInput = tileInput.slice(0, -1);
     } else if (key.name === "return" && tileInput.length) {
       echo(tileInput.map((i) => tiles[i]).join(""));
+      tileReply = rightReplyClips();
       send({ type: "replyTiles", tiles: tileInput });
     }
     render();
@@ -412,6 +480,7 @@ export function startApp(opts: AppOptions): App {
   enterPlace(core.state.place);
   resuming = true;
   apply(describeRun(course, core.state)); // a save made mid-scene resumes in the scene
+  flush();
   resuming = false;
   // A course whose lines say the player's name asks for it before anything else.
   if (course.needsName && !core.state.player) mode = "name";
