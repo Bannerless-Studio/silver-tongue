@@ -23,7 +23,8 @@
         "street",
         "room",
         "warehouse",
-        "station_road"
+        "station_road",
+        "shop"
       ]
     },
     "room": {
@@ -58,6 +59,11 @@
       "links": [
         "station_road"
       ]
+    },
+    "shop": {
+      "links": [
+        "market"
+      ]
     }
   },
   "npcs": {
@@ -84,6 +90,9 @@
     },
     "traveller": {
       "place": "station"
+    },
+    "shopkeeper": {
+      "place": "shop"
     }
   },
   "mentor": {

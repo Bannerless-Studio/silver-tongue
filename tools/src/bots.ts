@@ -7,6 +7,7 @@ import {
   createCore,
   mulberry32,
   newGame,
+  sceneCost,
   tilePieces,
   wordState,
   type Course,
@@ -48,6 +49,8 @@ export interface BotReport {
   rejected: number;
   /** parcels delivered */
   errands: number;
+  /** purchases made */
+  shopping: number;
 }
 
 const HOUR = 3_600_000;
@@ -107,7 +110,16 @@ interface Goal {
  * paid repeatable work, then unpaid practice.
  */
 function goals(course: Course, state: GameState): Goal[] {
-  const out: Goal[] = availableSceneIds(course, state).map((id) => {
+  const out: Goal[] = availableSceneIds(course, state)
+    // Repeat shopping never eats into tonight's food or the rent money, and waits while rent is
+    // late; a first visit is the story, so it's taken.
+    .filter((id) => {
+      const scene = course.scenes.find((s) => s.id === id)!;
+      const cost = sceneCost(scene);
+      if (cost === 0 || !scene.repeatable) return true;
+      return !state.rentLate && state.wallet - cost >= course.world.rentPerWeek + course.world.foodPerDay;
+    })
+    .map((id) => {
     const scene = course.scenes.find((s) => s.id === id)!;
     // A parcel in hand comes first; a pickup is paid work, since the trip pays at the other end.
     const rank = scene.endsErrand ? 1 : !scene.repeatable ? 0 : scene.startsErrand || scene.exchanges.some((ex) => ex.pay > 0) ? 2 : 3;
@@ -141,6 +153,7 @@ export function runBot(course: Course, bot: Bot, opts: { days: number; seed: num
     endWallet: 0,
     rejected: 0,
     errands: 0,
+    shopping: 0,
   };
   const paying = (id: string) => {
     const s = course.scenes.find((x) => x.id === id)!;
@@ -186,6 +199,7 @@ export function runBot(course: Course, bot: Bot, opts: { days: number; seed: num
         report.maxWallet = Math.max(report.maxWallet, e.wallet);
       }
       if (e.type === "errandEnded") report.errands += 1;
+      if (e.type === "walletChanged" && e.reason === "shopping") report.shopping += 1;
       if (e.type === "sceneEnded" && !course.scenes.find((x) => x.id === e.scene)!.repeatable) {
         report.firstDone[e.scene] ??= core.state.day;
       }
@@ -209,7 +223,7 @@ function main(): void {
   for (const [name, bot] of Object.entries(BOTS)) {
     const r = runBot(course, bot, { days, seed: 7 });
     const done = oneOff.map((id) => `${id}:${r.firstDone[id] ?? "-"}`).join(" ");
-    console.log(`${name.padEnd(8)} wallet ${r.minWallet}..${r.maxWallet} (end ${r.endWallet}) · words ${r.wordsKnown} known / ${r.wordsHeard} heard · notes ${r.notesRead}/${course.notes.length} · dead-end days ${r.deadEndDays} · broke without work ${r.brokeWithoutWork} · rejected ${r.rejected} · errands ${r.errands}`);
+    console.log(`${name.padEnd(8)} wallet ${r.minWallet}..${r.maxWallet} (end ${r.endWallet}) · words ${r.wordsKnown} known / ${r.wordsHeard} heard · notes ${r.notesRead}/${course.notes.length} · dead-end days ${r.deadEndDays} · broke without work ${r.brokeWithoutWork} · rejected ${r.rejected} · errands ${r.errands} · shopping ${r.shopping}`);
     console.log(`         ${done}`);
   }
 }

@@ -67,6 +67,7 @@ export const UI_KEYS: Record<string, string[]> = {
   "errand-started": [],
   "errand-ended": [],
   "errand-carrying": [],
+  "menu-needs-money": ["npc", "scene", "currency", "cost"],
   "rank-up": ["rank"],
   "day-ended": ["day"],
   "notice-bad-save": [],

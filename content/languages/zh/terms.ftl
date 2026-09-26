@@ -44,3 +44,9 @@
 -hospital = 医院
 -school = 学校
 -station = 火车站
+-rice = 米饭
+-vegetables = 菜
+-noodles = 面条
+-apple = 苹果
+-cup = 杯子
+-book = 书

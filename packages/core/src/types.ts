@@ -36,6 +36,8 @@ export interface Variant {
   rephrase?: RenderedLine;
   /** written wrong replies, offered alongside the right one (pick mode: "alt:<n>"; tiles: extra words) */
   alts?: RenderedLine[];
+  /** what a right reply spends (resolved from the exchange's cost for this slot combination) */
+  cost?: number;
 }
 
 export interface Exchange {
@@ -48,6 +50,8 @@ export interface Exchange {
   hinges: string[];
   pay: number;
   missCost: number;
+  /** what a right reply spends: a number, or "$slot" whose value is a number concept. The build resolves it into each variant's cost. */
+  cost?: number | string;
   /** keyed by comboKey(combo); "" when the exchange has no slots */
   variants: Record<string, Variant>;
 }
@@ -210,7 +214,7 @@ export const REJECT_REASONS = [
 export type RejectReason = (typeof REJECT_REASONS)[number];
 
 /** Why the wallet changed. */
-export const WALLET_REASONS = ["wages", "mixup", "food", "rent"] as const;
+export const WALLET_REASONS = ["wages", "mixup", "food", "rent", "shopping"] as const;
 export type WalletReason = (typeof WALLET_REASONS)[number];
 
 /** Replies arrive as `reply` (pick mode) or `replyTiles` (tiles mode); typed replies will add `replyText`. */

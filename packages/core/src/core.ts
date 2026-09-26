@@ -73,9 +73,10 @@ export function createCore(course: Course, initial: GameState, deps: CoreDeps): 
       const before = new Set(availableSceneIds(course, state));
       for (const id of availableSceneIds(course, ctx.state)) {
         // A drop-off opens with every pickup; errandStarted says so, without naming the place.
-        // A pickup reopens after every delivery; it was news only the first time.
+        // A repeatable scene already played can close and reopen (a parcel in hand, a price out of
+        // reach); it was news only the first time.
         const scene = course.scenes.find((s) => s.id === id);
-        const again = scene?.startsErrand !== undefined && (ctx.state.scenesDone[id] ?? 0) > 0;
+        const again = !!scene?.repeatable && (ctx.state.scenesDone[id] ?? 0) > 0;
         if (!before.has(id) && !scene?.endsErrand && !again) ctx.ev.push({ type: "unlocked", scene: id });
       }
       for (const note of newlyTriggered(course, ctx.state)) {

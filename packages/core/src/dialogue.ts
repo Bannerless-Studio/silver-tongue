@@ -249,6 +249,8 @@ function resolve(
       if (!rec.first) rec.first = { line: personalize(reply, nameOf(ctx.state)).text, place: ctx.state.place };
     }
     run.earned += ex.pay;
+    const cost = ex.variants[comboKey(run.combo)].cost ?? 0;
+    if (cost > 0) ctx.ev.push(...changeWallet(ctx.state, -cost, "shopping"));
     if (run.exchange + 1 < scene.exchanges.length) beginExchange(ctx, scene, run.exchange + 1);
     else finishScene(ctx, scene);
     return;

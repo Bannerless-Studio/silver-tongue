@@ -7,7 +7,9 @@
     "numbers_3_10": ["three", "four", "five", "six", "seven", "eight", "nine", "ten"],
     "furniture": ["table", "chair"],
     "sizes": ["big", "small"],
-    "destinations": ["hospital", "school", "station"]
+    "destinations": ["hospital", "school", "station"],
+    "foods": ["rice", "vegetables", "noodles"],
+    "goods": ["apple", "cup", "book"]
   },
   "numbers": {
     "two": 2,

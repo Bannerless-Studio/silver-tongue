@@ -70,3 +70,24 @@ describe("course bots (a world with an errand)", () => {
     expect(r.rejected).toBe(0);
   });
 });
+
+describe("course bots (a world with a shop)", () => {
+  it("shop only when a week's rent is left over, and never go broke doing it", () => {
+    const c = fixtureCourse();
+    for (const v of Object.values(c.scenes[1].exchanges[0].variants)) v.cost = 1; // the shift now also buys something
+    c.world.rentPerWeek = 1000; // nobody ever has a week's rent spare
+    expect(runBot(c, BOTS.right, { days: 3, seed: 1 }).shopping).toBe(0);
+    c.world.rentPerWeek = 0; // now there's always a week's rent spare
+    const r = runBot(c, BOTS.right, { days: 3, seed: 1 });
+    expect(r.shopping).toBeGreaterThan(0);
+    expect(r.rejected).toBe(0);
+  });
+
+  it("still pays for a first visit that costs something, since it's the story", () => {
+    const c = fixtureCourse();
+    c.scenes[0].exchanges[0].variants[""].cost = 1; // meeting the cook costs ¥1
+    c.world.rentPerWeek = 1000;
+    const r = runBot(c, BOTS.right, { days: 2, seed: 1 });
+    expect(r.firstDone.intro).toBe(1);
+  });
+});

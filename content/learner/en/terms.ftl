@@ -90,3 +90,27 @@
     [cap] Train station
    *[base] train station
 }
+-rice = { $form ->
+    [cap] Rice
+   *[base] rice
+}
+-vegetables = { $form ->
+    [cap] Vegetables
+   *[base] vegetables
+}
+-noodles = { $form ->
+    [cap] Noodles
+   *[base] noodles
+}
+-apple = { $form ->
+    [cap] Apple
+   *[base] apple
+}
+-cup = { $form ->
+    [cap] Cup
+   *[base] cup
+}
+-book = { $form ->
+    [cap] Book
+   *[base] book
+}

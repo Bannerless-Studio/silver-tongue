@@ -28,7 +28,7 @@ describe("build-course (real content)", () => {
 
   it("builds zh-china-en with no errors", () => {
     expect(errors).toEqual([]);
-    expect(course!.scenes.map((s) => s.id)).toEqual(["delivery-hospital", "delivery-intro", "delivery-pickup", "delivery-school", "delivery-station", "noodle-intro", "noodle-shift", "room-hello", "room-rent", "street-hello", "street-hungry", "street-numbers", "street-practice", "warehouse-intro", "warehouse-shift"]);
+    expect(course!.scenes.map((s) => s.id)).toEqual(["delivery-hospital", "delivery-intro", "delivery-pickup", "delivery-school", "delivery-station", "noodle-intro", "noodle-kitchen", "noodle-shift", "room-hello", "room-rent", "shop-buy", "shop-intro", "street-hello", "street-hungry", "street-numbers", "street-practice", "warehouse-intro", "warehouse-shift"]);
   });
 
   it("renders every slot combination and tags its words", () => {
@@ -53,7 +53,7 @@ describe("build-course (real content)", () => {
     expect(course!.conceptNames.tea).toBe("tea");
     expect(course!.conceptNames.thanks).toBe("Thank you");
     expect(course!.stageWords["1"]).toHaveLength(150);
-    expect(course!.notes.map((n) => n.id)).toEqual(["hao-ma", "lao-xiao", "le", "bukeqi", "bei", "ge", "kuai", "nali", "de", "dian"]);
+    expect(course!.notes.map((n) => n.id)).toEqual(["hao-ma", "lao-xiao", "le", "bukeqi", "bei", "ge", "kuai", "nali", "de", "dian", "mei", "tai"]);
     expect(course!.world.mentor).toEqual({ npc: "wang", after: "street-hello" });
     expect(course!.learnerFtl).toContain("note-bei-title");
   });
@@ -99,8 +99,8 @@ describe("build-course (real content)", () => {
 
   it("puts your room and the warehouse on Market Street, and keeps Main Street's menu at 7", () => {
     const { places, npcs, mentor } = course!.world;
-    expect([...places.market.links].sort()).toEqual(["room", "station_road", "street", "warehouse"]);
-    expect(places.market.links.length + course!.scenes.filter((s) => s.place === "market").length).toBe(6);
+    expect([...places.market.links].sort()).toEqual(["room", "shop", "station_road", "street", "warehouse"]);
+    expect(places.market.links.length + course!.scenes.filter((s) => s.place === "market").length).toBe(7);
     expect(places.room.links).toEqual(["market"]);
     expect(places.street.links).toContain("market");
     const mentorHere = mentor && npcs[mentor.npc].place === "street" ? 1 : 0;
@@ -123,6 +123,21 @@ describe("build-course (real content)", () => {
       expect(course!.scenes.filter((s) => s.endsErrand && s.place === p).map((s) => s.id)).toEqual([`delivery-${p}`]);
     }
     expect(course!.scenes.find((s) => s.id === "delivery-intro")!.after).toEqual(["warehouse-shift", "room-hello"]);
+  });
+
+  it("the shop sells at the price you agreed, and the kitchen comes after deliveries", () => {
+    const buy = course!.scenes.find((s) => s.id === "shop-buy")!;
+    expect(buy.exchanges[0].variants["item=apple|price=four"].cost).toBe(4);
+    // the course carries only the resolved price per variant, never the skeleton's "$price"
+    expect(buy.exchanges[0].cost).toBeUndefined();
+    const intro = course!.scenes.find((s) => s.id === "shop-intro")!;
+    expect(intro.exchanges.find((ex) => ex.id === "less")!.variants[""].cost).toBe(4);
+    expect(course!.scenes.find((s) => s.id === "noodle-kitchen")!.after).toEqual(["noodle-shift", "delivery-pickup"]);
+  });
+
+  it("the staff lunch names 菜 as vegetables, not dishes (you're washing the dishes)", () => {
+    expect(course!.groups.foods).toEqual(["rice", "vegetables", "noodles"]);
+    expect(course!.conceptNames.vegetables).toBe("vegetables");
   });
 
   it("the cook offers work only once Old Wang has taught you to count", () => {
@@ -186,6 +201,38 @@ describe("build-course (broken content)", () => {
       writeFileSync(f, readFileSync(f, "utf8").replace("action-fetch = You bring { $item }.", "action-fetch = You bring { $itme }."));
     });
     expect(bad.errors.some((e) => e.startsWith('narration "action-fetch"'))).toBe(true);
+  });
+
+  it("reports a cost that isn't a number or a slot of numbers", () => {
+    const bad = buildChanged((d) => {
+      const f = join(d, "settings/china-city/scenes/warehouse-shift.json");
+      const sk = JSON.parse(readFileSync(f, "utf8"));
+      sk.exchanges[0].cost = "$item";
+      sk.exchanges[1].cost = "$nope";
+      writeFileSync(f, JSON.stringify(sk));
+    });
+    expect(bad.errors).toContain('warehouse-shift/carry: cost "$item" must be a number or a slot whose values are all numbers');
+    expect(bad.errors).toContain('warehouse-shift/pick: cost "$nope" must be a number or a slot whose values are all numbers');
+    const odd = buildChanged((d) => {
+      const f = join(d, "settings/china-city/scenes/warehouse-shift.json");
+      const sk = JSON.parse(readFileSync(f, "utf8"));
+      sk.exchanges[0].cost = true;
+      writeFileSync(f, JSON.stringify(sk));
+    });
+    expect(odd.errors).toContain("warehouse-shift/carry: cost true must be a number or a slot whose values are all numbers");
+  });
+
+  it("resolves a slot's cost into each variant", () => {
+    const ok = buildChanged((d) => {
+      const f = join(d, "settings/china-city/scenes/warehouse-shift.json");
+      const sk = JSON.parse(readFileSync(f, "utf8"));
+      sk.exchanges[0].cost = "$amount";
+      sk.exchanges[1].cost = 2;
+      writeFileSync(f, JSON.stringify(sk));
+    });
+    const shift = ok.course!.scenes.find((s) => s.id === "warehouse-shift")!;
+    expect(shift.exchanges[0].variants["amount=seven|item=chair"].cost).toBe(7);
+    expect(shift.exchanges[1].variants["item=chair|size=big"].cost).toBe(2);
   });
 
   it("reports a syntax error in a lines file once, not once per slot combination", () => {

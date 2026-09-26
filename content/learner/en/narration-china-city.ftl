@@ -20,6 +20,8 @@ place-hospital = Hospital
 place-hospital-desc = White walls and a long queue. A doctor hurries past.
 place-station = Train Station
 place-station-desc = Announcements you can't follow, and people with too much luggage.
+place-shop = Corner Shop
+place-shop-desc = Shelves to the ceiling, a crate of apples by the door, and a shopkeeper who misses nothing.
 place-warehouse = Warehouse
 place-warehouse-desc = Stacks of tables and chairs, and a big man with a clipboard.
 
@@ -31,6 +33,7 @@ npc-dispatcher = Miss Gao
 npc-doctor = Doctor
 npc-teacher = Teacher
 npc-traveller = Traveller
+npc-shopkeeper = Shopkeeper
 
 # Scene names for the menu; scene-<id>-start and scene-<id>-end are optional narration.
 scene-street-hello = Meet Old Wang
@@ -88,6 +91,16 @@ scene-delivery-station = Deliver the parcel
 scene-delivery-station-start = A traveller sitting on a suitcase jumps up when she sees the parcel.
 scene-delivery-station-end = She takes the parcel, pays you, and runs for her train.
 
+scene-noodle-kitchen = Wash dishes
+scene-noodle-kitchen-start = The sink is full, and the cook needs clean cups faster than you can wash them.
+scene-noodle-kitchen-end = The last cup is dry, and the cook pays you.
+scene-shop-intro = Meet the shopkeeper
+scene-shop-intro-start = The shopkeeper looks up from her abacus as you come in.
+scene-shop-intro-end = You leave with one apple, and the feeling you paid too much anyway.
+scene-shop-buy = Buy something
+scene-shop-buy-start = The shopkeeper holds something up and names a price.
+scene-shop-buy-end = She wraps it in newspaper and drops the coins in a tin.
+
 # What a reply does (action-<name>), and on a mix-up what was asked (asked-<name>).
 # Concept values arrive as learner names: $item = "tea", $count = "three".
 action-fetch = You bring { $item }.
@@ -138,3 +151,15 @@ asked-teacher = They were telling you they're a teacher.
 asked-books = They wanted to know if it's books.
 asked-beijing = They were telling you where they're going.
 asked-time = They were telling you the time: { $hour } o'clock.
+action-wash = You wash { $amount } cups.
+asked-wash = They wanted { $amount } cups.
+action-eat = You eat { $food }.
+asked-eat = They were offering you { $food }.
+asked-out = They were telling you they're out of cups.
+asked-browse = They wanted to know what you're buying.
+asked-fruit = They were showing you the fruit.
+asked-apples = They were saying the apples are good.
+asked-haggle = They told you the price: five kuai for one apple.
+asked-less = They offered it for one kuai less.
+action-buy = You pay { $price } kuai for the { $item }.
+asked-buy = They wanted { $price } kuai for the { $item }.

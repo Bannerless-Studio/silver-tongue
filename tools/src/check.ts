@@ -153,6 +153,9 @@ export function checkCourse(input: CheckInput): string[] {
       for (const k of ["pay", "missCost"] as const) {
         if (!isCount(ex[k])) errors.push(`${s.id}/${ex.id}: ${k} must be a whole number of 0 or more`);
       }
+      if (Object.values(ex.variants).some((v) => v.cost !== undefined && !isCount(v.cost))) {
+        errors.push(`${s.id}/${ex.id}: cost must be a whole number of 0 or more`);
+      }
       for (const slot of Object.keys(ex.slots)) {
         if (!NAME.test(slot)) errors.push(`${s.id}/${ex.id}: slot "${slot}" may only use letters, digits, _ and -`);
       }
@@ -162,6 +165,19 @@ export function checkCourse(input: CheckInput): string[] {
       for (const h of ex.hinges) {
         const ok = h.startsWith("$") ? h.slice(1) in ex.slots : h in course.concepts;
         if (!ok) errors.push(`${s.id}/${ex.id}: unknown hinge "${h}"`);
+        // A graded slot must show in the reply: otherwise every option says the same and the word
+        // is marked right or wrong on nothing the player chose.
+        if (!ok || !h.startsWith("$")) continue;
+        const slot = h.slice(1);
+        const texts = new Map<string, Set<string>>();
+        for (const [key, v] of Object.entries(ex.variants)) {
+          const rest = key.split("|").filter((p) => !p.startsWith(`${slot}=`)).join("|");
+          texts.set(rest, (texts.get(rest) ?? new Set()).add(v.reply.text));
+        }
+        const values = new Set(Object.keys(ex.variants).map((k) => k.split("|").find((p) => p.startsWith(`${slot}=`))));
+        if (values.size > 1 && [...texts.values()].some((t) => t.size < values.size)) {
+          errors.push(`${s.id}/${ex.id}: hinge "${h}" doesn't change the reply, so a player can't get it wrong`);
+        }
       }
     }
   }

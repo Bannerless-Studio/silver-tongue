@@ -8,5 +8,7 @@
   { "id": "kuai", "trigger": { "scene": "room-rent" } },
   { "id": "nali", "trigger": { "scene": "delivery-intro" } },
   { "id": "de", "trigger": { "word": "w0125" } },
-  { "id": "dian", "trigger": { "word": "w0115" } }
+  { "id": "dian", "trigger": { "word": "w0115" } },
+  { "id": "mei", "trigger": { "word": "w0111" } },
+  { "id": "tai", "trigger": { "word": "w0069" } }
 ]
