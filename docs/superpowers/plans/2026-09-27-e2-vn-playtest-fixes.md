@@ -1210,7 +1210,9 @@ Keep the comment line above them (`# The story. intro-1, intro-2, … open a new
 
 ```bash
 npm run build:course
+cd site && python3 -m http.server 8123
 ```
+(`site/` and `dist/` are gitignored build output, so a fresh checkout needs `npm run build:course` before `npm run build:site`.)
 Expected: PASS with no errors, and `dist/courses/zh-china/en.json` rewritten.
 
 - [ ] **Step 3: Play it, by hand, in a browser**
@@ -1231,11 +1233,11 @@ Then in the browser at `http://localhost:8123/`:
 - [ ] **Step 4: Commit**
 
 ```bash
-git add content/learner/en/narration-china-city.ftl dist
+git add content/learner/en/narration-china-city.ftl
 git commit -m "content: an intro that says 1980" -m "The story opens by saying where and when you are, what you have, and what the
 work needs from you, instead of three lines of atmosphere." -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
-(Commit `dist/` — the repo tracks it, and the rule is to re-run the build rather than hand-edit it.)
+Commit only the `.ftl`: `dist/` is gitignored build output, and CLAUDE.md's rule is to re-run the build, never to commit it.
 
 ---
 
