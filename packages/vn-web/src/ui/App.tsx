@@ -6,10 +6,11 @@ import { keyAction } from "../keys";
 import type { Vn } from "../vn";
 import { Box } from "./Box";
 import { Card, type CardData } from "./Card";
-import { Choices } from "./Choices";
 import { DayFade } from "./DayFade";
 import { Hud } from "./Hud";
 import { Backlog, Games, Menu, Notebook } from "./Overlays";
+import { PlaceMenu } from "./PlaceMenu";
+import { Replies } from "./Replies";
 import { RotateHint } from "./RotateHint";
 import { Stage } from "./Stage";
 import { Tiles } from "./Tiles";
@@ -86,7 +87,8 @@ export function App({ vn, art, page }: { vn: Vn; art: Art; page: Page }) {
     <div class="stage">
       <Stage vn={vn} view={view} art={art} />
       <Hud vn={vn} view={view} onOpen={setOverlay} />
-      <Choices vn={vn} view={view} onWord={onWord} />
+      <PlaceMenu vn={vn} view={view} />
+      <Replies vn={vn} view={view} onWord={onWord} />
       <Tiles vn={vn} view={view} />
       <Box vn={vn} view={view} onWord={onWord} onMeaning={onMeaning} />
       <Toasts vn={vn} view={view} />
