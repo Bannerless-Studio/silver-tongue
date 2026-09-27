@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { newGame, serialize } from "@silver-tongue/core";
 import { fixtureCourse } from "@silver-tongue/core/testing";
-import { loadWebSettings, migrateWebAliases, saveWebSettings, SETTINGS_KEY, WebSessions, type KeyValue } from "../src/web-storage";
+import { loadWebSettings, migrateWebAliases, saveWebSettings, SETTINGS_KEY, updateWebSettings, WebSessions, type KeyValue } from "../src/web-storage";
 
 /** An in-memory localStorage. */
 class FakeStorage implements KeyValue {
@@ -102,6 +102,15 @@ describe("settings and old course ids", () => {
     expect(loadWebSettings(kv)).toEqual({ course: "zh-china", learner: "en" });
     kv.setItem(SETTINGS_KEY, "{bad");
     expect(loadWebSettings(kv)).toEqual({});
+  });
+
+  it("changes one setting without losing the others", () => {
+    const kv = new FakeStorage();
+    const kept = { course: "zh-other", learner: "en", speed: "slow", autoAdvance: true };
+    // A value the game does not understand is dropped rather than carried forward.
+    kv.setItem(SETTINGS_KEY, '{"course":"zh-china","learner":"en","speed":"slow","autoAdvance":true,"junk":1}');
+    expect(updateWebSettings(kv, { course: "zh-other" })).toEqual(kept);
+    expect(loadWebSettings(kv)).toEqual(kept);
   });
 
   it("moves alias keys and keeps the last game", () => {

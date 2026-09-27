@@ -16,6 +16,12 @@ describe("player settings", () => {
     expect(parseSettings("[1]")).toEqual({});
     expect(parseSettings('{"course":3,"learner":"en","x":1}')).toEqual({ learner: "en" });
   });
+  it("reads the speech speed and whether the visual novel plays itself, and leaves anything else unset", () => {
+    expect(parseSettings('{"speed":"normal","autoAdvance":false}')).toEqual({ speed: "normal", autoAdvance: false });
+    expect(parseSettings('{"speed":"quick"}')).toEqual({});
+    expect(parseSettings('{"autoAdvance":"no"}')).toEqual({});
+    expect(parseSettings('{"course":"zh-china","speed":"quick","autoAdvance":true}')).toEqual({ course: "zh-china", autoAdvance: true });
+  });
 });
 
 describe("choosing the course at start", () => {

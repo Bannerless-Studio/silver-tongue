@@ -164,6 +164,16 @@ export function saveWebSettings(kv: KeyValue, settings: PlayerSettings): boolean
   }
 }
 
+/**
+ * The settings with a few fields changed, and the whole set written back. Only the fields in
+ * `patch` change, so remembering a course keeps the speed and the auto-advance choice.
+ */
+export function updateWebSettings(kv: KeyValue, patch: Partial<PlayerSettings>): PlayerSettings {
+  const settings = { ...loadWebSettings(kv), ...patch };
+  saveWebSettings(kv, settings);
+  return settings;
+}
+
 /** A meta entry as stored, or an empty one. */
 function readMeta(kv: KeyValue, key: string): Meta {
   try {

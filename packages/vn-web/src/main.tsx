@@ -1,8 +1,8 @@
 import { render } from "preact";
 import { createCore, mulberry32, type CatalogEntry, type Course, type GameState } from "@silver-tongue/core";
-import { chooseStart, courseLabels, decodeSave, encodeSave, learnerFor, makeText, sessionLines, type Text } from "@silver-tongue/view";
+import { chooseStart, courseLabels, decodeSave, DEFAULT_SPEED, encodeSave, learnerFor, makeText, playbackRate, sessionLines, type Text } from "@silver-tongue/view";
 import {
-  coursesBase, createWebAudio, fetchJson, fromLocalStorage, loadWebSettings, metaContent, migrateWebAliases, saveWebSettings, WebSessions,
+  coursesBase, createWebAudio, fetchJson, fromLocalStorage, loadWebSettings, metaContent, migrateWebAliases, updateWebSettings, WebSessions,
   type KeyValue, type Opened,
 } from "@silver-tongue/web-common";
 import { loadArt, type Art } from "./art";
@@ -34,6 +34,8 @@ interface Loaded { course: Course; t: Text; sessions: WebSessions; audio: Return
 let catalog: CatalogEntry[] = [];
 let loaded: Loaded | undefined;
 let current: { id: string; readOnly: boolean; state: () => GameState } | undefined;
+/** The player's reading preferences, kept in their own settings, not in a game. */
+let prefs = { speed: DEFAULT_SPEED, autoAdvance: true };
 
 async function getText(url: string): Promise<string | null> {
   const res = await fetch(url);
@@ -55,6 +57,8 @@ async function load(entry: CatalogEntry, learner: string): Promise<Loaded> {
         const h = setTimeout(cb, ms);
         return { cancel: () => clearTimeout(h) };
       },
+      // Asked per clip, so a speed pressed in settings takes at once.
+      rate: () => playbackRate(prefs.speed),
     }),
     art: await loadArt(`${base}${entry.id}/`, course, getText),
   };
@@ -64,7 +68,7 @@ function use(l: Loaded, remember: boolean) {
   loaded?.audio.stop();
   loaded = l;
   document.documentElement.lang = l.course.learner;
-  if (remember) saveWebSettings(kv, { course: l.course.id, learner: l.course.learner });
+  if (remember) updateWebSettings(kv, { course: l.course.id, learner: l.course.learner });
 }
 
 function play(opened: Opened) {
@@ -74,12 +78,20 @@ function play(opened: Opened) {
   const store = l.sessions; // this game's own store: a course loaded later must not take its saves
   const vn = createVn({
     course: l.course, core, now: Date.now, audio: l.audio, notice: opened.notice,
+    autoAdvance: prefs.autoAdvance,
     save: opened.readOnly ? undefined : (s) => store.save(opened.id, s),
   });
   current = { id: opened.id, readOnly: opened.readOnly, state: () => core.state };
   const page: Page = {
     catalog,
     audioAvailable: l.audio.available,
+    // A getter, because this page is built once per game and the preferences outlive it: a plain
+    // property here would freeze the row's seed at the values the game started with.
+    get prefs() { return prefs; },
+    setPref: (patch) => {
+      prefs = { ...prefs, ...patch };
+      updateWebSettings(kv, patch);
+    },
     switchTo: (id, learner) => void switchTo(id, learner),
     textUrl,
     games: {
@@ -134,6 +146,7 @@ function title(courses?: { label: string; pick: () => void }[], error?: string) 
 
 async function boot() {
   const settings = loadWebSettings(kv);
+  prefs = { speed: settings.speed ?? DEFAULT_SPEED, autoAdvance: settings.autoAdvance ?? true };
   try {
     catalog = await fetchJson<CatalogEntry[]>(`${base}index.json`);
     const picked = chooseStart(catalog, settings);

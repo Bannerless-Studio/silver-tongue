@@ -3,6 +3,7 @@ import { comboKey, createCore, mulberry32, newGame, type Course, type GameState 
 import { fixtureWithText } from "@silver-tongue/view/testing";
 import type { AudioOut, Speech } from "@silver-tongue/view";
 import { createVn, type VnOptions } from "../src/vn";
+import { dwellMs } from "../src/dwell";
 
 const T0 = 1_000_000;
 const shaky = { right: 1, wrong: 1, streak: 0, helps: 0, lapsed: true, firstSeen: 0, lastSeen: 0 };
@@ -22,6 +23,16 @@ function setup(patch: (s: GameState) => void = () => {}, change: (c: Course) => 
 const skip = (vn: ReturnType<typeof setup>["vn"]) => {
   while (vn.view().phase.kind === "beat") vn.advance();
 };
+/** Timers the test fires by hand; a cancelled one does nothing, like clearTimeout. */
+function clock() {
+  const pending: { ms: number; fire: () => void; cancelled: boolean }[] = [];
+  const wait = (ms: number, cb: () => void) => {
+    const w = { ms, fire: () => !w.cancelled && cb(), cancelled: false };
+    pending.push(w);
+    return { cancel: () => void (w.cancelled = true) };
+  };
+  return { pending, wait, last: () => pending.at(-1)! };
+}
 const rightIndex = (core: ReturnType<typeof setup>["core"]) => core.state.run!.options.indexOf(comboKey(core.state.run!.combo));
 /** From a new game: to the noodle shop, into the intro scene, through its opening beats. */
 const intoScene = (s: ReturnType<typeof setup>) => {
@@ -246,5 +257,153 @@ describe("visual novel controller", () => {
     expect(s.core.state.sound).toBe(false);
     s.vn.replay();
     expect(played).toHaveLength(1);
+  });
+
+  it("moves on by itself once the line has had its reading time", () => {
+    const c = clock();
+    const s = setup(undefined, undefined, { wait: c.wait });
+    const p = s.vn.view().phase;
+    expect(p.kind).toBe("beat");
+    if (p.kind !== "beat") return;
+    expect(c.pending).toHaveLength(1);
+    expect(c.pending[0].ms).toBe(dwellMs(p.beat));
+    c.pending[0].fire(); // the reading time is up
+    expect(c.last().ms).toBe(200); // then a short pad before the next beat
+    c.last().fire();
+    expect(s.vn.view().phase).toMatchObject({ kind: "beat", beat: { text: "An old man on a bench is watching you with open curiosity." } });
+  });
+
+  it("stays until the clip has finished, then 200ms", () => {
+    const c = clock();
+    let busy = true;
+    const audio = { available: true, get busy() { return busy; }, play: () => {}, stop: () => {} };
+    const s = setup(undefined, undefined, { wait: c.wait, audio });
+    c.pending[0].fire(); // the reading time is up, the clip is still going
+    expect(s.vn.view().phase.kind).toBe("beat");
+    expect(c.last().ms).toBe(200);
+    busy = false;
+    c.last().fire();
+    expect(c.last().ms).toBe(200); // the pad after the sound
+    c.last().fire();
+    expect(s.vn.view().phase).toMatchObject({ kind: "beat", beat: { text: "An old man on a bench is watching you with open curiosity." } });
+  });
+
+  it("a clip started during the pad is not cut off", () => {
+    const c = clock();
+    let busy = false;
+    const audio = { available: true, get busy() { return busy; }, play: () => {}, stop: () => {} };
+    const s = setup(undefined, undefined, { wait: c.wait, audio });
+    c.pending[0].fire(); // the reading time is up, nothing is playing
+    expect(c.last().ms).toBe(200);
+    busy = true; // the player asks for the line again in the pad
+    c.last().fire();
+    expect(s.vn.view().phase).toMatchObject({ kind: "beat", beat: { text: "You arrive with ¥20 and no words." } });
+    expect(c.last().ms).toBe(200); // still waiting for the clip
+    busy = false;
+    c.last().fire();
+    expect(s.vn.view().phase).toMatchObject({ kind: "beat", beat: { text: "An old man on a bench is watching you with open curiosity." } });
+  });
+
+  it("waits while an overlay is open, and gives the line its time again after", () => {
+    const c = clock();
+    const s = setup(undefined, undefined, { wait: c.wait });
+    s.vn.hold(true);
+    expect(c.pending).toHaveLength(1); // the one armed while the first beat was shown
+    c.pending[0].fire(); // cancelled: the line stays
+    expect(s.vn.view().phase).toMatchObject({ kind: "beat", beat: { text: "You arrive with ¥20 and no words." } });
+    s.vn.setAuto(true); // the settings panel asks again, over the overlay
+    expect(c.pending).toHaveLength(1); // an overlay open, nothing armed
+    s.vn.hold(false);
+    expect(c.pending).toHaveLength(2);
+    c.last().fire(); // the reading time again, not what was left of it
+    c.last().fire(); // then the pad
+    expect(s.vn.view().phase).toMatchObject({ kind: "beat", beat: { text: "An old man on a bench is watching you with open curiosity." } });
+  });
+
+  it("waits for a press on the day card", () => {
+    const c = clock();
+    const s = setup(undefined, undefined, { wait: c.wait });
+    skip(s.vn);
+    const p = s.vn.view().phase;
+    if (p.kind === "explore") s.vn.choose(p.menu.findIndex((m) => m.kind === "sleep"));
+    expect(s.vn.view().phase).toMatchObject({ kind: "beat", beat: { day: 2 } });
+    // The opening beats tapped through above each armed a timer, and `cancel` only marks an entry
+    // cancelled: what must be true is that the day card left no live timer behind.
+    expect(c.pending.filter((w) => !w.cancelled)).toHaveLength(0);
+  });
+
+  it("waits for a press on every line when auto-advance is off", () => {
+    const c = clock();
+    const s = setup(undefined, undefined, { wait: c.wait, autoAdvance: false });
+    expect(c.pending).toHaveLength(0);
+    s.vn.advance();
+    expect(c.pending).toHaveLength(0);
+    s.vn.setAuto(true);
+    expect(c.pending).toHaveLength(1);
+    s.vn.setAuto(true); // the settings panel says it again
+    expect(c.pending.filter((w) => !w.cancelled)).toHaveLength(1); // one timer, not two
+  });
+
+  it("turning auto-advance off takes the clock off the line, and says so", () => {
+    const c = clock();
+    const s = setup(undefined, undefined, { wait: c.wait });
+    let told = 0;
+    s.vn.subscribe(() => told++);
+    expect(c.pending.filter((w) => !w.cancelled)).toHaveLength(1);
+    s.vn.setAuto(false);
+    expect(c.pending.filter((w) => !w.cancelled)).toHaveLength(0);
+    expect(told).toBe(1); // the settings row re-renders
+  });
+
+  it("the name box stops the clock on the line it is covering", () => {
+    const c = clock();
+    const s = setup(undefined, (course) => (course.needsName = true), { wait: c.wait });
+    expect(s.vn.view().phase.kind).toBe("name");
+    expect(c.pending.filter((w) => !w.cancelled)).toHaveLength(0);
+  });
+
+  it("a name gives the line behind it its full reading time", () => {
+    const c = clock();
+    const s = setup(undefined, (course) => (course.needsName = true), { wait: c.wait });
+    c.pending.forEach((w) => w.fire()); // however long the player took at the box
+    expect(s.vn.setName("Mei")).toBe(true);
+    const p = s.vn.view().phase;
+    expect(p).toMatchObject({ kind: "beat", beat: { text: "You arrive with ¥20 and no words." } });
+    if (p.kind !== "beat") return;
+    const live = c.pending.filter((w) => !w.cancelled);
+    expect(live).toHaveLength(1);
+    expect(live[0].ms).toBe(dwellMs(p.beat)); // the whole reading time, from now
+  });
+
+  it("a second submit of the same name does nothing", () => {
+    const c = clock();
+    const s = setup(undefined, (course) => (course.needsName = true), { wait: c.wait });
+    expect(s.vn.setName("Mei")).toBe(true);
+    const logged = s.core.state.log.length;
+    const armed = c.pending.length;
+    expect(s.vn.setName("Mei")).toBe(true);
+    expect(s.core.state.log.length).toBe(logged);
+    expect(c.pending).toHaveLength(armed); // the line keeps the clock it already had
+  });
+
+  it("a controller the page has walked away from stops for good", () => {
+    const c = clock();
+    const s = setup(undefined, undefined, { wait: c.wait });
+    s.vn.stop();
+    expect(c.pending.filter((w) => !w.cancelled)).toHaveLength(0);
+    s.vn.hold(true); // an overlay opens and closes on a controller nobody is looking at
+    s.vn.hold(false);
+    s.vn.setAuto(true);
+    expect(c.pending.filter((w) => !w.cancelled)).toHaveLength(0);
+  });
+
+  it("a press takes the line straight away, and the timer it cancelled does nothing after", () => {
+    const c = clock();
+    const s = setup(undefined, undefined, { wait: c.wait });
+    const first = c.pending[0];
+    s.vn.advance();
+    expect(c.pending).toHaveLength(2);
+    first.fire(); // the timer the press cancelled, dead like clearTimeout
+    expect(s.vn.view().phase).toMatchObject({ kind: "beat", beat: { text: "An old man on a bench is watching you with open curiosity." } });
   });
 });

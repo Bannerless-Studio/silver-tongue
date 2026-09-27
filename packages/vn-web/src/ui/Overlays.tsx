@@ -1,6 +1,6 @@
 import { useState } from "preact/hooks";
 import type { CatalogEntry } from "@silver-tongue/core";
-import { notebookEntries, settingsRows, type SettingsScreen } from "@silver-tongue/view";
+import { nextSpeed, notebookEntries, settingsRows, type SettingsScreen } from "@silver-tongue/view";
 import type { Vn, VnView } from "../vn";
 import type { Page } from "./App";
 import { Line } from "./Line";
@@ -66,6 +66,9 @@ export function Backlog({ vn, view, onClose }: { vn: Vn; view: VnView; onClose: 
 
 export function Menu({ vn, page, onClose, onGames }: { vn: Vn; page: Page; onClose: () => void; onGames: () => void }) {
   const [screen, setScreen] = useState<SettingsScreen>("main");
+  // Settings shows its own copy, so a press repaints the row; it is seeded from the page, which is
+  // live, and this screen is unmounted with the overlay and seeded again each time it is opened.
+  const [prefs, setPrefs] = useState(page.prefs);
   const rows = settingsRows(screen, { course: vn.course, catalog: page.catalog as CatalogEntry[], state: vn.core.state, t: vn.t, audioAvailable: page.audioAvailable });
   const title = screen === "main" ? vn.t("vn-settings") : screen === "course" ? vn.t("settings-pick-course") : vn.t("settings-pick-reading");
   return (
@@ -79,6 +82,18 @@ export function Menu({ vn, page, onClose, onGames }: { vn: Vn; page: Page; onClo
           else vn.toggleSound();
         }}>{r.label}</button>
       ))}
+      {screen === "main" && <button type="button" class="row" onClick={() => {
+        const speed = nextSpeed(prefs.speed);
+        setPrefs({ ...prefs, speed });
+        page.setPref({ speed });
+      }}>{vn.t("vn-speed", { speed: vn.t(`vn-speed-${prefs.speed}`) })}</button>}
+      {screen === "main" && <button type="button" class="row" onClick={() => {
+        // Only the advance row moves the timer; the speed row is heard through the audio.
+        const autoAdvance = !prefs.autoAdvance;
+        setPrefs({ ...prefs, autoAdvance });
+        page.setPref({ autoAdvance });
+        vn.setAuto(autoAdvance); // and this repaints the screen
+      }}>{vn.t("vn-advance", { mode: vn.t(prefs.autoAdvance ? "vn-advance-auto" : "vn-advance-tap") })}</button>}
       {screen === "main" && <button type="button" class="row" onClick={onGames}>{vn.t("vn-games")}</button>}
       {screen === "main" && page.textUrl && <a class="row" href={page.textUrl}>{vn.t("vn-play-text")}</a>}
     </Overlay>

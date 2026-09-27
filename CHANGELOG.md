@@ -2,14 +2,17 @@
 
 Every release of Silver Tongue, newest first.
 
-## 0.15.0 (unreleased)
+## 0.15.0 (2026-09-27)
 
-- The opening now sets the scene in 2004: your bag, passport and phone are gone, and the police can't help for a month, so it's just you and the words you know.
+- The visual novel now plays itself. Each line stays as long as it takes to read it and to hear it said, and a tap still hurries it on. If you would rather choose every line, turn it off in settings.
+- Speech starts slow, so there is time to copy what you hear. Settings has a speed choice — slow, normal or fast — and the text game at /text/ plays at the same speed.
+- The place menu and your replies no longer look like the same button: your replies are big cards, and the place menu is a quiet list of where you can go.
+- The intro now says where and when you are: China, 1980, with no phone, no translator and nobody who speaks your language.
 - The first conversation with Old Wang is a real one: he introduces himself, asks how you are, then asks your name, instead of quizzing you on the same line twice.
+- The cook now actually interviews you for the noodle shop job: she has you count her cups and asks if you like noodles before hiring you.
+- Old Wang's friend at the noodle shop is introduced by name in conversation, not shouted out of nowhere.
 - Wrong-answer hints now say who was talking and what they were doing, instead of a plain "they".
 - "There", "here" and "where" are taught as whole words now, not split into two misleading pieces.
-- Old Wang's friend at the noodle shop is introduced by name in conversation, not shouted out of nowhere.
-- The cook now actually interviews you for the noodle shop job: she has you count her cups and asks if you like noodles before hiring you.
 
 ## 0.14.0 (2026-09-26)
 

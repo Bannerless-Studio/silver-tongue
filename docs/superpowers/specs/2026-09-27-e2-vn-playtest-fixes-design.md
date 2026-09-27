@@ -41,6 +41,28 @@ how long a line stays — which is the point, in a game where hearing the line i
 controller asks `AudioOut.busy` rather than guessing a clip's length, so nothing is ever cut off
 mid-word. `busy` is false when the sound is off, or when the player has muted it.
 
+That asks the player layer for a clip's state, and a clip whose load **stalls with no event at all** —
+a blackholed connection, a hung CDN — reports neither an end nor an error, so `busy` would stick true
+and the scene would sit for good. The player can still tap through, so it is a dead auto-advance rather
+than a lock-out, but it is a hang. The web player therefore arms a **backstop** per clip: 20s, well
+past the 7.25s worst case any page can produce (`SLOWEST_RATE = 0.5` is applied inside `clipRate`, and
+the longest clip in the course is 3.623s). A healthy clip is never near it. A line of two clips
+recovers in about 40s, not 20s. It belongs here rather than as a ceiling in the controller, which
+would cut a long clip off mid-word.
+
+Two things that backstop does **not** settle, recorded so the next reader does not assume it did:
+
+- `next()` reassigns `onended`/`onerror` for every clip, and a stalled clip's `play()` promise rejects
+  with `AbortError` once the next `src` is assigned. So a stale event for an abandoned clip is handled
+  by the **current** clip's `done`, and the backstop's guarantee quietly lapses from the second clip of
+  a line onward. Attributing an event to a load needs `AudioLike` to widen — `readyState`, or
+  `paused && currentTime === 0` after a grace period — which is a deliberate call not made here
+  because the interface is otherwise narrow on purpose.
+- A stalled load that later times out delivers a real `onerror`, which counts toward
+  `FAILS_TO_GIVE_UP`. Three stalled-then-timed-out clips in a row therefore silence the page for good,
+  on the reasoning "the clips aren't there" — the wrong diagnosis for a bad connection. Untouched
+  because `fails` is the missing-audio-folder signal and the two are not yet told apart.
+
 **Held: the line waits for you.** The timer is not armed, and the beat on screen stays, while:
 
 - an overlay (notebook, backlog, settings, games) or a word card is open;
@@ -167,7 +189,9 @@ the course build checks:
   - a manual `advance()` cancels the pending timer (no double advance).
 - `vn-web` dwell: the formula and both clamps.
 - `web-common` audio: the rate comes from `rate()` on every clip; `slow` is 0.75× and never below
-  0.5; `busy` is true from `play()` until the queue drains; a new rate applies to the next clip.
+  0.5; `busy` is true from `play()` until the queue drains; a new rate applies to the next clip; a
+  clip that never reports an end is finished by a 20s backstop, which is never close to a real clip;
+  a clip is only finished once, so a backstop and a late event cannot start the next clip early.
 - `view`: `parseSettings` reads `speed` and `autoAdvance` and ignores anything else.
 - `web-common` storage: `updateWebSettings` keeps the other fields.
 - By hand, in a browser at a desktop size: the two buttons look like two different things; the
@@ -191,3 +215,6 @@ Each step leaves `main` green.
 - Auto-advance in the text game, which is a page of keys and lists.
 - A per-course default speed: one speed for the player, not per course.
 - Music, and any sound of its own for the auto-advance.
+- A speech speed in the terminal game: `packages/tui-node/src/main.ts` writes the whole settings
+  object on every launch, so those two writes have to become a merge before `speed` is stored
+  there. Nothing in the terminal game stores one yet.

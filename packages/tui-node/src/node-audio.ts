@@ -125,6 +125,10 @@ export function createNodeAudio(deps: NodeAudioDeps): AudioOut & { player: Playe
     get available() {
       return !broken;
     },
+    get busy() {
+      // Broken drops the queue for good, so there is nothing left to wait for, whatever proc still says.
+      return !broken && (proc !== undefined || timer !== undefined);
+    },
     play(lines: Speech[]) {
       stop();
       if (broken) return;

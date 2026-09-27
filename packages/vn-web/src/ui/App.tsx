@@ -1,14 +1,16 @@
 import { useEffect, useState } from "preact/hooks";
 import type { CatalogEntry, WordId } from "@silver-tongue/core";
+import type { SpeechSpeed } from "@silver-tongue/view";
 import type { Art } from "../art";
 import { keyAction } from "../keys";
 import type { Vn } from "../vn";
 import { Box } from "./Box";
 import { Card, type CardData } from "./Card";
-import { Choices } from "./Choices";
 import { DayFade } from "./DayFade";
 import { Hud } from "./Hud";
 import { Backlog, Games, Menu, Notebook } from "./Overlays";
+import { PlaceMenu } from "./PlaceMenu";
+import { Replies } from "./Replies";
 import { RotateHint } from "./RotateHint";
 import { Stage } from "./Stage";
 import { Tiles } from "./Tiles";
@@ -19,6 +21,9 @@ export interface Page {
   catalog: CatalogEntry[];
   /** the course has sound this browser can play */
   audioAvailable: boolean;
+  /** the player's speed and auto-advance choices, already resolved */
+  prefs: { speed: SpeechSpeed; autoAdvance: boolean };
+  setPref(patch: Partial<Page["prefs"]>): void;
   switchTo(course: string, learner: string): void;
   games: {
     list(): { id: string; label: string }[];
@@ -63,11 +68,27 @@ export function App({ vn, art, page }: { vn: Vn; art: Art; page: Page }) {
     return () => removeEventListener("keydown", onKey);
   }, [vn, overlay, card]);
 
+  // The scene waits for the player while a notebook, a card or another tab has their attention.
+  // Each of those re-runs this effect, which syncs the hold again, so the cleanup has none to give back.
+  useEffect(() => {
+    const held = () => !!overlay || !!card || document.hidden;
+    const sync = () => vn.hold(held());
+    sync();
+    addEventListener("visibilitychange", sync);
+    return () => removeEventListener("visibilitychange", sync);
+  }, [vn, overlay, card]);
+
+  // Only when this controller is the one going away, so closing an overlay does not stop the game:
+  // a stopped controller never arms its timer again, and the old one's dwell would tick on over
+  // the game that replaced it, on the audio they share.
+  useEffect(() => () => vn.stop(), [vn]);
+
   return (
     <div class="stage">
       <Stage vn={vn} view={view} art={art} />
       <Hud vn={vn} view={view} onOpen={setOverlay} />
-      <Choices vn={vn} view={view} onWord={onWord} />
+      <PlaceMenu vn={vn} view={view} />
+      <Replies vn={vn} view={view} onWord={onWord} />
       <Tiles vn={vn} view={view} />
       <Box vn={vn} view={view} onWord={onWord} onMeaning={onMeaning} />
       <Toasts vn={vn} view={view} />

@@ -1,8 +1,8 @@
 # The story. intro-1, intro-2, … open a new game ($currency, $wallet, $rent are available).
-intro-1 = China, 2004. Your bag is gone, passport and all. The police say: come back in a month.
-intro-2 = You have { $currency }{ $wallet }, and nobody here speaks your language. Whatever you need, you will ask for in Chinese.
-intro-3 = A room is down the street; rent { $currency }{ $rent } a week, and food costs money every day. Work pays in full only when you get the words right first time.
-intro-4 = On a bench by the road an old man is watching you. Maybe start there.
+intro-1 = China, 1980. There is no phone in your pocket, no translator in your bag, and nobody on this street who speaks your language: whatever you have to say, you will say it in Chinese.
+intro-2 = You have { $currency }{ $wallet }. There is a room for you down the street; the rent, { $currency }{ $rent }, falls due at the end of each week, and food costs money every day.
+intro-3 = There is work in the noodle shop, at the warehouse, out on the road. It needs words, and words get you paid in full only when you get them right the first time.
+intro-4 = On a bench by the road an old man is watching you with open curiosity. Maybe start there.
 
 place-street = Main Street
 place-street-desc = Bikes, steam and an old man on a bench; there's a room for you down past the noodle shop.
