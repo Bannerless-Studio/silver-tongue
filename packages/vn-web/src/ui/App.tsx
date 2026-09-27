@@ -1,5 +1,6 @@
 import { useEffect, useState } from "preact/hooks";
 import type { CatalogEntry, WordId } from "@silver-tongue/core";
+import type { SpeechSpeed } from "@silver-tongue/view";
 import type { Art } from "../art";
 import { keyAction } from "../keys";
 import type { Vn } from "../vn";
@@ -19,6 +20,9 @@ export interface Page {
   catalog: CatalogEntry[];
   /** the course has sound this browser can play */
   audioAvailable: boolean;
+  /** the player's speed and auto-advance choices, already resolved */
+  prefs: { speed: SpeechSpeed; autoAdvance: boolean };
+  setPref(patch: Partial<Page["prefs"]>): void;
   switchTo(course: string, learner: string): void;
   games: {
     list(): { id: string; label: string }[];
@@ -62,6 +66,20 @@ export function App({ vn, art, page }: { vn: Vn; art: Art; page: Page }) {
     addEventListener("keydown", onKey);
     return () => removeEventListener("keydown", onKey);
   }, [vn, overlay, card]);
+
+  // The scene waits for the player while a notebook, a card or another tab has their attention.
+  useEffect(() => {
+    const held = () => !!overlay || !!card || document.hidden;
+    const sync = () => vn.hold(held());
+    sync();
+    addEventListener("visibilitychange", sync);
+    return () => removeEventListener("visibilitychange", sync);
+  }, [vn, overlay, card]);
+
+  // Only when this controller is the one going away, so closing an overlay does not stop the game:
+  // a stopped controller never arms its timer again, and the old one's dwell would tick on over
+  // the game that replaced it, on the audio they share.
+  useEffect(() => () => vn.stop(), [vn]);
 
   return (
     <div class="stage">
