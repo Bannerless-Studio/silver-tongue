@@ -1,0 +1,15 @@
+reaction/wrong-count: いくつ|です|か|？
+reaction/wrong-generic: ちがいます|。
+tanaka-hello/bye/alt1: ありがとうございます|。
+tanaka-hello/bye/alt2: こんにちは|、|田中|さん|。
+tanaka-hello/bye/npc: さようなら|。
+tanaka-hello/bye/reply: さようなら|、|田中|さん|。
+tanaka-hello/hello/npc: こんにちは|。
+tanaka-hello/hello/reply: こんにちは|。
+tanaka-hello/sit/alt1: 田中|さん|。
+tanaka-hello/sit/alt2: こんにちは|。
+tanaka-hello/sit/npc: どうぞ|。
+tanaka-hello/sit/reply: ありがとうございます|。
+tanaka-hello/tanaka/alt1: こんにちは|。
+tanaka-hello/tanaka/npc: 田中|です|。
+tanaka-hello/tanaka/reply: こんにちは|、|田中|さん|。

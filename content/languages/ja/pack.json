@@ -1,0 +1,17 @@
+{
+ "key": "ja",
+ "name": "Japanese (JLPT N5)",
+ "locale": "ja",
+ "tts": "ja-JP",
+ "ttsRate": 0.85,
+ "levels": [
+  "N5"
+ ],
+ "stages": {
+  "1": [
+   "N5"
+  ]
+ },
+ "typing": null,
+ "spaced": false
+}

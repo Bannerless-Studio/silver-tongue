@@ -1,0 +1,20 @@
+# Hand-written glosses for content/languages/ja/words.json and extra-words.json, in the sense the scenes use.
+ja-konnichiwa = hello; good afternoon
+ja-desu = is; am; are (polite)
+ja-san = Mr; Ms (after a name)
+ja-dozo = please; go ahead; here you are
+ja-arigatogozaimasu = thank you (polite)
+ja-sayonara = goodbye
+ja-chigaimasu = that's wrong; it's different
+ja-ikutsu = how many
+ja-ka = (question marker, at the end of a sentence)
+ja-ocha = tea (green tea)
+ja-mizu = water
+ja-onigiri = rice ball
+ja-pan = bread
+ja-num1 = one
+ja-num2 = two
+ja-num3 = three
+ja-num4 = four
+ja-num5 = five
+ja-tanaka = Tanaka (a family name)

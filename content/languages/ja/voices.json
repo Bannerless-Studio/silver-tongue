@@ -1,0 +1,21 @@
+{
+ "engine": "edge-tts",
+ "player": "ja-JP-KeitaNeural",
+ "words": "ja-JP-NanamiNeural",
+ "npcs": {
+  "tanaka": {
+   "voice": "ja-JP-KeitaNeural",
+   "pitch": "-10Hz",
+   "rate": "-10%"
+  },
+  "ooya": {
+   "voice": "ja-JP-NanamiNeural",
+   "pitch": "-8Hz"
+  },
+  "ramen_owner": {
+   "voice": "ja-JP-KeitaNeural",
+   "pitch": "+10Hz"
+  },
+  "clerk": "ja-JP-NanamiNeural"
+ }
+}

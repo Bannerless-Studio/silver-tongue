@@ -1,0 +1,51 @@
+{
+ "start": "shotengai",
+ "home": "apartment",
+ "currency": "¥",
+ "slotsPerDay": 4,
+ "startWallet": 2000,
+ "foodPerDay": 500,
+ "rentPerWeek": 5000,
+ "places": {
+  "shotengai": {
+   "links": [
+    "apartment",
+    "ramen",
+    "konbini"
+   ]
+  },
+  "apartment": {
+   "links": [
+    "shotengai"
+   ]
+  },
+  "ramen": {
+   "links": [
+    "shotengai"
+   ]
+  },
+  "konbini": {
+   "links": [
+    "shotengai"
+   ]
+  }
+ },
+ "npcs": {
+  "tanaka": {
+   "place": "shotengai"
+  },
+  "ooya": {
+   "place": "apartment"
+  },
+  "ramen_owner": {
+   "place": "ramen"
+  },
+  "clerk": {
+   "place": "konbini"
+  }
+ },
+ "mentor": {
+  "npc": "tanaka",
+  "after": "tanaka-hello"
+ }
+}

@@ -1,0 +1,188 @@
+[
+ {
+  "id": "ja-konnichiwa",
+  "w": "こんにちは",
+  "lv": "N5",
+  "readings": [
+   "konnichiwa"
+  ]
+ },
+ {
+  "id": "ja-desu",
+  "w": "です",
+  "lv": "N5",
+  "readings": [
+   "desu"
+  ]
+ },
+ {
+  "id": "ja-san",
+  "w": "さん",
+  "lv": "N5",
+  "readings": [
+   "san"
+  ]
+ },
+ {
+  "id": "ja-dozo",
+  "w": "どうぞ",
+  "lv": "N5",
+  "readings": [
+   "dōzo"
+  ]
+ },
+ {
+  "id": "ja-arigatogozaimasu",
+  "w": "ありがとうございます",
+  "lv": "N5",
+  "readings": [
+   "arigatō gozaimasu"
+  ],
+  "forms": {
+   "ありがとうございました": [
+    "arigatō gozaimashita"
+   ]
+  }
+ },
+ {
+  "id": "ja-sayonara",
+  "w": "さようなら",
+  "lv": "N5",
+  "readings": [
+   "sayōnara"
+  ]
+ },
+ {
+  "id": "ja-chigaimasu",
+  "w": "ちがいます",
+  "lv": "N5",
+  "readings": [
+   "chigaimasu"
+  ]
+ },
+ {
+  "id": "ja-ikutsu",
+  "w": "いくつ",
+  "lv": "N5",
+  "readings": [
+   "ikutsu"
+  ]
+ },
+ {
+  "id": "ja-ka",
+  "w": "か",
+  "lv": "N5",
+  "readings": [
+   "ka"
+  ]
+ },
+ {
+  "id": "ja-ocha",
+  "w": "お茶",
+  "lv": "N5",
+  "readings": [
+   "おちゃ",
+   "ocha"
+  ]
+ },
+ {
+  "id": "ja-mizu",
+  "w": "水",
+  "lv": "N5",
+  "readings": [
+   "みず",
+   "mizu"
+  ]
+ },
+ {
+  "id": "ja-onigiri",
+  "w": "おにぎり",
+  "lv": "N5",
+  "readings": [
+   "onigiri"
+  ]
+ },
+ {
+  "id": "ja-pan",
+  "w": "パン",
+  "lv": "N5",
+  "readings": [
+   "pan"
+  ]
+ },
+ {
+  "id": "ja-num1",
+  "w": "一",
+  "lv": "N5",
+  "readings": [
+   "いち",
+   "ichi"
+  ],
+  "forms": {
+   "一つ": [
+    "ひとつ",
+    "hitotsu"
+   ]
+  }
+ },
+ {
+  "id": "ja-num2",
+  "w": "二",
+  "lv": "N5",
+  "readings": [
+   "に",
+   "ni"
+  ],
+  "forms": {
+   "二つ": [
+    "ふたつ",
+    "futatsu"
+   ]
+  }
+ },
+ {
+  "id": "ja-num3",
+  "w": "三",
+  "lv": "N5",
+  "readings": [
+   "さん",
+   "san"
+  ],
+  "forms": {
+   "三つ": [
+    "みっつ",
+    "mittsu"
+   ]
+  }
+ },
+ {
+  "id": "ja-num4",
+  "w": "四",
+  "lv": "N5",
+  "readings": [
+   "よん",
+   "yon"
+  ],
+  "forms": {
+   "四つ": [
+    "よっつ",
+    "yottsu"
+   ]
+  }
+ },
+ {
+  "id": "ja-num5",
+  "w": "五",
+  "lv": "N5",
+  "readings": [
+   "ご",
+   "go"
+  ],
+  "forms": {
+   "五つ": [
+    "いつつ",
+    "itsutsu"
+   ]
+  }
+ }
+]

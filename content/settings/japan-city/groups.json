@@ -1,0 +1,25 @@
+{
+ "groups": {
+  "drinks": [
+   "tea",
+   "water"
+  ],
+  "numbers_2_5": [
+   "two",
+   "three",
+   "four",
+   "five"
+  ],
+  "goods": [
+   "rice_ball",
+   "bread"
+  ]
+ },
+ "numbers": {
+  "one": 1,
+  "two": 2,
+  "three": 3,
+  "four": 4,
+  "five": 5
+ }
+}
