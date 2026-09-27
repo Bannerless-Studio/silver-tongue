@@ -21,6 +21,7 @@ import { checkCourse, usedWords } from "./check";
 import { bindSlots, messageIds, parseFtl, Renderer, termNames, type FtlSource } from "./fluent";
 import type { PackMeta, PackWord } from "./pack";
 import { buildLexicon, segment, type Lexicon } from "./segment";
+import { taggingLines, taggingPath } from "./tagging";
 import { assignAudio, voiceProblems, type Clip, type Voices } from "./voices";
 
 export interface CourseConfig {
@@ -467,7 +468,7 @@ function learnerName(ftl: string, locale: string): string | undefined {
 }
 
 function main(): void {
-  const only = process.argv[2];
+  const only = process.argv.slice(2).find((a) => !a.startsWith("--"));
   const repo = resolve(fileURLToPath(new URL("../..", import.meta.url)));
   const { catalog, builds, errors, warnings } = buildAll(join(repo, "content"), only);
   for (const w of warnings) console.warn(`! ${w}`);
@@ -477,6 +478,14 @@ function main(): void {
     process.exit(1);
   }
   writeCourses(join(repo, "dist", "courses"), builds, catalog, only);
+  // --update-tagging: rewrite each built language's snapshot of how its lines split into words
+  if (process.argv.includes("--update-tagging")) {
+    for (const { result } of builds) {
+      const c = result.course!;
+      writeFileSync(taggingPath(join(repo, "content"), c.language.code), taggingLines(c).join("\n") + "\n");
+      console.log(`tagging: languages/${c.language.code}/tagging.txt`);
+    }
+  }
 }
 
 /**
