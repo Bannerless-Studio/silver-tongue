@@ -51,11 +51,16 @@ function handle(ctx: Ctx, input: Input): void {
       state.sound = input.on;
       ctx.ev.push({ type: "soundSet", on: input.on });
       return;
-    case "sleep":
+    case "sleep": {
       if (state.run) return reject(ctx, "in-scene");
-      if (course.world.home && state.place !== course.world.home) return reject(ctx, "not-home");
-      ctx.ev.push(...endDay(course, state));
+      // Before the home scene is done, sleep is allowed anywhere (a rough night): the player must
+      // never be stuck with a full day and nowhere to sleep before they've been given a home.
+      const { homeScene } = course.world;
+      const hasHome = !homeScene || (state.scenesDone[homeScene] ?? 0) > 0;
+      if (hasHome && course.world.home && state.place !== course.world.home) return reject(ctx, "not-home");
+      ctx.ev.push(...endDay(course, state, !hasHome));
       return;
+    }
   }
 }
 

@@ -27,6 +27,17 @@ describe("narration", () => {
     ]);
   });
 
+  it("adds npc to the variables, additively, when given", () => {
+    const npcT = makeText(`asked-serve = { $npc } wanted { $count } cups of { $item }.\n`, "en");
+    expect(
+      actionNarration(course, npcT, { action: serve("four", "tea"), expected: serve("three", "tea"), matched: false, tilesWrong: false }, "Cook"),
+    ).toEqual([{ text: "Cook wanted three cups of tea.", tone: "warn" }]);
+    // without npc, the same string renders with the variable missing rather than throwing
+    expect(actionNarration(course, npcT, { action: serve("four", "tea"), expected: serve("three", "tea"), matched: false, tilesWrong: false })).toEqual([
+      { text: "{$npc} wanted three cups of tea.", tone: "warn" },
+    ]);
+  });
+
   it("falls back to the generic mismatch line", () => {
     const greet = { action: "greet" };
     expect(actionNarration(course, t, { action: greet, expected: greet, matched: false, tilesWrong: false })).toEqual([

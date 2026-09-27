@@ -31,7 +31,7 @@ export function Notebook({ vn, onClose }: { vn: Vn; onClose: () => void }) {
             {g.words.map((w) => (
               <div key={w.id} class="nb-word">
                 <span class="nb-mark">{MARK[w.state]}</span>
-                <b>{w.text}</b> <span class="nb-reading">{w.readings.join(" ")}</span> — {w.gloss}
+                <b>{w.text}</b> <span class="nb-reading">{w.readings.join(" ")}</span> — {w.short}
                 {w.clips.length > 0 && <button type="button" aria-label={vn.t("vn-play-word")} onClick={() => vn.play(w.clips)}>▶</button>}
                 {w.first && <div class="nb-first">{w.first}</div>}
               </div>

@@ -8,6 +8,11 @@ Every release of Silver Tongue, newest first.
 - Speech starts slow, so there is time to copy what you hear. Settings has a speed choice — slow, normal or fast — and the text game at /text/ plays at the same speed.
 - The place menu and your replies no longer look like the same button: your replies are big cards, and the place menu is a quiet list of where you can go.
 - The intro now says where and when you are: China, 1980, with no phone, no translator and nobody who speaks your language.
+- The first conversation with Old Wang is a real one: he introduces himself, asks how you are, then asks your name, instead of quizzing you on the same line twice.
+- The cook now actually interviews you for the noodle shop job: she has you count her cups and asks if you like noodles before hiring you.
+- Old Wang's friend at the noodle shop is introduced by name in conversation, not shouted out of nowhere.
+- Wrong-answer hints now say who was talking and what they were doing, instead of a plain "they".
+- "There", "here" and "where" are taught as whole words now, not split into two misleading pieces.
 
 ## 0.14.0 (2026-09-26)
 

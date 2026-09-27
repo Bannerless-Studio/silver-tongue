@@ -1,4 +1,4 @@
-hungry = { $player }, how are you?
+hungry = Are you hungry?
 hungry-reply = I'm hungry.
 hungry-alt1 = My name is { $player }.
 hungry-alt2 = Goodbye!
@@ -13,6 +13,11 @@ like-reply = I do! I like noodles.
 like-alt1 = My name is { $player }.
 like-alt2 = Goodbye, Old Wang!
 
+friend = Xiao Zhang is my friend.
+friend-reply = Good!
+friend-alt1 = Goodbye!
+friend-alt2 = How are you?
+
 there = There!
 there-reply = There?
 there-alt1 = Goodbye!
@@ -22,16 +27,6 @@ shop = There's a restaurant there.
 shop-reply = Good!
 shop-alt1 = Goodbye!
 shop-alt2 = How are you?
-
-zhang = Xiao Zhang!
-zhang-reply = Xiao Zhang?
-zhang-alt1 = Old Wang?
-zhang-alt2 = { $player }?
-
-friend = Xiao Zhang is my friend.
-friend-reply = Good!
-friend-alt1 = Goodbye!
-friend-alt2 = How are you?
 
 bye = Goodbye, { $player }!
 bye-reply = Thank you! Goodbye!

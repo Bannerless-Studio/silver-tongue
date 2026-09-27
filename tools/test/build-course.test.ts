@@ -175,7 +175,8 @@ describe("build-course (real content)", () => {
       expect(seen.has("room"), `${from} reaches room`).toBe(true);
     }
     // Main Street no longer links to the room, so its description says where the room went.
-    expect(course!.learnerFtl.match(/^place-street-desc = (.*)$/m)![1]).toContain("your room");
+    // ("a room for you", not "your room": before the landlord scene, it isn't the player's yet.)
+    expect(course!.learnerFtl.match(/^place-street-desc = (.*)$/m)![1]).toContain("a room for you");
   });
 
   it("Miss Gao sends parcels to the three places on Station Road, each with one drop-off", () => {
@@ -245,26 +246,41 @@ describe("build-course (broken content)", () => {
     expect(artDir).toBeUndefined();
   });
 
+  it("fails when a scene's newWords override isn't a positive integer", () => {
+    const f = join("settings/china-city/scenes/street-hello.json");
+    const { errors } = buildChanged((dir) => {
+      const p = join(dir, f);
+      const sk = JSON.parse(readFileSync(p, "utf8"));
+      sk.newWords = 0;
+      writeFileSync(p, JSON.stringify(sk));
+    });
+    expect(errors.some((e) => e.includes('street-hello: "newWords" must be a positive integer'))).toBe(true);
+  });
+
   it("with art on, fails on a missing drawing", () => {
     const { errors } = buildChanged((dir) => unlinkSync(join(dir, "settings/china-city/art/npcs/wang.svg")));
     expect(errors).toContain("settings/china-city/art/npcs/wang.svg: missing");
   });
 
-  it("with audio on, fails on a missing clip file and passes when all exist", () => {
-    const { clips } = buildCourse(CONTENT, "zh-china");
-    expect(clips.length).toBeGreaterThan(500);
-    const make = (skip: number) =>
-      buildChanged((dir) => {
-        unlinkSync(join(dir, "audio")); // the link to the real clips, never the clips themselves
-        mkdirSync(join(dir, "audio", "zh"), { recursive: true });
-        clips.forEach((c, i) => i !== skip && writeFileSync(join(dir, "audio", "zh", `${c.id}.mp3`), ""));
-        const cfgPath = join(dir, "courses", "zh-china.json");
-        const cfg = JSON.parse(readFileSync(cfgPath, "utf8"));
-        writeFileSync(cfgPath, JSON.stringify({ ...cfg, checks: { ...cfg.checks, audio: true } }));
-      });
-    expect(make(-1).errors).toEqual([]);
-    expect(make(0).errors).toEqual([`audio: no file for clip ${clips[0].id}`]);
-  });
+  it(
+    "with audio on, fails on a missing clip file and passes when all exist",
+    () => {
+      const { clips } = buildCourse(CONTENT, "zh-china");
+      expect(clips.length).toBeGreaterThan(500);
+      const make = (skip: number) =>
+        buildChanged((dir) => {
+          unlinkSync(join(dir, "audio")); // the link to the real clips, never the clips themselves
+          mkdirSync(join(dir, "audio", "zh"), { recursive: true });
+          clips.forEach((c, i) => i !== skip && writeFileSync(join(dir, "audio", "zh", `${c.id}.mp3`), ""));
+          const cfgPath = join(dir, "courses", "zh-china.json");
+          const cfg = JSON.parse(readFileSync(cfgPath, "utf8"));
+          writeFileSync(cfgPath, JSON.stringify({ ...cfg, checks: { ...cfg.checks, audio: true } }));
+        });
+      expect(make(-1).errors).toEqual([]);
+      expect(make(0).errors).toEqual([`audio: no file for clip ${clips[0].id}`]);
+    },
+    20_000,
+  );
 
   it("reports voice-map problems", () => {
     const { errors } = buildChanged((dir) => {

@@ -5,7 +5,7 @@ open-reply = 中午了！
 open-alt1 = 我饿了。
 open-alt2 = 你好吗？
 
-many = 饭馆很小！人很多！
+many = 饭馆很小！人有多少？
 many-reply = 很多！
 many-alt1 = 我去买杯子。
 many-alt2 = 中午了！
@@ -25,14 +25,14 @@ these-reply = 好，这些菜。
 these-alt1 = 看见了！
 these-alt2 = 很多！
 
-price = 那个小姐想吃菜，多少钱？
-price-reply = 她？十块钱。
+price = 那个小姐，十块钱！
+price-reply = 好，她十块钱！
 price-alt1 = 好，这些菜。
 price-alt2 = 我饿了。
 
-eat = 好，我们吃！你想吃米饭吗？
-eat-reply = 想！谢谢！
-eat-alt1 = 她？十块钱。
+eat = 好，我们吃！你想吃哪个菜？
+eat-reply = 我想吃这个。
+eat-alt1 = 好，她十块钱！
 eat-alt2 = 很多！
 
 taste = 菜怎么样？

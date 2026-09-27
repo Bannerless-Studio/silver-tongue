@@ -4,3 +4,5 @@ dist/
 *.part
 site/
 .worktrees/
+.cache/
+tsconfig.tsbuildinfo

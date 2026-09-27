@@ -20,6 +20,8 @@ note-hao = On its own, 好 agrees.
 intro-1 = You arrive with { $currency }{ $wallet } and no words.
 intro-2 = An old man on a bench is watching you with open curiosity.
 scene-shift = Serve drinks
+scene-shift-start = The cook slides a tray across the counter.
+scene-shift-end = The cook nods and turns back to the pot.
 `;
 
 const ui = () => readFileSync(new URL("../../../content/learner/en/ui.ftl", import.meta.url), "utf8");

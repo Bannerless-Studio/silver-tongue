@@ -182,6 +182,33 @@ describe("core", () => {
     expect(core.state.day).toBe(2);
   });
 
+  it("sleeps anywhere as a rough night before the home scene is done, then only at home", () => {
+    const c = fixtureCourse();
+    c.world.home = "street";
+    c.world.homeScene = "intro";
+    const core = createCore(c, newGame(c), { now: () => T0, rng: mulberry32(1) });
+    core.send({ type: "goTo", place: "noodle_shop" });
+    // Not home, and the home scene isn't done yet: sleep still works, and says it was rough.
+    let events = core.send({ type: "sleep" });
+    expect(find(events, "dayEnded")).toEqual({ type: "dayEnded", day: 1, rough: true });
+    expect(core.state.day).toBe(2);
+    // Finish the home scene: sleep is now home-only, same as a course without homeScene at all.
+    playIntro(core);
+    core.send({ type: "goTo", place: "noodle_shop" });
+    expect(core.send({ type: "sleep" })).toEqual([{ type: "inputRejected", reason: "not-home" }]);
+    core.send({ type: "goTo", place: "street" });
+    events = core.send({ type: "sleep" });
+    expect(find(events, "dayEnded")).toEqual({ type: "dayEnded", day: 2 });
+  });
+
+  it("without homeScene, sleep behaves exactly as before (no rough flag, ever)", () => {
+    const c = fixtureCourse();
+    c.world.home = "street";
+    const core = createCore(c, newGame(c), { now: () => T0, rng: mulberry32(1) });
+    const events = core.send({ type: "sleep" });
+    expect(events.find((e) => e.type === "dayEnded")).toEqual({ type: "dayEnded", day: 1 });
+  });
+
   it("keeps a running scene going after the course adds to its `after`", () => {
     const core = setup();
     playIntro(core);

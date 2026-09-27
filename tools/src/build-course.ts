@@ -16,7 +16,7 @@ import {
   type Word,
   type World,
 } from "@silver-tongue/core";
-import { narrationProblems, uiTextProblems } from "@silver-tongue/tui";
+import { heuristicGloss, narrationProblems, uiTextProblems } from "@silver-tongue/tui";
 import { checkCourse, usedWords } from "./check";
 import { bindSlots, messageIds, parseFtl, Renderer, termNames, type FtlSource } from "./fluent";
 import type { PackMeta, PackWord } from "./pack";
@@ -40,12 +40,15 @@ interface GroupsJson {
 }
 
 type ExchangeSkeleton = Omit<Exchange, "variants">;
-type SceneSkeleton = Omit<Scene, "exchanges"> & { exchanges: ExchangeSkeleton[] };
+/** `newWords` overrides the checker's ratio-based new-word limit for this scene; tools-only, stripped before the course is built. */
+type SceneSkeleton = Omit<Scene, "exchanges"> & { exchanges: ExchangeSkeleton[]; newWords?: number };
 
 export interface BuildResult {
   /** undefined when a problem stopped the build before a course could be put together */
   course: Course | undefined;
   errors: string[];
+  /** problems worth fixing that don't stop the build or fail the course, e.g. a missing curated gloss */
+  warnings: string[];
   /** every clip the course needs, once each */
   clips: Clip[];
   /** where the clip files live: content/audio/<language> */
@@ -60,6 +63,7 @@ const readOptional = (path: string): string => (existsSync(path) ? readFileSync(
 /** Builds a course from content/. Never throws: every problem becomes an error line. */
 export function buildCourse(root: string, courseId: string, learnerCode?: string): BuildResult {
   const errors: string[] = [];
+  const warnings: string[] = [];
   /** Runs one step; a throw becomes an error named after the step. */
   const attempt = <T>(where: string, step: () => T): T | undefined => {
     try {
@@ -69,7 +73,7 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
       return undefined;
     }
   };
-  const stop = (): BuildResult => ({ course: undefined, errors, clips: [], audioDir: undefined, artDir: undefined });
+  const stop = (): BuildResult => ({ course: undefined, errors, warnings, clips: [], audioDir: undefined, artDir: undefined });
 
   const cfg = attempt(`courses/${courseId}.json`, () => readJson<CourseConfig>(join(root, "courses", `${courseId}.json`)));
   if (!cfg) return stop();
@@ -124,6 +128,11 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
     readOptional(join(learnerDir, f)),
   ]);
   const glosses = attempt("glosses", () => new Renderer(learner, glossSrc));
+  // Hand-curated 1-3 word display glosses, for the words the heuristic in packages/view/src/help.ts
+  // can't shorten well on its own (see content/learner/en/glosses-zh-short.ftl). Optional: a word
+  // with no entry here just falls back to that heuristic, which the checker warns about below.
+  const shortSrc: FtlSource = [`glosses-${cfg.language}-short.ftl`, readOptional(join(learnerDir, `glosses-${cfg.language}-short.ftl`))];
+  const shorts = attempt("glosses-short", () => new Renderer(learner, [shortSrc]));
   const words: Record<string, Word> = {};
   for (const w of packWords) {
     if (glosses && !glosses.has(w.id)) errors.push(`glosses: no ${learner} gloss for ${w.id} "${w.w}"`);
@@ -132,6 +141,7 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
       w: w.w,
       lv: w.lv,
       gloss: glosses?.has(w.id) ? glosses.render(w.id) : "",
+      ...(shorts?.has(w.id) ? { short: shorts.render(w.id) } : {}),
       ...(w.readings ? { readings: w.readings } : w.pron ? { readings: [w.pron] } : {}),
       ...(w.bonus ? { bonus: true } : {}),
     };
@@ -170,6 +180,7 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
 
   const scenesDir = join(settingDir, "scenes");
   const scenes: Scene[] = [];
+  const newWordsOverride: Record<string, number> = {};
   const sceneFiles = attempt("scenes", () => readdirSync(scenesDir).filter((f) => f.endsWith(".json")).sort()) ?? [];
   for (const file of sceneFiles) {
     const sk = attempt(`scenes/${file}`, () => readJson<SceneSkeleton>(join(scenesDir, file)));
@@ -253,7 +264,13 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
       const { cost: _cost, ...rest } = ex;
       exchanges.push({ ...rest, variants });
     }
-    scenes.push({ ...sk, exchanges });
+    // "newWords" is a checker-only override: the course never carries it.
+    const { newWords, ...sceneRest } = sk;
+    if (newWords !== undefined) {
+      if (!Number.isInteger(newWords) || newWords <= 0) errors.push(`${sk.id}: "newWords" must be a positive integer, got ${JSON.stringify(newWords)}`);
+      else newWordsOverride[sk.id] = newWords;
+    }
+    scenes.push({ ...sceneRest, exchanges });
   }
 
   const reactions: Record<string, RenderedLine> = {};
@@ -293,6 +310,18 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
       packWords.filter((w) => !w.bonus && levels.includes(w.lv)).map((w) => w.id),
     ]),
   );
+  // A stage word with no curated short gloss and a heuristic that fell back to shortening its
+  // gloss's own parenthetical aside is usually a sign the pack's first sense isn't the everyday
+  // one; flagged so glosses-<lang>-short.ftl can be filled in as new stages are added, without
+  // failing the build over content that (unlike a missing gloss) still displays something.
+  for (const ids of Object.values(stageWords)) {
+    for (const id of ids) {
+      const w = words[id];
+      if (w?.gloss && !w.short && heuristicGloss(w.gloss).fellBack) {
+        warnings.push(`glosses-${cfg.language}-short.ftl: no curated short gloss for ${id} "${w.w}" (${w.gloss}); heuristic fell back to its aside`);
+      }
+    }
+  }
   const notesPath = join(langDir, "notes.json");
   const notes = (existsSync(notesPath) && attempt("notes.json", () => readJson<Note[]>(notesPath))) || [];
 
@@ -342,13 +371,14 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
   for (const id of ["learner-name", `language-${cfg.language}`]) {
     if (!learnerIds.has(id)) errors.push(`learner/${learner}/ui.ftl: missing "${id}"`);
   }
-  errors.push(...checkCourse({ course, stages: meta.stages, checks: cfg.checks, learnerIds, requiredUi: [], audioFiles }));
+  errors.push(...checkCourse({ course, stages: meta.stages, checks: cfg.checks, learnerIds, requiredUi: [], audioFiles, newWordsOverride }));
   errors.push(...uiTextProblems(learnerFtl, learner));
-  // Each action's narration gets the parameters its exchanges' `expect` gives it.
+  // Each action's narration gets the parameters its exchanges' `expect` gives it, plus the current
+  // scene's NPC (npc), which the front ends always supply alongside the action's own arguments.
   const actions: Record<string, string[]> = {};
   for (const ex of scenes.flatMap((s) => s.exchanges)) {
     const name = ex.expect.action;
-    if (name) actions[name] = [...new Set([...(actions[name] ?? []), ...Object.keys(ex.expect).filter((k) => k !== "action")])];
+    if (name) actions[name] = [...new Set([...(actions[name] ?? []), ...Object.keys(ex.expect).filter((k) => k !== "action"), "npc"])];
   }
   errors.push(...narrationProblems(learnerFtl, learner, actions));
   if (cfg.checks.art) errors.push(...artProblems(settingDir, world).map((e) => `settings/${cfg.setting}/${e}`));
@@ -357,7 +387,7 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
   // Ship only the words the course uses: rank is the share of these that are known, and
   // the pack has far more words than one course needs. (The checks above see the whole pack.)
   course.words = Object.fromEntries(Object.entries(words).filter(([id]) => used.has(id)));
-  return { course, errors, clips, audioDir, artDir };
+  return { course, errors, warnings, clips, audioDir, artDir };
 }
 
 const NO_LEARNERS = "learners must list at least one reading language";
@@ -377,11 +407,13 @@ export interface BuiltCourses {
   builds: { course: string; learner: string; result: BuildResult }[];
   /** every build's errors, each prefixed "<course>/<learner>: " */
   errors: string[];
+  /** every build's warnings, each prefixed "<course>/<learner>: "; never fails the build */
+  warnings: string[];
 }
 
 /** Builds every course (or only `only`) for each of its reading languages. */
 export function buildAll(root: string, only?: string): BuiltCourses {
-  const out: BuiltCourses = { catalog: [], builds: [], errors: [] };
+  const out: BuiltCourses = { catalog: [], builds: [], errors: [], warnings: [] };
   for (const id of only ? [only] : courseIds(root)) {
     let cfg: CourseConfig;
     try {
@@ -399,6 +431,7 @@ export function buildAll(root: string, only?: string): BuiltCourses {
       const result = buildCourse(root, id, learner);
       out.builds.push({ course: id, learner, result });
       out.errors.push(...result.errors.map((e) => `${id}/${learner}: ${e}`));
+      out.warnings.push(...result.warnings.map((e) => `${id}/${learner}: ${e}`));
       const name = result.course && learnerName(result.course.learnerFtl, learner);
       if (name) learnerNames[learner] = name;
     }
@@ -435,7 +468,8 @@ function learnerName(ftl: string, locale: string): string | undefined {
 function main(): void {
   const only = process.argv[2];
   const repo = resolve(fileURLToPath(new URL("../..", import.meta.url)));
-  const { catalog, builds, errors } = buildAll(join(repo, "content"), only);
+  const { catalog, builds, errors, warnings } = buildAll(join(repo, "content"), only);
+  for (const w of warnings) console.warn(`! ${w}`);
   if (errors.length || builds.some((b) => !b.result.course)) {
     for (const e of errors) console.error(`✗ ${e}`);
     console.error(`${errors.length} error(s); nothing written`);

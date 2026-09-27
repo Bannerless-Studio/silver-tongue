@@ -48,6 +48,7 @@ npm run build:site       # both pages into site/, as GitHub Pages serves them (v
 - Always keep core free of I/O and rendering; front ends talk to it only through `send` and `state`.
 - Always run `npm run build:course` after changing anything under `content/`; never ship a course with checker errors. A changed line needs its clip: run `npm run audio` and commit `content/audio/`.
 - Never edit generated files: `content/languages/zh/words.json`, `content/languages/zh/pack.json` (except `stages`), `content/learner/en/glosses-zh.ftl`, `content/audio/`, `dist/`. Re-run the import or the build instead.
+- `content/learner/<l>/glosses-<lang>-short.ftl` is hand-edited, not generated: curated 1-3 word display glosses for words the short-gloss heuristic (`packages/view/src/help.ts`) can't shorten well on its own. `npm run build:course` warns (without failing) when a stage word has none and needs one.
 - Bonus (off-list) words go in `content/languages/<lang>/extra-words.json` with glosses in `content/learner/<l>/glosses-<lang>-extra.ftl`.
 - Every UI string the TUI uses must be listed in `packages/view/src/text.ts` `UI_KEYS`.
 - Every UI string the visual novel uses must be listed in `packages/view/src/text.ts` `VN_UI_KEYS`.

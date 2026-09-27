@@ -6,10 +6,18 @@ describe("playbackRate", () => {
     expect(SPEEDS.map((s) => playbackRate(s))).toEqual([0.7, 0.85, 1]);
   });
 
-  it("plays a slow line at 0.75 of the chosen speed", () => {
-    expect(playbackRate("slow", true)).toBeCloseTo(0.525);
-    expect(playbackRate("normal", true)).toBeCloseTo(0.6375);
+  it("plays a slow line at 0.75 of the chosen speed, to 2 places", () => {
+    expect(playbackRate("slow", true)).toBe(0.53);
+    expect(playbackRate("normal", true)).toBe(0.64);
     expect(playbackRate("fast", true)).toBe(0.75);
+  });
+
+  it("rounds to 2 places, because the terminal hands the rate to ffplay on a command line", () => {
+    for (const speed of SPEEDS) {
+      for (const slow of [false, true]) {
+        expect(String(playbackRate(speed, slow)).replace(/^-?\d*\./, "").length).toBeLessThanOrEqual(2);
+      }
+    }
   });
 
   it("never plays slower than the floor, however the choices add up", () => {

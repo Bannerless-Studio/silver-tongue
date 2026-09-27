@@ -1,4 +1,4 @@
-# Television at the tea house, a call from Old Chen's mother, and a film.
+# Evening at the tea house: Old Chen has the television on, and a call interrupts the film.
 
 on = 开电视！
 on-reply = 好，开电视！
@@ -10,8 +10,8 @@ tv-reply = 看！我爱电视。
 tv-alt1 = 今天很冷！
 tv-alt2 = 三点了。
 
-all = 我们都看电视。
-all-reply = 我们都看！
+all = 我们都看电视！
+all-reply = 好，我们都看！
 all-alt1 = 天气很冷。
 all-alt2 = 十分钟。
 
@@ -20,7 +20,7 @@ phone-reply = 好！
 phone-alt1 = 我们都看！
 phone-alt2 = 中午来。
 
-sorry = 对不起！是我妈妈。
+sorry = 对不起，是我妈妈。
 sorry-reply = 你妈妈好吗？
 sorry-alt1 = 我们都看！
 sorry-alt2 = 好，开电视！
@@ -30,7 +30,7 @@ see-reply = 看见了！很大！
 see-alt1 = 你妈妈好吗？
 see-alt2 = 我们都看！
 
-film = 电影！不说话！
+film = 电影很好，不说话！
 film-reply = 好，我不说话。
 film-alt1 = 看见了！很大！
 film-alt2 = 你妈妈好吗？

@@ -25,14 +25,14 @@ daughter-reply = 在北京！
 daughter-alt1 = 下午！
 daughter-alt2 = 他很高兴！
 
-year = 他女儿二零二五年来北京。
-year-reply = 二零二五年！
+year = 他女儿二零零三年来北京。
+year-reply = 二零零三年！
 year-alt1 = 在北京！
 year-alt2 = 昨天上午？
 
 date = 九月一日，他女儿去学校。
 date-reply = 九月一日！
-date-alt1 = 二零二五年！
+date-alt1 = 二零零三年！
 date-alt2 = 不认识。
 
 how = 他的东西很多！他怎么去北京？

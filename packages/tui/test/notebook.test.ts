@@ -33,9 +33,10 @@ describe("notebook", () => {
     };
     state.notes.read = ["hao"];
     const lines = notebookLines(course, state, t, T0).map(plain);
-    expect(lines[0]).toBe("Stage 1: 1 of 12 words known · 4 heard");
+    expect(lines[0]).toBe("Speaks: Pidgin");
+    expect(lines[1]).toBe("Stage 1: 1 of 12 words known · 4 heard");
     const text = lines.join("\n");
-    expect(text).toMatch(/The street\n○ 杯 — cup \(measure word\)\n {4}三杯茶。/);
+    expect(text).toMatch(/The street\n○ 杯 — cup\n {4}三杯茶。/); // gloss shortened to its first sense
     expect(text).toMatch(/Noodle shop\n● 你 nǐ — you\n {4}你好！\n◐ 茶 — tea\n {4}茶。/);
     expect(text).toMatch(/Heard elsewhere\n○ 好 hǎo — good/);
     expect(text).toMatch(/Notes\n好 means good\nOn its own, 好 agrees\./);

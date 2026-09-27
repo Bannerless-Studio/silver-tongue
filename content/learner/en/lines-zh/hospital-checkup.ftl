@@ -1,4 +1,4 @@
-sit = Hello! Please sit down, for ten minutes.
+sit = Please sit down here for ten minutes.
 sit-reply = Thank you, doctor.
 sit-alt1 = My name is Old Wang.
 sit-alt2 = I'm going now!

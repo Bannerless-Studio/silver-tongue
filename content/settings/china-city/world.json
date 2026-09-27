@@ -3,6 +3,7 @@
   "home": "room",
   "currency": "¥",
   "slotsPerDay": 4,
+  "homeScene": "room-hello",
   "startWallet": 20,
   "foodPerDay": 5,
   "rentPerWeek": 50,

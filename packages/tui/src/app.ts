@@ -2,6 +2,7 @@ import {
   describeRun,
   joinTiles,
   MAX_NAME_LENGTH,
+  wordState,
   type CatalogEntry,
   type Core,
   type Course,
@@ -11,15 +12,18 @@ import {
   type RenderedLine,
   type WordId,
 } from "@silver-tongue/core";
-import type { AudioOut, Speech } from "@silver-tongue/view";
+import type { AudioOut, Speech, SpeechSpeed } from "@silver-tongue/view";
 import { notebookLines } from "./notebook";
 import { lineSpans, renderScreen, wrapItems } from "./screen";
 import { strWidth, wrapLine } from "./width";
 import type { Key, StyledLine, Terminal } from "./terminal";
 import {
-  actionNarration, hudValues, introLines, makeText, placeMenu, sentenceCard, settingsRows, tileEcho, waitingForMoney, wordCard,
+  actionNarration, firstTimeGloss, hudValues, introLines, makeText, placeMenu, sentenceCard, settingsRows, tileEcho, waitingForMoney, wordCard,
   type SettingsScreen, type Text,
 } from "@silver-tongue/view";
+
+/** slow -> normal -> fast -> slow, as the settings screen's Speed row cycles. */
+const SPEED_CYCLE: SpeechSpeed[] = ["slow", "normal", "fast"];
 
 export interface AppOptions {
   course: Course;
@@ -35,6 +39,11 @@ export interface AppOptions {
   version?: string;
   /** sound out; without it the game is silent and says "no audio" */
   audio?: AudioOut;
+  /** How fast clips are said, and how to remember a change; without it speed is fixed at "slow". */
+  speed?: {
+    value: SpeechSpeed;
+    onChange(speed: SpeechSpeed): void;
+  };
   /** Switching course and reading language from [o]; without it there is no [o]. */
   settings?: {
     /** the catalog; the course and reading language being played are course.id and course.learner */
@@ -47,7 +56,7 @@ export interface AppOptions {
   };
 }
 
-type MenuItem = { label: string; input?: Input; quit?: true };
+type MenuItem = { label: string; input?: Input; quit?: true; disabled?: string };
 type Mode = "explore" | "scene" | "help" | "notebook" | "name" | "settings" | "settings-course" | "settings-reading";
 const SETTINGS_MODES: Mode[] = ["settings", "settings-course", "settings-reading"];
 
@@ -79,6 +88,16 @@ export function startApp(opts: AppOptions): App {
   let lastHelp: string[] = []; // the clips of the word or sentence last looked up, for p
   let tileReply: string[] = []; // the right reply's clips, said if the tiles match
   let queue: Speech[] = []; // what this key press has people say, in order
+  let speed: SpeechSpeed = opts.speed?.value ?? "slow";
+  let currentNpc: string | undefined; // the scene's NPC, for hints that name who asked
+  let pendingNotes = new Set<string>(); // notes ready while a scene ran, shown once explore mode is back
+  // Shown once per batch of ready-unread notes: set the moment the hint is shown, cleared only when
+  // the mentor explains them all (pendingNotes goes back to empty). Without this, every scene that
+  // readies another note (on top of ones the player already hasn't visited the mentor for) would
+  // show the hint again.
+  let noteHintShown = false;
+  let visitedPlaces = new Set<string>(); // places whose name+description have already logged this session
+  let lastRejectReason: string | undefined; // the previous log line's reject reason, to collapse a repeat
 
   const soundOn = () => !!opts.audio?.available && core.state.sound !== false;
   const hear = (clips: string[] | undefined, slow = false) => {
@@ -117,11 +136,15 @@ export function startApp(opts: AppOptions): App {
    * What the reply did and, on a mix-up, what was asked (see actionNarration).
    */
   function narrateAction(action: Record<string, string>, expected: Record<string, string>, matched: boolean, tilesWrong: boolean) {
-    for (const n of actionNarration(course, t, { action, expected, matched, tilesWrong }))
+    for (const n of actionNarration(course, t, { action, expected, matched, tilesWrong }, currentNpc && npcName(currentNpc)))
       push([n.tone === "warn" ? { text: n.text, color: "yellow" } : { text: n.text, dim: true }]);
   }
 
   function enterPlace(place: string) {
+    // The border already names the current place; the name + description are worth a log entry
+    // only the first time this place is seen this session.
+    if (visitedPlaces.has(place)) return;
+    visitedPlaces.add(place);
     push([], [{ text: t(`place-${place}`), bold: true }], [{ text: t(`place-${place}-desc`), dim: true }]);
   }
 
@@ -129,7 +152,24 @@ export function startApp(opts: AppOptions): App {
     const fresh = new Set(
       events.flatMap((e) => (e.type === "wordStateChanged" && e.from === "unseen" ? [e.word] : [])),
     );
-    let hinted = false;
+    // A scene's own wages line already says it earned; "Done." only for the (normally unreachable)
+    // case where it paid but no wallet line showed it.
+    const hasWagesLine = events.some((ev) => ev.type === "walletChanged" && ev.reason === "wages");
+    // A trust bump is only news when it unlocked something; otherwise it's noise every scene.
+    const anyUnlocked = events.some((ev) => ev.type === "unlocked");
+    const unlockedCount = events.filter((ev) => ev.type === "unlocked").length;
+    // A scene unlocked somewhere other than here names that place too, so it's clear where to go.
+    const unlockedLabel = (sceneId: string) => {
+      const name = t(`scene-${sceneId}`);
+      const place = course.scenes.find((s) => s.id === sceneId)?.place;
+      return place && place !== core.state.place ? `${name} · ${t(`place-${place}`)}` : name;
+    };
+    const unlockedNames = events
+      .filter((ev): ev is Extract<GameEvent, { type: "unlocked" }> => ev.type === "unlocked")
+      .map((ev) => unlockedLabel(ev.scene));
+    let unlockedShown = false;
+    // A rejection is only worth a fresh log line the first time; a repeat of the same one replaces it.
+    if (!events.some((ev) => ev.type === "inputRejected")) lastRejectReason = undefined;
     for (const e of events) {
       switch (e.type) {
         case "placeEntered":
@@ -137,15 +177,24 @@ export function startApp(opts: AppOptions): App {
           break;
         case "sceneStarted":
           mode = "scene";
+          currentNpc = e.npc;
+          // The intro and place description above would otherwise bury every screen of the
+          // conversation; the frame's title still says where we are. Resuming mid-scene at startup
+          // is the exception: the place description was just pushed above and is worth keeping.
+          if (!resuming) log = [];
           push([]);
-          if (!resuming) narrate(`scene-${e.scene}-start`);
+          // A repeatable scene played before has already told its story; the second run is only news.
+          if (!resuming && !(core.state.scenesDone[e.scene] ?? 0)) narrate(`scene-${e.scene}-start`);
           break;
-        case "lineSpoken":
+        case "lineSpoken": {
           lastLine = e.line;
           lastSlow = false;
           hear(e.line.audio);
           push(say(e.npc, e.line, fresh));
+          const gloss = firstTimeGloss(course, e.line, fresh);
+          if (gloss) push([{ text: `   ${gloss}`, dim: true }]);
           break;
+        }
         case "replyOptions":
           replyMode = e.mode;
           tileInput = [];
@@ -166,6 +215,9 @@ export function startApp(opts: AppOptions): App {
           lastSlow = e.slow;
           hear(e.line.audio, e.slow);
           push(say(e.npc, e.line, fresh, ` ${t("rephrased")}`));
+          // Two misses: nobody should get stuck, so the NPC also mimes it and its meaning is given.
+          narrate("gesture-narration", { npc: npcName(e.npc) });
+          if (e.line.meaning) push([{ text: e.line.meaning, dim: true }]);
           break;
         case "walletChanged":
           push([
@@ -181,19 +233,31 @@ export function startApp(opts: AppOptions): App {
           ]);
           break;
         case "trustChanged":
-          push([{ text: t("trust-up", { npc: npcName(e.npc), trust: e.trust }), color: "magenta" }]);
+          if (anyUnlocked) push([{ text: t("trust-up", { npc: npcName(e.npc) }), color: "magenta" }]);
           break;
         case "sceneEnded":
           mode = "explore";
           lastLine = null; // r repeats a line only while its scene is on
-          narrate(`scene-${e.scene}-end`);
-          push([{ text: t("scene-done", { currency: course.world.currency, earned: e.earned }), bold: true }]);
+          // A repeatable scene's ending was already told the first time it played.
+          if ((core.state.scenesDone[e.scene] ?? 0) <= 1) narrate(`scene-${e.scene}-end`);
+          // A paid scene already said so via its wallet line; an unpaid one has nothing to add.
+          if (e.earned > 0 && !hasWagesLine) push([{ text: t("scene-done-short"), bold: true }]);
           break;
         case "unlocked":
-          push([{ text: t("unlocked", { scene: t(`scene-${e.scene}`) }), color: "green" }]);
+          if (unlockedCount >= 3) {
+            if (!unlockedShown) {
+              unlockedShown = true;
+              // Scenes are joined with ", " so a "scene · place" label's own " · " separator stays
+              // unambiguous even when the batch spans several places.
+              push([{ text: t("unlocked-many", { scenes: unlockedNames.join(", ") }), color: "green" }]);
+            }
+          } else {
+            push([{ text: t("unlocked", { scene: unlockedLabel(e.scene) }), color: "green" }]);
+          }
           break;
         case "errandStarted":
-          push([{ text: t("errand-started"), color: "cyan" }]);
+          // The header's own "· parcel" marker already says this; a log line would be the third
+          // time this scene told the player (after the scene's own narration).
           break;
         case "errandEnded":
           push([{ text: t("errand-ended"), color: "cyan" }]);
@@ -202,24 +266,36 @@ export function startApp(opts: AppOptions): App {
           push([{ text: t("rank-up", { rank: t(`rank-${e.rank}`) }), color: "yellow", bold: true }]);
           break;
         case "dayEnded":
-          push([], [{ text: t("day-ended", { day: e.day }), dim: true }]);
+          push([], [{ text: t(e.rough ? "day-ended-rough" : "day-ended", { day: e.day }), dim: true }]);
           break;
         case "inputRejected":
+          // The same rejection repeated (e.g. pressing sleep from the wrong place twice) replaces
+          // the previous line instead of piling up copies of it.
+          if (lastRejectReason === e.reason) log = log.slice(0, -1);
+          lastRejectReason = e.reason;
           push([{ text: t(`reject-${e.reason}`), color: "red" }]);
           break;
         case "noteReady":
-          // One hint however many notes became ready at once.
-          if (course.world.mentor && !hinted) push([{ text: t("note-hint", { npc: npcName(course.world.mentor.npc) }), color: "magenta" }]);
-          hinted = true;
+          // Never mid-scene: buffered and shown once explore mode is back (see below).
+          pendingNotes.add(e.note);
           break;
         case "mentorVisited":
           push([]);
           if (!e.notes.length) push([{ text: t("mentor-nothing", { npc: npcName(e.npc) }), dim: true }]);
           for (const id of e.notes) push([{ text: t(`note-${id}-title`), bold: true }], [{ text: t(`note-${id}`) }], []);
+          for (const id of e.notes) pendingNotes.delete(id);
+          if (!pendingNotes.size) noteHintShown = false;
           break;
         case "wordStateChanged":
           break;
       }
+    }
+    // A note readied mid-scene surfaces once we're back in explore mode, not mid-conversation, and
+    // only the first time: a player who hasn't visited the mentor yet sees this once, not again for
+    // every further scene that readies another note on top of the ones already waiting.
+    if (mode === "explore" && pendingNotes.size && !noteHintShown && course.world.mentor) {
+      push([{ text: t("note-hint", { npc: npcName(course.world.mentor.npc) }), color: "magenta" }]);
+      noteHintShown = true;
     }
   }
 
@@ -258,7 +334,14 @@ export function startApp(opts: AppOptions): App {
   const settingsScreen = (): SettingsScreen => (mode === "settings-course" ? "course" : mode === "settings-reading" ? "reading" : "main");
   /** The rows the settings screen shows, and what choosing each one does. */
   function settingsChoices(): { label: string; choose: () => void }[] {
-    const ctx = { course, catalog: opts.settings!.courses, state: core.state, t, audioAvailable: !!opts.audio?.available };
+    const ctx = {
+      course,
+      catalog: opts.settings!.courses,
+      state: core.state,
+      t,
+      audioAvailable: !!opts.audio?.available,
+      ...(opts.speed ? { terminal: { speed } } : {}),
+    };
     return settingsRows(settingsScreen(), ctx).map((r) => ({
       label: r.label,
       choose: () => {
@@ -266,7 +349,10 @@ export function startApp(opts: AppOptions): App {
         if (a.kind === "open") mode = a.screen === "course" ? "settings-course" : "settings-reading";
         else if (a.kind === "back") mode = "settings";
         else if (a.kind === "switch") switchTo(a.course, a.learner);
-        else soundKey("m");
+        else if (a.kind === "speed") {
+          speed = SPEED_CYCLE[(SPEED_CYCLE.indexOf(speed) + 1) % SPEED_CYCLE.length];
+          opts.speed?.onChange(speed);
+        } else soundKey("m");
       },
     }));
   }
@@ -282,6 +368,11 @@ export function startApp(opts: AppOptions): App {
   function menu(): MenuItem[] {
     // Sleep and quit always keep their keys; the content checker keeps places within 7 other items.
     return [...placeMenu(course, core.state, t), { label: t("menu-quit"), quit: true }];
+  }
+
+  /** Whether a reply's meaning is still news: at least one of its words isn't known yet. */
+  function replyNeedsGloss(o: RenderedLine): boolean {
+    return o.tokens.some((tk) => wordState(core.state.words[tk.word], opts.now()) !== "known");
   }
 
   /**
@@ -308,11 +399,15 @@ export function startApp(opts: AppOptions): App {
       return [[{ text: t(title), dim: true }], ...settingsChoices().map((r, i) => [{ text: `${i + 1}) ${r.label}` }])];
     }
     if (mode === "explore") {
-      // The status line's parcel marker is cut off on narrow screens; this line wraps instead.
-      const parcel: StyledLine[] = core.state.errand ? [[{ text: t("errand-carrying"), color: "cyan" }]] : [];
       // Scenes here that wait only for money: shown, not offered, so an empty shop says why.
       const waiting: StyledLine[] = waitingForMoney(course, core.state, t).map((text) => [{ text, dim: true }]);
-      return [...parcel, ...waiting, [{ text: t("menu-title"), dim: true }], ...menu().map((m, i) => [{ text: `${i + 1}) ${m.label}` }])];
+      return [
+        ...waiting,
+        [{ text: t("menu-title"), dim: true }],
+        ...menu().map((m, i) => [
+          m.disabled ? { text: `${i + 1}) ${m.label} — ${m.disabled}`, dim: true } : { text: `${i + 1}) ${m.label}` },
+        ]),
+      ];
     }
     if (mode === "help") {
       const items = helpWords().map((w, i) => ({ ...w, label: `${i + 1}) ${w.text}` }));
@@ -327,9 +422,18 @@ export function startApp(opts: AppOptions): App {
       ];
     }
     const title: StyledLine = [{ text: t("reply-title"), dim: true }];
-    if (replyMode === "pick") return [title, ...pickOptions.map((o, i) => [{ text: `${i + 1}) ` }, ...lineSpans(o, new Set())])];
+    if (replyMode === "pick")
+      return [
+        title,
+        ...pickOptions.map((o, i) => [
+          { text: `${i + 1}) ` },
+          ...lineSpans(o, new Set()),
+          // Once every word in a reply is known, its meaning is no longer news.
+          ...(o.meaning && replyNeedsGloss(o) ? [{ text: `  — ${o.meaning}`, dim: true }] : []),
+        ]),
+      ];
     return [
-      [{ text: t("tiles-title"), dim: true }],
+      [{ text: t("tiles-title", { keys: keyRange(tiles.length) }), dim: true }],
       ...wrapItems(
         tiles.map((x, i) => `[${i + 1}]${x}`),
         width,
@@ -340,14 +444,18 @@ export function startApp(opts: AppOptions): App {
   }
 
   /**
-   * ♪ [m] while sound plays, ♪ off [m] when turned off, "no audio" when there's none here; then the
-   * version, shortened or left out when the key hints on the left leave no room.
+   * Nothing while sound plays (expected, working sound earns no display); ♪ off [m] when muted,
+   * "no audio" when there's none here to turn on or off; then the version, shortened or left out
+   * when the key hints on the left leave no room.
    */
   function footerRight(footer: string, cols: number): string {
-    const sound = !opts.audio?.available ? t("sound-none") : core.state.sound === false ? t("sound-off") : t("sound-on");
+    const sound = !opts.audio?.available ? t("sound-none") : core.state.sound === false ? t("sound-off") : "";
     const room = cols - 2 - (strWidth(footer) + 2) - 2;
     const v = opts.version;
-    const choices = v ? [`${sound} · Silver Tongue v${v}`, `${sound} · v${v}`, sound] : [sound];
+    if (!v) return sound;
+    const full = sound ? `${sound} · Silver Tongue v${v}` : `Silver Tongue v${v}`;
+    const short = sound ? `${sound} · v${v}` : `v${v}`;
+    const choices = [full, short, sound];
     return choices.find((c) => strWidth(c) <= room) ?? sound;
   }
 
@@ -371,7 +479,7 @@ export function startApp(opts: AppOptions): App {
     }
     const [footerId, count] =
       mode === "settings"
-        ? ["keys-settings", 3]
+        ? ["keys-settings", settingsChoices().length]
         : SETTINGS_MODES.includes(mode)
         ? ["keys-settings-pick", settingsChoices().length]
         : mode === "name"
@@ -493,6 +601,9 @@ export function startApp(opts: AppOptions): App {
   if (opts.notice) push([{ text: t(opts.notice), color: "yellow" }]);
   tellIntro();
   enterPlace(core.state.place);
+  // A note readied mid-scene, then quitting before it was shown, would otherwise lose the one-time
+  // hint: core.state.notes.ready survives a save, so it's the source of truth on resume too.
+  pendingNotes = new Set(core.state.notes.ready);
   resuming = true;
   apply(describeRun(course, core.state)); // a save made mid-scene resumes in the scene
   flush();

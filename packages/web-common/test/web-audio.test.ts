@@ -66,7 +66,7 @@ describe("createWebAudio", () => {
     el.onended!();
     expect(el.played).toMatchObject([{ src: "audio/x.mp3", rate: 0.7 }]);
     beat()[0].cb();
-    expect(el.played[1].rate).toBeCloseTo(0.525);
+    expect(el.played[1].rate).toBe(0.53);
   });
 
   it("asks for the rate again for every clip, so a change takes at once", () => {

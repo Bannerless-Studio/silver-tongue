@@ -5,7 +5,7 @@ photo-reply = 你儿子在这里！
 photo-alt1 = 我在饭馆工作。
 photo-alt2 = 他八岁。
 
-people = 我家有六个人。
+people = 我家里有六个人。
 people-reply = 六个人！
 people-alt1 = 五块！
 people-alt2 = 你儿子很好！

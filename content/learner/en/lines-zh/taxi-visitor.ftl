@@ -23,14 +23,14 @@ daughter-reply = In Beijing!
 daughter-alt1 = The afternoon!
 daughter-alt2 = He must be happy!
 
-year = His daughter came to Beijing in twenty twenty-five.
-year-reply = Twenty twenty-five!
+year = His daughter came to Beijing in two thousand three.
+year-reply = Two thousand three!
 year-alt1 = In Beijing!
 year-alt2 = Yesterday morning?
 
 date = On the first of September his daughter starts school.
 date-reply = The first of September!
-date-alt1 = Twenty twenty-five!
+date-alt1 = Two thousand three!
 date-alt2 = I don't know him.
 
 how = He has so much luggage! How will he get to Beijing?

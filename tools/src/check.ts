@@ -12,9 +12,28 @@ export interface CheckInput {
   requiredUi: string[];
   /** clip ids that have a file (checked when checks.audio is on) */
   audioFiles?: Set<string>;
+  /** scene id -> a fixed new-word limit for its exchanges, replacing the ratio rule */
+  newWordsOverride?: Record<string, number>;
 }
 
 export const MAX_NEW_PER_EXCHANGE = 2;
+/** Below this many words met, a scene gets the most lenient band. */
+export const LENIENT_BELOW_MET = 30;
+/** Below this many words met (but not the lenient band), a scene gets the middle band. */
+export const EASING_BELOW_MET = 60;
+/**
+ * How many new words a variant may introduce: an override (a scene's own `newWords`) if one is
+ * given; otherwise a scene early in the course, where the player knows few words yet, gets a
+ * flat, generous cap (4 new words met before 30, 3 before 60); once the player knows 60+ words,
+ * the limit is the usual ratio: at least 2, or 20% of the variant's distinct words, whichever is
+ * bigger, so a longer exchange can carry more new words while staying mostly familiar.
+ */
+export const newWordLimit = (metCount: number, distinctWords: number, override?: number): number => {
+  if (override !== undefined) return override;
+  if (metCount < LENIENT_BELOW_MET) return 4;
+  if (metCount < EASING_BELOW_MET) return 3;
+  return Math.max(MAX_NEW_PER_EXCHANGE, Math.floor(distinctWords * 0.2));
+};
 export const MIN_SCENES_PER_WORD = 3;
 /** Every choice is one key, 1-9: a reply's tiles are its words plus up to 2 extra. */
 export const MAX_REPLY_WORDS = 7;
@@ -174,6 +193,11 @@ export function checkCourse(input: CheckInput): string[] {
       if (!reaches(world.places, id, world.home)) errors.push(`world: home "${world.home}" can't be reached from "${id}"`);
     }
   }
+  if (world.homeScene !== undefined) {
+    const scene = course.scenes.find((s) => s.id === world.homeScene);
+    if (!scene) errors.push(`world: homeScene "${world.homeScene}" is not a scene`);
+    else if (scene.repeatable) errors.push(`world: homeScene "${world.homeScene}" can't be repeatable`);
+  }
   for (const [id, n] of Object.entries(world.npcs)) {
     if (!world.places[n.place]) errors.push(`world: npc "${id}" is at unknown place "${n.place}"`);
   }
@@ -298,15 +322,20 @@ export function checkCourse(input: CheckInput): string[] {
   for (const s of ordered) {
     const seen = new Set<WordId>();
     for (const a of before.get(s.id) ?? []) for (const w of metAfter.get(a) ?? []) seen.add(w);
+    // A scene's leniency band is fixed at how much the player knows when the scene starts, not
+    // updated exchange by exchange, so every exchange in an early scene gets the same headroom.
+    const metCount = seen.size;
     for (const ex of s.exchanges) {
       const exWords = new Set<WordId>();
       for (const [key, v] of Object.entries(ex.variants)) {
         const where = `${s.id}/${ex.id}${key ? `[${key}]` : ""}`;
         const words = [...lineWords(v.npc), ...lineWords(v.reply), ...lineWords(v.rephrase)];
-        const fresh = [...new Set(words)].filter((w) => !seen.has(w));
-        if (fresh.length > MAX_NEW_PER_EXCHANGE) {
+        const distinct = new Set(words);
+        const fresh = [...distinct].filter((w) => !seen.has(w));
+        const limit = newWordLimit(metCount, distinct.size, input.newWordsOverride?.[s.id]);
+        if (fresh.length > limit) {
           const shown = fresh.map((w) => course.words[w]?.w ?? w).join(" ");
-          errors.push(`${where}: ${fresh.length} new words (${shown}); at most ${MAX_NEW_PER_EXCHANGE}`);
+          errors.push(`${where}: ${fresh.length} new words (${shown}); at most ${limit}`);
         }
         checkLevels(where, words, s.stage);
         // Written wrong replies are offered next to the right one: they may use only words the

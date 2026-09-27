@@ -10,8 +10,8 @@ fruit-reply = 水果！很好。
 fruit-alt1 = 杯子没有了！
 fruit-alt2 = 我现在去！
 
-apples = 这个苹果很好！
-apples-reply = 我喜欢苹果。
+apples = 哪个苹果好？
+apples-reply = 这个很好！
 apples-alt1 = 我喜欢面条。
 apples-alt2 = 学校在哪里？
 

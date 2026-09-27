@@ -8,7 +8,7 @@ export interface PlayerSettings {
   course?: string;
   /** the reading language */
   learner?: string;
-  /** how fast clips play, on either web page */
+  /** how fast clips are said; unset means "slow" */
   speed?: SpeechSpeed;
   /** the visual novel moves on by itself */
   autoAdvance?: boolean;
