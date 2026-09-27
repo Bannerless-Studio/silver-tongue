@@ -7,7 +7,7 @@ import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { availableSceneIds, createCore, moneyBlocked, newGame } from "@silver-tongue/core";
 import { describe, expect, it } from "vitest";
-import type { AudioLike } from "@silver-tongue/tui-web/src/web-audio";
+import type { AudioLike } from "@silver-tongue/web-common";
 import { BARKS } from "../barks";
 import { UI_LOCALES } from "../locale";
 import { BARK_CLIP, BarkPicker, barkTokens, FALLBACK_ROLE, npcRole, spaceFigures, type BarkBook } from "../src/barks";
