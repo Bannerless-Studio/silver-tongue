@@ -52,3 +52,7 @@ ja-ne = (isn't it; right: at the end of a sentence)
 ja-ashita = tomorrow
 ja-o = (object marker)
 ja-kudasai = please (give me)
+ja-hyaku = hundred
+ja-ju = ten
+ja-mo = also; too
+ja-sore = that; that one (near you)

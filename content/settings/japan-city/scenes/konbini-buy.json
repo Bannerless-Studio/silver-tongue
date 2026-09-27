@@ -1,0 +1,44 @@
+{
+ "id": "konbini-buy",
+ "place": "konbini",
+ "npc": "clerk",
+ "stage": 1,
+ "after": [
+  "konbini-prices"
+ ],
+ "requires": {
+  "trust": {
+   "clerk": 1
+  }
+ },
+ "repeatable": true,
+ "trustGain": 1,
+ "exchanges": [
+  {
+   "id": "buy",
+   "slots": {
+    "item": "goods"
+   },
+   "expect": {
+    "action": "buy",
+    "item": "$item"
+   },
+   "hinges": [
+    "$item"
+   ],
+   "pay": 0,
+   "missCost": 0,
+   "cost": 150
+  },
+  {
+   "id": "thanks",
+   "slots": {},
+   "expect": {
+    "action": "thanks"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  }
+ ]
+}

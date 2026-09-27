@@ -488,5 +488,39 @@
   "readings": [
    "kudasai"
   ]
+ },
+ {
+  "id": "ja-hyaku",
+  "w": "百",
+  "lv": "N5",
+  "readings": [
+   "ひゃく",
+   "hyaku"
+  ]
+ },
+ {
+  "id": "ja-ju",
+  "w": "十",
+  "lv": "N5",
+  "readings": [
+   "じゅう",
+   "jū"
+  ]
+ },
+ {
+  "id": "ja-mo",
+  "w": "も",
+  "lv": "N5",
+  "readings": [
+   "mo"
+  ]
+ },
+ {
+  "id": "ja-sore",
+  "w": "それ",
+  "lv": "N5",
+  "readings": [
+   "sore"
+  ]
  }
 ]

@@ -1,0 +1,64 @@
+{
+ "id": "konbini-prices",
+ "place": "konbini",
+ "npc": "clerk",
+ "stage": 1,
+ "after": [
+  "tanaka-numbers"
+ ],
+ "requires": {},
+ "repeatable": false,
+ "trustGain": 1,
+ "exchanges": [
+  {
+   "id": "welcome",
+   "slots": {},
+   "expect": {
+    "action": "welcome"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "onigiri",
+   "slots": {},
+   "expect": {
+    "action": "onigiri"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "bread",
+   "slots": {},
+   "expect": {
+    "action": "bread"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "which",
+   "slots": {},
+   "expect": {
+    "action": "which"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "thanks",
+   "slots": {},
+   "expect": {
+    "action": "thanks"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  }
+ ]
+}

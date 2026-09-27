@@ -40,12 +40,19 @@ scene-ramen-intro-start = A man in a white headband waves you in from behind the
 scene-ramen-intro-end = The owner ties a towel round your head: you have a job.
 scene-ramen-shift = Work a shift
 
+scene-konbini-prices = Ask what things cost
+scene-konbini-prices-start = The door chimes. A young clerk in a striped uniform bows.
+scene-konbini-prices-end = The clerk bows again as you leave. The rice balls are 150 yen.
+scene-konbini-buy = Buy something to eat
+
 # What a reply does (action-<name>), and on a mix-up what was asked (asked-<name>).
 # Concept values arrive as learner names: $item = "tea", $count = "three".
 action-fetch = You bring { $item }.
 asked-fetch = The owner wanted { $item }.
 action-serve = You set down { $count } { $item }s.
 asked-serve = The owner wanted { $count } { $item }s.
+action-buy = You buy the { $item }.
+asked-buy = The clerk was asking about the { $item }.
 
 # Conversations: what was asked, shown after a wrong reply. These are shared by every scene that
 # uses the action, so they say "they" unless only one person ever uses it.
@@ -71,3 +78,7 @@ asked-ate = The owner was asking if you've eaten ramen.
 asked-work = The owner was asking if you'll work.
 asked-water = The owner was showing you the water.
 asked-tea = The owner was showing you the tea.
+asked-onigiri = The clerk was telling you what rice balls cost.
+asked-bread = The clerk was telling you what bread costs.
+asked-which = The clerk was asking which one you meant.
+asked-thanks = { $npc } was thanking you.
