@@ -45,11 +45,12 @@ bordered panels, each with a title and an optional right-hand label, joined by `
 - **HUD row.** Money, days until rent, rank, and the parcel marker while an errand is on. Rent
   turns red when it is late. Days until rent is `7 - day % 7` (rent falls on every 7th day, see
   core `life.ts`), computed in `view/hud.ts` as `rentInDays`; the HUD string moves into its own Fluent
-  keys (`hud-top`, `hud-row`) so it can be laid out in two places.
+  keys (`hud-top` for the border; `hud-rent`, `hud-rent-late`, `hud-parcel` for the row, which is
+  built as coloured pieces) so it can be laid out in two places.
 - **Log.** Takes every row the other panels leave, newest at the bottom, as now.
 - **Word card panel.** Looking a word or the whole sentence up with `[w]` opens the card in its own
   panel instead of pushing a line into the log. It stays until the next reply, another lookup, or
-  `Esc`. Text, reading, base form when it differs, and the full gloss.
+  `Esc`. Text, readings and the full gloss.
 - **Reply panel.** Titled "Your reply" in a scene and "What now?" when exploring. Numbered options as
   now; a pick reply keeps its meaning while any of its words isn't known (unchanged rule). Tiles,
   help's word list, settings and the name prompt all draw into this same panel.
@@ -71,7 +72,8 @@ bordered panels, each with a title and an optional right-hand label, joined by `
 
 Under an NPC line (said or rephrased) a dim yellow row gives its reading: pinyin for zh, kana for ja,
 each word's last reading as `sentenceCard` already builds it. The row shows only while the line has
-at least one word that isn't `known`; once every word is known, the line stands alone. The rule
+at least one word that isn't `known`; once every word is known, the line stands alone. It is also
+left out when the reading only repeats the words (a Latin-script course). The rule
 lives in `view` (`readingRow(course, state, line, now)`, returning the text or `undefined`) so the
 visual novel can use it later. The first-time gloss row stays, below the reading.
 
@@ -82,33 +84,38 @@ visual novel can use it later. The first-time gloss row stays, below the reading
 - **Bottom right**, where the version already is. As the screen narrows it steps down:
   `<sound> · Silver Tongue v<v> · by Bannerless Studio` → `<sound> · Silver Tongue v<v>` →
   `<sound> · v<v>` → `<sound>`. The key hints on the left always win.
-- **Arrival.** Above the intro story in the log, "Silver Tongue" in bold and the credit dim under it,
-  so a phone that has no room in the border still sees it once.
+- **Arrival.** Right after the intro story in the log, "Silver Tongue" in bold and the credit dim
+  under it. After, not above: the real intro is longer than a screen, and above it the credit would
+  scroll away at once.
 
 ## Notebook
 
 ```
 ┌ Notebook ──────────────────────────── Speaks: Pidgin ┐
-│ [Words]  Notes                  Stage 1: 12/40 known │
+│ 1) Words   2) Notes                                   │
+│ Stage 1: 12 of 40 words known · 20 heard             │
 ├──────────────┬───────────────────────────────────────┤
-│ ▸ Recent  (3)│ 牛肉面 niúròumiàn            new      │
+│ ▸ Recent  (3)│ 牛肉面 niúròumiàn     ░░░░░  new      │
 │   Noodle Shop│   beef noodle soup                    │
-│   Street  (8)│ 多少钱 duōshao qián     ■■□□□  met    │
+│   Street  (8)│ 多少钱 duōshao qián     ██░░░  met    │
 │   Home    (5)│   how much                            │
-└ [tab] tab · [←→] group · [↑↓] word · [enter] open · [p] play · [esc] back ┘
+└ [esc] back · [1-2] words/notes · [↑↓] word · [←→] group · [enter] more · [p] play ┘
 ```
 
-- **Tabs:** Words and Notes (the mentor notes already explained). `[tab]` switches.
+- **Tabs:** Words and Notes (the mentor notes already explained). `[1]` and `[2]` switch; not Tab,
+  which the web page leaves to the browser so focus can leave the game. The phone keypad gains `←`
+  and `→` for the groups.
 - **Left column (Words):** Recent first, then one group per place in world order (the existing
   groups, `notebookEntries`). `[←→]` moves between groups. Recent is the words first heard within the
-  last day of play (`firstSeen >= now - DAY_MS`); it is left out when empty.
+  last day of play (`firstSeen >= now - DAY_MS`); it is left out when empty. It is its own `recent`
+  field, not one of `groups`, so the visual novel's notebook doesn't gain it by accident.
 - **Right column:** each word's text, reading, short gloss, a five-cell memory bar and a label. The
-  bar fills `min(streak, 5)` cells. The label is `new` at streak 0, else the word state: `met`,
+  bar fills `min(streak, 5)` cells, `█` filled and `░` empty (block characters: `■□` draw badly in
+  xterm.js). The label is `new` at streak 0, else the word state: `met`,
   `shaky` (yellow), `known` (green). `[↑↓]` moves the selection (`▸`), `[enter]` expands it to show
   the line it was first heard in, `[p]` plays its clip.
 - **Under 50 columns:** one column; the group list becomes a single line `◂ Noodle Shop (8) ▸`.
-- **Data in `view`:** `notebookEntries` gains the Recent group and, per word, `bar` (0-5) and
-  `label`. `tui/notebook.ts` only draws.
+- **Data in `view`:** `notebookEntries` gains `recent` and, per word, `bar` (0-5) and `label`. `tui/notebook.ts` only draws.
 
 ## Colours
 
@@ -132,8 +139,10 @@ light background stays readable. `Color` gains `blue` and `white` (`ansi.ts` 34,
 ## Code
 
 - `packages/view`: `rentInDays` in `hud.ts`; `readingRow`; notebook Recent group, `bar` and
-  `label`; new keys (`credit`, `hud-top`, `hud-row`, `notebook-tab-*`, `notebook-recent`,
-  `notebook-label-*`, `reply-title-explore`, key hints) in `ui.ftl` and `UI_KEYS`.
+  `label`; new keys (`credit`, `hud-top`, `hud-rent`, `hud-rent-late`, `hud-parcel`,
+  `notebook-title`, `notebook-words`, `notebook-recent`, `notebook-notes-empty`, `notebook-label-*`,
+  the new `keys-notebook`) in `ui.ftl` and `UI_KEYS`; `hud` goes. The explore panel reuses
+  `menu-title`.
 - `packages/tui/src/panel.ts` (new): `Panel { title?, right?, lines, min?, max? }` and
   `renderPanels(header, panels, footer, cols, rows)`, which does the row budget and the narrow mode.
   `screen.ts` keeps `lineSpans` and `wrapItems`; `renderScreen` goes.
@@ -153,7 +162,7 @@ light background stays readable. `Color` gains `blue` and `white` (`ansi.ts` 34,
 - `app.test.ts`: behaviour tests keep passing; assertions that pinned the old frame are updated.
 - `view` tests: `rentInDays` across the week and when late, `readingRow` shown then hidden as words
   become known, the Recent group, `bar` and `label` for each word state.
-- A zh and a ja course fixture both drawn, so readings and widths are checked for pinyin and kana.
+- The zh fixture and the spaced (Latin-script) fixture both drawn; `main` has no ja course yet.
 - Each commit: `npm test`, `npm run typecheck`. At the end: `npm run play` at 80 columns and
   `npm run build:site` with the text page at phone width.
 

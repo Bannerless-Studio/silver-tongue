@@ -2,6 +2,15 @@
 
 Every release of Silver Tongue, newest first.
 
+## 0.16.1 (2026-09-28)
+
+- The text game has a new look. The screen is split into boxes: where you are and what day it is at the top, then your money, how many days until rent and how well you speak, then the conversation, then your choices.
+- Under a line someone says, you now see how it's pronounced (pinyin for Chinese), until you know every word in it.
+- A word you look up opens in its own box above your choices, instead of in the conversation.
+- The notebook has two columns: your words on the right, grouped by where you heard them, with the ones from the last day under Recent. A bar shows how well you remember each word. Press 2 for the notes you've been told.
+- On a phone, the key bar has ← and → for moving around the notebook.
+- Silver Tongue is made by Bannerless Studio, and now says so.
+
 ## 0.16.0 (2026-09-27)
 
 - The game's rules engine (`@silver-tongue/core`) is now closed source. It lives in the private repository `Bannerless-Studio/silver-tongue-core`, and this repository uses a compiled copy of it. The front ends, the course content and the tools stay open here. Your saved games are unchanged and carry on in every version.
