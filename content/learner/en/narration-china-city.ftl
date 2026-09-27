@@ -1,8 +1,8 @@
 # The story. intro-1, intro-2, … open a new game ($currency, $wallet, $rent are available).
-intro-1 = Your phone is dead, your wallet is gone, and the bus that brought you here left an hour ago.
-intro-2 = You're standing on a street in a Chinese city with { $currency }{ $wallet } in your pocket. You know nobody, and nobody here speaks your language.
-intro-3 = Food costs money. There's a room for you down the street, and the rent, { $currency }{ $rent }, is due at the end of each week. To earn anything you'll need work, and for work you'll need words: get them right first time and you're paid in full.
-intro-4 = On a bench by the road, an old man is watching you with open curiosity. Maybe start there.
+intro-1 = China, 1980. There is no phone in your pocket, no translator in your bag, and nobody on this street who speaks your language: whatever you have to say, you will say it in Chinese.
+intro-2 = You have { $currency }{ $wallet }. There is a room for you down the street; the rent, { $currency }{ $rent }, falls due at the end of each week, and food costs money every day.
+intro-3 = There is work in the noodle shop, at the warehouse, out on the road. It needs words, and words get you paid in full only when you get them right the first time.
+intro-4 = On a bench by the road an old man is watching you with open curiosity. Maybe start there.
 
 place-street = Main Street
 place-street-desc = Bikes, steam and shouting. An old man sits on a bench by the road. Across it, a noodle shop glows, and past it the street opens onto Market Street, where your room is.
