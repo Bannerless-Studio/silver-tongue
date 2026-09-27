@@ -43,12 +43,108 @@ describe("tui app", () => {
     expect(term.frames.at(-1)!.length).toBe(12);
   });
 
+  it("puts the day in the top border and money, rent and rank in the HUD row", () => {
+    const { term } = setup();
+    const s = term.screen();
+    expect(s[0]).toMatch(/^┌ The street ─+ Day 1 · slot 0\/4 ┐$/);
+    expect(s[1]).toContain("¥20 · rent in 6 days · Speaks: Pidgin");
+  });
+
+  it("shows a line's reading under it while its words are new, and not once they're known", () => {
+    const { term } = setup();
+    term.press("1", "1");
+    expect(term.screen().join("\n")).toMatch(/Cook: 你好！ *│\n│ +nǐ hǎo/);
+    const known = { right: 3, wrong: 0, streak: 3, helps: 0, lapsed: false, firstSeen: T0, lastSeen: T0 };
+    const again = setup((s) => (s.words = { w_ni: { ...known }, w_hao: { ...known } }));
+    again.term.press("1", "1");
+    expect(again.term.screen().join("\n")).not.toContain("nǐ hǎo");
+  });
+
+  it("opens a looked-up word in a card above the replies, closed by a reply or esc", () => {
+    const { term, core } = setup();
+    term.press("1", "1", "w", "1");
+    const s = term.screen();
+    const card = s.findIndex((l) => l.includes("你 nǐ — you"));
+    expect(card).toBeGreaterThan(0);
+    expect(card).toBeLessThan(s.findIndex((l) => l.includes("Which word?"))); // still in help: its panel is below
+    term.press("escape"); // back from the word list; the card stays
+    expect(term.screen().join("\n")).toContain("你 nǐ — you");
+    term.press("escape"); // closes the card
+    expect(term.screen().join("\n")).not.toContain("你 nǐ — you");
+    term.press("w", "1", "escape", rightKey(core)); // a reply closes it too
+    expect(term.screen().join("\n")).not.toContain("你 nǐ — you");
+  });
+
+  it("gives up the word card, then the HUD, before the log's last row on a short screen", () => {
+    const { term } = setup();
+    term.press("1", "1", "w", "1", "escape");
+    term.resize(40, 8);
+    const f = term.frames.at(-1)!;
+    expect(f.length).toBe(8);
+    for (const l of f) expect(lineWidth(l)).toBe(40);
+    const s = term.screen().join("\n");
+    expect(s).not.toContain("你 nǐ — you");
+    expect(s).toMatch(/1\) /);
+  });
+
+  it("keeps the line being answered on a phone screen while a looked-up word is open", () => {
+    const { term } = setup();
+    term.resize(40, 12);
+    term.press("1", "1", "w", "1", "escape");
+    const s = term.screen().join("\n");
+    expect(s).toContain("Cook: 你好！");
+    expect(s).toContain("你 nǐ — you");
+  });
+
+  it("draws every screen inside the terminal at phone, short, laptop and wide sizes", () => {
+    for (const [cols, rows] of [[40, 12], [40, 8], [80, 24], [120, 40]]) {
+      const { term } = setup();
+      term.resize(cols, rows);
+      const check = () => {
+        const f = term.frames.at(-1)!;
+        expect(f.length).toBe(rows);
+        for (const l of f) expect(lineWidth(l)).toBe(cols);
+        expect(term.screen().at(-1)).toContain("[");
+      };
+      check(); // explore
+      term.press("1", "1");
+      check(); // a scene: pick a reply
+      term.press("w");
+      check(); // help: the word list
+      term.press("1");
+      check(); // a word card
+      term.press("escape");
+      check();
+      term.press("n");
+      check(); // the notebook
+      term.press("escape");
+    }
+  });
+
+  it("credits Bannerless Studio next to the version when there is room", () => {
+    const course = fixtureWithText();
+    const core = createCore(course, newGame(course), { now: () => T0, rng: mulberry32(1) });
+    const term = new FakeTerminal(120, 20);
+    startApp({ course, core, term, now: () => T0, quit: () => {}, version: "0.16.1" });
+    expect(term.screen().at(-1)).toMatch(/no audio · Silver Tongue v0\.16\.1 · by Bannerless Studio ┘$/);
+  });
+
   it("opens a new game with the story, wrapped to the screen", () => {
     const { term } = setup();
     const s = term.screen().join("\n");
     expect(s).toContain("You arrive with ¥20 and no words.");
     term.resize(40, 20);
-    expect(term.screen().join("\n")).toMatch(/An old man on a bench is watching\s*│\n│ you with open curiosity\./);
+    expect(term.screen().join("\n")).toMatch(/An old man on a bench is watching you\s*\nwith open curiosity\./);
+  });
+
+  it("names the game and its studio after the opening story, on the first screen however long the story is", () => {
+    const long = Array.from({ length: 12 }, (_, i) => `intro-${i + 1} = Story line ${i + 1}.`).join("\n");
+    const { term } = setup(undefined, (c) => (c.learnerFtl += `\n${long}\n`));
+    const s = term.screen().join("\n");
+    expect(s).toMatch(/Silver Tongue *│\n│ by Bannerless Studio/);
+    expect(s.indexOf("Story line 12.")).toBeLessThan(s.indexOf("by Bannerless Studio"));
+    const under = setup((st) => (st.scenesDone.intro = 1));
+    expect(under.term.screen().join("\n")).not.toContain("Bannerless");
   });
 
   it("skips the story when the game is already under way", () => {
@@ -98,6 +194,21 @@ describe("tui app", () => {
     const s = term.screen().join("\n");
     expect(s).toMatch(/\+¥\d+ \(wages\)/);
     expect(s).not.toContain("Done.");
+  });
+
+  it("announces places revealed together on one line", () => {
+    const { term, core } = setup(undefined, (c) => {
+      for (const p of ["school", "hospital"]) {
+        c.world.places[p] = { links: ["street"], after: ["intro"] };
+        c.world.places.street.links.push(p);
+      }
+    });
+    term.press("1", "1"); // to the noodle shop, then the intro
+    term.press(rightKey(core));
+    term.press(rightKey(core));
+    const s = term.screen().join("\n");
+    expect(s).toContain("New places: place-school, place-hospital");
+    expect(s.split("New place").length - 1).toBe(1);
   });
 
   it("shows the trust line only when it unlocks a scene, and drops the number", () => {
@@ -199,7 +310,8 @@ describe("tui app", () => {
     const { term } = setup();
     const s = term.screen().join("\n");
     expect(s).toContain("The street");
-    expect(s).toContain("Day 1 · slot 0/4 · ¥20");
+    expect(s).toContain("Day 1 · slot 0/4");
+    expect(s).toContain("¥20 · rent in 6 days");
     expect(s).toContain("1) Go to Noodle shop");
     expect(s).toContain("3) Save and quit");
   });
@@ -233,14 +345,14 @@ describe("tui app", () => {
     const { term, core } = setup();
     term.press("1", "1");
     let s = term.screen().join("\n");
-    expect(s).toContain("Your reply:");
+    expect(s).toContain("Your reply");
     expect(s).toMatch(/[1-3]\) 你好！/);
     expect(s).toContain("[1-3] reply");
     term.press(rightKey(core));
     s = term.screen().join("\n");
     expect(s).toContain("You: 你好！");
     expect(s).toContain(`[1-${core.state.run!.options.length}] reply`);
-    expect(term.screen().filter((l) => l.includes("Your reply:")).length).toBe(1);
+    expect(term.screen().filter((l) => l.includes("Your reply")).length).toBe(1);
   });
 
   it("counts the menu items in the footer", () => {
@@ -329,7 +441,7 @@ describe("tui app", () => {
       s.slot = 4;
     });
     term.press("1", "1");
-    expect(term.screen().join("\n")).toContain("You're out of time today. Sleep first.");
+    expect(term.screen().join("\n")).toContain("You're out of time today. Go and find your bed.");
     expect(saves.length).toBe(1);
   });
 
@@ -350,16 +462,14 @@ describe("tui app", () => {
     expect(term.screen().join("\n")).toContain("You: 你好，Jamil！");
   });
 
-  it("won't sleep away from home, and says so", () => {
-    const { term, core, saves } = setup(
+  it("offers no sleep away from home", () => {
+    const { term } = setup(
       (s) => (s.place = "noodle_shop"),
       (c) => (c.world.home = "street"),
     );
-    const savedBefore = saves.length;
-    term.press("3");
-    expect(term.screen().join("\n")).toContain("You want your own bed. Head home first.");
-    expect(core.state.day).toBe(1);
-    expect(saves.length).toBe(savedBefore); // a refused input isn't saved
+    const s = term.screen().join("\n");
+    expect(s).not.toContain("Sleep (end the day)");
+    expect(s).toContain("3) Save and quit");
   });
 
   it("sleeping ends the day", () => {
@@ -370,47 +480,43 @@ describe("tui app", () => {
     expect(s).toContain("Day 2 · slot 0/4");
   });
 
-  it("sleeps rough away from home before the home scene is done, and says so", () => {
-    const { term } = setup(
-      (s) => (s.place = "noodle_shop"),
-      (c) => {
-        c.world.home = "street";
-        c.world.homeScene = "intro";
-      },
-    );
-    term.press("3"); // sleep: not home, but the home scene isn't done, so it still works
+  it("sleeps rough only at the start before the home scene is done, and says so", () => {
+    const { term } = setup(undefined, (c) => {
+      c.world.home = "noodle_shop";
+      c.world.homeScene = "intro";
+    });
+    term.press("2"); // sleep, at the start: no home yet, so a rough night
     const s = term.screen().join("\n");
     expect(s).toContain("Day 1 is over. You sleep rough by the road.");
     expect(s).toContain("Day 2 · slot 0/4");
   });
 
-  it("goes back to home-only sleep, without rough wording, once the home scene is done", () => {
+  it("offers no sleep at the home-to-be before the home scene is done", () => {
+    const { term } = setup(
+      (s) => (s.place = "noodle_shop"),
+      (c) => {
+        c.world.home = "noodle_shop";
+        c.world.homeScene = "intro";
+      },
+    );
+    expect(term.screen().join("\n")).not.toContain("Sleep (end the day)");
+  });
+
+  it("sleeps at home, without rough wording, once the home scene is done", () => {
     const { term } = setup(
       (s) => {
         s.place = "noodle_shop";
         s.scenesDone.intro = 1;
       },
       (c) => {
-        c.world.home = "street";
+        c.world.home = "noodle_shop";
         c.world.homeScene = "intro";
       },
     );
-    term.press("2"); // sleep, away from home: rejected, same as a course without homeScene
-    expect(term.screen().join("\n")).toContain("You want your own bed. Head home first.");
-  });
-
-  it("doesn't hint 'go home first' on the sleep item before the home scene is done", () => {
-    const { term } = setup(
-      (s) => (s.place = "noodle_shop"),
-      (c) => {
-        c.world.home = "street";
-        c.world.homeScene = "intro";
-      },
-    );
-    const frame = term.frames.at(-1)!;
-    const line = frame.find((l) => l.some((span) => span.text.includes("Sleep")))!;
-    expect(line.map((span) => span.text).join("")).toContain("Sleep (end the day)");
-    expect(line.map((span) => span.text).join("")).not.toContain("go home first");
+    term.press("2"); // sleep, at home
+    const s = term.screen().join("\n");
+    expect(s).toContain("Day 1 is over. You sleep.");
+    expect(s).not.toContain("rough");
   });
 
   it("a save made mid-scene resumes in the scene", () => {
@@ -519,7 +625,7 @@ describe("tui app", () => {
     expect(s).toContain("2) Go to The street"); // moving is free
     expect(s).not.toContain("The street · 1 slot");
     expect(s).not.toContain("Say hello · Cook · 1 slot");
-    expect(s).toContain("¥20 · rent due");
+    expect(s).toContain("¥20 · rent late");
   });
 
   it("hints when the mentor has a note, and a visit explains it", () => {
@@ -569,33 +675,44 @@ describe("tui app", () => {
       s.place = "noodle_shop";
     });
     term.press("1");
-    // options, "Your reply:", the NPC's line, its first-time-words gloss line, the gap
-    // renderScreen adds once there's room for one, frame
-    const rows = core.state.run!.options.length + 1 + 2 + 1 + 2;
+    // frame 2 + HUD 1 + log rule 1 + the NPC's line, its reading and its first-time gloss 3
+    // + reply rule 1 + options
+    const rows = 2 + 1 + 1 + 3 + 1 + core.state.run!.options.length;
     term.resize(64, rows);
     expect(term.screen().join("\n")).toMatch(/Cook: .+。/);
   });
 
-  it("opens the notebook with n, scrolls it, and goes back where it was", () => {
+  it("shows every notebook key hint in an 80-column terminal", () => {
+    const { term } = setup();
+    term.resize(80, 24);
+    term.press("1", "1", "n");
+    const bottom = term.screen().at(-1)!;
+    for (const k of ["[esc]", "[1-2]", "[enter]", "[p]"]) expect(bottom).toContain(k);
+  });
+
+  it("opens the notebook with n: words by group, notes, and back where it was", () => {
     const { term, core } = setup();
     term.press("1", "1");
     term.press(rightKey(core));
     term.press("n");
     let s = term.screen();
+    expect(s[0]).toMatch(/Notebook ─+ Speaks: Pidgin/);
     expect(s.join("\n")).toContain("Stage 1: 0 of 12 words known");
-    expect(s.at(-1)).toContain("[↑↓] scroll");
-    term.resize(64, 5);
-    const top = term.screen()[1];
+    expect(s.join("\n")).toMatch(/▸ Recent \(\d+\)/);
+    expect(s.at(-1)).toContain("[esc] back");
+    // the chosen word: the right-hand column's row that starts with ▸
+    const chosen = () => term.screen().map((l) => l.split(" │ ")[1] ?? "").find((r) => r.startsWith("▸ "));
+    const first = chosen();
+    expect(first).toBeDefined();
     term.press("down");
-    expect(term.screen()[1]).not.toBe(top);
-    term.press("up");
-    expect(term.screen()[1]).toBe(top);
-    term.resize(64, 20);
+    expect(chosen()).not.toBe(first);
+    term.press("2");
+    expect(term.screen().join("\n")).toContain("No notes yet.");
     term.press("escape");
     s = term.screen();
-    expect(s.join("\n")).toContain("Your reply:");
+    expect(s.join("\n")).toContain("Your reply");
     term.press("n", "n");
-    expect(term.screen().join("\n")).toContain("Your reply:");
+    expect(term.screen().join("\n")).toContain("Your reply");
   });
 
   it("asks for the player's name first when the course's lines use it", () => {
@@ -626,7 +743,7 @@ describe("tui app", () => {
     term.resize(90, 20);
     expect(term.screen().at(-1)).toMatch(/no audio · Silver Tongue v0\.5\.0 ┘$/);
     term.resize(46, 20);
-    expect(term.screen().at(-1)).toMatch(/^└ \[1-3\] choose · \[n\] notebook ─* no audio ┘$/);
+    expect(term.screen().at(-1)).toMatch(/^─ \[1-3\] choose · \[n\] notebook ─* no audio ─$/);
   });
 
   const ERRAND_TEXT = `
@@ -673,7 +790,7 @@ asked-deliver = They wanted it taken to the { $place }.
   });
 
   it("marks the status line while a parcel is carried", () => {
-    expect(setup((s) => { s.errand = { to: "street" }; }).term.screen().join("\n")).toMatch(/Day 1 .*· parcel/);
+    expect(setup((s) => { s.errand = { to: "street" }; }).term.screen().join("\n")).toMatch(/¥20 · .*· parcel/);
     expect(setup().term.screen().join("\n")).not.toContain("parcel");
   });
 
@@ -850,7 +967,7 @@ asked-deliver = They wanted it taken to the { $place }.
       const { term, core } = withAudio();
       term.resize(46, 20);
       term.press("1", "1");
-      expect(term.screen().at(-1)).toMatch(/^└ \[1-3\] reply · \[w\] help · \[r\] again ─*┘$/);
+      expect(term.screen().at(-1)).toMatch(/^─ \[1-3\] reply · \[w\] help · \[r\] again ─*─$/);
       expect(fixtureWithText().learnerFtl).toMatch(/keys-tiles = .*\[n\] notebook/);
       void core;
     });
@@ -1078,41 +1195,31 @@ describe("menu surprisal and place notices", () => {
     expect(line.map((span) => span.text).join("")).toContain("no time left");
     expect(line.find((span) => span.text.includes("Serve drinks"))?.dim).toBe(true);
     term.press("1"); // still selectable: choosing it gives the normal rejection
-    expect(term.screen().join("\n")).toContain("You're out of time today. Sleep first.");
+    expect(term.screen().join("\n")).toContain("You're out of time today. Go and find your bed.");
     expect(core.state.run).toBeNull();
   });
 
-  it("names home on the sleep item when away from it, without dimming it", () => {
-    const { term } = setup((s) => (s.place = "noodle_shop"), (c) => (c.world.home = "street"));
-    const frame = term.frames.at(-1)!;
-    const line = frame.find((l) => l.some((span) => span.text.includes("Sleep")))!;
-    expect(line.map((span) => span.text).join("")).toContain("3) Sleep (end the day) — go home first (The street)");
-    // Unlike a dimmed, out-of-time item, the sleep row itself isn't dimmed (only the frame's border is).
-    expect(line.find((span) => span.text.includes("Sleep"))?.dim).toBeFalsy();
-  });
-
   it("replaces a repeated identical rejection instead of piling it up", () => {
-    const { term } = setup((s) => (s.place = "noodle_shop"), (c) => (c.world.home = "street"));
-    term.press("3"); // sleep, away from home: rejected
-    term.press("3"); // the same rejection again
+    const { term } = setup((s) => {
+      s.place = "noodle_shop";
+      s.slot = 4; // slotsPerDay: nothing left today
+    });
+    term.press("1"); // talking with no slots left: rejected
+    term.press("1"); // the same rejection again
     const s = term.screen().join("\n");
-    expect(s.split("Head home first.").length - 1).toBe(1);
+    expect(s.split("find your bed.").length - 1).toBe(1);
   });
 
-  it("shows a different rejection normally after a repeated one", () => {
-    const { term } = setup(
-      (s) => {
-        s.place = "noodle_shop";
-        s.slot = 4; // slotsPerDay: nothing left today
-      },
-      (c) => (c.world.home = "street"),
-    );
-    term.press("3"); // sleep, away from home: rejected (not-home)
-    term.press("3"); // the same rejection again: replaces, doesn't stack
-    term.press("1"); // talking here with no slots left: a different rejection (no-slots)
+  it("shows a rejection again once something else happened in between", () => {
+    const { term } = setup((s) => {
+      s.place = "noodle_shop";
+      s.slot = 4; // slotsPerDay: nothing left today
+    });
+    term.press("1"); // rejected (no-slots)
+    term.press("2", "1"); // to the street and back: accepted inputs end the run of repeats
+    term.press("1"); // rejected again: a new line, not a replacement
     const s = term.screen().join("\n");
-    expect(s).toContain("Head home first.");
-    expect(s).toContain("You're out of time today. Sleep first.");
+    expect(s.split("find your bed.").length - 1).toBe(2);
   });
 
   it("prints a place's name and description only the first time it's visited this session", () => {

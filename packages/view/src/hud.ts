@@ -11,6 +11,8 @@ export interface HudValues {
   rankLabel: string;
   parcel: boolean;
   rentLate: boolean;
+  /** Days until rent is taken (at the end of every 7th day): 0 when that's tonight, or when it's late. */
+  rentInDays: number;
 }
 
 export function hudValues(course: Course, state: GameState, t: Text, now: number): HudValues {
@@ -25,5 +27,6 @@ export function hudValues(course: Course, state: GameState, t: Text, now: number
     rankLabel: t(`rank-${rank}`),
     parcel: !!state.errand,
     rentLate: state.rentLate,
+    rentInDays: state.rentLate ? 0 : (7 - (state.day % 7)) % 7,
   };
 }

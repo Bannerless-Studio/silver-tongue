@@ -28,9 +28,9 @@ describe("text", () => {
   });
 
   it("reports missing messages and unknown variables", () => {
-    const broken = "hud = Day { $dya }\n";
+    const broken = "hud-top = Day { $dya }\n";
     const problems = uiTextProblems(broken, "en");
-    expect(problems).toContain('learner text "hud": Unknown variable: $dya');
+    expect(problems).toContain('learner text "hud-top": Unknown variable: $dya');
     expect(problems).toContain('learner text: missing "menu-title"');
   });
   it("formats numbers in the reading language's locale", () => {

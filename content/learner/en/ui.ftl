@@ -1,12 +1,15 @@
 # Text-game UI. Every id here is required by packages/tui (UI_KEYS).
 
-hud = Day { $day } · slot { $slot }/{ $slots } · { $currency }{ $wallet }{ $parcel ->
-    [yes] { " · parcel" }
-   *[no] {""}
-}{ $rentLate ->
-    [yes] { " · rent due" }
-   *[no] {""}
+# The top border (right) and the HUD row under it.
+hud-top = Day { $day } · slot { $slot }/{ $slots }
+hud-rent = { $days ->
+    [0] rent due tonight
+    [one] rent due tomorrow
+   *[other] rent in { $days } days
 }
+hud-rent-late = rent late
+hud-parcel = parcel
+credit = by Bannerless Studio
 
 rank-0 = Pidgin
 rank-1 = Getting By
@@ -20,7 +23,6 @@ menu-go = Go to { $place }
 menu-needs-money = { $npc }: { $scene } · needs { $currency }{ $cost }
 menu-mentor = Ask { $npc } about the language
 menu-no-time = no time left
-menu-go-home = go home first ({ $place })
 menu-cost-money = { " · " }{ $currency }{ $cost }
 menu-sleep = Sleep (end the day)
 menu-quit = Save and quit
@@ -34,7 +36,7 @@ keys-help-sentence = [{ $keys }] look up · [s] whole sentence · [p] play · [e
 help-title = Which word?
 help-sentence = The whole sentence
 help-in-replies = In the replies:
-reply-title = Your reply:
+reply-title = Your reply
 tiles-title = Build your reply: [{ $keys }] add a word · [enter] say it
 tiles-answer = You say:
 you = You
@@ -59,6 +61,10 @@ scene-done = { $earned ->
 scene-done-short = Done.
 unlocked = New: { $scene }
 unlocked-many = New: { $scenes }
+place-revealed = { $count ->
+    [one] New place: { $places }
+   *[other] New places: { $places }
+}
 errand-started = You're carrying a parcel.
 errand-ended = You hand over the parcel.
 rank-up = You're now: { $rank }
@@ -68,7 +74,7 @@ reject-unknown-scene = There's nobody here for that.
 reject-in-scene = Finish the conversation first.
 reject-wrong-place = They're not here.
 reject-locked = They're not ready to talk about that yet.
-reject-no-slots = You're out of time today. Sleep first.
+reject-no-slots = You're out of time today. Go and find your bed.
 reject-stale-run = That conversation can't continue. Start it again.
 reject-no-pick = Choose a reply with the number keys.
 reject-bad-choice = There's no reply with that number.
@@ -91,7 +97,15 @@ reject-no-mentor = There's nobody here to explain things.
 note-hint = { $npc } seems to have something to tell you.
 mentor-nothing = { $npc } has nothing new to explain today.
 
-keys-notebook = [↑↓] scroll · [esc] back
+keys-notebook = [esc] back · [1-2] tab · [↑↓←→] move · [enter] more · [p] play
+notebook-title = Notebook
+notebook-words = Words
+notebook-recent = Recent
+notebook-notes-empty = No notes yet. Ask around; someone will explain things.
+notebook-label-new = new
+notebook-label-met = met
+notebook-label-shaky = shaky
+notebook-label-known = known
 notebook-rank = Speaks: { $rank }
 notebook-progress = Stage { $stage }: { $known } of { $total } words known · { $heard } heard
 notebook-empty = Nothing yet. Words you hear are written down here.

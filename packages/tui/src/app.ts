@@ -13,13 +13,14 @@ import {
   type WordId,
 } from "@silver-tongue/core";
 import type { AudioOut, Speech, SpeechSpeed } from "@silver-tongue/view";
-import { notebookLines } from "./notebook";
-import { lineSpans, renderScreen, wrapItems } from "./screen";
+import { notebookBody, notebookGroups, notebookHead, type NotebookView } from "./notebook";
+import { lineSpans, wrapItems } from "./screen";
+import { innerWidth, NARROW, renderFrame, type Panel } from "./panel";
 import { strWidth, wrapLine } from "./width";
 import type { Key, StyledLine, Terminal } from "./terminal";
 import {
-  actionNarration, firstTimeGloss, hudValues, introLines, makeText, placeMenu, sentenceCard, settingsRows, tileEcho, waitingForMoney, wordCard,
-  type SettingsScreen, type Text,
+  actionNarration, firstTimeGloss, hudValues, introLines, makeText, notebookEntries, placeMenu, readingRow, sentenceCard, settingsRows, tileEcho, waitingForMoney, wordCard,
+  type HudValues, type SettingsScreen, type Text,
 } from "@silver-tongue/view";
 
 /** slow -> normal -> fast -> slow, as the settings screen's Speed row cycles. */
@@ -79,13 +80,14 @@ export function startApp(opts: AppOptions): App {
   let tileInput: number[] = [];
   let lastLine: RenderedLine | null = null;
   let notebookFrom: Mode = "explore"; // where closing the notebook returns to
-  let notebookTop = 0; // first notebook line on screen
+  let nbView: NotebookView = { tab: "words", group: 0, word: 0, open: false, top: 0 };
   let settingsFrom: Mode = "explore"; // where closing settings returns to
   let handedOver = false; // another course or reading language took over: this app is done
   let resuming = false;
   let nameInput = ""; // replaying a scene saved half-way: it has already been introduced
   let lastSlow = false; // the last line was a slow repeat, so r says it slowly too
   let lastHelp: string[] = []; // the clips of the word or sentence last looked up, for p
+  let card: StyledLine | null = null; // the word or sentence last looked up, shown above the replies
   let tileReply: string[] = []; // the right reply's clips, said if the tiles match
   let queue: Speech[] = []; // what this key press has people say, in order
   let speed: SpeechSpeed = opts.speed?.value ?? "slow";
@@ -117,6 +119,12 @@ export function startApp(opts: AppOptions): App {
     { text: `${npcName(npc)}${suffix}: `, color: "cyan", bold: true },
     ...lineSpans(line, fresh),
   ];
+  /** An NPC's line, then its reading while any word in it isn't known yet, lined up under the words. */
+  const sayLine = (npc: string, line: RenderedLine, fresh: Set<WordId>, suffix = "") => {
+    push(say(npc, line, fresh, suffix));
+    const reading = readingRow(course, core.state, line, opts.now());
+    if (reading) push([{ text: " ".repeat(strWidth(`${npcName(npc)}${suffix}: `)) + reading, color: "yellow", dim: true }]);
+  };
 
   /** The number keys that choose among `n` items: "1", "1-4". */
   const keyRange = (n: number) => (n <= 1 ? "1" : `1-${Math.min(n, 9)}`);
@@ -127,9 +135,15 @@ export function startApp(opts: AppOptions): App {
     if (t.has(id)) push([{ text: t(id, args), dim: true }]);
   };
 
-  /** The opening story, for a game that hasn't started yet. Lines intro-1, intro-2, … */
+  /**
+   * The opening story (intro-1, intro-2, …) for a game that hasn't started yet, then the game's name
+   * and its studio: after the story, so they are on the first screen however long the story is.
+   */
   function tellIntro() {
-    for (const line of introLines(course, core.state, t)) push([{ text: line }], []);
+    const story = introLines(course, core.state, t);
+    if (!story.length) return;
+    for (const line of story) push([{ text: line }], []);
+    push([{ text: "Silver Tongue", bold: true, color: "cyan" }], [{ text: t("credit"), dim: true }]);
   }
 
   /**
@@ -168,6 +182,9 @@ export function startApp(opts: AppOptions): App {
       .filter((ev): ev is Extract<GameEvent, { type: "unlocked" }> => ev.type === "unlocked")
       .map((ev) => unlockedLabel(ev.scene));
     let unlockedShown = false;
+    // Places revealed together share one line: news, but one piece of it.
+    const revealed = events.flatMap((ev) => (ev.type === "placeRevealed" ? [t(`place-${ev.place}`)] : []));
+    let revealedShown = false;
     // A rejection is only worth a fresh log line the first time; a repeat of the same one replaces it.
     if (!events.some((ev) => ev.type === "inputRejected")) lastRejectReason = undefined;
     for (const e of events) {
@@ -178,6 +195,7 @@ export function startApp(opts: AppOptions): App {
         case "sceneStarted":
           mode = "scene";
           currentNpc = e.npc;
+          card = null;
           // The intro and place description above would otherwise bury every screen of the
           // conversation; the frame's title still says where we are. Resuming mid-scene at startup
           // is the exception: the place description was just pushed above and is worth keeping.
@@ -190,7 +208,7 @@ export function startApp(opts: AppOptions): App {
           lastLine = e.line;
           lastSlow = false;
           hear(e.line.audio);
-          push(say(e.npc, e.line, fresh));
+          sayLine(e.npc, e.line, fresh);
           const gloss = firstTimeGloss(course, e.line, fresh);
           if (gloss) push([{ text: `   ${gloss}`, dim: true }]);
           break;
@@ -208,13 +226,13 @@ export function startApp(opts: AppOptions): App {
         case "npcReacted":
           // Word help keeps offering the request the player got wrong, not the reaction.
           hear(course.reactionAudio?.[e.reaction]?.[e.npc]);
-          push(say(e.npc, e.line, fresh));
+          sayLine(e.npc, e.line, fresh);
           break;
         case "lineRephrased":
           lastLine = e.line;
           lastSlow = e.slow;
           hear(e.line.audio, e.slow);
-          push(say(e.npc, e.line, fresh, ` ${t("rephrased")}`));
+          sayLine(e.npc, e.line, fresh, ` ${t("rephrased")}`);
           // Two misses: nobody should get stuck, so the NPC also mimes it and its meaning is given.
           narrate("gesture-narration", { npc: npcName(e.npc) });
           if (e.line.meaning) push([{ text: e.line.meaning, dim: true }]);
@@ -238,6 +256,7 @@ export function startApp(opts: AppOptions): App {
         case "sceneEnded":
           mode = "explore";
           lastLine = null; // r repeats a line only while its scene is on
+          card = null;
           // A repeatable scene's ending was already told the first time it played.
           if ((core.state.scenesDone[e.scene] ?? 0) <= 1) narrate(`scene-${e.scene}-end`);
           // A paid scene already said so via its wallet line; an unpaid one has nothing to add.
@@ -255,6 +274,12 @@ export function startApp(opts: AppOptions): App {
             push([{ text: t("unlocked", { scene: unlockedLabel(e.scene) }), color: "green" }]);
           }
           break;
+        case "placeRevealed":
+          if (!revealedShown) {
+            revealedShown = true;
+            push([{ text: t("place-revealed", { count: revealed.length, places: revealed.join(", ") }), color: "green" }]);
+          }
+          break;
         case "errandStarted":
           // The header's own "· parcel" marker already says this; a log line would be the third
           // time this scene told the player (after the scene's own narration).
@@ -269,7 +294,7 @@ export function startApp(opts: AppOptions): App {
           push([], [{ text: t(e.rough ? "day-ended-rough" : "day-ended", { day: e.day }), dim: true }]);
           break;
         case "inputRejected":
-          // The same rejection repeated (e.g. pressing sleep from the wrong place twice) replaces
+          // The same rejection repeated (e.g. talking twice with no time left) replaces
           // the previous line instead of piling up copies of it.
           if (lastRejectReason === e.reason) log = log.slice(0, -1);
           lastRejectReason = e.reason;
@@ -389,74 +414,90 @@ export function startApp(opts: AppOptions): App {
     return [...said, ...extra].slice(0, 9);
   }
 
-  /** `width` is the room inside the frame, for wrapping tiles and help words. */
-  function prompt(width: number): StyledLine[] {
+  /** The panel at the bottom: what the player can do now. `width` is the room inside the frame. */
+  function replyPanel(width: number): Panel {
     if (mode === "name") {
-      return [[{ text: t("name-prompt"), bold: true }], [{ text: "> " }, { text: nameInput, bold: true }, { text: "_", dim: true }]];
+      return { lines: [[{ text: t("name-prompt"), bold: true }], [{ text: "> " }, { text: nameInput, bold: true }, { text: "_", dim: true }]] };
     }
     if (SETTINGS_MODES.includes(mode)) {
       const title = mode === "settings" ? "settings-title" : mode === "settings-course" ? "settings-pick-course" : "settings-pick-reading";
-      return [[{ text: t(title), dim: true }], ...settingsChoices().map((r, i) => [{ text: `${i + 1}) ${r.label}` }])];
+      return { title: t(title), lines: settingsChoices().map((r, i) => [{ text: `${i + 1}) ${r.label}` }]) };
     }
     if (mode === "explore") {
       // Scenes here that wait only for money: shown, not offered, so an empty shop says why.
       const waiting: StyledLine[] = waitingForMoney(course, core.state, t).map((text) => [{ text, dim: true }]);
-      return [
-        ...waiting,
-        [{ text: t("menu-title"), dim: true }],
-        ...menu().map((m, i) => [
-          m.disabled ? { text: `${i + 1}) ${m.label} — ${m.disabled}`, dim: true } : { text: `${i + 1}) ${m.label}` },
-        ]),
-      ];
+      return {
+        title: t("menu-title"),
+        lines: [
+          ...waiting,
+          ...menu().map((m, i) => [
+            m.disabled ? { text: `${i + 1}) ${m.label} — ${m.disabled}`, dim: true } : { text: `${i + 1}) ${m.label}` },
+          ]),
+        ],
+      };
     }
     if (mode === "help") {
       const items = helpWords().map((w, i) => ({ ...w, label: `${i + 1}) ${w.text}` }));
       const said = items.filter((w) => !w.inReplies).map((w) => w.label);
       const inReplies = items.filter((w) => w.inReplies).map((w) => w.label);
       const sentence: StyledLine[] = lastLine?.meaning ? [[{ text: `s) ${t("help-sentence")}` }]] : [];
-      return [
-        [{ text: t("help-title"), dim: true }],
-        ...wrapItems(said, width),
-        ...sentence,
-        ...(inReplies.length ? [[{ text: t("help-in-replies"), dim: true }], ...wrapItems(inReplies, width)] : []),
-      ];
+      return {
+        title: t("help-title"),
+        lines: [
+          ...wrapItems(said, width),
+          ...sentence,
+          ...(inReplies.length ? [[{ text: t("help-in-replies"), dim: true }], ...wrapItems(inReplies, width)] : []),
+        ],
+      };
     }
-    const title: StyledLine = [{ text: t("reply-title"), dim: true }];
     if (replyMode === "pick")
-      return [
-        title,
-        ...pickOptions.map((o, i) => [
+      return {
+        title: t("reply-title"),
+        lines: pickOptions.map((o, i) => [
           { text: `${i + 1}) ` },
           ...lineSpans(o, new Set()),
           // Once every word in a reply is known, its meaning is no longer news.
           ...(o.meaning && replyNeedsGloss(o) ? [{ text: `  — ${o.meaning}`, dim: true }] : []),
         ]),
-      ];
+      };
+    return {
+      title: t("reply-title"),
+      lines: [
+        [{ text: t("tiles-title", { keys: keyRange(tiles.length) }), dim: true }],
+        ...wrapItems(tiles.map((x, i) => `[${i + 1}]${x}`), width, " "),
+        [{ text: `${t("tiles-answer")} `, dim: true }, { text: joinTiles(course, tileInput.map((i) => tiles[i])), bold: true }],
+      ],
+    };
+  }
+
+  /** Money, rent (yellow the night it's due, red once late), how well you speak, and the parcel. */
+  function hudRow(h: HudValues): StyledLine {
+    const sep = { text: " · ", dim: true };
+    const rent = h.rentLate
+      ? { text: t("hud-rent-late"), color: "red" as const }
+      : { text: t("hud-rent", { days: h.rentInDays }), ...(h.rentInDays === 0 ? { color: "yellow" as const } : {}) };
     return [
-      [{ text: t("tiles-title", { keys: keyRange(tiles.length) }), dim: true }],
-      ...wrapItems(
-        tiles.map((x, i) => `[${i + 1}]${x}`),
-        width,
-        " ",
-      ),
-      [{ text: `${t("tiles-answer")} `, dim: true }, { text: joinTiles(course, tileInput.map((i) => tiles[i])), bold: true }],
+      { text: `${h.currency}${h.wallet}`, bold: true },
+      sep,
+      rent,
+      sep,
+      { text: t("notebook-rank", { rank: h.rankLabel }) },
+      ...(h.parcel ? [sep, { text: t("hud-parcel"), color: "cyan" as const }] : []),
     ];
   }
 
   /**
    * Nothing while sound plays (expected, working sound earns no display); ♪ off [m] when muted,
-   * "no audio" when there's none here to turn on or off; then the version, shortened or left out
-   * when the key hints on the left leave no room.
+   * "no audio" when there's none here to turn on or off; then the version and the credit, stepped
+   * down (the credit, then "Silver Tongue", then all of it) when the key hints on the left leave no room.
    */
   function footerRight(footer: string, cols: number): string {
     const sound = !opts.audio?.available ? t("sound-none") : core.state.sound === false ? t("sound-off") : "";
     const room = cols - 2 - (strWidth(footer) + 2) - 2;
     const v = opts.version;
     if (!v) return sound;
-    const full = sound ? `${sound} · Silver Tongue v${v}` : `Silver Tongue v${v}`;
-    const short = sound ? `${sound} · v${v}` : `v${v}`;
-    const choices = [full, short, sound];
-    return choices.find((c) => strWidth(c) <= room) ?? sound;
+    const choices = [[sound, `Silver Tongue v${v}`, t("credit")], [sound, `Silver Tongue v${v}`], [sound, `v${v}`], [sound]];
+    return choices.map((parts) => parts.filter(Boolean).join(" · ")).find((c) => strWidth(c) <= room) ?? sound;
   }
 
   function render() {
@@ -464,17 +505,17 @@ export function startApp(opts: AppOptions): App {
     const s = core.state;
     const { cols, rows } = term.size();
     const h = hudValues(course, s, t, opts.now());
-    const hud = t("hud", {
-      day: h.day, slot: h.slot, slots: h.slots, currency: h.currency, wallet: h.wallet,
-      rank: h.rankLabel, parcel: h.parcel ? "yes" : "no", rentLate: h.rentLate ? "yes" : "no",
-    });
+    const top = { title: t(`place-${s.place}`), right: t("hud-top", { day: h.day, slot: h.slot, slots: h.slots }) };
     if (mode === "notebook") {
-      const lines = notebookLines(course, s, t, opts.now()).flatMap((l) => wrapLine(l, cols - 4));
-      const bodyRows = Math.max(1, rows - 2);
-      notebookTop = Math.max(0, Math.min(notebookTop, lines.length - bodyRows));
-      const page = lines.slice(notebookTop, notebookTop + bodyRows);
-      const prompt = [...page, ...Array(bodyRows - page.length).fill([])];
-      term.write(renderScreen({ title: t(`place-${s.place}`), hud, log: [], prompt, footer: t("keys-notebook"), footerRight: footerRight(t("keys-notebook"), cols) }, cols, rows));
+      const book = notebookEntries(course, s, t, opts.now());
+      const head = notebookHead(book, t, nbView.tab);
+      const headRows = head.flatMap((l) => wrapLine(l, innerWidth(cols))).length;
+      const height = Math.max(1, rows - 3 - headRows); // top border, the rule under the head, bottom border
+      const body = notebookBody(book, t, nbView, cols, height);
+      nbView = { ...nbView, top: body.top };
+      const footer = t("keys-notebook");
+      const frame = { title: t("notebook-title"), right: book.rankLabel, panels: [{ lines: head }, { lines: body.lines }], footer };
+      term.write(renderFrame({ ...frame, footerRight: footerRight(footer, cols) }, cols, rows));
       return;
     }
     const [footerId, count] =
@@ -494,10 +535,17 @@ export function startApp(opts: AppOptions): App {
     // [o] is listed last, so a narrow screen drops it first.
     const keys = t(footerId, { keys: keyRange(count) });
     const footer = opts.settings && ["explore", "scene", "help"].includes(mode) ? `${keys} · ${t("keys-o")}` : keys;
+    const panels: Panel[] = [
+      { lines: [hudRow(h)], drop: 2 },
+      { lines: log, grow: true, min: 4 },
+      ...(card && mode !== "explore" ? [{ lines: [card], drop: 1 }] : []),
+      replyPanel(innerWidth(cols)),
+    ];
+    const left = cols < NARROW ? 0 : 2; // where a line's text starts: after "│ " when wide
     term.write(
-      renderScreen({ title: t(`place-${s.place}`), hud, log, prompt: prompt(cols - 4), footer, footerRight: footerRight(footer, cols) }, cols, rows),
+      renderFrame({ ...top, panels, footer, footerRight: footerRight(footer, cols) }, cols, rows),
       // Typing a name: the cursor sits after the text, where a phone keyboard shows what's being composed.
-      mode === "name" ? { row: rows - 2, col: Math.min(cols - 3, 4 + strWidth(nameInput)) } : undefined,
+      mode === "name" ? { row: rows - 2, col: Math.min(cols - 1 - left, left + 2 + strWidth(nameInput)) } : undefined,
     );
   }
 
@@ -516,9 +564,26 @@ export function startApp(opts: AppOptions): App {
       return render();
     }
     if (mode === "notebook") {
+      const groups = notebookGroups(notebookEntries(course, core.state, t, opts.now()), t);
+      const g = Math.max(0, Math.min(nbView.group, groups.length - 1));
+      const words = groups[g]?.words ?? [];
+      const v = nbView;
       if (key.name === "escape" || key.name === "n") mode = notebookFrom;
-      else if (key.name === "down") notebookTop += 1;
-      else if (key.name === "up") notebookTop = Math.max(0, notebookTop - 1);
+      else if (key.name === "1" || key.name === "2") nbView = { ...v, tab: key.name === "1" ? "words" : "notes", top: 0 };
+      else if (v.tab === "notes") {
+        if (key.name === "down") nbView = { ...v, top: v.top + 1 };
+        else if (key.name === "up") nbView = { ...v, top: Math.max(0, v.top - 1) };
+      } else if (key.name === "left" || key.name === "right") {
+        const next = Math.max(0, Math.min(groups.length - 1, g + (key.name === "right" ? 1 : -1)));
+        nbView = { ...v, group: next, word: 0, open: false };
+      } else if (key.name === "up" || key.name === "down") {
+        const next = Math.max(0, Math.min(words.length - 1, v.word + (key.name === "down" ? 1 : -1)));
+        nbView = { ...v, group: g, word: next, open: false };
+      } else if (key.name === "return") nbView = { ...v, open: !v.open };
+      else if (key.name === "p") {
+        hear(words[v.word]?.clips);
+        flush();
+      }
       return render();
     }
     if (SETTINGS_MODES.includes(mode)) {
@@ -535,7 +600,7 @@ export function startApp(opts: AppOptions): App {
     }
     if (key.name === "n" && mode !== "help") {
       notebookFrom = mode;
-      notebookTop = 0;
+      nbView = { tab: "words", group: 0, word: 0, open: false, top: 0 };
       mode = "notebook";
       return render();
     }
@@ -549,16 +614,16 @@ export function startApp(opts: AppOptions): App {
     } else if (mode === "help") {
       const word = n >= 0 ? helpWords()[n] : undefined;
       if (word) {
-        const card = wordCard(course, word.word, word.text);
-        lastHelp = card.clips;
+        const wc = wordCard(course, word.word, word.text);
+        lastHelp = wc.clips;
         hear(lastHelp);
         send({ type: "helpWord", word: word.word });
-        push([
-          { text: card.text, bold: true },
-          ...(card.readings.length ? [{ text: ` ${card.readings.join(" ")}`, color: "yellow" as const }] : []),
-          ...(card.base ? [{ text: ` (${card.base})`, dim: true }] : []),
-          { text: ` — ${card.gloss}` },
-        ]);
+        card = [
+          { text: wc.text, bold: true },
+          ...(wc.readings.length ? [{ text: ` ${wc.readings.join(" ")}`, color: "yellow" as const }] : []),
+          ...(wc.base ? [{ text: ` (${wc.base})`, dim: true }] : []),
+          { text: ` — ${wc.gloss}` },
+        ];
       }
       if (key.name === "p") {
         hear(lastHelp);
@@ -571,17 +636,20 @@ export function startApp(opts: AppOptions): App {
         flush();
         // Reading the whole line is not logged as help on each word: the words still have to be
         // recognised in the reply.
-        push([
+        card = [
           { text: sentence.text, bold: true },
           ...(sentence.reading ? [{ text: ` ${sentence.reading}`, color: "yellow" as const }] : []),
           { text: ` — ${sentence.meaning}` },
-        ]);
+        ];
       }
       if (key.name === "escape" || key.name === "w") mode = "scene";
+    } else if (key.name === "escape") {
+      card = null;
     } else if (key.name === "w") {
       mode = "help";
     } else if (replyMode === "pick") {
       if (n >= 0 && n < pickOptions.length) {
+        card = null;
         echo(pickOptions[n].text);
         hear(pickOptions[n].audio);
         send({ type: "reply", choice: n });
@@ -592,6 +660,7 @@ export function startApp(opts: AppOptions): App {
       tileInput = tileInput.slice(0, -1);
     } else if (key.name === "return" && tileInput.length) {
       const said = tileEcho(course, core.state, tiles, tileInput);
+      card = null;
       echo(said.line.text);
       tileReply = said.clips;
       send({ type: "replyTiles", tiles: tileInput });

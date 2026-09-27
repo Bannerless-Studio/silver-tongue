@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { formsCourse } from "@silver-tongue/core/testing";
-import { fixtureWithText } from "../src/testing";
-import { firstTimeGloss, firstTimeWords, sentenceCard, shortGloss, wordCard } from "../src/index";
+import { newGame, type WordRecord } from "@silver-tongue/core";
+import { formsCourse, line } from "@silver-tongue/core/testing";
+import { fixtureWithText, spacedWithText } from "../src/testing";
+import { firstTimeGloss, firstTimeWords, readingRow, sentenceCard, shortGloss, wordCard } from "../src/index";
 
 describe("help cards", () => {
   const course = fixtureWithText();
@@ -77,5 +78,34 @@ describe("other forms of a word", () => {
     expect(wordCard(c, id, word.w)).toMatchObject({ text: word.w, readings: word.readings });
     expect(wordCard(c, id, word.w).base).toBeUndefined();
     expect(wordCard(c, id).base).toBeUndefined();
+  });
+
+  it("the reading row under a line reads the form that is in the line", () => {
+    expect(readingRow(c, newGame(c), lineWith(form), 0)).toBe(formReadings.at(-1));
+  });
+});
+
+describe("reading row", () => {
+  const course = fixtureWithText();
+  const known: WordRecord = { right: 3, wrong: 0, streak: 3, helps: 0, lapsed: false, firstSeen: 0, lastSeen: 0 };
+  const said = line(["你", "w_ni"], ["好", "w_hao"], ["！", null]);
+
+  it("gives the line's reading while any word in it isn't known", () => {
+    const state = newGame(course);
+    state.words = { w_ni: { ...known } };
+    expect(readingRow(course, state, said, 0)).toBe("nǐ hǎo");
+  });
+
+  it("drops it once every word is known", () => {
+    const state = newGame(course);
+    state.words = { w_ni: { ...known }, w_hao: { ...known } };
+    expect(readingRow(course, state, said, 0)).toBeUndefined();
+  });
+
+  it("has none for words without readings, or when the reading is the words themselves", () => {
+    const state = newGame(course);
+    expect(readingRow(course, state, line(["茶", "w_cha"]), 0)).toBeUndefined();
+    const spaced = spacedWithText();
+    expect(readingRow(spaced, newGame(spaced), line(["mi", "w_ni"]), 0)).toBeUndefined();
   });
 });

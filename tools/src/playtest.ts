@@ -15,7 +15,7 @@ import { FakeTerminal } from "../../packages/tui/test/fake-terminal";
 import { clipsDir, coursesDir, courseFile, readCatalog } from "../../packages/tui-node/src/catalog";
 import { loadSave, writeSave } from "../../packages/tui-node/src/storage";
 import { createNodeAudio, nodeAudioDeps } from "../../packages/tui-node/src/node-audio";
-import { stepToward } from "./bots";
+import { bedPlace, stepToward } from "./bots";
 
 export const USAGE = `Usage: tsx tools/src/playtest.ts [options]
 
@@ -30,7 +30,7 @@ export const USAGE = `Usage: tsx tools/src/playtest.ts [options]
   --goto <placeId|Place Name>   from explore mode, walk to that place (shortest path, one menu press per hop)
   --start <sceneId|Scene Name>  from explore mode, walk to the scene's place if needed, then start it
   --play <sceneId|Scene Name>   --start, then --auto until the scene ends (cap 40 steps)
-  --sleep             walk home if needed, then press the Sleep menu item
+  --sleep             walk to the bed (home, or the start before there is one), then press Sleep
   --keys "1,1,w,2"    a key script: comma-separated tokens (see below)
   --keys-file <path>  a key script file, one token per line (# comments allowed)
   --auto <n>          from the current screen, pick the first sensible reply for n steps
@@ -485,12 +485,12 @@ export function menuIndexFor(
  * check reachability up front and by tests. Throws if there's no path, or the walk would take more
  * than `capSteps` hops (a course-graph bug, since `stepToward` never revisits a place).
  */
-export function computeWalkPath(course: Course, from: string, target: string, capSteps = 50): string[] {
+export function computeWalkPath(course: Course, from: string, target: string, capSteps = 50, state?: GameState): string[] {
   const path: string[] = [];
   let at = from;
   while (at !== target) {
     if (path.length >= capSteps) throw new Error(`playtest: walking from "${from}" to "${target}" took more than ${capSteps} steps (possible loop)`);
-    const step = stepToward(course, at, new Set([target]));
+    const step = stepToward(course, at, new Set([target]), state);
     if (!step) throw new Error(`playtest: no path from "${from}" to "${target}"`);
     path.push(step);
     at = step;
@@ -505,9 +505,9 @@ export function computeWalkPath(course: Course, from: string, target: string, ca
  */
 async function walkTo(ctx: NavCtx, target: string, capSteps = 50): Promise<void> {
   if (ctx.core.state.run) throw new Error(`playtest: can't walk to "${target}", not in explore mode (mid-scene "${ctx.core.state.run.scene}")`);
-  computeWalkPath(ctx.course, ctx.core.state.place, target, capSteps); // reachability check, error first
+  computeWalkPath(ctx.course, ctx.core.state.place, target, capSteps, ctx.core.state); // reachability check, error first
   while (ctx.core.state.place !== target) {
-    const step = stepToward(ctx.course, ctx.core.state.place, new Set([target]))!;
+    const step = stepToward(ctx.course, ctx.core.state.place, new Set([target]), ctx.core.state)!;
     const items = placeMenu(ctx.course, ctx.core.state, ctx.t);
     const idx = menuIndexFor(items, { kind: "go", place: step });
     if (idx < 0)
@@ -543,11 +543,11 @@ async function playScene(ctx: NavCtx, sceneId: string, capSteps = 40): Promise<v
   }
 }
 
-/** Walks home (if `world.home` is set and the player isn't there) and presses Sleep. */
+/** Walks to the bed (home, or the start before there is one) and presses Sleep. */
 async function sleepAction(ctx: NavCtx): Promise<void> {
   if (ctx.core.state.run) throw new Error(`playtest: can't --sleep, not in explore mode (mid-scene "${ctx.core.state.run.scene}")`);
-  const home = ctx.course.world.home;
-  if (home && ctx.core.state.place !== home) await walkTo(ctx, home);
+  const bed = bedPlace(ctx.course, ctx.core.state);
+  if (bed && ctx.core.state.place !== bed) await walkTo(ctx, bed);
   const items = placeMenu(ctx.course, ctx.core.state, ctx.t);
   const idx = menuIndexFor(items, { kind: "sleep" });
   if (idx < 0) throw new Error(`playtest: no Sleep item at "${ctx.core.state.place}" (current menu: ${describeMenu(items)})`);

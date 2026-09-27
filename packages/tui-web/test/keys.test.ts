@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 import { dataKeys, forBrowser, keyName } from "../src/keys";
 
 describe("web keys", () => {
@@ -48,3 +49,12 @@ describe("web keys", () => {
   });
 });
 
+
+describe("phone keypad", () => {
+  it("has every key the game's screens ask for, the notebook's arrows included", () => {
+    const html = readFileSync(new URL("../src/index.html", import.meta.url), "utf8");
+    const keys = new Set([...html.matchAll(/data-key="([^"]+)"/g)].map((m) => m[1]));
+    for (const k of ["1", "2", "3", "4", "5", "6", "7", "8", "9", "w", "n", "s", "r", "m", "p", "o", "up", "down", "left", "right", "backspace", "return", "escape"])
+      expect(keys, k).toContain(k);
+  });
+});

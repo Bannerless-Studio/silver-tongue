@@ -17,6 +17,9 @@
     "noodle_shop": {
       "links": [
         "street"
+      ],
+      "after": [
+        "street-hungry"
       ]
     },
     "market": {
@@ -26,17 +29,26 @@
         "warehouse",
         "station_road",
         "shop"
+      ],
+      "after": [
+        "street-hungry"
       ]
     },
     "room": {
       "links": [
         "market",
         "stairs"
+      ],
+      "after": [
+        "street-hungry"
       ]
     },
     "warehouse": {
       "links": [
         "market"
+      ],
+      "after": [
+        "street-numbers"
       ]
     },
     "station_road": {
@@ -46,36 +58,58 @@
         "hospital",
         "station",
         "tea_house"
+      ],
+      "after": [
+        "delivery-intro"
       ]
     },
     "school": {
       "links": [
         "station_road"
+      ],
+      "after": [
+        "delivery-pickup"
       ]
     },
     "hospital": {
       "links": [
         "station_road"
+      ],
+      "after": [
+        "delivery-pickup"
       ]
     },
     "station": {
       "links": [
         "station_road"
+      ],
+      "after": [
+        "delivery-pickup"
       ]
     },
     "shop": {
       "links": [
         "market"
+      ],
+      "after": [
+        "noodle-kitchen",
+        "room-rent"
       ]
     },
     "tea_house": {
       "links": [
         "station_road"
+      ],
+      "after": [
+        "delivery-intro"
       ]
     },
     "stairs": {
       "links": [
         "room"
+      ],
+      "after": [
+        "room-rent"
       ]
     }
   },

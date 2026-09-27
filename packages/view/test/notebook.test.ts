@@ -26,9 +26,25 @@ describe("notebook entries", () => {
     const nb = notebookEntries(course, state, t, T0);
     expect(nb.groups.map((g) => [g.place, g.title])).toEqual([["noodle_shop", "Noodle shop"], [null, t("notebook-elsewhere")]]);
     expect(nb.groups[0].words[0]).toEqual({
-      id: "w_ni", text: "你", readings: ["nǐ"], gloss: "you", short: "you", state: "known", clips: ["c-ni"], first: "你好Mei！",
+      id: "w_ni", text: "你", readings: ["nǐ"], gloss: "you", short: "you", state: "known", bar: 3, label: "known", clips: ["c-ni"], first: "你好Mei！",
     });
     expect(nb.groups[1].words[0].first).toBeUndefined();
     expect(nb.notes).toEqual([{ title: "好 means good", text: "On its own, 好 agrees." }]);
+  });
+
+  it("gives each word a memory bar and label, and lists the words first heard in the last day as recent", () => {
+    const state = newGame(course);
+    const day = 86_400_000;
+    state.words = {
+      w_ni: rec({ streak: 0, right: 0, firstSeen: T0 + day, first: { line: "你", place: "noodle_shop" } }),
+      w_cha: rec({ streak: 2, firstSeen: T0 + 2 * day, first: { line: "茶", place: "noodle_shop" } }),
+      w_hao: rec({ streak: 7, right: 7, lapsed: true, firstSeen: 0, first: { line: "好", place: "street" } }),
+    };
+    const nb = notebookEntries(course, state, t, T0 + 2 * day);
+    const byId = Object.fromEntries(nb.groups.flatMap((g) => g.words).map((w) => [w.id, w]));
+    expect([byId.w_ni.bar, byId.w_ni.label]).toEqual([0, "new"]);
+    expect([byId.w_cha.bar, byId.w_cha.label]).toEqual([2, "met"]);
+    expect([byId.w_hao.bar, byId.w_hao.label]).toEqual([5, "shaky"]);
+    expect(nb.recent.map((w) => w.id)).toEqual(["w_cha", "w_ni"]); // newest first; 好 is days old
   });
 });

@@ -301,6 +301,23 @@ describe("checkCourse", () => {
     expect(checkCourse(input({ course: c }))).toContain('world: homeScene "shift" can\'t be repeatable');
   });
 
+  it("needs a place's `after` to name scenes, and the start to be known from the start", () => {
+    const c = fixtureCourse();
+    c.world.places.noodle_shop.after = ["no-such-scene"];
+    expect(checkCourse(input({ course: c }))).toContain('world: place "noodle_shop" is after unknown scene "no-such-scene"');
+    c.world.places.noodle_shop.after = [];
+    c.world.places.street.after = ["intro"];
+    expect(checkCourse(input({ course: c }))).toContain('world: start place "street" must be known from the start');
+  });
+
+  it("refuses a scene that opens before the player knows the way to its place", () => {
+    const c = fixtureCourse();
+    c.world.places.noodle_shop.after = ["shift"]; // intro, at the noodle shop, comes first
+    expect(checkCourse(input({ course: c }))).toContain('intro: opens before the player knows the way to "noodle_shop"');
+    c.world.places.noodle_shop.after = [];
+    expect(checkCourse(input({ course: c }))).toEqual([]);
+  });
+
   it("counts the mentor's visit in their place's menu", () => {
     const c = fixtureCourse();
     // 2 scenes + 5 exits = 7: allowed, until the mentor sits here too.

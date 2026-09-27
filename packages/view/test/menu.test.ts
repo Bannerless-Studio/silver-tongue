@@ -80,13 +80,31 @@ describe("place menu", () => {
     expect(menu.find((m) => m.kind === "sleep")).not.toHaveProperty("disabled");
   });
 
-  it("says where home is when sleep is offered away from it", () => {
+  it("offers sleep only where there's a bed", () => {
     const { course, state, t } = setup();
     course.world.home = "street";
     state.place = "noodle_shop";
-    const sleep = placeMenu(course, state, t).find((m) => m.kind === "sleep")!;
-    expect(sleep.label).toBe("Sleep (end the day) — go home first (The street)");
-    expect(sleep).not.toHaveProperty("disabled"); // still a normal, selectable action
+    expect(placeMenu(course, state, t).map((m) => m.kind)).not.toContain("sleep");
+    state.place = "street";
+    expect(placeMenu(course, state, t).at(-1)).toMatchObject({ kind: "sleep", label: "Sleep (end the day)" });
+  });
+
+  it("sleeps rough only at the start until the home scene is done", () => {
+    const { course, state, t } = setup();
+    course.world.home = "noodle_shop";
+    course.world.homeScene = "intro";
+    state.place = "noodle_shop";
+    expect(placeMenu(course, state, t).map((m) => m.kind)).not.toContain("sleep");
+    state.place = "street";
+    expect(placeMenu(course, state, t).at(-1)!.kind).toBe("sleep");
+  });
+
+  it("leaves a place off the menu until the scenes that reveal it are done", () => {
+    const { course, state, t } = setup();
+    course.world.places.noodle_shop.after = ["intro"];
+    expect(placeMenu(course, state, t).map((m) => m.kind)).toEqual(["sleep"]);
+    state.scenesDone.intro = 1;
+    expect(placeMenu(course, state, t).map((m) => m.kind)).toEqual(["go", "sleep"]);
   });
 
   it("names the scenes here that wait only for money", () => {
