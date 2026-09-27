@@ -50,8 +50,6 @@ Stage gate: no gate place exists yet (spec: "a locked gate to the stage 2 distri
 
 ## Handoff (session ended 2026-09-27, usage limit)
 
-Committed and pushed: sleep-rough rule (72da923), playtest navigation flags (1deae65). Uncommitted in the working tree when the session stopped — two workers were mid-task:
-- Review follow-ups + TUI fixes (packages/tui, view/help.ts, tui-node speed row for mpg123, hospital-checkup/shop-intro lines). At stop: checker failed on 下/里 coverage (hospital `sit` line changed) and 6 missing clips. Finish: restore 下 and 里 in ≥3 scenes each, run `npm run audio -- zh-china`, then all four gates.
-- Content fixes (class-write/taxi-visitor years → 2004/2003, tea-tv rewrite, noodle-lunch price line). Clips not generated yet: same `npm run audio` run.
-Then: rent-late line in the TUI (see Iteration 2), release 0.15.0 (CHANGELOG entry first), then HSK 2 with the stage gate scene.
+Everything is committed and pushed (main 6d53fbd); working tree clean; all four gates green.
+Still open from Iteration 2: parcel line tripled at pickup, mentor hint after every scene, rent-late line, VN dimming, shared like-exchange in street-hungry/noodle-intro. Then release 0.15.0 (CHANGELOG entry first), then HSK 2 with the stage gate scene.
 Playtest with `npm run playtest -- --run <name> --seed 3 --play <scene>` and `--resume <name> --play/--sleep/--goto`.
