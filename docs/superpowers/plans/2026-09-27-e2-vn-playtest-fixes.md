@@ -739,6 +739,8 @@ Then add these six tests inside `describe("visual novel controller")`:
     expect(c.pending).toHaveLength(1);
     expect(c.pending[0].ms).toBe(dwellMs(p.beat));
     c.pending[0].fire();
+    expect(c.last().ms).toBe(200); // the pad
+    c.last().fire();
     expect(s.vn.view().phase).toMatchObject({ kind: "beat", beat: { text: "An old man on a bench is watching you with open curiosity." } });
   });
 
@@ -764,8 +766,10 @@ Then add these six tests inside `describe("visual novel controller")`:
     expect(c.pending).toHaveLength(1); // the one armed while the first beat was shown
     c.pending[0].fire(); // cancelled: the line stays
     expect(s.vn.view().phase.kind).toBe("beat");
-    s.vn.hold(false);
+    s.vn.    hold(false);
     expect(c.pending).toHaveLength(2);
+    c.last().fire();
+    expect(c.last().ms).toBe(200); // the pad
     c.last().fire();
     expect(s.vn.view().phase).toMatchObject({ kind: "beat", beat: { text: "An old man on a bench is watching you with open curiosity." } });
   });
@@ -777,7 +781,7 @@ Then add these six tests inside `describe("visual novel controller")`:
     const p = s.vn.view().phase;
     if (p.kind === "explore") s.vn.choose(p.menu.findIndex((m) => m.kind === "sleep"));
     expect(s.vn.view().phase).toMatchObject({ kind: "beat", beat: { day: 2 } });
-    expect(c.pending).toHaveLength(0);
+    expect(c.pending.filter((w) => !w.cancelled)).toHaveLength(0);
   });
 
   it("waits for a press on every line when auto-advance is off", () => {
