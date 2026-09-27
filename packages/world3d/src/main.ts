@@ -15,7 +15,7 @@
 import * as THREE from "three";
 import { cleanName, type CatalogEntry, type Course } from "@silver-tongue/core";
 import { decodeSave, encodeSave, sessionLines } from "@silver-tongue/tui";
-import { fromLocalStorage, type KeyValue } from "@silver-tongue/tui-web/src/web-storage";
+import { fromLocalStorage, type KeyValue } from "@silver-tongue/web-common";
 import { COMING_SOON, NATIVE_NAMES } from "../locale";
 import { BARKS } from "../barks";
 import { turnToward } from "./anim";
@@ -61,11 +61,11 @@ import { SeeThroughControl } from "./seethrough";
 import { GuideMarker } from "./marker";
 import { daySteps, edgeArrow, findPath, LostTimer, nextSteps, resolveTarget, type PathGrid, type WayTarget } from "./wayfind";
 import { EdgeArrowView, PathTrail, spaceGrid } from "./wayview";
-import type { WebSessions } from "@silver-tongue/tui-web/src/web-storage";
+import type { WebSessions } from "@silver-tongue/web-common";
 
 /**
- * Where courses/<id>/audio/ is, relative to the page (build.mjs): "../" on Pages (the browser TUI's
- * copy at the site root), "" when the clips are bundled into this dist/.
+ * Where courses/<id>/audio/ is, relative to the page (build.mjs): "../" on Pages (the site's shared
+ * courses/ folder at the site root), "" when the clips are bundled into this dist/.
  */
 declare const __AUDIO_ROOT__: string;
 const ASSETS = "./assets"; // relative: the page works under a subpath (GitHub Pages /world3d/)

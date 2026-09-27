@@ -137,10 +137,13 @@ describe("world3d game (real course)", () => {
   it("rejections become toasts; walking into a zone routes through the graph", () => {
     let t = 9_000_000;
     const now = () => (t += 1000);
-    const core = createCore(course, { ...newGame(course), player: "Sam" }, { now, rng: () => 0.5 });
+    // The home scene done (0.14 world.homeScene): home applies, so sleeping elsewhere is refused.
+    const homed = { ...newGame(course), player: "Sam", scenesDone: { [course.world.homeScene!]: 1 } };
+    const core = createCore(course, homed, { now, rng: () => 0.5 });
     const game = createGame({ course, core, now });
     game.talkTo("cook"); // not here
     expect(game.model.feed.at(-1)).toMatchObject({ kind: "inputRejected", tone: "bad" });
+    expect(game.model.canSleep).toBe(false);
     game.sleep(); // not home
     expect(game.model.feed.at(-1)?.text).toBe(game.t("reject-not-home"));
     expect(route(course.world, "street", "room")).toEqual(["market", "room"]);

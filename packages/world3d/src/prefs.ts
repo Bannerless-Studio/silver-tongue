@@ -3,7 +3,7 @@
 // effects (word clips follow core's setSound as well), the music volume, whether the first-steps
 // guide (and wayfinding's "lost?" reminder) is hidden (and whether its note after the first bark
 // was shown), and whether the ground path hint is off. Unreadable or blocked storage: the defaults.
-import type { KeyValue } from "@silver-tongue/tui-web/src/web-storage";
+import type { KeyValue } from "@silver-tongue/web-common";
 
 export const PREFS_KEY = "silver-tongue:world3d:prefs";
 

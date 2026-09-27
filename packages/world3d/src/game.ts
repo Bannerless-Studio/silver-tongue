@@ -28,9 +28,9 @@ import {
   type WordId,
 } from "@silver-tongue/core";
 import { makeText, notebookLines, type AudioOut, type Speech, type StyledLine, type Text } from "@silver-tongue/tui";
-import { WebSessions, type KeyValue, type Opened } from "@silver-tongue/tui-web/src/web-storage";
+import { WebSessions, type KeyValue, type Opened } from "@silver-tongue/web-common";
 import { route } from "./layout";
-import { objective, type Objective } from "./objective";
+import { canSleepHere, objective, type Objective } from "./objective";
 import { display, makeStrings, uiLanguage, type Strings } from "./strings";
 import { FALLBACK_UI } from "../locale";
 import { BARK_CLIP, barkGloss, barkTokens, isBarkClip, npcRole, wordForms, type BarkLine, type BarkPicker } from "./barks";
@@ -360,8 +360,11 @@ export function createGame(opts: GameOptions): Game {
   const narrate = (kind: FeedItem["kind"], id: string, args?: Record<string, string | number>) => {
     if (t.has(id)) feed(kind, t(id, args), "story");
   };
-  const actionArgs = (a: Record<string, string>) =>
-    Object.fromEntries(Object.entries(a).map(([k, v]) => [k, course.conceptNames[v] ?? v]));
+  /** An action's parameters as narration variables (as view's actionNarration): concept names, plus the scene NPC's name (0.14 asked-* hints say who asked). */
+  const actionArgs = (a: Record<string, string>) => ({
+    ...Object.fromEntries(Object.entries(a).map(([k, v]) => [k, course.conceptNames[v] ?? v])),
+    ...(model.scene ? { npc: npcName(model.scene.npc) } : {}),
+  });
 
   /** Things derived from state alone, refreshed after every change. */
   function refresh() {
@@ -372,7 +375,7 @@ export function createGame(opts: GameOptions): Game {
       !inScene && mentorAvailable(course, st) && st.notes.ready.length
         ? { label: t("menu-mentor", { npc: npcName(course.world.mentor!.npc) }) + t("cost-slot"), input: { type: "visitMentor" } }
         : null;
-    model.canSleep = !inScene && (!course.world.home || st.place === course.world.home);
+    model.canSleep = !inScene && canSleepHere(course, st);
     if (!inScene && model.mode === "scene") model.mode = "explore";
     model.objective = objective(course, st, t, s, course.needsName);
     opts.onChange?.(model);
@@ -490,7 +493,7 @@ export function createGame(opts: GameOptions): Game {
           break;
         case "dayEnded":
           model.dayChanges += 1;
-          feed(e.type, t("day-ended", { day: e.day }), "info");
+          feed(e.type, t(e.rough ? "day-ended-rough" : "day-ended", { day: e.day }), "info");
           ended = { day: e.day, food: 0, rent: 0 };
           break;
         case "noteReady":
@@ -785,7 +788,7 @@ export function createGame(opts: GameOptions): Game {
 
 /**
  * Opens the last played game from storage, with the same keys as the browser TUI
- * (`silver-tongue:<course>:session:<id>` + `…:meta`, via tui-web's WebSessions), so a save
+ * (`silver-tongue:<course>:session:<id>` + `…:meta`, via web-common's WebSessions), so a save
  * moves between the two front ends as is.
  */
 export function openSession(

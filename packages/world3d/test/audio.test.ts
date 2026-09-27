@@ -3,7 +3,7 @@
 // packages/tui app.ts does) with a fake AudioOut against the real course.
 import { describe, expect, it } from "vitest";
 import { comboKey, newGame, type WordRecord } from "@silver-tongue/core";
-import type { AudioLike } from "@silver-tongue/tui-web/src/web-audio";
+import type { AudioLike } from "@silver-tongue/web-common";
 import { createAudioPlayer, silentWav, unlockAudioOnGesture } from "../src/audio";
 import { course, fakeAudio, makeGame, rightOption, rightTiles } from "./helpers";
 
@@ -45,7 +45,7 @@ const flushPromises = () => new Promise((r) => setTimeout(r, 0));
 const named = () => ({ ...newGame(course), player: "Sam" });
 
 describe("AudioPlayer: sequencing", () => {
-  it("plays every clip in order, a 300 ms beat between clips (tui-web's BEAT_MS), none after the last; slow lines at 0.8", () => {
+  it("plays every clip in order, a 300 ms beat between clips (web-common's BEAT_MS), none after the last; slow lines at 0.8", () => {
     const el = fakeEl();
     const { waits, wait } = timers();
     const p = createAudioPlayer({ base: "../audio/", audio: el, wait });

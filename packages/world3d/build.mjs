@@ -1,6 +1,6 @@
 // Builds dist/: index.html (CSS inlined), main.js (the app with three.js) and chunks/ (split off:
 // the start flow, the GLTF loader + meshopt decoder, the orbit camera), courses/ (the catalog
-// and every course file, copied from the repo's dist/courses/ as packages/tui-web's build does; the
+// and every course file, copied from the repo's dist/courses/ as packages/web-common's copy-courses.mjs does for tui-web and vn-web; the
 // page fetches the course it plays, so it needs a web server), assets/ (only the GLBs layout.json
 // and town.json use, meshopt-compressed by scripts/meshopt.mjs, plus a matching index.json with
 // each file's bytes), manifest.webmanifest and icons/. GLBs are copied, never
@@ -11,8 +11,8 @@
 //
 // Audio: each course's clips (content/audio/<language>, ~870 clips, ~7 MB) are loaded by URL as
 // they are said, never inlined. A one-off build doesn't copy them (dist/ stays near 10 MB): the page
-// loads them from ../courses/<course>/audio/, the browser TUI's copy at the Pages site root (pages.yml
-// puts world3d under /world3d/). --dev, or WORLD3D_AUDIO=bundle, copies the clips each course uses
+// loads them from ../courses/<course>/audio/, the site's shared courses/ folder (build:site;
+// pages.yml puts world3d under /world3d/). --dev, or WORLD3D_AUDIO=bundle, copies the clips each course uses
 // into dist/courses/<course>/audio/ and loads them from there. Clips missing: the game plays silently
 // and the HUD says "no audio".
 //

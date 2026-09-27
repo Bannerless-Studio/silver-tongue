@@ -65,6 +65,8 @@ const FALLBACK: Record<string, string> = {
   "obj-sleep-here": "Out of time today: sleep in your bed",
   "obj-go-home": "Out of time today: go home to {place} and sleep",
   "obj-sleep-now": "Nothing more today: sleep in your bed",
+  "obj-sleep-rough": "Out of time today: sleep rough right here",
+  "obj-sleep-rough-now": "Nothing more today: sleep rough right here",
   "obj-nothing": "Nothing more today: go home to {place} and sleep",
   "obj-rent-due": "Rent {currency}{rent} is due in {n} days",
   "obj-rent-tonight": "Rent {currency}{rent} is due tonight",
@@ -204,6 +206,8 @@ export const TUI_ONLY = new Set([
   "reject-bad-tile",
   "reject-no-tiles",
   "reject-bad-choice",
+  // 0.14: the terminal settings row's "(or [m])" (view's settingsRows adds it only for a terminal)
+  "settings-sound-hint",
 ]);
 /** A TUI key hint: "[w]", "[enter]", "[1-4]", "number keys". */
 export const KEY_HINT = /\[(?:[a-z0-9]|esc|enter|⌫|↑↓|\d-\d|\{ ?\$keys ?\})\]|number keys/i;

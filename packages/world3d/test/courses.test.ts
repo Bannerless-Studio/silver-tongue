@@ -3,12 +3,12 @@
 // and tiles spaced in a spaced language.
 import { describe, expect, it } from "vitest";
 import { createCore, newGame, serialize, type CatalogEntry, type Course, type WordRecord } from "@silver-tongue/core";
-import { loadWebSettings, SETTINGS_KEY, type KeyValue } from "@silver-tongue/tui-web/src/web-storage";
+import { loadWebSettings, SETTINGS_KEY, type KeyValue } from "@silver-tongue/web-common";
 import { coursePath, pickCourse, type CourseChoice, type FetchJson } from "../src/courses";
 import { createGame, lineReading, openSession } from "../src/game";
 import { course, rightTiles } from "./helpers";
 
-/** An in-memory localStorage (as tui-web's web-storage test). */
+/** An in-memory localStorage (as web-common's web-storage test). */
 class FakeStorage implements KeyValue {
   data = new Map<string, string>();
   getItem(k: string) {

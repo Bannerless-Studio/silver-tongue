@@ -288,7 +288,7 @@ function walker(L: LayoutIndex, game: ReturnType<typeof createGame>, nav: SpaceN
 describe.skipIf(!assetIndex)("a day played through: the objective line at every step", () => {
   const L = new LayoutIndex(LAYOUT, assetIndex!);
 
-  it("name -> meet Wang (3 scenes) -> noodle intro -> home -> sleep (day card) -> day 2 shift", () => {
+  it("name -> meet Wang (3 scenes) -> noodle intro -> sleep rough (day card) -> day 2 the landlord's key -> shift", () => {
     const { game, core } = makeGame(newGame(course), 50_000_000);
     const { s, t } = game;
     const obj = () => game.model.objective.text;
@@ -323,24 +323,29 @@ describe.skipIf(!assetIndex)("a day played through: the objective line at every 
     expect(obj()).toBe(s("obj-talk", { task: task("noodle-intro"), npc: game.npcName("cook") }));
     play("cook");
     expect(game.model.hud.slotsLeft).toBe(0);
-    expect(obj()).toBe(s("obj-go-home", { place: t("place-room") }));
-    walkTo("room");
-    expect(nav.space).toBe("room");
-    expect(obj()).toBe(s("obj-sleep-here"));
+    // No home yet (world.homeScene, the landlord's key, not done): the night is spent right here.
+    expect(core.state.scenesDone[course.world.homeScene!]).toBeUndefined();
+    expect(obj()).toBe(s("obj-sleep-rough"));
     expect(game.model.canSleep).toBe(true);
     const wallet = core.state.wallet;
     game.sleep();
     expect(game.model.dayChanges).toBe(1);
+    expect(game.model.feed.map((f) => f.text)).toContain(t("day-ended-rough", { day: 1 }));
     expect(game.model.dayCard).toMatchObject({ day: 1, food: course.world.foodPerDay, rent: 0, rentLate: false, wallet: wallet - course.world.foodPerDay });
     expect(game.model.dayCard!.change).toBe(core.state.wallet - 20);
     expect(game.model.walletFx.at(-1)?.delta).toBe(-course.world.foodPerDay);
     expect(game.model.hud.day).toBe(2);
-    // day 2: the landlord is right here
+    // day 2: the landlord hands over the key at the room
+    expect(obj()).toBe(s("obj-go", { place: t("place-room"), npc: game.npcName("landlord"), task: task("room-hello") }));
+    walkTo("room");
     expect(obj()).toBe(s("obj-talk", { task: task("room-hello"), npc: game.npcName("landlord") }));
     play("landlord");
+    // a home now: out of slots means going back to the room's bed
+    expect(game.model.canSleep).toBe(true);
+    walkTo("noodle_shop");
+    expect(game.model.canSleep).toBe(false);
     expect(obj()).toBe(s("obj-go", { place: t("place-warehouse"), npc: game.npcName("foreman"), task: task("warehouse-intro") }));
     // a paid shift at the noodle shop instead
-    walkTo("noodle_shop");
     const before = core.state.wallet;
     play("cook");
     expect(events.some((e) => e.type === "walletChanged" && e.reason === "wages")).toBe(true);
@@ -456,6 +461,23 @@ describe("3D wording", () => {
     for (const id of shown) expect(t(id), id).not.toMatch(KEY_HINT);
     // the intro narration names the taps instead
     expect(t("scene-street-hello-start")).toMatch(/Tap a word/);
+  });
+
+  it("a mix-up's hint names who asked (0.14 asked-* take { $npc }); no unfilled variable", () => {
+    expect([...course.learnerFtl.matchAll(/^asked-[\w-]+ = .*\{ \$npc \}/gm)].length).toBeGreaterThan(0);
+    // Old Wang's first exchange, its asked-* line rewritten to take the NPC as the 0.14 ones do.
+    const id = `asked-${course.scenes.find((x) => x.id === "street-hello")!.exchanges[0].expect.action}`;
+    expect(course.learnerFtl).toMatch(new RegExp(`^${id} =`, "m"));
+    const withNpc = { ...course, learnerFtl: course.learnerFtl.replace(new RegExp(`^${id} = .*$`, "m"), `${id} = { $npc } was asking.`) };
+    let t = 1_000_000;
+    const now = () => (t += 1000);
+    const core = createCore(withNpc, named(), { now, rng: () => 0.42 });
+    const game = createGame({ course: withNpc, core, now });
+    game.talkTo("wang");
+    const n = game.model.feed.length;
+    game.reply(rightOption(game) === 0 ? 1 : 0);
+    const bad = game.model.feed.slice(n).filter((f) => f.kind === "actionPerformed" && f.tone === "bad").map((f) => f.text);
+    expect(bad).toEqual([`${game.npcName("wang")} was asking.`]);
   });
 
   it("the narration override reaches the feed when Old Wang's first scene starts", () => {

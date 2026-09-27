@@ -6,7 +6,7 @@
 // only keys the English has.
 import { beforeEach, describe, expect, it } from "vitest";
 import { createCore, newGame, serialize, type CatalogEntry, type Course } from "@silver-tongue/core";
-import { loadWebSettings, saveWebSettings, SETTINGS_KEY, type KeyValue } from "@silver-tongue/tui-web/src/web-storage";
+import { loadWebSettings, saveWebSettings, SETTINGS_KEY, type KeyValue } from "@silver-tongue/web-common";
 import { UI_LOCALES } from "../locale";
 import { applyStart, coursePath, rememberedStart, resumePick, type FetchJson } from "../src/courses";
 import { mountStartFlow, nameProblem, type StartResult } from "../src/start/flow";

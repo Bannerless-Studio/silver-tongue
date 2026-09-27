@@ -1,13 +1,13 @@
 // Which course the page plays, picked as the browser TUI picks it (packages/tui-web/src/main.ts
 // boot / fetchCourse), with the same shared helpers (@silver-tongue/tui chooseStart, learnerFor,
-// courseLabels) and the same storage (tui-web's loadWebSettings / saveWebSettings /
+// courseLabels) and the same storage (web-common's loadWebSettings / saveWebSettings /
 // migrateWebAliases): the catalog courses/index.json, then the remembered course (or the only one)
 // in its reading language, else the player chooses from the list. Fetching a course file moves games
 // saved under its old ids (a course's aliases) to its own, so an old save plays on. DOM-free: fetch
 // and the chooser come in as deps, so tests use fakes.
 import type { CatalogEntry, Course } from "@silver-tongue/core";
 import { chooseStart, courseLabels, learnerFor, makeText } from "@silver-tongue/tui";
-import { loadWebSettings, migrateWebAliases, saveWebSettings, WebSessions, type KeyValue } from "@silver-tongue/tui-web/src/web-storage";
+import { loadWebSettings, migrateWebAliases, saveWebSettings, WebSessions, type KeyValue } from "@silver-tongue/web-common";
 
 export type FetchJson = <T>(path: string) => Promise<T>;
 

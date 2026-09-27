@@ -22,6 +22,20 @@ export interface Objective {
   goal?: ObjectiveGoal;
 }
 
+/**
+ * Whether the player has a home to sleep in (core's sleep rule, 0.14): before `world.homeScene` is
+ * done, sleep works anywhere (a rough night); after it, or without one, `world.home` (if set) applies.
+ */
+export function hasHome(course: Course, st: GameState): boolean {
+  const { homeScene } = course.world;
+  return !homeScene || (st.scenesDone[homeScene] ?? 0) > 0;
+}
+
+/** Whether core accepts sleep here now (outside a scene): anywhere before the player has a home, else at home. */
+export function canSleepHere(course: Course, st: GameState): boolean {
+  return !hasHome(course, st) || !course.world.home || st.place === course.world.home;
+}
+
 /** Graph distance (hops) from `from` to every place. */
 function hops(course: Course, from: string): Map<string, number> {
   const d = new Map([[from, 0]]);
@@ -43,6 +57,8 @@ export function objective(course: Course, st: GameState, t: Text, s: Strings, ne
   const npcName = (n: string) => t(`npc-${n}`);
   const placeName = (p: string) => t(`place-${p}`);
   const home = w.home ?? st.place;
+  // No home yet (0.14 homeScene): the day ends wherever the player is, no bed to walk to.
+  const rough = !hasHome(course, st);
   const rentArgs = { currency: w.currency, rent: w.rentPerWeek };
   const due = daysToRent(st.day);
   const sub = st.rentLate
@@ -57,6 +73,7 @@ export function objective(course: Course, st: GameState, t: Text, s: Strings, ne
     return { text: s("obj-in-scene", { npc: scene ? npcName(scene.npc) : "" }), sub, scene: st.run.scene, kind: "scene" };
   }
   if (st.slot >= w.slotsPerDay) {
+    if (rough) return { text: s("obj-sleep-rough"), sub, kind: "sleep" };
     const kind = st.place === home ? "sleep" : "go-home";
     return { text: st.place === home ? s("obj-sleep-here") : s("obj-go-home", { place: placeName(home) }), sub, kind, goal: { kind: "bed", place: home } };
   }
@@ -92,5 +109,6 @@ export function objective(course: Course, st: GameState, t: Text, s: Strings, ne
   if (work) return say(work, "obj-work", "obj-work-go", "work");
   const practice = scenes.find((x) => x.repeatable);
   if (practice) return say(practice, "obj-talk", "obj-go", "practice");
+  if (rough) return { text: s("obj-sleep-rough-now"), sub, kind: "rest" };
   return { text: st.place === home ? s("obj-sleep-now") : s("obj-nothing", { place: placeName(home) }), sub, kind: "rest", goal: { kind: "bed", place: home } };
 }

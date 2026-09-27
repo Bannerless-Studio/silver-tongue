@@ -88,8 +88,8 @@ effects play from the .m4a. The next saving (both music formats under 15 MB): th
 
 **Audio clips** (`content/audio/<language>`, for zh 870 clips, all referenced by the course, about
 7.1 MB) would take dist/ further past the 15 MB budget, so a one-off build doesn't copy
-them: the page loads each clip by URL as it is said, from `../courses/<course>/audio/`, the browser
-TUI's copy at the Pages site root (tui-web's build copies them to its `dist/courses/<course>/audio/`).
+them: the page loads each clip by URL as it is said, from `../courses/<course>/audio/`, the site's
+shared courses folder at the Pages site root (`npm run build:site` puts it at `site/courses/`, clips included).
 `npm run dev` and `WORLD3D_AUDIO=bundle npm run build -w @silver-tongue/world3d` copy the clips each
 course uses into `dist/courses/<course>/audio/` and load from there (a self-contained dist/ to host
 alone). Clips missing (dist/
@@ -98,8 +98,9 @@ HUD saying "no audio".
 
 ## Deploy (GitHub Pages)
 
-`.github/workflows/pages.yml` builds the course, the browser TUI and this package on every push to
-main and uploads one site: `packages/tui-web/dist` at `/`, `packages/world3d/dist` at `/world3d/`.
+`.github/workflows/pages.yml` builds the course, the site (`npm run build:site`: the visual novel at
+`/`, the text game at `/text/`, courses at `/courses/`) and this package on every push to main, and
+uploads one site with `packages/world3d/dist` added at `/world3d/`.
 Every world3d URL is relative (`./main.js`, `./assets/...`), so it works under any subpath,
 including a fork's `<user>.github.io/silver-tongue/world3d/`. `index.html` carries a web manifest
 (`src/manifest.webmanifest`, fullscreen), theme colour and the apple-mobile-web-app tags, so "Add
@@ -182,7 +183,7 @@ courses/<id>/<learner>.json (courses.ts) ─► core ◄─ inputs ── game.t
     label for shopping and for a delivery's wages), a notebook pulse counter (a word goes in or
     becomes known), mix-ups (the NPC shrugs), the parcel being carried (`hud.errand`, from core's
     `state.errand`) and the price of the reply in progress (`reply.cost`, a variant's `cost`).
-  - `openSession` uses tui-web's `WebSessions` for storage (new game, a chosen session, or the
+  - `openSession` uses web-common's `WebSessions` for storage (new game, a chosen session, or the
     last played).
 - The layout is two files, merged by `layout.ts mergeLayout` (a place's or NPC's fields come from
   both; town.json's win):
@@ -611,7 +612,7 @@ then `chooseStart` (from `@silver-tongue/tui`) picks the remembered course (sett
 `silver-tongue:settings`, shared with tui-web) or the only one, in `learnerFor`'s reading language;
 with several courses and none remembered, the start dialog lists them by `courseLabels`, in the
 first course's reading language, and nothing is remembered until one is chosen. The course file
-`courses/<course>/<learner>.json` is fetched and tui-web's `migrateWebAliases` moves games saved
+`courses/<course>/<learner>.json` is fetched and web-common's `migrateWebAliases` moves games saved
 under the course's old ids (`aliases`: 0.12's `zh-china-en`) to its own keys, so an old save plays
 on as the last game. The page's `lang` is the reading language, and the learner text uses its
 locale. The page needs a web server (it fetches its course); the build copies the repo's
@@ -655,7 +656,7 @@ Show are kept in `silver-tongue:world3d:prefs` (`src/prefs.ts`).
 
 ## Audio buses
 
-`src/audio.ts`: word clips stay on the `AudioPlayer` (tui-web's element). Music, ambience and
+`src/audio.ts`: word clips stay on the `AudioPlayer` (web-common's element). Music, ambience and
 effects (make-it-in-china `tools/audio/make_audio.py`, vendored in `assets/audio/` with its
 `manifest.json`) play on a `SoundMixer` over Web Audio (iOS ignores an element's volume): master →
 music / ambient / sfx gains. `pickFormat` takes `.ogg` where `canPlayType` says Vorbis, else

@@ -1,4 +1,4 @@
-// Spoken audio for the 3D front end: one AudioPlayer for the page, tui-web's createWebAudio under
+// Spoken audio for the 3D front end: one AudioPlayer for the page, web-common's createWebAudio under
 // it (the same player the browser TUI uses: one audio element, clips in order with a 300 ms beat
 // between them, a slow line at 0.8 speed, a clip that won't load skipped, three failing in a row
 // and `available` goes false). game.ts decides what is said (as packages/tui app.ts does); this
@@ -8,7 +8,7 @@
 // click / key plays a silent clip through the same element (unlock(), retried on each gesture until
 // one goes through), and every clip after that plays. A play() refused before that is ignored (the text is on screen anyway).
 import type { AudioOut, Speech } from "@silver-tongue/tui";
-import { createWebAudio, type AudioLike, type WebAudioDeps } from "@silver-tongue/tui-web/src/web-audio";
+import { createWebAudio, type AudioLike, type WebAudioDeps } from "@silver-tongue/web-common";
 import type { WalkGrid } from "./layout";
 
 export interface AudioPlayer extends AudioOut {
@@ -139,7 +139,7 @@ export function unlockAudioOnGesture(player: Pick<AudioPlayer, "unlock" | "unloc
 //            birds_day / crickets_evening by daylight, market_murmur in the market; outdoors only
 //   sfx      one-shots: ui_*, bubble, tiles, coin, jingle, fail, doors, notebook, skip, bell, steps
 // Nothing starts before the first gesture (unlock() inside it resumes the context). Word clips stay
-// on the AudioPlayer above (tui-web's element), untouched.
+// on the AudioPlayer above (web-common's element), untouched.
 // ---------------------------------------------------------------------------------------------
 export type AudioFormat = "ogg" | "m4a";
 export type AudioKind = "music" | "ambient" | "sfx";

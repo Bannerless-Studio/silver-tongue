@@ -29,6 +29,8 @@ const { game } = makeGame(newGame(course));
 const { t, s } = game;
 const named = (): GameState => ({ ...newGame(course), player: "Mina" });
 const done = (...ids: string[]) => Object.fromEntries(ids.map((id) => [id, 1]));
+/** Named, with the home scene done (0.14 world.homeScene): home and its bed apply. */
+const homed = (): GameState => ({ ...named(), scenesDone: done(course.world.homeScene!) });
 const obj = (st: GameState, c: Course = course): Objective => objective(c, st, t, s, true);
 /** the course with only these scenes (the rest of the rules as they are) */
 const only = (...ids: string[]): Course => ({ ...course, scenes: course.scenes.filter((x) => ids.includes(x.id)) });
@@ -78,22 +80,29 @@ describe.skipIf(!assetIndex)("every objective kind → a target in the player's 
   });
 
   it("go home (out of slots): the home door from the street, the way out from another interior", () => {
-    const st = { ...named(), slot: course.world.slotsPerDay };
+    const st = { ...homed(), slot: course.world.slotsPerDay };
     expect(at(st, STREET)).toMatchObject({ o: { kind: "go-home", goal: { kind: "bed", place: "room" } }, target: { kind: "door", ref: "room", final: false } });
     expect(at({ ...st, place: "noodle_shop" }, "noodle_shop").target).toMatchObject({ kind: "exit", final: false });
   });
 
   it("sleep (out of slots, at home): the bed", () => {
-    const st = { ...named(), slot: course.world.slotsPerDay, place: "room" };
+    const st = { ...homed(), slot: course.world.slotsPerDay, place: "room" };
     const { o, target } = at(st, "room");
     expect(o.kind).toBe("sleep");
     expect(target).toMatchObject({ kind: "bed", ref: "room", final: true });
   });
 
+  it("no home yet (homeScene not done): out of slots or nothing left, sleep rough where you stand, nothing to walk to", () => {
+    expect(course.world.homeScene).toBeTruthy();
+    const st = { ...named(), slot: course.world.slotsPerDay };
+    expect(at(st, STREET)).toEqual({ o: { text: s("obj-sleep-rough"), sub: expect.any(String), kind: "sleep" }, target: null });
+    expect(at(named(), STREET, only())).toMatchObject({ o: { kind: "rest", text: s("obj-sleep-rough-now") }, target: null });
+  });
+
   it("rest (nothing left today): the bed at home, the door elsewhere", () => {
     const empty = only();
-    expect(at(named(), STREET, empty)).toMatchObject({ o: { kind: "rest" }, target: { kind: "door", ref: "room" } });
-    expect(at({ ...named(), place: "room" }, "room", empty).target).toMatchObject({ kind: "bed" });
+    expect(at(homed(), STREET, empty)).toMatchObject({ o: { kind: "rest" }, target: { kind: "door", ref: "room" } });
+    expect(at({ ...homed(), place: "room" }, "room", empty).target).toMatchObject({ kind: "bed" });
   });
 
   it("deliver: the parcel's NPC (the doctor at the hospital spot, in the town)", () => {
@@ -180,7 +189,10 @@ describe("the sequence: the next steps and step n/N today", () => {
   it("the last slot: this scene, then the evening; nothing projected past sleep", () => {
     const st = { ...named(), slot: course.world.slotsPerDay - 1 };
     const steps = nextSteps(course, st, t, s, true);
-    expect(steps.map((x) => x.kind)).toEqual(["story", "go-home"]);
+    // No home yet (the first scene isn't the home scene): the evening is a rough night where the player is.
+    expect(steps.map((x) => x.kind)).toEqual(["story", "sleep"]);
+    const later = { ...homed(), slot: course.world.slotsPerDay - 1 };
+    expect(nextSteps(course, later, t, s, true).map((x) => x.kind)).toEqual(["story", "go-home"]);
     expect(daySteps(course, st).n).toBe(course.world.slotsPerDay);
     expect(daySteps(course, { ...st, slot: course.world.slotsPerDay }).n).toBe(course.world.slotsPerDay + 1);
   });
