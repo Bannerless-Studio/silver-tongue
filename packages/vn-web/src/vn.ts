@@ -3,6 +3,7 @@ import {
   actionNarration, introLines, makeText, placeMenu, sentenceCard, tileEcho, waitingForMoney, wordCard,
   type AudioOut, type MenuItem, type SentenceCard, type Speech, type Text, type WordCard,
 } from "@silver-tongue/view";
+import { dwellMs } from "./dwell";
 
 export type Cue = "speak" | "puzzled" | "pleased" | "listen";
 export interface Beat {
@@ -46,11 +47,15 @@ export interface VnOptions {
   course: Course;
   core: Core;
   now: () => number;
+  /** timers, so a test can fire them by hand */
+  wait?: (ms: number, cb: () => void) => { cancel(): void };
   /** saves after each accepted input; false if it couldn't. Leave out to play without saving. */
   save?: (state: GameState) => boolean;
   audio?: AudioOut;
   /** a message id shown once at start, e.g. "notice-bad-save" */
   notice?: string;
+  /** the scene moves on by itself; false waits for a press on every line */
+  autoAdvance?: boolean;
 }
 export interface Vn {
   readonly t: Text;
@@ -59,6 +64,10 @@ export interface Vn {
   view(): VnView;
   subscribe(fn: () => void): () => void;
   advance(): void;
+  /** an overlay, a card or a hidden tab: the line waits for the player */
+  hold(held: boolean): void;
+  /** the player turned auto-advance on or off in settings */
+  setAuto(on: boolean): void;
   choose(n: number): void;
   talkTo(npc: string): void;
   placeTile(i: number): void;
@@ -103,6 +112,13 @@ export function createVn(opts: VnOptions): Vn {
   let resuming = false;
   let nextId = 1;
   let save = opts.save;
+  const wait: NonNullable<VnOptions["wait"]> = opts.wait ?? ((ms, cb) => {
+    const h = setTimeout(cb, ms);
+    return { cancel: () => clearTimeout(h) };
+  });
+  let timer: { cancel(): void } | undefined;
+  let held = false;
+  let auto = opts.autoAdvance !== false;
   const listeners = new Set<() => void>();
 
   const changed = () => listeners.forEach((f) => f());
@@ -123,14 +139,46 @@ export function createVn(opts: VnOptions): Vn {
   let shownAt = -Infinity;
   const settled = () => opts.now() - shownAt >= SETTLE_MS;
 
+  const disarm = () => {
+    timer?.cancel();
+    timer = undefined;
+  };
+
+  /** Arms the timer for a beat: its reading time, then the sound, then a short pad. */
+  function arm(b: Beat) {
+    disarm();
+    if (!auto || held || b.day !== undefined) return; // a new day is always a press
+    const go = () => {
+      timer = undefined;
+      if (opts.audio?.busy) {
+        timer = wait(200, go);
+        return;
+      }
+      timer = wait(200, () => {
+        timer = undefined;
+        if (!held) advance();
+      });
+    };
+    timer = wait(dwellMs(b), go);
+  }
+
+  function advance() {
+    if (!current || naming) return;
+    disarm();
+    show();
+    changed();
+  }
+
   function show() {
     current = queue.shift();
     if (current) {
       log(current);
       if (current.cue) cue = current.cue;
       say(current.speech);
+      arm(current);
       return;
     }
+    disarm();
     if (leaving) {
       npc = undefined;
       leaving = false;
@@ -272,9 +320,17 @@ export function createVn(opts: VnOptions): Vn {
       listeners.add(fn);
       return () => listeners.delete(fn);
     },
-    advance() {
-      if (!current || naming) return;
-      show();
+    advance,
+    hold(on) {
+      if (on === held) return;
+      held = on;
+      if (on) disarm();
+      else if (current) arm(current);
+    },
+    setAuto(on) {
+      auto = on;
+      if (auto && current) arm(current);
+      else disarm();
       changed();
     },
     choose(n) {
