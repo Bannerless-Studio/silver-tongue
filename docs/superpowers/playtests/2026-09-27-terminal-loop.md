@@ -29,3 +29,27 @@ Fixed at once: noodle-intro count-alt1 "三个杯子！" was a correct answer of
 - Untrack tsconfig.tsbuildinfo and ignore it.
 - VN ignores MenuItem.disabled (no dimming); web-phase item.
 - help.ts isPureAside is not depth-aware ("(a) b (c)"); no course gloss triggers it today.
+
+## Iteration 2 — days 2–9 (room-rent, delivery-*, tea-*, taxi-*, class-*, stairs-*, shop-*, noodle-kitchen/lunch, hospital-checkup)
+
+Reads well: room-rent, warehouse-shift, tea-intro, tea-weather, taxi-way, class-first, hospital-checkup, stairs-meet/family/pets, shop-intro (haggling), noodle-kitchen (runs out of cups → shop), class-read, tea-shift, shop-buy, taxi-luggage, delivery-station.
+
+Fix:
+- Parcel state said three times at pickup (narration + errand-started + errand-carrying) while the header shows "parcel". → keep narration + header only.
+- "Old Wang seems to have something to tell you." after almost every scene (each scene readies a note), and at session start between the walk-home place descriptions. → once, when the first unread note appears.
+- Rent: header shows "rent due" but nothing says what happened. Night of day 7 with ¥36 and day 8 with ¥48: silent. → one line on the night it goes late ("Rent is ¥50. Mr Li will wait.") and one when it is paid ("-¥50 (rent)" already exists).
+- Dates: class-write writes 二零二六年, taxi-visitor 二零二五年; the setting is 2004. → 二零零四年 / 二零零三年.
+- Wrong-sense glosses: 点 "point" (→ o'clock), 字 "letter" (→ character), 月 "moon" (→ month), 日 "sun" (→ day). Curated.
+- tea-tv is a topic jumble (phone call, dog, movie, be quiet) → rewrite as one coherent evening in front of the TV.
+- noodle-lunch: the cook asks the player how much the customer's dish costs (那个小姐想吃菜，多少钱？→ 她？十块钱。). → cook states the price, player relays it.
+- Place descriptions replay on every new session while walking (once per session). Acceptable for real play; harness resumes make it look worse.
+
+Stage gate: no gate place exists yet (spec: "a locked gate to the stage 2 district"). Build it with HSK 2: a police-station/gate scene about a month in (the passport excuse), which opens the stage-2 district.
+
+## Handoff (session ended 2026-09-27, usage limit)
+
+Committed and pushed: sleep-rough rule (72da923), playtest navigation flags (1deae65). Uncommitted in the working tree when the session stopped — two workers were mid-task:
+- Review follow-ups + TUI fixes (packages/tui, view/help.ts, tui-node speed row for mpg123, hospital-checkup/shop-intro lines). At stop: checker failed on 下/里 coverage (hospital `sit` line changed) and 6 missing clips. Finish: restore 下 and 里 in ≥3 scenes each, run `npm run audio -- zh-china`, then all four gates.
+- Content fixes (class-write/taxi-visitor years → 2004/2003, tea-tv rewrite, noodle-lunch price line). Clips not generated yet: same `npm run audio` run.
+Then: rent-late line in the TUI (see Iteration 2), release 0.15.0 (CHANGELOG entry first), then HSK 2 with the stage gate scene.
+Playtest with `npm run playtest -- --run <name> --seed 3 --play <scene>` and `--resume <name> --play/--sleep/--goto`.
