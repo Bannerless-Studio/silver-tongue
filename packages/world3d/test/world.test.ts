@@ -15,7 +15,7 @@ import { ScatterMotion, WalkerMotion, WAIT_RANGE } from "../src/streetlife";
 import { placeBubble, screenLayout } from "../src/ui/viewport";
 import { AssetCache, drawCalls, mergeStatic, SceneSpace } from "../src/world";
 import { CameraRig } from "../src/camera";
-import { holeAt, isSeeThrough, SEE_ATTR, SEE_CLUSTER0, SEE_HOLE, SEE_NEVER, SEE_THROUGH, seeThroughCompile, SeeThroughControl, seeUniforms, underCanopy, visibility, type Canopy } from "../src/seethrough";
+import { fadeTexture, isSeeThrough, occludes, SEE_ATTR, SEE_ID0, SEE_NEVER, SEE_THROUGH, seeThroughCompile, SeeThroughControl, seeUniforms, segmentIntersectsAabb, underCanopy, type Occluder } from "../src/seethrough";
 import { ASSETS, assetIndex, readGlb, countingCore, course, makeGame, playScene, rightOption, rightTiles } from "./helpers";
 import { createCore } from "@silver-tongue/core";
 
@@ -646,7 +646,7 @@ describe.skipIf(!assetIndex)("bug 2: daylight is clearly perceptible at each qua
   });
 });
 
-describe("see-through: whatever hides the player (or the NPC in a scene) is cut away round them", () => {
+describe("see-through: whatever blocks a focus fades as a whole object", () => {
   // The rig as main.ts has it: a landscape viewport, snapped onto the player at the plaza.
   const rig = () => {
     const r = new CameraRig({} as HTMLElement);
@@ -654,102 +654,83 @@ describe("see-through: whatever hides the player (or the NPC in a scene) is cut 
     return r;
   };
   const feet = new THREE.Vector3(-15, 0, 8); // under the great tree
-  const view = (cam: THREE.Camera, p: THREE.Vector3) => p.clone().applyMatrix4(cam.matrixWorldInverse);
-
-  it("focus depth: the focus point 1 m above the feet sits at the camera distance (19 m) straight ahead; off / the fly-over turn it off", () => {
-    const r = rig();
-    r.snap(feet);
-    const see = new SeeThroughControl();
-    see.update(1 / 60, r.camera, [feet, new THREE.Vector3(-13, 0, 8)], []);
-    const [f0, f1] = seeUniforms.stFocus.value;
-    expect(f0.w).toBe(1);
-    expect(f0.x).toBeCloseTo(0, 5);
-    expect(f0.y).toBeCloseTo(0, 5);
-    expect(-f0.z).toBeCloseTo(19, 5);
-    expect(f1.w).toBe(1);
-    expect(seeUniforms.stFeetY.value[0]).toBe(0);
-    expect(see.status().focusDepth[0]).toBeCloseTo(19, 5);
-    see.update(1 / 60, r.camera, [feet], [], false); // the fly-over
-    expect(seeUniforms.stFocus.value.every((f) => f.w === 0)).toBe(true);
-    see.on = false;
-    see.update(1 / 60, r.camera, [feet], []);
-    expect(seeUniforms.stFocus.value[0].w).toBe(0);
-    see.on = true;
-    see.update(1 / 60, r.camera, [feet, null], []);
-    expect(seeUniforms.stFocus.value.map((f) => f.w)).toEqual([1, 0]);
+  const occluder = (asset: string, boxes: Occluder["boxes"], canopyFootprint?: Occluder["canopyFootprint"], id = 0): Occluder => ({
+    id,
+    asset,
+    min: [Math.min(...boxes.map((b) => b.min[0])), Math.min(...boxes.map((b) => b.min[1])), Math.min(...boxes.map((b) => b.min[2]))],
+    max: [Math.max(...boxes.map((b) => b.max[0])), Math.max(...boxes.map((b) => b.max[1])), Math.max(...boxes.map((b) => b.max[2]))],
+    boxes,
+    ...(canopyFootprint ? { canopyFootprint } : {}),
   });
 
-  it("the hole: nearer than the focus by the margin, within the radius on screen, above the feet; soft at the rim; nothing behind or underfoot", () => {
+  it("only fades mesh proxies that genuinely block the fixed camera's view", () => {
     const r = rig();
-    r.snap(feet);
-    const cam = r.camera;
-    cam.updateMatrixWorld(); // the renderer does this each frame (SeeThroughControl.update too)
-    const aim = feet.clone().setY(SEE_THROUGH.aimHeight);
-    const focus = view(cam, aim);
-    const along = (m: number, side = 0) => {
-      // m metres from the aim point towards the camera, `side` metres across the screen (camera right)
-      const toCam = cam.position.clone().sub(aim).normalize();
-      const right = new THREE.Vector3(1, 0, 0).applyQuaternion(cam.quaternion);
-      return aim.clone().addScaledVector(toCam, m).addScaledVector(right, side);
-    };
-    const hole = (w: THREE.Vector3) => holeAt(view(cam, w), w.y, focus, feet.y);
-    // a canopy, an eave, a lantern pole on the line of sight: cut
-    for (const m of [3, 6, 10, 15]) expect(hole(along(m)), `${m} m in front`).toBeCloseTo(1, 5);
-    // just in front of the player (within the margin) and behind them: kept
-    expect(hole(along(0.5))).toBe(0);
-    expect(hole(along(-3))).toBe(0);
-    // across the screen, measured at the focus depth (scaled for depth: 10 m nearer, the same screen offset)
-    const k = (19 - 10) / 19;
-    expect(hole(along(10, 1.0 * k))).toBeCloseTo(1, 5);
-    expect(hole(along(10, SEE_THROUGH.radius * k))).toBeCloseTo(0.5, 5); // the rim: half
-    const inner = hole(along(10, (SEE_THROUGH.radius - 0.2) * k));
-    const outer = hole(along(10, (SEE_THROUGH.radius + 0.2) * k));
-    expect(inner).toBeGreaterThan(0.5);
-    expect(inner).toBeLessThan(1); // a soft edge, not a hard circle
-    expect(outer).toBeGreaterThan(0);
-    expect(outer).toBeLessThan(0.5);
-    expect(hole(along(10, 3.5 * k))).toBe(0);
-    // the ground between the camera and the feet (the plaza, a deck, a floor): never cut
-    expect(hole(new THREE.Vector3(feet.x + 0.6, 0, feet.z + 0.8))).toBe(0);
-    expect(hole(new THREE.Vector3(feet.x + 0.6, 0.2, feet.z + 0.8))).toBe(0);
-    // the rule's own tags: ground never, the hole cuts roofs/walls/props, a canopy only uses its cluster fade
-    expect(visibility(SEE_NEVER, 1)).toBe(1);
-    expect(visibility(SEE_HOLE, 1)).toBe(0);
-    expect(visibility(SEE_HOLE, 0.25)).toBeCloseTo(0.75);
-    const clusters = [1, 0.25];
-    expect(visibility(SEE_CLUSTER0 + 1, 0, clusters)).toBe(0.25);
-    expect(visibility(SEE_CLUSTER0 + 1, 1, clusters)).toBe(0.25);
-    expect(visibility(SEE_CLUSTER0, 1, clusters)).toBe(1);
-    // the radius is live
-    const see = new SeeThroughControl();
-    see.radius = 3;
-    expect(seeUniforms.stShape.value.x).toBe(3);
-    expect(see.status().radius).toBe(3);
-    see.radius = SEE_THROUGH.radius;
+    const focus = new THREE.Vector3(0, 0.35, 0);
+    r.snap(focus);
+    const bridge = occluder("bridge_stone_arch", [
+      { min: [-9, 0, -2], max: [9, 0.45, 2] },
+      { min: [-9, 0.3, -2], max: [9, 1.55, -1.7] },
+      { min: [-9, 0.3, 1.7], max: [9, 1.55, 2] },
+    ]);
+    expect(occludes(bridge, r.camera.position, focus)).toBe(false);
+
+    const aim = focus.clone().setY(focus.y + SEE_THROUGH.aimHeight);
+    const roofCentre = aim.clone().addScaledVector(r.camera.position.clone().sub(aim).normalize(), 6);
+    const roof = occluder("room_shell", [{ min: [roofCentre.x - 1, roofCentre.y - 0.3, roofCentre.z - 1], max: [roofCentre.x + 1, roofCentre.y + 0.3, roofCentre.z + 1] }]);
+    expect(occludes(roof, r.camera.position, focus)).toBe(true);
+
+    const lowWall = occluder("wall_low", [{ min: [0.5, focus.y, -1], max: [1, focus.y + 1.2, 1] }]);
+    expect(occludes(lowWall, r.camera.position, focus)).toBe(false);
+
+    const canopy = occluder("willow", [{ min: [-3, 4, -3], max: [3, 7, 3] }], { min: [-3, -3], max: [3, 3] });
+    expect(occludes(canopy, r.camera.position, focus)).toBe(true);
   });
 
-  it("a canopy the player (or the NPC talked to) stands under dithers down to 25 %, eased; back up once out; off keeps it opaque", () => {
+  it("tests the bounded camera-to-focus segment (hit, radius miss, behind camera, and below feet)", () => {
+    const camera = new THREE.Vector3(0, 3, 10);
+    const focus = new THREE.Vector3(0, 0, 0);
+    expect(segmentIntersectsAabb(camera, focus.clone().setY(1), [-0.2, 1, 4], [0.2, 3, 5])).toBe(true);
+    expect(segmentIntersectsAabb(camera, focus.clone().setY(1), [0.7, 1, 4], [1, 3, 5])).toBe(false);
+    expect(segmentIntersectsAabb(camera, focus.clone().setY(1), [-0.2, 1, 11], [0.2, 3, 12])).toBe(false);
+    const low = occluder("deck", [{ min: [-1, -0.2, 4], max: [1, 0.2, 6] }]);
+    expect(occludes(low, camera, focus)).toBe(false);
+    const blocker = occluder("roof", [{ min: [-1, 1, 4], max: [1, 3, 6] }]);
+    expect(occludes(blocker, camera, focus)).toBe(true);
+    const near = occluder("near", [{ min: [-0.4, 1.3, 0.1], max: [0.4, 3, 0.8] }]);
+    expect(occludes(near, camera, focus)).toBe(false);
+  });
+
+  it("eases an occluding root down to fadeTo and back up; off and fly-over restore opaque", () => {
     const r = rig();
     r.snap(feet);
-    const tree: Canopy = { id: "great_tree", asset: "great_tree", cluster: 0, min: [-28.9, -2], max: [-5.5, 14.6] };
-    const willow: Canopy = { id: "willow_7", asset: "willow", cluster: 1, min: [10, 8], max: [14.3, 12.3] };
-    expect(underCanopy(tree, feet.x, feet.z)).toBe(true);
-    expect(underCanopy(willow, feet.x, feet.z)).toBe(false);
+    const tree = occluder("great_tree", [{ min: [-29, 3.4, -2], max: [-5, 12, 15] }], { min: [-28.9, -2], max: [-5.5, 14.6] });
+    expect(underCanopy(tree.canopyFootprint!, feet.x, feet.z)).toBe(true);
     const see = new SeeThroughControl();
-    see.update(1 / 60, r.camera, [feet], [tree, willow]);
+    see.update(1 / 60, r.camera, [feet], [tree]);
     expect(see.vis[0]).toBeLessThan(1);
-    expect(see.vis[0]).toBeGreaterThan(SEE_THROUGH.canopyFade); // eased, not a pop
-    for (let i = 0; i < 120; i++) see.update(1 / 60, r.camera, [feet], [tree, willow]);
-    expect(seeUniforms.stCluster.value[0]).toBe(SEE_THROUGH.canopyFade);
-    expect(seeUniforms.stCluster.value[1]).toBe(1);
-    expect(see.status([tree, willow]).faded).toEqual([{ id: "great_tree", vis: 0.25 }]);
-    // the NPC in a scene under the willow, the player out in the open
-    const open = new THREE.Vector3(0, 0, 0);
-    for (let i = 0; i < 120; i++) see.update(1 / 60, r.camera, [open, new THREE.Vector3(12, 0, 10)], [tree, willow]);
-    expect(seeUniforms.stCluster.value.slice(0, 2)).toEqual([1, SEE_THROUGH.canopyFade]);
+    expect(see.vis[0]).toBeGreaterThan(SEE_THROUGH.fadeTo);
+    for (let i = 0; i < 120; i++) see.update(1 / 60, r.camera, [feet], [tree]);
+    expect(see.vis[0]).toBeCloseTo(SEE_THROUGH.fadeTo);
+    expect(see.status([tree]).faded).toEqual([{ id: 0, asset: "great_tree", vis: SEE_THROUGH.fadeTo }]);
     see.on = false;
-    see.update(10, r.camera, [feet], [tree, willow]);
-    expect(seeUniforms.stCluster.value.every((v) => v === 1)).toBe(true);
+    see.update(10, r.camera, [feet], [tree]);
+    expect(see.vis[0]).toBe(1);
+    see.on = true;
+    see.update(10, r.camera, [feet], [tree], false);
+    expect(see.vis[0]).toBe(1);
+  });
+
+  it("uploads eased visibility through the shared float DataTexture", () => {
+    const r = rig();
+    r.snap(feet);
+    const roof = occluder("roof", [{ min: [-16, 1, 10], max: [-14, 4, 12] }], undefined, 7);
+    const see = new SeeThroughControl();
+    const before = fadeTexture.version;
+    see.update(0, r.camera, [feet], [roof]);
+    expect(fadeTexture.image.width).toBe(SEE_THROUGH.maxOccluders);
+    expect(fadeTexture.image.data![7]).toBeCloseTo(SEE_THROUGH.fadeTo);
+    expect(fadeTexture.version).toBeGreaterThan(before);
+    expect(seeUniforms.stFade.value).toBe(fadeTexture);
   });
 
   it("the shader patch lands in three's toon shader (its anchors exist) and shares the one set of uniforms", () => {
@@ -757,14 +738,14 @@ describe("see-through: whatever hides the player (or the NPC in a scene) is cut 
     const shader = { vertexShader: toon.vertexShader, fragmentShader: toon.fragmentShader, uniforms: THREE.UniformsUtils.clone(toon.uniforms) };
     seeThroughCompile(shader);
     expect(shader.vertexShader).toContain(`attribute float ${SEE_ATTR};`);
-    expect(shader.vertexShader.indexOf("vStView = mvPosition.xyz;")).toBeGreaterThan(shader.vertexShader.indexOf("#include <project_vertex>"));
-    expect(shader.vertexShader).toContain("vStHole = stId == 1 ? 1.0 : 0.0;");
+    expect(shader.vertexShader.indexOf(`vStId = ${SEE_ATTR};`)).toBeGreaterThan(shader.vertexShader.indexOf("#include <project_vertex>"));
+    expect(shader.fragmentShader).toContain("texture2D(stFade");
     expect(shader.fragmentShader.indexOf("stSeeThrough();")).toBeGreaterThan(shader.fragmentShader.indexOf("#include <clipping_planes_fragment>"));
     expect(shader.fragmentShader).toContain("discard"); // a cutout: no blending, depth still written
     for (const k of Object.keys(seeUniforms)) expect(shader.uniforms[k]).toBe(seeUniforms[k as keyof typeof seeUniforms]);
   });
 
-  it("mergeStatic bakes the tag per vertex: ground and a prop in one batch keep theirs, a canopy's parts get its cluster; a mesh left alone gets its own tagged copy", () => {
+  it("mergeStatic bakes each root id per vertex; canopy parts carry it while the trunk stays never-faded", () => {
     const mat = new THREE.MeshToonMaterial({ name: "leaf_green" });
     const bark = new THREE.MeshToonMaterial({ name: "town_bark" });
     const box = new THREE.BoxGeometry(1, 1, 1);
@@ -778,7 +759,7 @@ describe("see-through: whatever hides the player (or the NPC in a scene) is cut 
     };
     const scene = new THREE.Scene();
     const lone = new THREE.Mesh(box, bark);
-    const roots = [root("ground", { tag: SEE_NEVER }), root("prop", { tag: SEE_HOLE }), root("willow", { tag: SEE_HOLE, cluster: 3, baseY: 0 }, "willow", [new THREE.Mesh(box, mat), lone])];
+    const roots = [root("ground", { tag: SEE_NEVER }), root("prop", { tag: SEE_ID0 }), root("willow", { tag: SEE_ID0 + 3, baseY: 0 }, "willow", [new THREE.Mesh(box, mat), lone])];
     scene.add(...roots);
     const calls = drawCalls(scene);
     mergeStatic(scene, roots);
@@ -786,30 +767,31 @@ describe("see-through: whatever hides the player (or the NPC in a scene) is cut 
     const batch = scene.children.find((c) => c.name === "batch:leaf_green") as THREE.Mesh;
     const tags = [...(batch.geometry.getAttribute(SEE_ATTR).array as Float32Array)];
     const n = box.getAttribute("position").count;
-    expect(tags).toEqual([...Array(n).fill(SEE_NEVER), ...Array(n).fill(SEE_HOLE), ...Array(n).fill(SEE_CLUSTER0 + 3)]);
+    expect(tags).toEqual([...Array(n).fill(SEE_NEVER), ...Array(n).fill(SEE_ID0), ...Array(n).fill(SEE_ID0 + 3)]);
     expect(lone.geometry).not.toBe(box); // the template's geometry untouched
     expect(box.hasAttribute(SEE_ATTR)).toBe(false);
-    expect([...(lone.geometry.getAttribute(SEE_ATTR).array as Float32Array)].every((v) => v === SEE_HOLE)).toBe(true); // bark: not a willow part
+    expect([...(lone.geometry.getAttribute(SEE_ATTR).array as Float32Array)].every((v) => v === SEE_NEVER)).toBe(true);
   });
 
-  it.skipIf(!assetIndex)("the real town: 19 canopies tagged (the great tree first), ground never cut, characters / sky / clouds / trail / marker never patched, draw calls unchanged", async () => {
+  it.skipIf(!assetIndex)("the real town: every static root has an id, spawn fades the great tree but not ground, and batching is unchanged", async () => {
     const L = new LayoutIndex(LAYOUT, assetIndex!);
     const assets = new AssetCache(ASSETS, L, { read: readGlb });
     const street = await SceneSpace.create(L, assets, STREET);
     const tea = await SceneSpace.create(L, assets, "tea_house");
-    // the canopies: by asset name, each its own cluster
-    const ids = street.canopies.map((c) => c.id);
-    expect(ids.length).toBe(19); // the great tree, 8 willows, 7 small ones, 3 bamboo groves
-    expect(ids.filter((i) => i === "great_tree")).toEqual(["great_tree"]);
-    expect(ids.filter((i) => i.startsWith("willow_small")).length).toBe(7);
-    expect(ids.filter((i) => i.startsWith("bamboo_grove")).length).toBe(3);
-    expect(new Set(street.canopies.map((c) => c.cluster)).size).toBe(19);
-    expect(tea.canopies).toEqual([]);
-    const great = street.canopies.find((c) => c.id === "great_tree")!;
-    expect(underCanopy(great, -17.2, 6.3)).toBe(true);
-    expect(great.max[0] - great.min[0]).toBeGreaterThan(20); // 23 x 17 m: long stretches under it (the cluster rule)
-    expect(great.max[1] - great.min[1]).toBeGreaterThan(15);
-    // every cluster's vertices are in the batches; the great tree's branches above its lanterns too, its trunk not
+    const noodle = await SceneSpace.create(L, assets, "noodle_shop");
+    const room = await SceneSpace.create(L, assets, "room");
+    expect(street.occluders.length).toBeGreaterThan(100);
+    expect(street.occluders.length).toBeLessThanOrEqual(SEE_THROUGH.maxOccluders);
+    expect(new Set(street.occluders.map((c) => c.id)).size).toBe(street.occluders.length);
+    const canopies = street.occluders.filter((c) => c.canopyFootprint);
+    expect(canopies.length).toBe(19);
+    expect(canopies.filter((c) => c.asset === "willow_small").length).toBe(7);
+    expect(canopies.filter((c) => c.asset === "bamboo_grove").length).toBe(3);
+    const great = canopies.find((c) => c.asset === "great_tree")!;
+    expect(underCanopy(great.canopyFootprint!, -17.2, 6.3)).toBe(true);
+    expect(great.canopyFootprint!.max[0] - great.canopyFootprint!.min[0]).toBeGreaterThan(20);
+    expect(great.canopyFootprint!.max[1] - great.canopyFootprint!.min[1]).toBeGreaterThan(15);
+    // every root id is in the batches; the great tree's high branches carry it and its trunk does not
     const count = new Map<number, number>();
     const barkTags: number[] = [];
     street.scene.traverse((o) => {
@@ -819,11 +801,11 @@ describe("see-through: whatever hides the player (or the NPC in a scene) is cut 
       for (const v of a.array as Float32Array) count.set(v, (count.get(v) ?? 0) + 1);
       if (m.name === "batch:town_bark") barkTags.push(...(a.array as Float32Array));
     });
-    for (const c of street.canopies) expect(count.get(SEE_CLUSTER0 + c.cluster), c.id).toBeGreaterThan(0);
-    expect(barkTags.filter((v) => v === SEE_CLUSTER0 + great.cluster).length).toBeGreaterThan(0);
-    expect(barkTags.filter((v) => v === SEE_HOLE).length).toBeGreaterThan(0);
+    for (const c of street.occluders) expect(count.get(SEE_ID0 + c.id), c.asset).toBeGreaterThan(0);
+    expect(barkTags.filter((v) => v === SEE_ID0 + great.id).length).toBeGreaterThan(0);
+    expect(barkTags.filter((v) => v === SEE_NEVER).length).toBeGreaterThan(0);
     expect(count.get(SEE_NEVER)).toBeGreaterThan(0);
-    // what each root is tagged: the landscape, the plaza disc, the far edge never; buildings, lamps, the arch by the hole
+    // landscape, plaza and far edge stay never-faded; each building/prop root has its own id
     const tagOf = (name: string) => (street.scene.getObjectByName(name)!.userData.see as { tag: number }).tag;
     for (const g of ["terrain_town", "lake", "canal_water", "canal_banks", "plaza_round", "horizon_skirt", "ground_apron", "hills_ring", "mountains_far", "mountains_far_echo", "countryside"]) expect(tagOf(g), g).toBe(SEE_NEVER);
     // the countryside (horizon.ts): the apron, the skirt, both mountain rings, the hills and trees in one vertex-coloured batch, never cut
@@ -832,7 +814,31 @@ describe("see-through: whatever hides the player (or the NPC in a scene) is cut 
     expect(new Set(vc[0].geometry.getAttribute(SEE_ATTR).array as Float32Array)).toEqual(new Set([SEE_NEVER]));
     expect(street.countryside).toMatchObject({ near: "#78a152", far: "#93af86" });
     expect(street.countryside!.hills).toBeGreaterThanOrEqual(24);
-    for (const h of ["tea_house", "pavilion", "street_lamp", "bridge_stone_arch", "noodle_shop", "willow"]) expect(tagOf(h), h).toBe(SEE_HOLE);
+    for (const h of ["tea_house", "pavilion", "street_lamp", "bridge_stone_arch", "noodle_shop", "willow"]) expect(tagOf(h), h).toBeGreaterThanOrEqual(SEE_ID0);
+    const r = rig();
+    const spawn = new THREE.Vector3(...L.spawn(LAYOUT.defaultPlace).pos);
+    r.snap(spawn);
+    const see = new SeeThroughControl();
+    for (let i = 0; i < 120; i++) see.update(1 / 60, r.camera, [spawn], street.occluders);
+    expect(see.vis[great.id]).toBeCloseTo(SEE_THROUGH.fadeTo);
+    expect(tagOf("plaza_round")).toBe(SEE_NEVER);
+    const bridge = street.occluders.find((c) => c.asset === "bridge_stone_arch")!;
+    const bridgeFeet = new THREE.Vector3(-28, 1.6, 18);
+    r.snap(bridgeFeet);
+    expect(occludes(bridge, r.camera.position, bridgeFeet), "standing on the real stone bridge").toBe(false);
+    for (const [space, shellAsset] of [
+      [noodle, "noodle_shop_shell"],
+      [room, "room_shell"],
+    ] as const) {
+      const shell = space.occluders.find((c) => c.asset === shellAsset)!;
+      const inside = new THREE.Vector3(...L.entrySpawn(space.id).pos);
+      const interiorRig = rig();
+      interiorRig.setDistance(space.layout.camera.distance);
+      interiorRig.snap(inside);
+      expect(shell.boxes.length, shellAsset).toBeGreaterThan(1);
+      expect(shell.boxes.some((b) => b.min[1] <= inside.y && b.max[1] <= inside.y + SEE_THROUGH.lift), `${shellAsset} floor`).toBe(true);
+      expect(occludes(shell, interiorRig.camera.position, inside), `${shellAsset} roof/front wall`).toBe(true);
+    }
     // every static mesh drawn with a patched material carries the tag; what isn't patched
     const actorRoots = new Set<THREE.Object3D>([...street.npcs.values()].map((v) => v.actor.root).concat(street.walkers.map((w) => w.actor.root), street.extras.map((a) => a.root), street.scatterers.map((s) => s.actor.root)));
     const inActor = (o: THREE.Object3D) => {

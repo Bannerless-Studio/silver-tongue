@@ -1150,7 +1150,7 @@ async function main() {
       space.update(dt, player.position, null);
       if (done) endFlyover();
       else {
-        see.update(dt, rig.camera, [], space.canopies, false); // no hole on the fly-over
+        see.update(dt, rig.camera, [], space.occluders, false); // everything opaque on the fly-over
         return renderer.render(space.scene, rig.camera);
       }
     }
@@ -1220,10 +1220,10 @@ async function main() {
       }
     } else rig.update(dt, focus, !!sceneNpc);
     updateEdge();
-    // See-through: a hole round the player, and round the NPC in a scene (or the figure barking).
+    // See-through: whole static objects blocking the player, NPC in a scene, or barking figure.
     seeFocus[0] = player.position;
     seeFocus[1] = sceneNpc ? space.npcs.get(sceneNpc)?.actor.root.position : barking ? figureActor(barking.fig)?.root.position : null;
-    see.update(dt, rig.camera, seeFocus, space.canopies);
+    see.update(dt, rig.camera, seeFocus, space.occluders);
 
     // Speech bubble on the speaker's head: a scene started from the topic picker (or any NPC the
     // current space doesn't have, e.g. mid space-swap) can leave the actor lookup empty for a frame
@@ -1338,14 +1338,12 @@ async function main() {
       /** the start flow is on screen */
       starting: () => startOpen,
       /**
-       * The see-through: seeThrough("off") / ("on") switches it (screenshot comparisons), `radius`
-       * (m at the focus depth) sets the hole's size; returns its state (radius, feather, margin,
-       * the focus depths, the canopies faded now).
+       * The see-through: seeThrough("off") / ("on") switches whole-object fades for screenshot
+       * comparisons and returns the roots currently easing below opaque.
        */
-      seeThrough: (cmd?: "on" | "off" | boolean, radius?: number) => {
+      seeThrough: (cmd?: "on" | "off" | boolean) => {
         if (cmd !== undefined) see.on = cmd === true || cmd === "on";
-        if (typeof radius === "number" && radius >= 0) see.radius = radius;
-        return see.status(space.canopies);
+        return see.status(space.occluders);
       },
       /**
        * Promo capture only (README "Promo capture"), console-only, never reached by normal play:

@@ -1,58 +1,36 @@
-// See-through: roofs, walls and props between the fixed camera and the player (or the NPC they
-// talk to) are cut away round them on screen. A canopy instead fades as a whole cluster while the
-// focus stands under it, without the hole cutting a disc through it. Screen-space, in the shared
-// toon materials' fragment shader (onBeforeCompile) and the static outline hull's: no un-batching,
-// no extra draw call, no transparency sorting (an ordered-dither cutout: fragments are discarded,
-// depth writes kept), and the hole's edge reads as a soft dither.
-//
-// Two rules, one per-vertex attribute (`seeThru`, baked into every static batch at merge time):
-//   0  never cut: flat ground (the landscape: terrain, water, hills; tiles, decals, ground boxes,
-//      the horizon skirt and caps). Also the default for any mesh without the attribute (held props).
-//   1  the hole: a fragment is cut when it is (a) nearer the camera than a focus point by more than
-//      `margin`, (b) within `radius` m of it on screen (measured at the focus depth, `feather` soft)
-//      and (c) above the focus's feet by `lift` (the ground and decks the player stands on stay).
-//   2+k  canopy cluster k, never cut by the hole: while a focus stands inside its footprint the
-//      whole canopy dithers down to `canopyFade` (the great tree covers a 23 x 17 m patch of the
-//      plaza, so this whole-canopy fade reveals the player while they walk under it).
-// Characters' materials (and their outline hulls), the sky, clouds, the wayfinding trail and
-// marker are never patched.
+// See-through: every static object genuinely between the fixed camera and a focus (the player, the
+// NPC they talk to, or a barking figure) fades as one object. CPU segment/mesh-AABB tests select occluders and
+// a one-row texture carries their eased visibility into the shared toon and outline shaders. The
+// shader uses an ordered-dither cutout: no blending, transparency sorting, un-batching or extra
+// draw calls. Ground and decks are never tagged. Canopy assets keep their existing part filter, so
+// leaves (and the great tree's high branches) fade while trunks stay opaque; standing in a canopy
+// footprint remains an additional trigger.
 import * as THREE from "three";
 
 export const SEE_THROUGH = {
-  /** the hole's radius on screen, in metres at the focus depth (its half-fade point) */
-  radius: 2.2,
-  /** the soft band across the radius, metres */
-  feather: 0.9,
-  /** cut only what is this much nearer the camera than the focus point, metres */
-  margin: 0.9,
-  /** and fade in over this much more depth */
-  ramp: 0.6,
-  /** cut only above the feet by this much (ground, decks, steps underfoot stay), metres */
-  lift: 0.3,
-  /** fade in over this much height */
-  liftRamp: 0.4,
+  /** expand the camera-to-focus segment by this much, so near-edge blockers count */
+  radius: 0.6,
+  /** stop this far in front of the focus, so nearby and underfoot geometry does not count */
+  margin: 1.2,
+  /** only geometry above this height over a focus's feet can occlude */
+  lift: 1.3,
   /** the focus point above the feet (the camera's aim height, camera.ts) */
   aimHeight: 1.0,
-  /** a canopy the player stands under dithers down to this */
-  canopyFade: 0.25,
-  /** 1/s, easing of a canopy's fade */
+  /** visibility of an occluding object */
+  fadeTo: 0.13,
+  /** 1/s, easing into and out of a fade */
   fadeRate: 4,
-  /** canopy clusters a space may tag (the town has 19: the great tree, 8 willows, 7 small ones, 3 bamboo groves) */
-  maxClusters: 24,
-  /** focus points: the player, the one they talk to */
-  maxFocus: 2,
+  /** bounded texture/id table for one space */
+  maxOccluders: 1024,
 };
 
 export const SEE_ATTR = "seeThru";
 export const SEE_NEVER = 0;
-export const SEE_HOLE = 1;
-export const SEE_CLUSTER0 = 2;
+/** An unassigned fadeable root; SceneSpace replaces this with SEE_ID0 + id. */
+export const SEE_OCCLUDER = 1;
+export const SEE_ID0 = 2;
 
-/**
- * Canopies by asset name (town.json's buildings; the manifest's town set): the parts that fade as
- * one cluster (by palette material name), and optionally the vertices above `above` m over the
- * root (the great tree's branches above its lanterns).
- */
+/** Canopy parts that share their root's occluder id; all other parts remain SEE_NEVER. */
 export const CANOPIES: Record<string, { parts: RegExp; above?: number }> = {
   great_tree: { parts: /^(canopy_green|leaf_green|leaf_dark)$/, above: 3.4 },
   willow: { parts: /^(leaf_green|leaf_pale|town_willow)$/ },
@@ -60,121 +38,79 @@ export const CANOPIES: Record<string, { parts: RegExp; above?: number }> = {
   bamboo_grove: { parts: /^(leaf_green|leaf_dark)$/ },
 };
 
-/** How a static root's meshes are tagged: ground (never cut), or cut, optionally in canopy cluster `cluster`. */
 export interface SeeSpec {
-  tag: typeof SEE_NEVER | typeof SEE_HOLE;
-  cluster?: number;
-  /** the root's world y (for `above`) */
+  tag: number;
+  /** the root's world y, used by the great tree's `above` rule */
   baseY?: number;
 }
 
-/** Asset sets that are ground: the landscape, the tiles (roads, pavements, decals). */
 const GROUND_SETS = new Set(["tiles", "landscape"]);
 const FLAT = /^(road_|pavement_|manhole|drain_grate|decal_)/;
 
-/** The tag for a static asset instance (by its index set and name). Canopy clusters are assigned by SceneSpace. */
+/** Classifies an asset before SceneSpace assigns fadeable roots an id. */
 export function seeSpecFor(set: string | undefined, name: string): SeeSpec {
-  return { tag: (set && GROUND_SETS.has(set)) || FLAT.test(name) ? SEE_NEVER : SEE_HOLE };
+  return { tag: (set && GROUND_SETS.has(set)) || FLAT.test(name) ? SEE_NEVER : SEE_OCCLUDER };
 }
 
-/** The material that decides a mesh's canopy part: its own, or (an outline hull) its source mesh's. */
 function partName(mesh: THREE.Mesh): string {
   const src = mesh.userData.outline && (mesh.parent as THREE.Mesh | null)?.isMesh ? (mesh.parent as THREE.Mesh) : mesh;
   const m = src.material as THREE.Material | THREE.Material[];
   return Array.isArray(m) ? "" : m.name;
 }
 
-/**
- * The `seeThru` attribute for one static mesh's geometry. `geo` is in world space when `world` is
- * true (a batch's copy), else local (then `mesh.matrixWorld` places it).
- */
+/** Builds the per-vertex root id for a static mesh (world-space when copied into a batch). */
 export function seeAttribute(geo: THREE.BufferGeometry, mesh: THREE.Mesh, spec: SeeSpec | undefined, rootAsset: string | undefined, world: boolean): THREE.BufferAttribute {
   const n = geo.getAttribute("position").count;
-  const out = new Float32Array(n).fill(spec?.tag ?? SEE_HOLE);
   const canopy = rootAsset ? CANOPIES[rootAsset] : undefined;
-  if (spec?.tag === SEE_HOLE && spec.cluster !== undefined && canopy && spec.cluster < SEE_THROUGH.maxClusters) {
-    const id = SEE_CLUSTER0 + spec.cluster;
-    if (canopy.parts.test(partName(mesh))) out.fill(id);
-    else if (canopy.above !== undefined) {
-      const pos = geo.getAttribute("position");
-      const v = new THREE.Vector3();
-      const cut = (spec.baseY ?? 0) + canopy.above;
-      for (let i = 0; i < n; i++) {
-        v.fromBufferAttribute(pos, i);
-        if (!world) v.applyMatrix4(mesh.matrixWorld);
-        if (v.y > cut) out[i] = id;
-      }
+  if (!canopy) return new THREE.BufferAttribute(new Float32Array(n).fill(spec?.tag ?? SEE_NEVER), 1);
+
+  const out = new Float32Array(n).fill(SEE_NEVER);
+  if (!spec || spec.tag < SEE_ID0) return new THREE.BufferAttribute(out, 1);
+  if (canopy.parts.test(partName(mesh))) out.fill(spec.tag);
+  else if (canopy.above !== undefined) {
+    const pos = geo.getAttribute("position");
+    const v = new THREE.Vector3();
+    const cut = (spec.baseY ?? 0) + canopy.above;
+    for (let i = 0; i < n; i++) {
+      v.fromBufferAttribute(pos, i);
+      if (!world) v.applyMatrix4(mesh.matrixWorld);
+      if (v.y > cut) out[i] = spec.tag;
     }
   }
   return new THREE.BufferAttribute(out, 1);
 }
 
-// ---------------------------------------------------------------------------------------------
-// Shader
-// ---------------------------------------------------------------------------------------------
+const fadeData = new Float32Array(SEE_THROUGH.maxOccluders).fill(1);
+export const fadeTexture = new THREE.DataTexture(fadeData, SEE_THROUGH.maxOccluders, 1, THREE.RedFormat, THREE.FloatType);
+fadeTexture.minFilter = THREE.NearestFilter;
+fadeTexture.magFilter = THREE.NearestFilter;
+fadeTexture.generateMipmaps = false;
+fadeTexture.needsUpdate = true;
 
-/** One set of uniforms shared by every patched material (updated once per frame). */
-export const seeUniforms = {
-  /** focus points in view space (xyz); w 1 = on */
-  stFocus: { value: Array.from({ length: SEE_THROUGH.maxFocus }, () => new THREE.Vector4()) },
-  /** each focus's feet, world y */
-  stFeetY: { value: new Array<number>(SEE_THROUGH.maxFocus).fill(0) },
-  /** radius, feather, margin, ramp */
-  stShape: { value: new THREE.Vector4(SEE_THROUGH.radius, SEE_THROUGH.feather, SEE_THROUGH.margin, SEE_THROUGH.ramp) },
-  /** lift, lift ramp */
-  stLift: { value: new THREE.Vector2(SEE_THROUGH.lift, SEE_THROUGH.liftRamp) },
-  /** each canopy cluster's visibility (1: opaque) */
-  stCluster: { value: new Array<number>(SEE_THROUGH.maxClusters).fill(1) },
-};
+/** One uniform set shared by every patched material. */
+export const seeUniforms = { stFade: { value: fadeTexture } };
 
 export const SEE_VERT_PARS = /* glsl */ `
-#define ST_MAX ${SEE_THROUGH.maxClusters}
 attribute float ${SEE_ATTR};
-uniform float stCluster[ST_MAX];
-varying vec3 vStView;
-varying float vStWorldY;
-varying float vStHole;
-varying float vStVis;
+varying float vStId;
 `;
 
-/** after mvPosition (view space) and `transformed` (object space) are known */
 export const SEE_VERT = /* glsl */ `
-  vStView = mvPosition.xyz;
-  vStWorldY = (modelMatrix * vec4(transformed, 1.0)).y;
-  int stId = int(${SEE_ATTR} + 0.5);
-  vStHole = stId == 1 ? 1.0 : 0.0;
-  vStVis = stId >= 2 ? stCluster[min(stId - 2, ST_MAX - 1)] : 1.0;
+  vStId = ${SEE_ATTR};
 `;
 
 export const SEE_FRAG_PARS = /* glsl */ `
-#define ST_FOCUS ${SEE_THROUGH.maxFocus}
-uniform vec4 stFocus[ST_FOCUS];
-uniform float stFeetY[ST_FOCUS];
-uniform vec4 stShape;
-uniform vec2 stLift;
-varying vec3 vStView;
-varying float vStWorldY;
-varying float vStHole;
-varying float vStVis;
+uniform sampler2D stFade;
+varying float vStId;
 float stBayer(vec2 p) {
   ivec2 i = ivec2(mod(floor(p), 4.0));
   const float m[16] = float[16](0.0, 8.0, 2.0, 10.0, 12.0, 4.0, 14.0, 6.0, 3.0, 11.0, 1.0, 9.0, 15.0, 7.0, 13.0, 5.0);
   return (m[i.x + i.y * 4] + 0.5) / 16.0;
 }
-float stHoleAt(vec4 f, float feetY) {
-  if (f.w < 0.5) return 0.0;
-  float fd = max(-f.z, 1e-3);
-  float d = max(-vStView.z, 1e-3);
-  float nearer = 1.0 - smoothstep(fd - stShape.z - stShape.w, fd - stShape.z, d);
-  float r = length(vStView.xy / d - f.xy / fd) * fd;
-  float radial = 1.0 - smoothstep(stShape.x - 0.5 * stShape.y, stShape.x + 0.5 * stShape.y, r);
-  float above = smoothstep(feetY + stLift.x, feetY + stLift.x + stLift.y, vStWorldY);
-  return nearer * radial * above;
-}
 void stSeeThrough() {
-  float hole = 0.0;
-  for (int k = 0; k < ST_FOCUS; k++) hole = max(hole, stHoleAt(stFocus[k], stFeetY[k]));
-  float vis = (1.0 - hole * vStHole) * vStVis;
+  if (vStId < 1.5) return;
+  float x = (floor(vStId + 0.5) - 1.5) / ${SEE_THROUGH.maxOccluders.toFixed(1)};
+  float vis = texture2D(stFade, vec2(x, 0.5)).r;
   if (vis < 0.999 && vis <= stBayer(gl_FragCoord.xy)) discard;
 }
 `;
@@ -183,14 +119,12 @@ export const SEE_FRAG = /* glsl */ `
   stSeeThrough();
 `;
 
-/** Inserts `add` after the first `anchor` (before it: `before`); throws when the anchor is gone (a three.js upgrade moved it). */
 function inject(src: string, anchor: string, add: string, before = false): string {
   const i = src.indexOf(anchor);
   if (i < 0) throw new Error(`see-through: no "${anchor}" in the shader`);
   return before ? src.slice(0, i) + add + src.slice(i) : src.slice(0, i + anchor.length) + add + src.slice(i + anchor.length);
 }
 
-/** The onBeforeCompile of every patched toon material (one function: one program per variant). */
 export function seeThroughCompile(shader: { vertexShader: string; fragmentShader: string; uniforms: Record<string, THREE.IUniform> }) {
   Object.assign(shader.uniforms, seeUniforms);
   shader.vertexShader = inject(inject(shader.vertexShader, "void main() {", SEE_VERT_PARS, true), "#include <project_vertex>", SEE_VERT);
@@ -199,142 +133,134 @@ export function seeThroughCompile(shader: { vertexShader: string; fragmentShader
 
 const patched = new WeakSet<THREE.Material>();
 
-/** Whether a material cuts the see-through hole. */
 export function isSeeThrough(m: THREE.Material): boolean {
   return patched.has(m);
 }
 
-/** Patches an opaque lit material (toon) for the see-through; a mesh without the attribute reads 0 (never cut). */
 export function patchSeeThrough<M extends THREE.Material>(m: M): M {
   if (patched.has(m) || m.transparent) return m;
   m.onBeforeCompile = seeThroughCompile as THREE.Material["onBeforeCompile"];
-  m.customProgramCacheKey = () => "see-through";
+  m.customProgramCacheKey = () => "see-through-objects";
   markSeeThrough(m);
   return m;
 }
 
-/** A shader material written with the see-through chunks (the outline hull): recorded, its default attribute set. */
 export function markSeeThrough(m: THREE.Material) {
   const d = m as THREE.Material & { defaultAttributeValues?: Record<string, number[]> };
   d.defaultAttributeValues = { ...(d.defaultAttributeValues ?? {}), [SEE_ATTR]: [SEE_NEVER] };
   patched.add(m);
 }
 
-// ---------------------------------------------------------------------------------------------
-// The same maths in JS (tests, checks): what the fragment shader computes
-// ---------------------------------------------------------------------------------------------
-
-const smooth = (a: number, b: number, x: number) => {
-  const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
-  return t * t * (3 - 2 * t);
-};
-
-export interface HoleShape {
-  radius: number;
-  feather: number;
-  margin: number;
-  ramp: number;
-  lift: number;
-  liftRamp: number;
-}
-
-/**
- * How much of the hole a fragment is in, 0..1 (stHoleAt): `frag` and `focus` in view space (the
- * camera looks down -z), `fragY` the fragment's world height, `feetY` the focus's feet.
- */
-export function holeAt(frag: THREE.Vector3, fragY: number, focus: THREE.Vector3, feetY: number, s: HoleShape = SEE_THROUGH): number {
-  const fd = Math.max(-focus.z, 1e-3);
-  const d = Math.max(-frag.z, 1e-3);
-  const nearer = 1 - smooth(fd - s.margin - s.ramp, fd - s.margin, d);
-  const r = Math.hypot(frag.x / d - focus.x / fd, frag.y / d - focus.y / fd) * fd;
-  const radial = 1 - smooth(s.radius - 0.5 * s.feather, s.radius + 0.5 * s.feather, r);
-  const above = smooth(feetY + s.lift, feetY + s.lift + s.liftRamp, fragY);
-  return nearer * radial * above;
-}
-
-/** A fragment's visibility (1: drawn), before the dither: its tag, the hole, its cluster's fade. */
-export function visibility(tag: number, hole: number, clusters: readonly number[] = seeUniforms.stCluster.value): number {
-  const id = Math.round(tag);
-  const clusterVis = id >= SEE_CLUSTER0 ? (clusters[Math.min(id - SEE_CLUSTER0, clusters.length - 1)] ?? 1) : 1;
-  return (1 - (id === SEE_HOLE ? hole : 0)) * clusterVis;
-}
-
-// ---------------------------------------------------------------------------------------------
-// Per frame
-// ---------------------------------------------------------------------------------------------
-
-/** A canopy in a space: its cluster, and its footprint on the ground (the XZ box of its canopy parts). */
-export interface Canopy {
-  id: string;
-  asset: string;
-  cluster: number;
+export interface CanopyFootprint {
   min: [number, number];
   max: [number, number];
 }
 
-export function underCanopy(c: Canopy, x: number, z: number): boolean {
+export interface OccluderBox {
+  min: [number, number, number];
+  max: [number, number, number];
+}
+
+export interface Occluder {
+  id: number;
+  asset: string;
+  /** union bounds, retained for the root's footprint/inside test */
+  min: [number, number, number];
+  max: [number, number, number];
+  /** one tight world-space proxy per tagged source mesh */
+  boxes: OccluderBox[];
+  canopyFootprint?: CanopyFootprint;
+}
+
+export function underCanopy(c: CanopyFootprint, x: number, z: number): boolean {
   return x >= c.min[0] && x <= c.max[0] && z >= c.min[1] && z <= c.max[1];
 }
 
-/** Drives the uniforms from main.ts's frame loop. */
+/** Segment against an AABB expanded in XZ by `radius`; t is deliberately clamped to 0..1. */
+export function segmentIntersectsAabb(from: THREE.Vector3, to: THREE.Vector3, min: readonly number[], max: readonly number[], radius = SEE_THROUGH.radius): boolean {
+  let lo = 0;
+  let hi = 1;
+  for (let axis = 0; axis < 3; axis++) {
+    const a = from.getComponent(axis);
+    const d = to.getComponent(axis) - a;
+    const pad = axis === 1 ? 0 : radius;
+    const mn = min[axis] - pad;
+    const mx = max[axis] + pad;
+    if (Math.abs(d) < 1e-9) {
+      if (a < mn || a > mx) return false;
+      continue;
+    }
+    const t0 = (mn - a) / d;
+    const t1 = (mx - a) / d;
+    lo = Math.max(lo, Math.min(t0, t1));
+    hi = Math.min(hi, Math.max(t0, t1));
+    if (lo > hi) return false;
+  }
+  return true;
+}
+
+const aimPoint = new THREE.Vector3();
+const clippedPoint = new THREE.Vector3();
+const clippedMin: [number, number, number] = [0, 0, 0];
+
+function footprintContains(min: readonly number[], max: readonly number[], focus: THREE.Vector3): boolean {
+  return focus.x >= min[0] && focus.x <= max[0] && focus.z >= min[2] && focus.z <= max[2];
+}
+
+/** Whether a tagged mesh of this root genuinely blocks this focus. */
+export function occludes(o: Occluder, camera: THREE.Vector3, focus: THREE.Vector3): boolean {
+  if (o.canopyFootprint && underCanopy(o.canopyFootprint, focus.x, focus.z)) return true;
+  aimPoint.set(focus.x, focus.y + SEE_THROUGH.aimHeight, focus.z);
+  clippedPoint.subVectors(aimPoint, camera);
+  const distance = clippedPoint.length();
+  if (distance <= SEE_THROUGH.margin) return false;
+  clippedPoint.multiplyScalar((distance - SEE_THROUGH.margin) / distance).add(camera);
+  const threshold = focus.y + SEE_THROUGH.lift;
+  const insideRoot = !o.canopyFootprint && o.min[1] <= focus.y && footprintContains(o.min, o.max, focus);
+  return o.boxes.some((box) => {
+    if (box.max[1] <= threshold) return false;
+    // Floors, decks, and other geometry occupied by the focus cannot hide that focus. Other mesh
+    // proxies in the same root (a separate roof or front wall) remain eligible.
+    if (insideRoot && box.min[1] <= focus.y && footprintContains(box.min, box.max, focus)) return false;
+    clippedMin[0] = box.min[0];
+    clippedMin[1] = Math.max(box.min[1], threshold);
+    clippedMin[2] = box.min[2];
+    return segmentIntersectsAabb(camera, clippedPoint, clippedMin, box.max);
+  });
+}
+
+/** Drives the shared fade texture from the current space's precomputed root bounds. */
 export class SeeThroughControl {
   on = true;
-  /** each cluster's current visibility (eased) */
-  readonly vis = new Array<number>(SEE_THROUGH.maxClusters).fill(1);
-  private v = new THREE.Vector3();
+  readonly vis = new Float32Array(SEE_THROUGH.maxOccluders).fill(1);
+  private readonly want = new Uint8Array(SEE_THROUGH.maxOccluders);
+  private readonly cameraWorld = new THREE.Vector3();
 
-  get radius(): number {
-    return seeUniforms.stShape.value.x;
-  }
-  set radius(r: number) {
-    seeUniforms.stShape.value.x = r;
-  }
-
-  /**
-   * `focus`: the feet of whoever must stay visible (the player first, then the NPC talked to;
-   * null: none). `active` false (the fly-over): no hole, canopies back to opaque.
-   */
-  update(dt: number, camera: THREE.Camera, focus: readonly (THREE.Vector3 | null | undefined)[], canopies: readonly Canopy[], active = true) {
+  update(dt: number, camera: THREE.Camera, focus: readonly (THREE.Vector3 | null | undefined)[], occluders: readonly Occluder[], active = true) {
+    if (occluders.length > SEE_THROUGH.maxOccluders) throw new Error(`see-through: ${occluders.length} occluders exceeds ${SEE_THROUGH.maxOccluders}`);
     camera.updateMatrixWorld();
-    const on = this.on && active;
-    const f = seeUniforms.stFocus.value;
-    for (let k = 0; k < f.length; k++) {
-      const p = focus[k];
-      if (!on || !p) {
-        f[k].w = 0;
-        continue;
-      }
-      this.v.set(p.x, p.y + SEE_THROUGH.aimHeight, p.z).applyMatrix4(camera.matrixWorldInverse);
-      f[k].set(this.v.x, this.v.y, this.v.z, 1);
-      seeUniforms.stFeetY.value[k] = p.y;
-    }
-    const want = new Array<number>(this.vis.length).fill(1);
-    if (on)
-      for (const c of canopies) {
-        if (c.cluster >= want.length) continue;
-        if (focus.some((p) => p && underCanopy(c, p.x, p.z))) want[c.cluster] = SEE_THROUGH.canopyFade;
+    const want = this.want;
+    want.fill(0);
+    camera.getWorldPosition(this.cameraWorld);
+    if (this.on && active)
+      for (const o of occluders) {
+        if (o.id < 0 || o.id >= SEE_THROUGH.maxOccluders) throw new Error(`see-through: invalid occluder id ${o.id}`);
+        if (focus.some((p) => p && occludes(o, this.cameraWorld, p))) want[o.id] = 1;
       }
     const k = dt > 0 ? 1 - Math.exp(-SEE_THROUGH.fadeRate * dt) : 1;
-    const out = seeUniforms.stCluster.value;
     for (let i = 0; i < this.vis.length; i++) {
-      this.vis[i] += (want[i] - this.vis[i]) * k;
-      if (Math.abs(want[i] - this.vis[i]) < 1e-3) this.vis[i] = want[i];
-      out[i] = this.vis[i];
+      const target = want[i] ? SEE_THROUGH.fadeTo : 1;
+      this.vis[i] += (target - this.vis[i]) * k;
+      if (Math.abs(target - this.vis[i]) < 1e-3) this.vis[i] = target;
+      fadeData[i] = this.vis[i];
     }
+    fadeTexture.needsUpdate = true;
   }
 
-  /** for checks: on / off, the shape, the focus depths, the canopies faded now */
-  status(canopies: readonly Canopy[] = []) {
-    const [radius, feather, margin, ramp] = seeUniforms.stShape.value.toArray();
+  status(occluders: readonly Occluder[] = []) {
     return {
       on: this.on,
-      radius,
-      feather,
-      margin,
-      ramp,
-      lift: seeUniforms.stLift.value.x,
-      focusDepth: seeUniforms.stFocus.value.map((f) => (f.w ? -f.z : null)),
-      faded: canopies.filter((c) => this.vis[c.cluster] < 0.999).map((c) => ({ id: c.id, vis: +this.vis[c.cluster].toFixed(3) })),
+      faded: occluders.filter((o) => this.vis[o.id] < 0.999).map((o) => ({ id: o.id, asset: o.asset, vis: +this.vis[o.id].toFixed(3) })),
     };
   }
 }

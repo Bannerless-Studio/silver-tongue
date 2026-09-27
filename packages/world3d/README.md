@@ -406,7 +406,7 @@ case).
 | [r] say the last line again (slowly after a slow repeat) | ▶ on the bubble, or R | none |
 | [s] whole sentence says the line; [p] play the word / sentence looked up | "…" says the sentence; ▶ in the gloss popover; ▶ on each reply option says it without picking | none |
 | Barks (none in the TUI: only the story NPCs talk there) | everyone else in the town and the interiors (walkers, pets, pigeons, the egg seller, the boatman, the diner, the tea drinker) and a story NPC with nothing to talk about: "E · Talk to Egg seller" / tap the prompt within 2.3 m; a line in the course's language with its reading, the meaning under the hint chip, its clip; "…" (or a tap anywhere, E, Enter) closes it (see Barks) | none (no slot, nothing logged) |
-| See-through (none in the TUI: text never hides anyone) | roofs, walls and props between the fixed camera and the player (or the NPC in a scene, or the figure barking) are cut away round them in a soft dither: roofs and eaves, the pavilion, awnings, lamps, the arch's railings, interior walls; standing under the great tree, willows or bamboo dithers the whole canopy to 25 % instead, revealing the player without cutting a disc through it (see Seeing it: See-through) | none |
+| See-through (none in the TUI: text never hides anyone) | each roof, wall, prop or canopy that really blocks the fixed camera's view of the player (or the NPC in a scene, or the figure barking) fades as a whole object to a faint 13 % ghost (two pixels in sixteen of the ordered dither): the player knows it is there and sees straight through it; ground and decks remain opaque (see Seeing it: See-through) | none |
 
 Every `GameEvent` is handled in `game.ts` `dispatch`: placeEntered (banner), sceneStarted,
 lineSpoken / npcReacted / lineRephrased (bubble), replyOptions (panel), actionPerformed (narration,
@@ -559,20 +559,18 @@ wooden one, a lake with a pier to the west, hills, and mountains 360-400 m out u
   scatter. `world3d.walkers()`, `world3d.pets()`.
 - The day: the light warms from morning to evening as slots are used (hemisphere, sun, sky dome
   and haze), a night fade on sleep, then the day card. `world3d.daylight()`.
-- See-through (`src/seethrough.ts`): the shared toon materials (and the static outline hull) cut
-  a hole through roofs, walls and props round the player and the NPC they talk to: a fragment
-  nearer the camera than the focus point (1 m above the feet) by more than 0.9 m, within 2.2 m of
-  it on screen (measured at the focus depth, a 0.9 m soft band) and more than 0.3 m above their
-  feet is dropped by a 4x4 ordered dither (a cutout: no blending, depth still written, no extra draw call). A per-vertex
-  tag baked into the static batches (`seeThru`) says what may be cut: the landscape, plaza disc,
-  far edge and countryside never; roofs, walls and props by the hole; the canopies (`CANOPIES` by
-  asset name: the great tree's leaves and its branches above the lanterns, the willows' leaves and
-  drapes, the bamboo's leaves) are also a cluster each, and while the player or the NPC talked to stands in
-  one's footprint the whole canopy eases down to 25 %, which reveals the player under trees; the
-  hole never cuts a disc through canopy clusters. Characters, their hulls, what they hold,
-  the sky, clouds, the path and the marker are never cut. Off on the fly-over. Console:
-  `world3d.seeThrough("off")` / `("on")`, `world3d.seeThrough(undefined, 3)` sets the radius;
-  each returns `{ on, radius, feather, margin, ramp, lift, focusDepth, faded }`.
+- See-through (`src/seethrough.ts`): every static layout root has a precomputed world AABB per mesh
+  and a per-vertex integer id (`seeThru`) preserved through batching. A root fades only when one of
+  those proxies crosses the camera ray above 1.3 m over the focus's feet and at least 1.2 m before
+  the focus; occupied floors/decks and low props are excluded, while the canopy-footprint rule stays.
+  Its visibility eases to 13 % (the dither's second step) in a one-row float texture sampled by the
+  shared toon materials and static outline hull; a 4x4 ordered-dither cutout keeps depth writes,
+  needs no transparency sorting and adds no draw calls. Ground, decks, the landscape, plaza disc,
+  far edge and countryside have no id and stay opaque. Canopies keep their part rules (the great
+  tree's leaves and high branches, willow leaves and drapes, bamboo leaves; trunks stay opaque),
+  with standing inside their footprint as an extra fade trigger. Characters, held objects, sky,
+  clouds, path and marker are not patched. Everything returns opaque during the fly-over. Console:
+  `world3d.seeThrough("off")` / `("on")`; each returns `{ on, faded }`.
 
 ## Promo capture
 
@@ -666,7 +664,7 @@ music volume persist (prefs). The choices are pure (`test/sound.test.ts`):
 
 | bus | what | when |
 | --- | --- | --- |
-| music | `owner_theme` | the start flow (from its first tap), fly-over and town; one looping source continues without a scene-change restart; inside a building −6 dB |
+| music | `owner_theme` | the start flow (from its first tap), fly-over and town; plays once (~2 min), rests silently for 25 s, then plays again; inside a building −6 dB |
 | ambient | `canal_water` | outdoors, 1 − d / 25 m to the nearest water vertex of the walk grid (heights under −0.6 m: canal, lake; `waterDistance`, a chamfer transform) |
 | ambient | `boat_creak` | outdoors, 0.6 × (1 − d / 15 m) to the pier's deck path (`distanceToPath`) |
 | ambient | `birds_day` | outdoors: 0.6 in the morning, 0.4 in the afternoon (`AFTERNOON_AT` 0.4 of the day's slots) |
@@ -689,7 +687,17 @@ music volume persist (prefs). The choices are pure (`test/sound.test.ts`):
 
 `world3d.sound()` shows what the mixer wants now; `world3d.sfx(id)` plays one.
 
-**Music: Fiazul Haque.** The author's own composition is rendered from the source named in
+The theme's repeat cycle is scheduled on the Web Audio clock, so background-tab timer drift cannot
+shorten or lengthen the rest. The rendered file itself fades in for 2 seconds and fades out for 4;
+the mixer adds a 3-second fade-in on every play and a 2-second fade-out when music stops or changes.
+
+| `MUSIC_CYCLE` value | seconds | purpose |
+| --- | ---: | --- |
+| `fadeIn` | 3 | mixer fade at the start of every play |
+| `rest` | 25 | silence between complete plays |
+| `fadeOut` | 2 | mixer fade when stopping or replacing music |
+
+**Music: composed by Rook.** The theme is rendered from the source named in
 `assets/audio/music/owner_theme.json`. The rule is that it stays unobtrusive and cannot become
 loud: the shipped file is mastered to −24 LUFS integrated with a −6 dBTP target, the mixer
 multiplies the 0..1 slider by the hard `MUSIC_BUS_CAP` of 0.35, and a −24 dB / 12:1 compressor
@@ -850,9 +858,9 @@ that role said last).
   leave → outside cycle, travel (across the town too) and resume, prompts, a full played day
   asserting the objective line at each step and the day card, an errand walked end to end (Miss
   Gao, the drop-off by the gate or through the Go to list) and a shop purchase, street life motion, 3D wording, the
-  see-through (focus depth, the hole's depth / radius / soft rim / lift maths, canopy fades, the
-  shader patch against three's toon shader, per-vertex tags through mergeStatic, the real town's
-  19 canopies, what is never patched, draw calls unchanged).
+  see-through (segment/AABB hits and exclusions, eased whole-root fades and texture uploads, the
+  shader patch against three's toon shader, per-vertex ids through mergeStatic, and the real town's
+  spawn/tree and never-faded-ground behavior with draw calls unchanged).
 - `test/parity.test.ts`: the Input / GameEvent unions from core's source against
   `INPUT_AFFORDANCES`, this README's table and the dispatcher, and each Input sent through the
   Game API.
