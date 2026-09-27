@@ -27,7 +27,8 @@ const BEAT_MS = 300;
 /** Clips failing to load one after another: the clips aren't there (a page saved without its audio folder). */
 const FAILS_TO_GIVE_UP = 3;
 /** A backstop for a load that never reports an end, not a length: the longest clip in a course is
- *  3.6s, and even that one is under 7s at the slowest rate. */
+ *  3.6s and no page plays below clipRate's 0.5, so 7.3s is the worst any clip can take and this is
+ *  under three times that. It is armed per clip, so a stalled scene is back in about 40s, not 20s. */
 const STALL_BACKSTOP_MS = 20_000;
 
 /**
@@ -52,8 +53,14 @@ export function createWebAudio(deps: WebAudioDeps): AudioOut {
     const item = queue.shift();
     if (!item) return;
     speaking = true;
+    // The backstop can end a clip whose load is still going, so the event that arrives after it must
+    // not arm a second beat: that would start the clip after next over the one still speaking.
+    let ended = false;
     const done = () => {
-      if (mine !== run) return;
+      if (mine !== run || ended) return;
+      ended = true;
+      // Defensive, and kept this side of the guard: an event outlives its run only when it arrives
+      // after stop(), and by then there is no backstop left to take away.
       stall?.cancel();
       stall = undefined;
       if (queue.length) {

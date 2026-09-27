@@ -200,6 +200,21 @@ describe("createWebAudio", () => {
     expect(a.available).toBe(true); // a stall is not a missing audio folder
   });
 
+  it("finishes a clip once, even when a stalled load reports an end afterwards", () => {
+    const el = fakeEl();
+    const { backstop, beat, wait } = timers();
+    const a = createWebAudio({ base: "audio/", audio: el, wait });
+    a.play([{ clips: ["x", "y", "z"] }]);
+    backstop()[0].cb(); // x's load stalls, and the backstop lets it go
+    el.onerror!(); // and only then does the load give up
+    beat().forEach((b) => b.cb()); // however many beats are pending, only one clip may start
+    expect(el.played.map((p) => p.src)).toEqual(["audio/x.mp3", "audio/y.mp3"]);
+    expect(beat()).toHaveLength(1);
+    backstop()[1].cb(); // y stalls too, so the line still comes to an end
+    beat()[0].cb();
+    expect(el.played.map((p) => p.src)).toEqual(["audio/x.mp3", "audio/y.mp3", "audio/z.mp3"]);
+  });
+
   it("takes the backstop away as soon as a clip ends, so a healthy clip is never cut short", () => {
     const el = fakeEl();
     const { backstop, wait } = timers();
