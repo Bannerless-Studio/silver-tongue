@@ -9,7 +9,7 @@ import { clone as cloneSkinned } from "three/examples/jsm/utils/SkeletonUtils.js
 import { CharacterActor, type ActorOptions } from "./actor";
 import { turnToward } from "./anim";
 import { buildCountryside, flyoverViews, hazeColour, HORIZON, moveClouds, type Part } from "./horizon";
-import { CANOPIES, markSeeThrough, patchSeeThrough, seeAttribute, SEE_ATTR, SEE_FRAG, SEE_FRAG_PARS, SEE_ID0, SEE_NEVER, SEE_OCCLUDER, SEE_VERT, SEE_VERT_PARS, SEE_THROUGH, seeSpecFor, seeUniforms, type Occluder, type OccluderBox, type SeeSpec } from "./seethrough";
+import { CANOPIES, markSeeThrough, patchSeeThrough, seeAttribute, SEE_ATTR, SEE_FRAG, SEE_FRAG_PARS, SEE_ID0, SEE_NEVER, SEE_OCCLUDER, SEE_VERT, SEE_VERT_PARS, SEE_THROUGH, seeSpecFor, seeUniforms, type Occluder, type SeeSpec } from "./seethrough";
 import { figureId } from "./barks";
 import { CHARACTER_KINDS, type LoadEvent } from "./loading";
 import { anchorToWorld, heldProp, yawFor, type Blocker, type Box2, type HeldPropSpec, type LayoutIndex, type Placement, type SpaceLayout, type Vec3 } from "./layout";
@@ -581,7 +581,7 @@ export class SceneSpace {
   /** the town's sky dome materials and their own colours (tinted through the day), and the haze colour it starts from */
   private sky: { mat: THREE.MeshBasicMaterial; base: THREE.Color }[] = [];
   private horizon?: THREE.Color;
-  /** static roots that can block a focus, with their baked id and world bounds */
+  /** static roots that can block a focus, with baked ids */
   readonly occluders: Occluder[] = [];
   /** static batching (mergeStatic): draw calls before / after, meshes merged away */
   batching = { before: 0, after: 0, merged: 0 };
@@ -719,7 +719,7 @@ export class SceneSpace {
     this.staticCalls = { before: this.batching.before, after: this.batching.after };
   }
 
-  /** Assigns one bounded id and a tight world AABB per tagged mesh to a fadeable static root. */
+  /** Assigns one bounded id to a fadeable static root. */
   private seeSpec(o: THREE.Object3D, id: string, asset: string): SeeSpec {
     const spec = seeSpecFor(this.L.asset(asset).set, asset);
     if (spec.tag !== SEE_OCCLUDER) return spec;
@@ -727,7 +727,7 @@ export class SceneSpace {
     if (occluderId >= SEE_THROUGH.maxOccluders) throw new Error(`${this.id}: more than ${SEE_THROUGH.maxOccluders} see-through occluders`);
     o.updateMatrixWorld(true);
     const canopy = CANOPIES[asset];
-    const boxes: OccluderBox[] = [];
+    let eligible = false;
     const point = new THREE.Vector3();
     const cut = o.position.y + (canopy?.above ?? 0);
     o.traverse((m) => {
@@ -735,35 +735,19 @@ export class SceneSpace {
       if (!mesh.isMesh || mesh.userData.outline) return;
       const material = mesh.material as THREE.Material | THREE.Material[];
       const namedPart = canopy && !Array.isArray(material) && canopy.parts.test(material.name);
-      const box = new THREE.Box3();
       const position = mesh.geometry.getAttribute("position");
-      if (!canopy || namedPart || canopy.above !== undefined) {
-        for (let i = 0; position && i < position.count; i++) {
+      if (!position) return;
+      if (!canopy || namedPart) eligible ||= position.count > 0;
+      else if (canopy.above !== undefined) {
+        for (let i = 0; i < position.count && !eligible; i++) {
           point.fromBufferAttribute(position, i).applyMatrix4(mesh.matrixWorld);
-          if (!canopy || namedPart || point.y > cut) box.expandByPoint(point);
+          if (point.y > cut) eligible = true;
         }
       }
-      if (!box.isEmpty()) boxes.push({ min: box.min.toArray() as [number, number, number], max: box.max.toArray() as [number, number, number] });
     });
-    if (!boxes.length) return { tag: SEE_NEVER };
-    const rootBox = new THREE.Box3();
-    for (const box of boxes) rootBox.expandByPoint(new THREE.Vector3(...box.min)).expandByPoint(new THREE.Vector3(...box.max));
-    let canopyFootprint: Occluder["canopyFootprint"];
-    if (canopy) {
-      canopyFootprint = {
-        min: [rootBox.min.x - SEE_THROUGH.radius, rootBox.min.z - SEE_THROUGH.radius],
-        max: [rootBox.max.x + SEE_THROUGH.radius, rootBox.max.z + SEE_THROUGH.radius],
-      };
-      o.userData.seeAsset = asset;
-    }
-    this.occluders.push({
-      id: occluderId,
-      asset,
-      min: rootBox.min.toArray() as [number, number, number],
-      max: rootBox.max.toArray() as [number, number, number],
-      boxes,
-      ...(canopyFootprint ? { canopyFootprint } : {}),
-    });
+    if (!eligible) return { tag: SEE_NEVER };
+    if (canopy) o.userData.seeAsset = asset;
+    this.occluders.push({ id: occluderId, asset });
     return { tag: SEE_ID0 + occluderId, baseY: o.position.y };
   }
 

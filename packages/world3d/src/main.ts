@@ -58,7 +58,7 @@ import { LoadingScreen } from "./ui/loading";
 import { Overlay } from "./ui/overlay";
 import type { Insets } from "./ui/viewport";
 import { AssetCache, drawCalls, SceneSpace, setOutlineScale } from "./world";
-import { SeeThroughControl } from "./seethrough";
+import { SEE_THROUGH, SeeThroughControl, SeeThroughDetector } from "./seethrough";
 import { GuideMarker } from "./marker";
 import { daySteps, edgeArrow, findPath, LostTimer, nextSteps, resolveTarget, type PathGrid, type WayTarget } from "./wayfind";
 import { EdgeArrowView, PathTrail, spaceGrid } from "./wayview";
@@ -428,6 +428,10 @@ async function main() {
   let flyover: { path: CameraPathPlayer; bars: Letterbox } | null = null;
   /** the see-through (seethrough.ts): the player and whoever they talk to, never hidden */
   const see = new SeeThroughControl();
+  const seeDetector = new SeeThroughDetector(renderer);
+  let seeFrame = 0;
+  let seeSpace: THREE.Scene | null = null;
+  const lastSeePlayer = player.position.clone();
   const seeFocus: (THREE.Vector3 | null | undefined)[] = [null, null];
   /** the fly-over's state for browser checks: playing, done (played out or skipped), null (never played: a loaded save) */
   let flyoverState: "playing" | "done" | null = null;
@@ -1141,6 +1145,7 @@ async function main() {
     const dt = Math.min(0.05, clock.getDelta());
     updateSound();
     if (!game) return;
+    seeDetector.poll();
     updateGuide(dt);
     updateFootsteps();
     // The fly-over: the camera on its path, the town living (walkers, pets, NPCs), the player idle at the spawn.
@@ -1150,7 +1155,7 @@ async function main() {
       space.update(dt, player.position, null);
       if (done) endFlyover();
       else {
-        see.update(dt, rig.camera, [], space.occluders, false); // everything opaque on the fly-over
+        see.update(dt, [], space.occluders, new Map(), false); // everything opaque on the fly-over
         return renderer.render(space.scene, rig.camera);
       }
     }
@@ -1223,7 +1228,22 @@ async function main() {
     // See-through: whole static objects blocking the player, NPC in a scene, or barking figure.
     seeFocus[0] = player.position;
     seeFocus[1] = sceneNpc ? space.npcs.get(sceneNpc)?.actor.root.position : barking ? figureActor(barking.fig)?.root.position : null;
-    see.update(dt, rig.camera, seeFocus, space.occluders);
+    if (seeSpace !== space.scene || lastSeePlayer.distanceToSquared(player.position) > 4) {
+      seeSpace = space.scene;
+      see.reset();
+      seeDetector.invalidate();
+      seeFrame = 0;
+    }
+    lastSeePlayer.copy(player.position);
+    if (see.on && seeFrame++ % 2 === 0) {
+      for (const [slot, p] of seeFocus.entries()) if (p) seeDetector.sample(space.scene, rig.camera, p, slot);
+    }
+    const seeCounts = new Map<number, number>();
+    for (const [slot, p] of seeFocus.entries()) {
+      if (!p) { seeDetector.invalidateSlot(slot); continue; }
+      for (const [id, n] of seeDetector.counts(slot)) seeCounts.set(id, (seeCounts.get(id) ?? 0) + n);
+    }
+    see.update(dt, seeFocus, space.occluders, seeCounts);
 
     // Speech bubble on the speaker's head: a scene started from the topic picker (or any NPC the
     // current space doesn't have, e.g. mid space-swap) can leave the actor lookup empty for a frame
@@ -1284,6 +1304,8 @@ async function main() {
           return;
         }
         player.place(a, z ?? 0);
+        see.reset();
+        seeDetector.invalidate();
         const go = nav.step(0, a, z ?? 0);
         if (go) game?.enterPlace(go);
       },
@@ -1316,7 +1338,7 @@ async function main() {
       /** accepted goTo inputs in core's log (a place-trigger thrash shows as a burst here) */
       goToCount: () => game?.core.state.log.filter((l) => l.input.type === "goTo").length ?? 0,
       /** last frame's draw calls (frustum-culled) and the space's static batching: draw calls before / after merging, unculled */
-      info: () => ({ calls: renderer.info.render.calls, triangles: renderer.info.render.triangles, batching: { ...space.batching, now: drawCalls(space.scene) }, pixelRatio: renderer.getPixelRatio(), cutscene: flyover ? { t: flyover.path.t, duration: flyover.path.duration } : null, cutsceneState: flyoverState }),
+      info: () => ({ calls: renderer.info.render.calls, triangles: renderer.info.render.triangles, batching: { ...space.batching, now: drawCalls(space.scene) }, pixelRatio: renderer.getPixelRatio(), seeThroughPass: { sampleMs: +seeDetector.lastSampleMs.toFixed(2), readMs: +seeDetector.lastReadMs.toFixed(2), bytesPerFocus: SEE_THROUGH.sampleSize ** 2 * 4 }, cutscene: flyover ? { t: flyover.path.t, duration: flyover.path.duration } : null, cutsceneState: flyoverState }),
       /** touch input: the last joystick vector, pointers down, whether the stick is out; the layout in use */
       touch: () => ({ ...pointers!.debug(), touchUi: overlay.touch, layout: overlay.screen }),
       /** sound: unlocked, muted, music volume, the music bed and ambient gains wanted now */

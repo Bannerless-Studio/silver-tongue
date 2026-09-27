@@ -559,17 +559,22 @@ wooden one, a lake with a pier to the west, hills, and mountains 360-400 m out u
   scatter. `world3d.walkers()`, `world3d.pets()`.
 - The day: the light warms from morning to evening as slots are used (hemisphere, sun, sky dome
   and haze), a night fade on sleep, then the day card. `world3d.daylight()`.
-- See-through (`src/seethrough.ts`): every static layout root has a precomputed world AABB per mesh
-  and a per-vertex integer id (`seeThru`) preserved through batching. A root fades only when one of
-  those proxies crosses the camera ray above 1.3 m over the focus's feet and at least 1.2 m before
-  the focus; occupied floors/decks and low props are excluded, while the canopy-footprint rule stays.
-  Its visibility eases to 13 % (the dither's second step) in a one-row float texture sampled by the
-  shared toon materials and static outline hull; a 4x4 ordered-dither cutout keeps depth writes,
-  needs no transparency sorting and adds no draw calls. Ground, decks, the landscape, plaza disc,
-  far edge and countryside have no id and stay opaque. Canopies keep their part rules (the great
-  tree's leaves and high branches, willow leaves and drapes, bamboo leaves; trunks stay opaque),
-  with standing inside their footprint as an extra fade trigger. Characters, held objects, sky,
-  clouds, path and marker are not patched. Everything returns opaque during the fly-over. Console:
+- See-through (`src/seethrough.ts`): a 96×96 stencil-masked character silhouette detects the actual
+  static triangles closer to the camera than the player, scene NPC, or barking figure. Each tagged
+  batched vertex carries its root id (`seeThru`); the ID pass counts pixels per root and fades a root
+  when at least six pixels cover a silhouette; the silhouette is the only trigger, canopies included
+  (standing under a tree fades it only once leaves cover the character). It samples every other
+  frame and skips the pass while neither camera nor focus moved (reusing the last counts); on WebGL2
+  the read goes through a pixel-pack buffer and a fence polled each frame (results a frame or two
+  late), WebGL1 falls back to a synchronous `readPixels`. A hit holds 0.35 s, then eases back; a
+  teleport or space change drops every fade, hold and in-flight read. The old camera-ray/mesh-box test
+  could mistake empty canopy and building boxes for visible geometry or miss leaning branches and
+  eaves. A one-row float texture eases whole roots to 13 % visibility in the shared toon materials
+  and static outline hull; the 4x4 ordered-dither cutout retains depth writes and batching. Ground,
+  decks, landscape, plaza disc, far edge and countryside stay opaque. Canopies keep their part rules:
+  leaves and high branches fade, trunks stay opaque. Characters, held objects, sky, clouds, path and
+  marker are not patched. Fly-over keeps everything opaque. The detector adds one 96×96 render per
+  focus on sampled frames (at most three focuses) and reads 36 KiB per focus. Console:
   `world3d.seeThrough("off")` / `("on")`; each returns `{ on, faded }`.
 
 ## Promo capture

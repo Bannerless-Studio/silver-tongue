@@ -15,7 +15,7 @@ import { ScatterMotion, WalkerMotion, WAIT_RANGE } from "../src/streetlife";
 import { placeBubble, screenLayout } from "../src/ui/viewport";
 import { AssetCache, drawCalls, mergeStatic, SceneSpace } from "../src/world";
 import { CameraRig } from "../src/camera";
-import { fadeTexture, isSeeThrough, occludes, SEE_ATTR, SEE_ID0, SEE_NEVER, SEE_THROUGH, seeThroughCompile, SeeThroughControl, seeUniforms, segmentIntersectsAabb, underCanopy, type Occluder } from "../src/seethrough";
+import { fadeTexture, idHistogram, isSeeThrough, SEE_ATTR, SEE_ID0, SEE_NEVER, SEE_THROUGH, seeThroughCompile, SeeThroughControl, SeeThroughDetector, seeUniforms, silhouetteProjection, type Occluder } from "../src/seethrough";
 import { ASSETS, assetIndex, readGlb, countingCore, course, makeGame, playScene, rightOption, rightTiles } from "./helpers";
 import { createCore } from "@silver-tongue/core";
 
@@ -654,79 +654,277 @@ describe("see-through: whatever blocks a focus fades as a whole object", () => {
     return r;
   };
   const feet = new THREE.Vector3(-15, 0, 8); // under the great tree
-  const occluder = (asset: string, boxes: Occluder["boxes"], canopyFootprint?: Occluder["canopyFootprint"], id = 0): Occluder => ({
-    id,
-    asset,
-    min: [Math.min(...boxes.map((b) => b.min[0])), Math.min(...boxes.map((b) => b.min[1])), Math.min(...boxes.map((b) => b.min[2]))],
-    max: [Math.max(...boxes.map((b) => b.max[0])), Math.max(...boxes.map((b) => b.max[1])), Math.max(...boxes.map((b) => b.max[2]))],
-    boxes,
-    ...(canopyFootprint ? { canopyFootprint } : {}),
+  const occluder = (asset: string, id = 0): Occluder => ({ id, asset });
+
+  it("counts rendered root ids and ignores untouched pixels", () => {
+    expect(idHistogram(new Uint8Array([0, 0, 0, 0, 1, 0, 0, 255, 1, 0, 0, 255, 2, 1, 0, 255]))).toEqual(new Map([[0, 2], [257, 1]]));
   });
 
-  it("only fades mesh proxies that genuinely block the fixed camera's view", () => {
+  it("requires six pixels, ignores canopy position, expires every hit after 0.35 s, and honors off and fly-over", () => {
+    const tree = occluder("great_tree", 0);
+    const roof = occluder("roof", 7);
+    const see = new SeeThroughControl();
+    const outside = new THREE.Vector3(3, 0, 3);
+    const underCanopy = new THREE.Vector3(0, 0, 0);
+    see.update(0, [underCanopy], [tree, roof]);
+    expect(see.vis[0]).toBe(1);
+    see.update(0, [outside], [tree, roof], new Map([[7, 5]]));
+    expect(see.vis[7]).toBe(1);
+    see.update(0, [outside], [tree, roof], new Map([[0, 6], [7, 6]]));
+    expect(see.vis[0]).toBeCloseTo(SEE_THROUGH.fadeTo);
+    expect(see.vis[7]).toBeCloseTo(SEE_THROUGH.fadeTo);
+    see.update(0.2, [underCanopy], [tree, roof]);
+    expect(see.vis[0]).toBeCloseTo(SEE_THROUGH.fadeTo);
+    expect(see.vis[7]).toBeCloseTo(SEE_THROUGH.fadeTo);
+    see.update(0.2, [underCanopy], [tree, roof]);
+    expect(see.vis[0]).toBeGreaterThan(SEE_THROUGH.fadeTo);
+    expect(see.vis[7]).toBeGreaterThan(SEE_THROUGH.fadeTo);
+    see.update(10, [underCanopy], [tree, roof], new Map(), false);
+    expect(see.vis[0]).toBe(1);
+    see.on = false;
+    see.update(10, [outside], [tree, roof], new Map([[7, 100]]));
+    expect(see.vis[7]).toBe(1);
+  });
+
+  it("sets up one scissored ID render and pixel read for a focus", () => {
+    const calls: string[] = [];
+    const viewport = new THREE.Vector4(10, 20, 1280, 720);
+    const scissor = new THREE.Vector4(30, 40, 600, 400);
+    let scissorTest = true;
+    let target: THREE.WebGLRenderTarget | null = null;
+    let clearColor = new THREE.Color(0xffffff);
+    let clearAlpha = 1;
+    let throwRead = false;
+    const renderer = {
+      autoClear: true,
+      getDrawingBufferSize: (v: THREE.Vector2) => v.set(1280, 720),
+      getRenderTarget: () => target,
+      getViewport: (v: THREE.Vector4) => v.copy(viewport),
+      getScissor: (v: THREE.Vector4) => v.copy(scissor),
+      getScissorTest: () => scissorTest,
+      getClearColor: (v: THREE.Color) => v.copy(clearColor),
+      getClearAlpha: () => clearAlpha,
+      setClearColor: (c: THREE.Color | number, a: number) => { clearColor = new THREE.Color(c); clearAlpha = a; },
+      setRenderTarget: (rt: THREE.WebGLRenderTarget | null) => {
+        calls.push(rt ? "target:offscreen" : "target:default");
+        target = rt;
+        if (rt) { viewport.copy(rt.viewport); scissor.copy(rt.scissor); }
+      },
+      setViewport: (x: number | THREE.Vector4, y?: number, w?: number, h?: number) => { if (x instanceof THREE.Vector4) viewport.copy(x); else viewport.set(x, y!, w!, h!); },
+      setScissor: (x: number | THREE.Vector4, y?: number, w?: number, h?: number) => { if (x instanceof THREE.Vector4) scissor.copy(x); else scissor.set(x, y!, w!, h!); },
+      setScissorTest: (value: boolean) => { scissorTest = value; },
+      clear: () => calls.push("clear"),
+      render: (scene: THREE.Scene) => {
+        calls.push("render");
+        expect(scene.children).toHaveLength(2);
+        const proxy = scene.children[0] as THREE.Mesh;
+        const idMesh = scene.children[1] as THREE.Mesh;
+        expect((proxy.material as THREE.Material).colorWrite).toBe(false);
+        expect((idMesh.material as THREE.ShaderMaterial).stencilFunc).toBe(THREE.EqualStencilFunc);
+        expect(idMesh.geometry).toBe(geo);
+      },
+      readRenderTargetPixels: () => { calls.push("readPixels"); if (throwRead) throw new Error("read failed"); },
+    } as unknown as THREE.WebGLRenderer;
+    const geo = new THREE.BoxGeometry();
+    geo.setAttribute(SEE_ATTR, new THREE.Float32BufferAttribute(new Array(geo.getAttribute("position").count).fill(SEE_ID0), 1));
+    const source = new THREE.Scene();
+    source.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial()));
+    const detector = new SeeThroughDetector(renderer);
+    const see = new SeeThroughControl();
     const r = rig();
-    const focus = new THREE.Vector3(0, 0.35, 0);
-    r.snap(focus);
-    const bridge = occluder("bridge_stone_arch", [
-      { min: [-9, 0, -2], max: [9, 0.45, 2] },
-      { min: [-9, 0.3, -2], max: [9, 1.55, -1.7] },
-      { min: [-9, 0.3, 1.7], max: [9, 1.55, 2] },
-    ]);
-    expect(occludes(bridge, r.camera.position, focus)).toBe(false);
-
-    const aim = focus.clone().setY(focus.y + SEE_THROUGH.aimHeight);
-    const roofCentre = aim.clone().addScaledVector(r.camera.position.clone().sub(aim).normalize(), 6);
-    const roof = occluder("room_shell", [{ min: [roofCentre.x - 1, roofCentre.y - 0.3, roofCentre.z - 1], max: [roofCentre.x + 1, roofCentre.y + 0.3, roofCentre.z + 1] }]);
-    expect(occludes(roof, r.camera.position, focus)).toBe(true);
-
-    const lowWall = occluder("wall_low", [{ min: [0.5, focus.y, -1], max: [1, focus.y + 1.2, 1] }]);
-    expect(occludes(lowWall, r.camera.position, focus)).toBe(false);
-
-    const canopy = occluder("willow", [{ min: [-3, 4, -3], max: [3, 7, 3] }], { min: [-3, -3], max: [3, 3] });
-    expect(occludes(canopy, r.camera.position, focus)).toBe(true);
+    r.snap(new THREE.Vector3());
+    const beforeViewport = viewport.clone();
+    const beforeScissor = scissor.clone();
+    const update = () => see.update(1 / 60, [new THREE.Vector3()], [{ id: 0, asset: "box" }], detector.sample(source, r.camera, new THREE.Vector3()));
+    update();
+    expect(calls).toContain("readPixels");
+    expect(target).toBeNull();
+    expect(viewport).toEqual(beforeViewport);
+    expect(scissor).toEqual(beforeScissor);
+    expect(scissorTest).toBe(true);
+    expect(clearColor).toEqual(new THREE.Color(0xffffff));
+    expect(clearAlpha).toBe(1);
+    expect(renderer.autoClear).toBe(true);
+    const renders = calls.filter((c) => c === "render").length;
+    update(); // nothing moved: the pass is skipped and the last decision reused
+    expect(calls.filter((c) => c === "render").length).toBe(renders);
+    throwRead = true;
+    const oldTarget = new THREE.WebGLRenderTarget(64, 64);
+    target = oldTarget;
+    detector.invalidate(); // a teleport or space change forces a fresh pass
+    expect(update).toThrow("read failed");
+    expect(target).toBe(oldTarget);
+    expect(viewport).toEqual(beforeViewport);
+    expect(scissor).toEqual(beforeScissor);
+    expect(scissorTest).toBe(true);
+    expect(clearColor).toEqual(new THREE.Color(0xffffff));
+    expect(clearAlpha).toBe(1);
+    expect(renderer.autoClear).toBe(true);
+    expect(calls.at(-2)).toBe("target:default");
+    expect(calls.at(-1)).toBe("target:offscreen");
+    expect(silhouetteProjection(r.camera, new THREE.Vector3(), 1280, 720).elements.every(Number.isFinite)).toBe(true);
   });
 
-  it("tests the bounded camera-to-focus segment (hit, radius miss, behind camera, and below feet)", () => {
-    const camera = new THREE.Vector3(0, 3, 10);
-    const focus = new THREE.Vector3(0, 0, 0);
-    expect(segmentIntersectsAabb(camera, focus.clone().setY(1), [-0.2, 1, 4], [0.2, 3, 5])).toBe(true);
-    expect(segmentIntersectsAabb(camera, focus.clone().setY(1), [0.7, 1, 4], [1, 3, 5])).toBe(false);
-    expect(segmentIntersectsAabb(camera, focus.clone().setY(1), [-0.2, 1, 11], [0.2, 3, 12])).toBe(false);
-    const low = occluder("deck", [{ min: [-1, -0.2, 4], max: [1, 0.2, 6] }]);
-    expect(occludes(low, camera, focus)).toBe(false);
-    const blocker = occluder("roof", [{ min: [-1, 1, 4], max: [1, 3, 6] }]);
-    expect(occludes(blocker, camera, focus)).toBe(true);
-    const near = occluder("near", [{ min: [-0.4, 1.3, 0.1], max: [0.4, 3, 0.8] }]);
-    expect(occludes(near, camera, focus)).toBe(false);
+  // A minimal renderer (and optionally a WebGL2 context) for the detector's pass.
+  const stubRenderer = (gl?: object) => {
+    const calls: string[] = [];
+    const renderer = {
+      autoClear: true,
+      getContext: () => gl,
+      getDrawingBufferSize: (v: THREE.Vector2) => v.set(1280, 720),
+      getRenderTarget: () => null,
+      getViewport: (v: THREE.Vector4) => v,
+      getScissor: (v: THREE.Vector4) => v,
+      getScissorTest: () => false,
+      getClearColor: (v: THREE.Color) => v,
+      getClearAlpha: () => 1,
+      setClearColor: () => {},
+      setRenderTarget: () => {},
+      setViewport: () => {},
+      setScissor: () => {},
+      setScissorTest: () => {},
+      clear: () => {},
+      render: () => calls.push("render"),
+      readRenderTargetPixels: (_t: unknown, _x: number, _y: number, _w: number, _h: number, px: Uint8Array) => { calls.push("syncRead"); px.set([3, 0, 0, 255, 3, 0, 0, 255, 3, 0, 0, 255, 3, 0, 0, 255, 3, 0, 0, 255, 3, 0, 0, 255]); },
+    } as unknown as THREE.WebGLRenderer;
+    const geo = new THREE.BoxGeometry();
+    geo.setAttribute(SEE_ATTR, new THREE.Float32BufferAttribute(new Array(geo.getAttribute("position").count).fill(SEE_ID0), 1));
+    const source = new THREE.Scene();
+    source.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial()));
+    const r = rig();
+    r.snap(new THREE.Vector3());
+    return { calls, renderer, source, camera: r.camera };
+  };
+  const fakeGl2 = () => {
+    const calls: string[] = [];
+    let state = 0x911b; // TIMEOUT_EXPIRED
+    let bound: object | null = null;
+    const gl = {
+      PIXEL_PACK_BUFFER: 0x88eb, PIXEL_PACK_BUFFER_BINDING: 0x88ed, STREAM_READ: 0x88e1, RGBA: 0x1908, UNSIGNED_BYTE: 0x1401,
+      SYNC_GPU_COMMANDS_COMPLETE: 0x9117, TIMEOUT_EXPIRED: 0x911b, CONDITION_SATISFIED: 0x911c, ALREADY_SIGNALED: 0x911a, WAIT_FAILED: 0x911d,
+      createBuffer: () => { calls.push("createBuffer"); return {}; },
+      deleteBuffer: () => calls.push("deleteBuffer"),
+      bindBuffer: (_t: number, b: object | null) => { bound = b; },
+      getParameter: () => bound,
+      bufferData: (_t: number, size: number) => calls.push(`bufferData:${size}`),
+      readPixels: (_x: number, _y: number, w: number, h: number, _f: number, _t: number, offset: unknown) => calls.push(`readPixels:${w}x${h}@${offset}`),
+      fenceSync: () => { calls.push("fenceSync"); return {}; },
+      flush: () => calls.push("flush"),
+      clientWaitSync: (_s: object, _f: number, timeout: number) => { calls.push(`clientWaitSync:${timeout}`); return state; },
+      getBufferSubData: (_t: number, _o: number, px: Uint8Array) => { calls.push("getBufferSubData"); px.set([6, 0, 0, 255, 6, 0, 0, 255, 6, 0, 0, 255, 6, 0, 0, 255, 6, 0, 0, 255, 6, 0, 0, 255]); },
+      deleteSync: () => calls.push("deleteSync"),
+    };
+    return { gl, calls, signal: (s: number) => { state = s; }, bound: () => bound };
+  };
+
+  it("WebGL2: reads the ID pass through a pixel-pack buffer and fence, polled without waiting", () => {
+    const g = fakeGl2();
+    const { calls, renderer, source, camera } = stubRenderer(g.gl);
+    const detector = new SeeThroughDetector(renderer);
+    const focus = new THREE.Vector3();
+    const n = SEE_THROUGH.sampleSize;
+    expect(detector.sample(source, camera, focus).size).toBe(0); // queued, nothing known yet
+    expect(calls).toEqual(["render"]); // no sync readback
+    expect(g.calls).toEqual(["createBuffer", `bufferData:${n * n * 4}`, `readPixels:${n}x${n}@0`, "fenceSync", "flush"]);
+    expect(g.bound()).toBeNull(); // pack binding restored
+    g.calls.length = 0;
+    detector.poll(); // GPU not done: no read, still pending
+    expect(g.calls).toEqual(["clientWaitSync:0"]);
+    detector.sample(source, camera, focus.clone().setX(1)); // a pending read blocks a second pass
+    expect(calls).toEqual(["render"]);
+    g.signal(g.gl.CONDITION_SATISFIED);
+    g.calls.length = 0;
+    detector.poll();
+    expect(g.calls).toEqual(["clientWaitSync:0", "getBufferSubData", "deleteSync", "deleteBuffer"]);
+    expect(detector.counts(0)).toEqual(new Map([[5, 6]]));
+    expect(detector.lastReadMs).toBeGreaterThanOrEqual(0);
+    // unmoved: skipped, last decision reused
+    expect(detector.sample(source, camera, focus)).toEqual(new Map([[5, 6]]));
+    expect(calls).toEqual(["render"]);
+    // an in-flight read from before a teleport is dropped, never applied
+    detector.sample(source, camera, focus.clone().setX(2));
+    expect(calls).toEqual(["render", "render"]);
+    g.calls.length = 0;
+    detector.invalidate();
+    expect(g.calls).toEqual(["deleteSync", "deleteBuffer"]);
+    expect(detector.counts(0).size).toBe(0);
+    detector.poll();
+    expect(g.calls).not.toContain("getBufferSubData");
+    // a failed wait falls back to the sync read for good
+    detector.sample(source, camera, focus.clone().setX(3));
+    g.signal(g.gl.WAIT_FAILED);
+    detector.poll();
+    detector.sample(source, camera, focus.clone().setX(4));
+    expect(calls.at(-1)).toBe("syncRead");
+    expect(detector.counts(0)).toEqual(new Map([[2, 6]]));
+  });
+
+  it("WebGL1 (no fences): falls back to a synchronous read; skips when neither camera nor focus moved", () => {
+    const { calls, renderer, source, camera } = stubRenderer({}); // a context without fenceSync
+    const detector = new SeeThroughDetector(renderer);
+    const focus = new THREE.Vector3();
+    expect(detector.sample(source, camera, focus)).toEqual(new Map([[2, 6]]));
+    expect(calls).toEqual(["render", "syncRead"]);
+    detector.sample(source, camera, focus.clone().addScalar(1e-4)); // under the epsilon
+    expect(calls).toHaveLength(2);
+    detector.sample(source, camera, focus.clone().setZ(0.5)); // focus moved
+    expect(calls).toHaveLength(4);
+    camera.position.x += 0.5; // camera moved
+    camera.updateMatrixWorld();
+    detector.sample(source, camera, focus.clone().setZ(0.5));
+    expect(calls).toHaveLength(6);
+    detector.invalidateSlot(0); // the focus left (scene ended): its counts go
+    expect(detector.counts(0).size).toBe(0);
+  });
+
+  it("the silhouette is the only trigger: a canopy with no pixels never fades, and every id clears after the hold", () => {
+    const ids = [0, 1, 7, 300, SEE_THROUGH.maxOccluders - 1];
+    const roots = ids.map((id) => occluder(id === 0 ? "great_tree" : "roof", id));
+    const see = new SeeThroughControl();
+    const under = new THREE.Vector3(-15, 0, 8); // under the great tree's canopy
+    for (let i = 0; i < 60; i++) see.update(1 / 60, [under], roots);
+    expect(ids.map((id) => see.vis[id])).toEqual(ids.map(() => 1));
+    const all = new Map(ids.map((id) => [id, 20]));
+    for (let i = 0; i < 180; i++) see.update(1 / 60, [under], roots, all);
+    for (const id of ids) expect(see.vis[id]).toBeCloseTo(SEE_THROUGH.fadeTo, 2);
+    for (let t = 0; t < SEE_THROUGH.holdSeconds - 0.05; t += 1 / 60) see.update(1 / 60, [under], roots);
+    for (const id of ids) expect(see.vis[id]).toBeCloseTo(SEE_THROUGH.fadeTo, 2); // still held
+    for (let i = 0; i < 180; i++) see.update(1 / 60, [under], roots);
+    expect(ids.map((id) => see.vis[id])).toEqual(ids.map(() => 1));
+    expect(see.status(roots).faded).toEqual([]);
+    // a teleport or space change drops every fade and hold at once
+    see.update(0, [under], roots, all);
+    see.reset();
+    see.update(0, [under], roots);
+    expect(ids.map((id) => see.vis[id])).toEqual(ids.map(() => 1));
   });
 
   it("eases an occluding root down to fadeTo and back up; off and fly-over restore opaque", () => {
     const r = rig();
     r.snap(feet);
-    const tree = occluder("great_tree", [{ min: [-29, 3.4, -2], max: [-5, 12, 15] }], { min: [-28.9, -2], max: [-5.5, 14.6] });
-    expect(underCanopy(tree.canopyFootprint!, feet.x, feet.z)).toBe(true);
+    const tree = occluder("great_tree", 0);
     const see = new SeeThroughControl();
-    see.update(1 / 60, r.camera, [feet], [tree]);
+    see.update(1 / 60, [feet], [tree], new Map([[0, 6]]));
     expect(see.vis[0]).toBeLessThan(1);
     expect(see.vis[0]).toBeGreaterThan(SEE_THROUGH.fadeTo);
-    for (let i = 0; i < 120; i++) see.update(1 / 60, r.camera, [feet], [tree]);
+    for (let i = 0; i < 120; i++) see.update(1 / 60, [feet], [tree], new Map([[0, 6]]));
     expect(see.vis[0]).toBeCloseTo(SEE_THROUGH.fadeTo);
     expect(see.status([tree]).faded).toEqual([{ id: 0, asset: "great_tree", vis: SEE_THROUGH.fadeTo }]);
     see.on = false;
-    see.update(10, r.camera, [feet], [tree]);
+    see.update(10, [feet], [tree]);
     expect(see.vis[0]).toBe(1);
     see.on = true;
-    see.update(10, r.camera, [feet], [tree], false);
+    see.update(10, [feet], [tree], new Map(), false);
     expect(see.vis[0]).toBe(1);
   });
 
   it("uploads eased visibility through the shared float DataTexture", () => {
     const r = rig();
     r.snap(feet);
-    const roof = occluder("roof", [{ min: [-16, 1, 10], max: [-14, 4, 12] }], undefined, 7);
+    const roof = occluder("roof", 7);
     const see = new SeeThroughControl();
     const before = fadeTexture.version;
-    see.update(0, r.camera, [feet], [roof]);
+    see.update(0, [feet], [roof], new Map([[7, 6]]));
     expect(fadeTexture.image.width).toBe(SEE_THROUGH.maxOccluders);
     expect(fadeTexture.image.data![7]).toBeCloseTo(SEE_THROUGH.fadeTo);
     expect(fadeTexture.version).toBeGreaterThan(before);
@@ -783,14 +981,7 @@ describe("see-through: whatever blocks a focus fades as a whole object", () => {
     expect(street.occluders.length).toBeGreaterThan(100);
     expect(street.occluders.length).toBeLessThanOrEqual(SEE_THROUGH.maxOccluders);
     expect(new Set(street.occluders.map((c) => c.id)).size).toBe(street.occluders.length);
-    const canopies = street.occluders.filter((c) => c.canopyFootprint);
-    expect(canopies.length).toBe(19);
-    expect(canopies.filter((c) => c.asset === "willow_small").length).toBe(7);
-    expect(canopies.filter((c) => c.asset === "bamboo_grove").length).toBe(3);
-    const great = canopies.find((c) => c.asset === "great_tree")!;
-    expect(underCanopy(great.canopyFootprint!, -17.2, 6.3)).toBe(true);
-    expect(great.canopyFootprint!.max[0] - great.canopyFootprint!.min[0]).toBeGreaterThan(20);
-    expect(great.canopyFootprint!.max[1] - great.canopyFootprint!.min[1]).toBeGreaterThan(15);
+    const great = street.occluders.find((c) => c.asset === "great_tree")!;
     // every root id is in the batches; the great tree's high branches carry it and its trunk does not
     const count = new Map<number, number>();
     const barkTags: number[] = [];
@@ -819,26 +1010,9 @@ describe("see-through: whatever blocks a focus fades as a whole object", () => {
     const spawn = new THREE.Vector3(...L.spawn(LAYOUT.defaultPlace).pos);
     r.snap(spawn);
     const see = new SeeThroughControl();
-    for (let i = 0; i < 120; i++) see.update(1 / 60, r.camera, [spawn], street.occluders);
+    for (let i = 0; i < 120; i++) see.update(1 / 60, [spawn], street.occluders, new Map([[great.id, 6]]));
     expect(see.vis[great.id]).toBeCloseTo(SEE_THROUGH.fadeTo);
     expect(tagOf("plaza_round")).toBe(SEE_NEVER);
-    const bridge = street.occluders.find((c) => c.asset === "bridge_stone_arch")!;
-    const bridgeFeet = new THREE.Vector3(-28, 1.6, 18);
-    r.snap(bridgeFeet);
-    expect(occludes(bridge, r.camera.position, bridgeFeet), "standing on the real stone bridge").toBe(false);
-    for (const [space, shellAsset] of [
-      [noodle, "noodle_shop_shell"],
-      [room, "room_shell"],
-    ] as const) {
-      const shell = space.occluders.find((c) => c.asset === shellAsset)!;
-      const inside = new THREE.Vector3(...L.entrySpawn(space.id).pos);
-      const interiorRig = rig();
-      interiorRig.setDistance(space.layout.camera.distance);
-      interiorRig.snap(inside);
-      expect(shell.boxes.length, shellAsset).toBeGreaterThan(1);
-      expect(shell.boxes.some((b) => b.min[1] <= inside.y && b.max[1] <= inside.y + SEE_THROUGH.lift), `${shellAsset} floor`).toBe(true);
-      expect(occludes(shell, interiorRig.camera.position, inside), `${shellAsset} roof/front wall`).toBe(true);
-    }
     // every static mesh drawn with a patched material carries the tag; what isn't patched
     const actorRoots = new Set<THREE.Object3D>([...street.npcs.values()].map((v) => v.actor.root).concat(street.walkers.map((w) => w.actor.root), street.extras.map((a) => a.root), street.scatterers.map((s) => s.actor.root)));
     const inActor = (o: THREE.Object3D) => {
