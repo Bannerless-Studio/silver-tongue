@@ -1,7 +1,7 @@
 import { spawn as nodeSpawn } from "node:child_process";
 import { accessSync, constants, existsSync } from "node:fs";
 import { delimiter, join } from "node:path";
-import type { AudioOut, Speech } from "@silver-tongue/tui";
+import { playbackRate, type AudioOut, type Speech, type SpeechSpeed } from "@silver-tongue/tui";
 
 export interface Player {
   cmd: string;
@@ -33,6 +33,18 @@ export function onPath(cmd: string, path = process.env.PATH ?? ""): boolean {
 
 export const findPlayer = (has: (cmd: string) => boolean): Player | undefined => PLAYERS.find((p) => has(p.cmd));
 
+/**
+ * Extra args to play a clip at `rate` (already rounded by playbackRate). ffplay, mpv and afplay
+ * each take the rate their own way; mpg123 has no clean rate control, so the clip plays unchanged.
+ */
+export function rateArgs(cmd: string, rate: number): string[] {
+  const r = String(rate);
+  if (cmd === "ffplay") return ["-af", `atempo=${r}`];
+  if (cmd === "mpv") return [`--speed=${r}`];
+  if (cmd === "afplay") return ["-r", r];
+  return [];
+}
+
 export interface Proc {
   kill(): void;
   /** exit gets the exit code, or null when the player was killed */
@@ -46,19 +58,27 @@ export interface NodeAudioDeps {
   player: Player | undefined;
   spawn: (cmd: string, args: string[]) => Proc;
   wait: (ms: number, cb: () => void) => { cancel(): void };
+  /** the speed the player chose, read fresh for each clip so a change takes effect live; default "fast" (no change) */
+  rate?: () => SpeechSpeed;
 }
 
 const BEAT_MS = 300;
 /** Clips failing one after another: no clip folder, or no sound device. */
 const FAILS_TO_GIVE_UP = 3;
 
+interface QueuedClip {
+  clip: string;
+  slow: boolean;
+}
+
 /**
- * Plays clips by running a player program once per clip, with a beat between them. `slow` is
- * ignored: the clip plays as it is. A player that fails turns sound off for the session.
+ * Plays clips by running a player program once per clip, with a beat between them, at the rate
+ * `deps.rate` currently says (slower still for a slow repeat). A player that fails turns sound off
+ * for the session.
  */
 export function createNodeAudio(deps: NodeAudioDeps): AudioOut {
   let broken = !deps.player;
-  let queue: string[] = [];
+  let queue: QueuedClip[] = [];
   let proc: Proc | undefined;
   let timer: { cancel(): void } | undefined;
   let run = 0; // each play() or stop() starts a new run; callbacks from an older one do nothing
@@ -72,10 +92,12 @@ export function createNodeAudio(deps: NodeAudioDeps): AudioOut {
   const next = (mine: number) => {
     timer = undefined;
     if (mine !== run || broken) return;
-    const clip = queue.shift();
-    if (!clip) return;
+    const item = queue.shift();
+    if (!item) return;
     try {
-      const p = deps.spawn(deps.player!.cmd, [...deps.player!.args, join(deps.dir, `${clip}.mp3`)]);
+      const rate = playbackRate(deps.rate ? deps.rate() : "fast", item.slow);
+      const args = [...deps.player!.args, ...rateArgs(deps.player!.cmd, rate), join(deps.dir, `${item.clip}.mp3`)];
+      const p = deps.spawn(deps.player!.cmd, args);
       proc = p;
       p.on("error", breakDown);
       p.on("exit", (code) => {
@@ -106,7 +128,7 @@ export function createNodeAudio(deps: NodeAudioDeps): AudioOut {
     play(lines: Speech[]) {
       stop();
       if (broken) return;
-      queue = lines.flatMap((l) => l.clips);
+      queue = lines.flatMap((l) => l.clips.map((clip) => ({ clip, slow: !!l.slow })));
       next(run);
     },
     stop,
@@ -114,12 +136,13 @@ export function createNodeAudio(deps: NodeAudioDeps): AudioOut {
 }
 
 /** The real thing: the first player on PATH, run with no terminal input or output. */
-export function nodeAudioDeps(dir: string): NodeAudioDeps {
+export function nodeAudioDeps(dir: string, rate?: () => SpeechSpeed): NodeAudioDeps {
   return {
     dir,
     // Without its clips there's nothing to play, and the footer should say so.
     player: existsSync(dir) ? findPlayer((c) => onPath(c)) : undefined,
     spawn: (cmd, args) => nodeSpawn(cmd, args, { stdio: "ignore" }),
+    rate,
     wait: (ms, cb) => {
       const h = setTimeout(cb, ms);
       return { cancel: () => clearTimeout(h) };

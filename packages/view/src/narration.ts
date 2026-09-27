@@ -8,19 +8,27 @@ export interface NarrationLine {
 }
 
 /** An action's parameters as narration variables: concept values become learner-language names. */
-const actionArgs = (course: Course, a: Record<string, string>) =>
-  Object.fromEntries(Object.entries(a).map(([k, v]) => [k, course.conceptNames[v] ?? v]));
+const actionArgs = (course: Course, a: Record<string, string>, npc?: string) => ({
+  ...Object.fromEntries(Object.entries(a).map(([k, v]) => [k, course.conceptNames[v] ?? v])),
+  ...(npc ? { npc } : {}),
+});
 
 /**
  * What the reply did (action-<name>) and, on a mix-up, what was asked (asked-<name> of the asked
  * action), falling back to the generic mismatch line. Wrong tiles did nothing recognisable, so only
- * what was asked is narrated.
+ * what was asked is narrated. `npc` (the current scene's NPC display name), when given, is added to
+ * the variables so asked-* hints can name who asked.
  */
-export function actionNarration(course: Course, t: Text, e: Pick<ActionPerformed, "action" | "expected" | "matched" | "tilesWrong">): NarrationLine[] {
+export function actionNarration(
+  course: Course,
+  t: Text,
+  e: Pick<ActionPerformed, "action" | "expected" | "matched" | "tilesWrong">,
+  npc?: string,
+): NarrationLine[] {
   const out: NarrationLine[] = [];
-  if (!e.tilesWrong && t.has(`action-${e.action.action}`)) out.push({ text: t(`action-${e.action.action}`, actionArgs(course, e.action)), tone: "plain" });
+  if (!e.tilesWrong && t.has(`action-${e.action.action}`)) out.push({ text: t(`action-${e.action.action}`, actionArgs(course, e.action, npc)), tone: "plain" });
   if (e.matched) return out;
-  if (t.has(`asked-${e.expected.action}`)) out.push({ text: t(`asked-${e.expected.action}`, actionArgs(course, e.expected)), tone: "warn" });
+  if (t.has(`asked-${e.expected.action}`)) out.push({ text: t(`asked-${e.expected.action}`, actionArgs(course, e.expected, npc)), tone: "warn" });
   else out.push({ text: t("mismatch"), tone: "warn" });
   return out;
 }

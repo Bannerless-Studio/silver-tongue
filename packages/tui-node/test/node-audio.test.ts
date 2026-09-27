@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync, chmodSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { createNodeAudio, findPlayer, nodeAudioDeps, onPath, PLAYERS, type Proc } from "../src/node-audio";
+import { createNodeAudio, findPlayer, nodeAudioDeps, onPath, PLAYERS, rateArgs, type Proc } from "../src/node-audio";
 
 type FakeProc = Proc & { exit(code?: number): void; fail(): void; killed: boolean };
 
@@ -157,5 +157,39 @@ describe("createNodeAudio", () => {
     });
     expect(() => a.play([{ clips: ["x"] }])).not.toThrow();
     expect(a.available).toBe(false);
+  });
+});
+
+describe("rateArgs", () => {
+  it("gives each player its own way to say a rate; mpg123 has none", () => {
+    expect(rateArgs("ffplay", 0.7)).toEqual(["-af", "atempo=0.7"]);
+    expect(rateArgs("mpv", 0.85)).toEqual(["--speed=0.85"]);
+    expect(rateArgs("afplay", 1)).toEqual(["-r", "1"]);
+    expect(rateArgs("mpg123", 0.7)).toEqual([]);
+  });
+});
+
+describe("createNodeAudio: speed", () => {
+  it("plays a clip at the rate `rate()` says when it starts, read fresh so a change takes effect live", () => {
+    const f = fakes();
+    let speed: "slow" | "normal" | "fast" = "slow";
+    const a = createNodeAudio({ dir: "/a", player, ...f, rate: () => speed });
+    a.play([{ clips: ["x"] }]);
+    expect(f.spawned[0].args).toEqual(["-nodisp", "-autoexit", "-loglevel", "quiet", "-af", "atempo=0.7", "/a/x.mp3"]);
+    f.spawned[0].proc.exit();
+    speed = "fast";
+    a.play([{ clips: ["y"] }, { clips: ["z"], slow: true }]);
+    expect(f.spawned[1].args).toEqual(["-nodisp", "-autoexit", "-loglevel", "quiet", "-af", "atempo=1", "/a/y.mp3"]);
+    f.spawned[1].proc.exit();
+    f.waits[0].cb();
+    // A slow repeat plays slower still: 1 (fast) × 0.75.
+    expect(f.spawned[2].args).toEqual(["-nodisp", "-autoexit", "-loglevel", "quiet", "-af", "atempo=0.75", "/a/z.mp3"]);
+  });
+
+  it("without `rate`, plays at the plain rate (no filter added at 1×)", () => {
+    const f = fakes();
+    const a = createNodeAudio({ dir: "/a", player, ...f });
+    a.play([{ clips: ["x"] }]);
+    expect(f.spawned[0].args).toEqual(["-nodisp", "-autoexit", "-loglevel", "quiet", "-af", "atempo=1", "/a/x.mp3"]);
   });
 });

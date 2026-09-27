@@ -5,35 +5,60 @@ import type { Text } from "./text";
 export const MAX_PLACE_ITEMS = 7;
 
 export type MenuItem =
-  | { kind: "talk"; label: string; input: Input; npc: string; scene: string }
-  | { kind: "mentor"; label: string; input: Input; npc: string }
+  // `disabled`, when set, is why the action can't be taken right now: still offered (so the
+  // rejection message still shows), but a front end should show it dimmed with the reason inline.
+  | { kind: "talk"; label: string; input: Input; npc: string; scene: string; disabled?: string }
+  | { kind: "mentor"; label: string; input: Input; npc: string; disabled?: string }
   | { kind: "go"; label: string; input: Input; place: string }
   | { kind: "sleep"; label: string; input: Input };
+
+/** True once `label` already names the npc, so a "Talk to <npc>:" lead-in would just repeat it. */
+function namesNpc(label: string, npc: string): boolean {
+  return label.toLowerCase().includes(npc.toLowerCase());
+}
+
+/**
+ * Every talk/mentor action costs exactly one of the day's slots; that's the norm, so it's never
+ * shown. A yuan cost is the only thing that varies here, so it's the only thing worth calling out.
+ */
+function costSuffix(t: Text, cost: number, currency: string): string {
+  return cost > 0 ? t("menu-cost-money", { currency, cost }) : "";
+}
 
 /** What the player can do here: talk, visit the mentor, go somewhere, sleep (always last). */
 export function placeMenu(course: Course, state: GameState, t: Text): MenuItem[] {
   const npcName = (npc: string) => t(`npc-${npc}`);
   const items: MenuItem[] = [];
+  // Every talk/mentor action costs a slot; with none left, offering them just invites the rejection.
+  const noSlots = state.slot >= course.world.slotsPerDay;
+  const disabled = noSlots ? t("menu-no-time") : undefined;
   for (const id of availableSceneIds(course, state)) {
     const scene = course.scenes.find((x) => x.id === id)!;
     if (scene.place !== state.place) continue;
+    const npc = npcName(scene.npc);
+    const sceneName = t(`scene-${id}`);
+    const label = namesNpc(sceneName, npc) ? sceneName : t("menu-talk", { npc, scene: sceneName });
     items.push({
       kind: "talk",
-      label: t("menu-talk", { npc: npcName(scene.npc), scene: t(`scene-${id}`) }) + t("cost-slot"),
+      label: label + costSuffix(t, sceneCost(scene), course.world.currency),
       input: { type: "startScene", scene: id },
       npc: scene.npc,
       scene: id,
+      disabled,
     });
   }
   // Offered only when there is something to explain, so a slot is never spent on nothing.
   if (mentorAvailable(course, state) && state.notes.ready.length) {
     const npc = course.world.mentor!.npc;
-    items.push({ kind: "mentor", label: t("menu-mentor", { npc: npcName(npc) }) + t("cost-slot"), input: { type: "visitMentor" }, npc });
+    items.push({ kind: "mentor", label: t("menu-mentor", { npc: npcName(npc) }), input: { type: "visitMentor" }, npc, disabled });
   }
   for (const p of course.world.places[state.place].links) {
     items.push({ kind: "go", label: t("menu-go", { place: t(`place-${p}`) }), input: { type: "goTo", place: p }, place: p });
   }
-  return [...items.slice(0, MAX_PLACE_ITEMS), { kind: "sleep", label: t("menu-sleep"), input: { type: "sleep" } }];
+  // Away from home, sleep still works (it just says so and sends you home first): says where home is.
+  const home = course.world.home;
+  const sleepLabel = home && state.place !== home ? `${t("menu-sleep")} — ${t("menu-go-home", { place: t(`place-${home}`) })}` : t("menu-sleep");
+  return [...items.slice(0, MAX_PLACE_ITEMS), { kind: "sleep", label: sleepLabel, input: { type: "sleep" } }];
 }
 
 /** Scenes here that wait only for money: shown, not offered, so an empty shop says why. */

@@ -1,6 +1,6 @@
 # Text-game UI. Every id here is required by packages/tui (UI_KEYS).
 
-hud = Day { $day } · slot { $slot }/{ $slots } · { $currency }{ $wallet } · { $rank }{ $parcel ->
+hud = Day { $day } · slot { $slot }/{ $slots } · { $currency }{ $wallet }{ $parcel ->
     [yes] { " · parcel" }
    *[no] {""}
 }{ $rentLate ->
@@ -15,11 +15,13 @@ rank-3 = Fluent
 rank-4 = Silver Tongue
 
 menu-title = What now?
-menu-talk = Talk to { $npc }: { $scene }
+menu-talk = { $scene } · { $npc }
 menu-go = Go to { $place }
 menu-needs-money = { $npc }: { $scene } · needs { $currency }{ $cost }
 menu-mentor = Ask { $npc } about the language
-cost-slot = { " · 1 slot" }
+menu-no-time = no time left
+menu-go-home = go home first ({ $place })
+menu-cost-money = { " · " }{ $currency }{ $cost }
 menu-sleep = Sleep (end the day)
 menu-quit = Save and quit
 
@@ -33,11 +35,11 @@ help-title = Which word?
 help-sentence = The whole sentence
 help-in-replies = In the replies:
 reply-title = Your reply:
-tiles-title = Your reply: tap the words in order, then press [enter].
+tiles-title = Build your reply: [{ $keys }] add a word · [enter] say it
 tiles-answer = You say:
 you = You
 
-mismatch = That's not what they asked for.
+mismatch = That's not what was asked.
 rephrased = (slower)
 # Bottom border, right: sound playing, turned off with m, or no way to play it here.
 sound-on = ♪ [m]
@@ -49,12 +51,14 @@ reason-mixup = mix-up
 reason-food = food
 reason-rent = rent
 reason-shopping = shopping
-trust-up = { $npc } trusts you a little more ({ $trust }).
+trust-up = { $npc } trusts you a little more.
 scene-done = { $earned ->
     [0] Done.
    *[other] Done. You earned { $currency }{ $earned }.
 }
+scene-done-short = Done.
 unlocked = New: { $scene }
+unlocked-many = New: { $scenes }
 errand-started = You're carrying a parcel.
 errand-ended = You hand over the parcel.
 errand-carrying = You have a parcel to deliver.
@@ -88,6 +92,7 @@ note-hint = { $npc } seems to have something to tell you.
 mentor-nothing = { $npc } has nothing new to explain today.
 
 keys-notebook = [↑↓] scroll · [esc] back
+notebook-rank = Speaks: { $rank }
 notebook-progress = Stage { $stage }: { $known } of { $total } words known · { $heard } heard
 notebook-empty = Nothing yet. Words you hear are written down here.
 notebook-elsewhere = Heard elsewhere
@@ -128,6 +133,11 @@ settings-sound = Sound: { $sound }
 settings-sound-on = on
 settings-sound-off = off
 settings-sound-none = no audio
+settings-sound-hint = (or [m])
+settings-speed = Speed: { $speed }
+settings-speed-slow = slow
+settings-speed-normal = normal
+settings-speed-fast = fast
 settings-pick-course = Learn:
 settings-pick-reading = Read the game in:
 settings-current = (now)
@@ -164,3 +174,6 @@ vn-rent-late = Rent is late
 vn-turn-phone = Turn your phone sideways for a bigger view.
 vn-dismiss = Got it
 vn-play-word = Hear it
+
+# NPC gesturing after two wrong replies, alongside the slow repeat.
+gesture-narration = { $npc } mimes it:

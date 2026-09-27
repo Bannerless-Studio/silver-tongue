@@ -25,7 +25,9 @@ describe("notebook entries", () => {
     state.notes.read = ["hao"];
     const nb = notebookEntries(course, state, t, T0);
     expect(nb.groups.map((g) => [g.place, g.title])).toEqual([["noodle_shop", "Noodle shop"], [null, t("notebook-elsewhere")]]);
-    expect(nb.groups[0].words[0]).toEqual({ id: "w_ni", text: "你", readings: ["nǐ"], gloss: "you", state: "known", clips: ["c-ni"], first: "你好Mei！" });
+    expect(nb.groups[0].words[0]).toEqual({
+      id: "w_ni", text: "你", readings: ["nǐ"], gloss: "you", short: "you", state: "known", clips: ["c-ni"], first: "你好Mei！",
+    });
     expect(nb.groups[1].words[0].first).toBeUndefined();
     expect(nb.notes).toEqual([{ title: "好 means good", text: "On its own, 好 agrees." }]);
   });

@@ -9,3 +9,6 @@ x0008 = Old Chen, who owns the tea house (老 "old" + the surname Chen)
 x0009 = Mrs Lin, your neighbour (the surname Lin + 太太 "Mrs")
 x0010 = David, a classmate (the Chinese form of the name)
 x0011 = Old Ma, the taxi driver (老 "old" + the surname Ma)
+x0012 = there
+x0013 = here
+x0014 = where

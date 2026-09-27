@@ -8,8 +8,8 @@ fruit-reply = Fruit! Very good.
 fruit-alt1 = We're out of cups!
 fruit-alt2 = I'm going now!
 
-apples = This apple is very good!
-apples-reply = I like apples.
+apples = Which apple is good?
+apples-reply = This one is good!
 apples-alt1 = I like noodles.
 apples-alt2 = Where is the school?
 

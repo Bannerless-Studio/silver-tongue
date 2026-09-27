@@ -7,7 +7,7 @@ const MARK: Record<WordState, string> = { unseen: " ", met: "○", shaky: "◐",
 /** The notebook as terminal lines (see notebookEntries for what it holds). */
 export function notebookLines(course: Course, state: GameState, t: Text, now: number): StyledLine[] {
   const nb = notebookEntries(course, state, t, now);
-  const out: StyledLine[] = nb.progress.map((text) => [{ text, bold: true }]);
+  const out: StyledLine[] = [[{ text: nb.rankLabel, bold: true }], ...nb.progress.map((text) => [{ text, bold: true }])];
   if (nb.empty) out.push([], [{ text: t("notebook-empty"), dim: true }]);
   for (const g of nb.groups) {
     out.push([], [{ text: g.title, color: "cyan", bold: true }]);
@@ -16,7 +16,7 @@ export function notebookLines(course: Course, state: GameState, t: Text, now: nu
         { text: `${MARK[w.state]} ` },
         { text: w.text, bold: true },
         ...(w.readings.length ? [{ text: ` ${w.readings.join(" ")}`, color: "yellow" as const }] : []),
-        { text: ` — ${w.gloss}` },
+        { text: ` — ${w.short}` },
       ]);
       if (w.first !== undefined) out.push([{ text: `    ${w.first}`, dim: true }]);
     }

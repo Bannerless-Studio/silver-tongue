@@ -31,7 +31,7 @@ age-alt1 = 八块！
 age-alt2 = 十年！
 
 work = 你做什么工作？
-work-reply = 我在饭馆工作。
+work-reply = 我在饭馆里工作。
 work-alt1 = 他八岁。
 work-alt2 = 十年！
 

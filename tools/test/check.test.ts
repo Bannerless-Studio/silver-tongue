@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { PLAYER_MARK } from "@silver-tongue/core";
 import { addErrand, fixtureCourse, line } from "@silver-tongue/core/testing";
-import { checkCourse, orderScenes, usedWords, type CheckInput } from "../src/check";
+import { checkCourse, newWordLimit, orderScenes, usedWords, type CheckInput } from "../src/check";
 import { assignAudio } from "../src/voices";
 
 const LEARNER = [
@@ -88,10 +88,42 @@ describe("checkCourse", () => {
     expect(orderScenes([loop, c.scenes[1]]).errors[0]).toMatch(/cycle/);
   });
 
-  it("allows at most 2 new words per exchange", () => {
+  it("allows an early scene (few words met) up to 4 new words per exchange", () => {
+    const c = fixtureCourse();
+    c.scenes[0].exchanges[0].variants[""].npc = line(
+      ["你", "w_ni"],
+      ["好", "w_hao"],
+      ["茶", "w_cha"],
+      ["水", "w_shui"],
+      ["三", "w_san"],
+    );
+    expect(checkCourse(input({ course: c }))).toContain("intro/greet: 5 new words (你 好 茶 水 三); at most 4");
+  });
+
+  describe("newWordLimit", () => {
+    it("grades the default by words met so far: 4 below 30, 3 below 60, then the ratio", () => {
+      expect(newWordLimit(0, 3)).toBe(4);
+      expect(newWordLimit(29, 3)).toBe(4);
+      expect(newWordLimit(30, 3)).toBe(3);
+      expect(newWordLimit(59, 3)).toBe(3);
+      expect(newWordLimit(60, 3)).toBe(2); // floor(0.6) = 0, so the floor of 2 wins
+      expect(newWordLimit(60, 10)).toBe(2); // floor(2) = 2, ties the floor
+      expect(newWordLimit(60, 20)).toBe(4); // floor(4) = 4, above the floor
+      expect(newWordLimit(60, 21)).toBe(4); // floor(4.2) = 4
+    });
+
+    it("a scene override replaces the band or ratio entirely, even below the usual floor", () => {
+      expect(newWordLimit(0, 3, 1)).toBe(1);
+      expect(newWordLimit(60, 20, 6)).toBe(6);
+      expect(newWordLimit(0, 3, 0)).toBe(0);
+    });
+  });
+
+  it("a scene's newWordsOverride replaces the ratio limit in checkCourse", () => {
     const c = fixtureCourse();
     c.scenes[0].exchanges[0].variants[""].npc = line(["你", "w_ni"], ["好", "w_hao"], ["茶", "w_cha"]);
-    expect(checkCourse(input({ course: c }))).toContain("intro/greet: 3 new words (你 好 茶); at most 2");
+    expect(checkCourse(input({ course: c, newWordsOverride: { intro: 1 } }))).toContain("intro/greet: 3 new words (你 好 茶); at most 1");
+    expect(checkCourse(input({ course: c, newWordsOverride: { intro: 5 } }))).toEqual([]);
   });
 
   it("rejects non-bonus words above the scene's stage", () => {
@@ -159,7 +191,11 @@ describe("checkCourse", () => {
     // shift no longer comes after intro, so intro's words are new in shift.
     c.scenes[1].after = [];
     c.scenes[1].requires = {};
-    expect(checkCourse(input({ course: c })).some((e) => /^shift\/order\[.*new words/.test(e))).toBe(true);
+    // A tight override isolates this from the graded default's leniency band, which the tiny
+    // fixture vocabulary would otherwise never exceed.
+    expect(
+      checkCourse(input({ course: c, newWordsOverride: { shift: 1 } })).some((e) => /^shift\/order\[.*new words/.test(e)),
+    ).toBe(true);
   });
 
   it("keeps a slot that has its own reaction to one group", () => {
@@ -184,10 +220,16 @@ describe("checkCourse", () => {
   it("keeps checking scenes stuck in a cycle", () => {
     const c = fixtureCourse();
     c.scenes[0].after = ["shift"];
-    c.scenes[0].exchanges[0].variants[""].npc = line(["你", "w_ni"], ["好", "w_hao"], ["茶", "w_cha"]);
+    c.scenes[0].exchanges[0].variants[""].npc = line(
+      ["你", "w_ni"],
+      ["好", "w_hao"],
+      ["茶", "w_cha"],
+      ["水", "w_shui"],
+      ["三", "w_san"],
+    );
     const errors = checkCourse(input({ course: c }));
     expect(errors.some((e) => /cycle/.test(e))).toBe(true);
-    expect(errors).toContain("intro/greet: 3 new words (你 好 茶); at most 2");
+    expect(errors).toContain("intro/greet: 5 new words (你 好 茶 水 三); at most 4");
   });
 
   it("rejects duplicate ids and trust no earlier scene can give", () => {

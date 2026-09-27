@@ -13,6 +13,8 @@ export interface Word {
   readings?: string[];
   lv: string;
   gloss: string;
+  /** a curated 1-3 word display gloss, when the pack's own first sense isn't a good short form */
+  short?: string;
   bonus?: boolean;
   /** clip ids that say the word */
   audio?: string[];

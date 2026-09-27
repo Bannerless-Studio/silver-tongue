@@ -8,6 +8,11 @@
   "engines": { "node": ">=22" },
   "bin": { "silver-tongue": "dist/silver-tongue.mjs" },
   "files": ["dist"],
+  "exports": {
+    "./storage": "./src/storage.ts",
+    "./catalog": "./src/catalog.ts",
+    "./node-audio": "./src/node-audio.ts"
+  },
   "scripts": {
     "bundle": "esbuild src/main.ts --bundle --platform=node --format=esm --outfile=dist/silver-tongue.mjs --banner:js=\"#!/usr/bin/env node\" && node bundle-courses.mjs"
   },

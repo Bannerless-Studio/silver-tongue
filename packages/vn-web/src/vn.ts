@@ -168,7 +168,7 @@ export function createVn(opts: VnOptions): Vn {
           placed = [];
           break;
         case "actionPerformed":
-          for (const n of actionNarration(course, t, e)) queue.push({ text: n.text, tone: n.tone, cue: e.matched ? "pleased" : "puzzled" });
+          for (const n of actionNarration(course, t, e, npc && npcName(npc))) queue.push({ text: n.text, tone: n.tone, cue: e.matched ? "pleased" : "puzzled" });
           break;
         case "npcReacted":
           // Word help keeps offering the request the player got wrong, not the reaction.

@@ -80,3 +80,8 @@ export function loadSettings(configRoot: string): PlayerSettings {
 export function saveSettings(configRoot: string, settings: PlayerSettings): boolean {
   return writeFileAtomic(settingsPath(configRoot), JSON.stringify(settings));
 }
+
+/** Changes just the given fields, keeping whatever else was saved (course, learner, speed, …). */
+export function updateSettings(configRoot: string, patch: Partial<PlayerSettings>): boolean {
+  return saveSettings(configRoot, { ...loadSettings(configRoot), ...patch });
+}

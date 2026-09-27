@@ -28,8 +28,8 @@ price-reply = Her? Ten kuai.
 price-alt1 = OK, these dishes.
 price-alt2 = I'm hungry.
 
-eat = Right, we eat! Do you want rice?
-eat-reply = Yes! Thanks!
+eat = Right, we eat! Which dish do you want?
+eat-reply = I want this one.
 eat-alt1 = Her? Ten kuai.
 eat-alt2 = So many!
 

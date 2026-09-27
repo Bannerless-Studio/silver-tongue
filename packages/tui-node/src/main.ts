@@ -12,6 +12,7 @@ import {
   sessionLines,
   startApp,
   type PlayerSettings,
+  type SpeechSpeed,
 } from "@silver-tongue/tui";
 import { clipsDir, courseFile, coursesDir, readCatalog } from "./catalog";
 import { parseFlags, pickAnswer, USAGE } from "./cli";
@@ -19,7 +20,7 @@ import { createNodeAudio, nodeAudioDeps } from "./node-audio";
 import { createNodeTerminal } from "./node-terminal";
 import pkg from "../package.json" with { type: "json" };
 import { listSessions, migrateCourseSessions, newSessionPath, sessionsDir } from "./sessions";
-import { configDir, loadSave, loadSettings, saveSettings, writeSave } from "./storage";
+import { configDir, loadSave, loadSettings, updateSettings, writeSave } from "./storage";
 
 const [major] = process.versions.node.split(".").map(Number);
 if (major < 22) {
@@ -44,6 +45,9 @@ if (flags.mode === "error") {
 const game = flags;
 
 const root = configDir();
+// How fast clips are said; unset means "slow". Changed live from the settings screen, and
+// remembered for the player's next game too.
+let speed: SpeechSpeed = loadSettings(root).speed ?? "slow";
 
 /** A course to play: its file, its clips, and where it sits in the catalog (none for a course file given by path). */
 interface Chosen {
@@ -104,7 +108,7 @@ async function start(): Promise<Chosen> {
   const entry = picked.ask ? await askCourse(dir, catalog, settings) : picked.course;
   const learner = picked.ask ? learnerFor(entry, game.read, settings.learner) : picked.learner;
   const chosen = orExit(() => loadCourse(dir, entry, learner, catalog), DAMAGED);
-  saveSettings(root, { course: entry.id, learner });
+  updateSettings(root, { course: entry.id, learner });
   return chosen;
 }
 
@@ -223,7 +227,7 @@ function play(session: Chosen, savePath: string, carried?: { state: GameState; r
   audio?.stop();
   const { state, notice, readOnly } = carried ?? loadSave(session.course, savePath);
   const core = createCore(session.course, state, { now: Date.now, rng: mulberry32(Date.now() >>> 0) });
-  audio = createNodeAudio(nodeAudioDeps(session.clips));
+  audio = createNodeAudio(nodeAudioDeps(session.clips, () => speed));
   const { dir } = session;
   startApp({
     course: session.course,
@@ -233,6 +237,13 @@ function play(session: Chosen, savePath: string, carried?: { state: GameState; r
     notice,
     version: pkg.version,
     audio,
+    speed: {
+      value: speed,
+      onChange: (s) => {
+        speed = s;
+        updateSettings(root, { speed: s });
+      },
+    },
     save: readOnly ? undefined : (s) => writeSave(savePath, s),
     quit: () => bail(0),
     settings: dir
@@ -247,7 +258,7 @@ function play(session: Chosen, savePath: string, carried?: { state: GameState; r
               // The course file is missing or damaged: go on with the game being played.
               return play(session, savePath, { state: played, readOnly });
             }
-            saveSettings(root, { course: id, learner });
+            updateSettings(root, { course: id, learner });
             // Another reading language keeps the game; another course continues its last one.
             if (id === session.course.id) play(next, savePath, { state: played, readOnly });
             else play(next, lastOrNew(next.course));

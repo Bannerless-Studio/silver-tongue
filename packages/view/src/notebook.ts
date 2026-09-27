@@ -1,4 +1,5 @@
-import { PLAYER_MARK, wordState, type Course, type GameState, type WordId, type WordState } from "@silver-tongue/core";
+import { PLAYER_MARK, rankFor, wordState, type Course, type GameState, type WordId, type WordState } from "@silver-tongue/core";
+import { displayGloss } from "./help";
 import type { Text } from "./text";
 
 export interface NotebookWord {
@@ -6,6 +7,8 @@ export interface NotebookWord {
   text: string;
   readings: string[];
   gloss: string;
+  /** the short display gloss (curated override, else the heuristic): what the notebook row shows */
+  short: string;
   state: WordState;
   clips: string[];
   /** the line it was first heard in, with the player's name */
@@ -18,6 +21,8 @@ export interface NotebookGroup {
   words: NotebookWord[];
 }
 export interface Notebook {
+  /** what the player can now say, e.g. "Speaks: Pidgin" */
+  rankLabel: string;
   progress: string[];
   empty: boolean;
   groups: NotebookGroup[];
@@ -29,6 +34,7 @@ export interface Notebook {
  * they were first heard (in world order), and the mentor notes already explained.
  */
 export function notebookEntries(course: Course, state: GameState, t: Text, now: number): Notebook {
+  const rankLabel = t("notebook-rank", { rank: t(`rank-${rankFor(state.words, Object.keys(course.words), now)}`) });
   const stages = [...new Set(course.scenes.map((s) => String(s.stage)))].sort();
   const progress = stages.map((stage) => {
     const list = course.stageWords[stage] ?? [];
@@ -56,6 +62,7 @@ export function notebookEntries(course: Course, state: GameState, t: Text, now: 
           text: w.w,
           readings: w.readings ?? [],
           gloss: w.gloss,
+          short: displayGloss(w),
           state: wordState(rec, now),
           clips: w.audio ?? [],
           // Saves from before 0.7.0 may hold the name's mark instead of the name.
@@ -64,5 +71,5 @@ export function notebookEntries(course: Course, state: GameState, t: Text, now: 
       }),
     });
   }
-  return { progress, empty: !heard.length, groups, notes: state.notes.read.map((id) => ({ title: t(`note-${id}-title`), text: t(`note-${id}`) })) };
+  return { rankLabel, progress, empty: !heard.length, groups, notes: state.notes.read.map((id) => ({ title: t(`note-${id}-title`), text: t(`note-${id}`) })) };
 }

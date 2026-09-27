@@ -32,6 +32,27 @@
       "missCost": 0
     },
     {
+      "id": "count",
+      "slots": { "number": "numbers_2_5" },
+      "expect": {
+        "action": "count",
+        "number": "$number"
+      },
+      "hinges": ["$number"],
+      "pay": 0,
+      "missCost": 0
+    },
+    {
+      "id": "like",
+      "slots": {},
+      "expect": {
+        "action": "like"
+      },
+      "hinges": [],
+      "pay": 0,
+      "missCost": 0
+    },
+    {
       "id": "job",
       "slots": {},
       "expect": {

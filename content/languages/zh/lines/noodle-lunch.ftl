@@ -30,8 +30,8 @@ price-reply = 她？十块钱。
 price-alt1 = 好，这些菜。
 price-alt2 = 我饿了。
 
-eat = 好，我们吃！你想吃米饭吗？
-eat-reply = 想！谢谢！
+eat = 好，我们吃！你想吃哪个菜？
+eat-reply = 我想吃这个。
 eat-alt1 = 她？十块钱。
 eat-alt2 = 很多！
 

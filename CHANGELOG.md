@@ -2,6 +2,15 @@
 
 Every release of Silver Tongue, newest first.
 
+## 0.15.0 (unreleased)
+
+- The opening now sets the scene in 2004: your bag, passport and phone are gone, and the police can't help for a month, so it's just you and the words you know.
+- The first conversation with Old Wang is a real one: he introduces himself, asks how you are, then asks your name, instead of quizzing you on the same line twice.
+- Wrong-answer hints now say who was talking and what they were doing, instead of a plain "they".
+- "There", "here" and "where" are taught as whole words now, not split into two misleading pieces.
+- Old Wang's friend at the noodle shop is introduced by name in conversation, not shouted out of nowhere.
+- The cook now actually interviews you for the noodle shop job: she has you count her cups and asks if you like noodles before hiring you.
+
 ## 0.14.0 (2026-09-26)
 
 - A new way to play in the browser: a visual novel. Each place is drawn, the people you talk to stand in front of you as silhouettes, and their lines appear one at a time. Tap any word to look it up.

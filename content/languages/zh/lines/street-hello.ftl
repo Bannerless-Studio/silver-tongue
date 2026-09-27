@@ -5,20 +5,15 @@ hello = 你好！
 hello-reply = 你好！
 hello-alt1 = 好！
 
-wang = 老王！
+wang = 我叫老王。
 wang-reply = 你好，老王！
 wang-alt1 = 老王！
-wang-alt2 = 好，老王！
+wang-alt2 = 你好！
 
 how = 你好吗？
 how-reply = 很好！你好吗？
 how-alt1 = 老王！
 how-alt2 = 你好，老王！
-
-name = 很好！叫我老王。
-name-reply = 你好，老王！
-name-alt1 = 我叫老王。
-name-alt2 = 很好！
 
 ask = 你叫什么名字？
 ask-reply = 我叫{ $player }。
