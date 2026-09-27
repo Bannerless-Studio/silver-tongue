@@ -527,9 +527,9 @@ export function startApp(opts: AppOptions): App {
     const keys = t(footerId, { keys: keyRange(count) });
     const footer = opts.settings && ["explore", "scene", "help"].includes(mode) ? `${keys} · ${t("keys-o")}` : keys;
     const panels: Panel[] = [
-      { lines: [hudRow(h)], drop: 1 },
-      { lines: log, grow: true },
-      ...(card && mode !== "explore" ? [{ lines: [card], drop: 2 }] : []),
+      { lines: [hudRow(h)], drop: 2 },
+      { lines: log, grow: true, min: 4 },
+      ...(card && mode !== "explore" ? [{ lines: [card], drop: 1 }] : []),
       replyPanel(innerWidth(cols)),
     ];
     const left = cols < NARROW ? 0 : 2; // where a line's text starts: after "│ " when wide

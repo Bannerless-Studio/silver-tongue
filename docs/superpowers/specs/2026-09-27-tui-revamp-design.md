@@ -62,9 +62,9 @@ bordered panels, each with a title and an optional right-hand label, joined by `
 
 - Under 50 columns: the HUD row wraps, reply meanings go on their own dim line under the reply, and
   panel side borders are dropped (rules only).
-- Rows are handed out in this order: header, footer, reply panel, HUD row, word card, log. The log
-  gets what is left, at least one row; when even that doesn't fit, the word card closes, then the HUD
-  row goes.
+- Rows are handed out in this order: header, footer, reply panel, word card, HUD row, log. The log
+  gets what is left, at least four rows (so the line being answered shows); when that doesn't fit,
+  the HUD row goes, then the word card closes.
 - CJK and kana are two columns wide; no line is ever cut through a wide character (`width.ts` already
   does this).
 
@@ -99,7 +99,7 @@ visual novel can use it later. The first-time gloss row stays, below the reading
 │   Noodle Shop│   beef noodle soup                    │
 │   Street  (8)│ 多少钱 duōshao qián     ██░░░  met    │
 │   Home    (5)│   how much                            │
-└ [esc] back · [1-2] words/notes · [↑↓] word · [←→] group · [enter] more · [p] play ┘
+└ [esc] back · [1-2] tab · [↑↓←→] move · [enter] more · [p] play ────────────────┘
 ```
 
 - **Tabs:** Words and Notes (the mentor notes already explained). `[1]` and `[2]` switch; not Tab,

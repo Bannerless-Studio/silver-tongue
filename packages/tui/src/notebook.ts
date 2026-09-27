@@ -71,11 +71,11 @@ export function notebookBody(nb: Notebook, t: Text, v: NotebookView, cols: numbe
   if (v.tab === "notes") {
     const all: StyledLine[] = nb.notes.length
       ? nb.notes.flatMap((n) => [...wrapLine([{ text: n.title, bold: true }], inner), ...wrapLine([{ text: n.text }], inner), []])
-      : [[{ text: t("notebook-notes-empty"), dim: true }]];
+      : wrapLine([{ text: t("notebook-notes-empty"), dim: true }], inner);
     const top = Math.max(0, Math.min(v.top, all.length - height));
     return { lines: pad(all.slice(top, top + height), height), top };
   }
-  if (nb.empty) return { lines: pad([[{ text: t("notebook-empty"), dim: true }]], height), top: 0 };
+  if (nb.empty) return { lines: pad(wrapLine([{ text: t("notebook-empty"), dim: true }], inner), height), top: 0 };
   const groups = notebookGroups(nb, t);
   const g = Math.max(0, Math.min(v.group, groups.length - 1));
   const narrow = cols < NARROW;

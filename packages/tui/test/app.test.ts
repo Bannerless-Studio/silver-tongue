@@ -87,6 +87,15 @@ describe("tui app", () => {
     expect(s).toMatch(/1\) /);
   });
 
+  it("keeps the line being answered on a phone screen while a looked-up word is open", () => {
+    const { term } = setup();
+    term.resize(40, 12);
+    term.press("1", "1", "w", "1", "escape");
+    const s = term.screen().join("\n");
+    expect(s).toContain("Cook: 你好！");
+    expect(s).toContain("你 nǐ — you");
+  });
+
   it("draws every screen inside the terminal at phone, short, laptop and wide sizes", () => {
     for (const [cols, rows] of [[40, 12], [40, 8], [80, 24], [120, 40]]) {
       const { term } = setup();
@@ -662,6 +671,14 @@ describe("tui app", () => {
     const rows = 2 + 1 + 1 + 3 + 1 + core.state.run!.options.length;
     term.resize(64, rows);
     expect(term.screen().join("\n")).toMatch(/Cook: .+。/);
+  });
+
+  it("shows every notebook key hint in an 80-column terminal", () => {
+    const { term } = setup();
+    term.resize(80, 24);
+    term.press("1", "1", "n");
+    const bottom = term.screen().at(-1)!;
+    for (const k of ["[esc]", "[1-2]", "[enter]", "[p]"]) expect(bottom).toContain(k);
   });
 
   it("opens the notebook with n: words by group, notes, and back where it was", () => {

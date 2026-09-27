@@ -94,7 +94,7 @@ reject-no-mentor = There's nobody here to explain things.
 note-hint = { $npc } seems to have something to tell you.
 mentor-nothing = { $npc } has nothing new to explain today.
 
-keys-notebook = [esc] back · [1-2] words/notes · [↑↓] word · [←→] group · [enter] more · [p] play
+keys-notebook = [esc] back · [1-2] tab · [↑↓←→] move · [enter] more · [p] play
 notebook-title = Notebook
 notebook-words = Words
 notebook-recent = Recent

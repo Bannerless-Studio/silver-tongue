@@ -30,6 +30,16 @@ describe("notebook", () => {
     notebookBody(notebookEntries(course, state, t, now), t, view(v), cols, height);
   const text = (v: Partial<NotebookView>, cols = 80, now = LATER) => body(v, cols, now).lines.map(plain).join("\n");
 
+  it("wraps the empty Words and Notes messages to a phone's width", () => {
+    const fresh = newGame(course);
+    const nb = notebookEntries(course, fresh, t, LATER);
+    for (const tab of ["words", "notes"] as const) {
+      const lines = notebookBody(nb, t, view({ tab }), 40, 6).lines;
+      for (const l of lines) expect(lineWidth(l)).toBeLessThanOrEqual(innerWidth(40));
+      expect(lines.map(plain).join(" ").replace(/\s+/g, " ")).toContain(t(tab === "words" ? "notebook-empty" : "notebook-notes-empty"));
+    }
+  });
+
   it("heads the page with the tabs and progress", () => {
     const head = notebookHead(notebookEntries(course, state, t, LATER), t, "words").map(plain);
     expect(head[0]).toMatch(/1\) Words +2\) Notes/);

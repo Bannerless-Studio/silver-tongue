@@ -13,6 +13,8 @@ export interface Panel {
   lines: StyledLine[];
   /** takes the rows the other panels leave, showing its last lines (the log); one panel at most */
   grow?: boolean;
+  /** rows the growing panel keeps before optional panels do (default 1), so the line being answered shows */
+  min?: number;
   /** may be left out when rows run short, the highest number first */
   drop?: number;
 }
@@ -68,7 +70,7 @@ const TITLE: Omit<Span, "text"> = { bold: true, color: "cyan" };
 /**
  * A screen: the title (and `right`) on the top border, the panels one under another, joined by
  * rules that carry their titles, and the key hints on the bottom border. Rows go to the fixed panels
- * first; the growing one (the log) gets the rest. When even one log row doesn't fit, the optional
+ * first; the growing one (the log) gets the rest. When its `min` rows don't fit, the optional
  * panels are dropped, the highest `drop` first. A frame still too tall keeps its bottom rows.
  */
 export function renderFrame(f: Frame, cols: number, rows: number): StyledLine[] {
@@ -80,14 +82,15 @@ export function renderFrame(f: Frame, cols: number, rows: number): StyledLine[] 
   const rule = (title = "") => (narrow ? border("─", title, "─", "─", cols, "", false, TITLE) : border("├", title, "┤", "─", cols, "", false, TITLE));
 
   let panels = f.panels.map((p) => ({ ...p, rows: p.lines.flatMap((l) => wrapLine(l, inner)) }));
-  const need = () => panels.reduce((n, p, i) => n + (i > 0 ? 1 : 0) + (p.grow ? 1 : p.rows.length), 0);
+  const least = (p: (typeof panels)[number]) => Math.max(1, Math.min(p.min ?? 1, p.rows.length));
+  const need = () => panels.reduce((n, p, i) => n + (i > 0 ? 1 : 0) + (p.grow ? least(p) : p.rows.length), 0);
   while (need() > avail && panels.some((p) => p.drop !== undefined)) {
     const top = Math.max(...panels.map((p) => p.drop ?? -Infinity));
     const i = panels.findIndex((p) => p.drop === top);
     panels = panels.filter((_, j) => j !== i);
   }
   const growing = panels.some((p) => p.grow);
-  const growRows = Math.max(0, avail - (need() - (growing ? 1 : 0)));
+  const growRows = Math.max(0, avail - (need() - panels.reduce((n, p) => n + (p.grow ? least(p) : 0), 0)));
   if (growing && growRows === 0) panels = panels.filter((p) => !p.grow);
 
   const body: StyledLine[] = [];

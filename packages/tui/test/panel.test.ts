@@ -70,4 +70,22 @@ describe("panel frames", () => {
     expect(s.at(-2)).toContain("20) choice");
     expect(s.at(-1)).toContain("[1-3] reply");
   });
+
+  it("keeps a growing panel's minimum rows before optional panels, so the line being answered shows", () => {
+    const panels: Panel[] = [
+      { lines: text("HUD"), drop: 2 },
+      { lines: text(...log), grow: true, min: 4 },
+      { lines: text("CARD"), drop: 1 },
+      { title: "Your reply", lines: text("1", "2", "3") },
+    ];
+    // HUD 1 + log rule 1 + log 4 + card rule 1 + card 1 + reply rule 1 + 3 = 12 inside: 14 rows
+    let s = screen(frame(panels, 64, 14)).join("\n");
+    expect(s).toContain("HUD");
+    expect(s).toContain("CARD");
+    // 12 rows: the HUD goes first (drop 2), the card stays and the log keeps its 4 rows
+    s = screen(frame(panels, 64, 12)).join("\n");
+    expect(s).not.toContain("HUD");
+    expect(s).toContain("CARD");
+    expect(s).toContain("line 27 你好");
+  });
 });
