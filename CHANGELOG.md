@@ -2,6 +2,13 @@
 
 Every release of Silver Tongue, newest first.
 
+## 0.15.0 (2026-09-27)
+
+- The visual novel now plays itself. Each line stays as long as it takes to read it and to hear it said, and a tap still hurries it on. If you would rather choose every line, turn it off in settings.
+- Speech starts slow, so there is time to copy what you hear. Settings has a speed choice — slow, normal or fast — and the text game at /text/ plays at the same speed.
+- The place menu and your replies no longer look like the same button: your replies are big cards, and the place menu is a quiet list of where you can go.
+- The intro now says where and when you are: China, 1980, with no phone, no translator and nobody who speaks your language.
+
 ## 0.14.0 (2026-09-26)
 
 - A new way to play in the browser: a visual novel. Each place is drawn, the people you talk to stand in front of you as silhouettes, and their lines appear one at a time. Tap any word to look it up.
