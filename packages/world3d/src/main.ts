@@ -1008,8 +1008,10 @@ async function main() {
     mixer.setAmbient(ambientFor(scene));
   }
 
-  /** Footsteps in step with the walk clip, by the surface underfoot. */
+  /** Footsteps in step with the walk clip, by the surface underfoot. Off for now (player's request, 2026-09-27); the clips stay for a later, softer set. */
+  const FOOTSTEPS = false;
   function updateFootsteps() {
+    if (!FOOTSTEPS) return;
     const p = player.position;
     const moved = Math.hypot(p.x - lastFoot.x, p.z - lastFoot.y);
     lastFoot.set(p.x, p.z);
