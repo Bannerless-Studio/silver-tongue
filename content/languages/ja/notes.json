@@ -1,1 +1,14 @@
-[]
+[
+ {
+  "id": "desu-masu",
+  "trigger": {
+   "scene": "tanaka-name"
+  }
+ },
+ {
+  "id": "tsu",
+  "trigger": {
+   "scene": "tanaka-numbers"
+  }
+ }
+]

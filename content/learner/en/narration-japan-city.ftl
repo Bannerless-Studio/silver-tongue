@@ -22,6 +22,11 @@ npc-clerk = the clerk
 scene-tanaka-hello = Say hello to the old man
 scene-tanaka-hello-start = The old man pats the bench beside him.
 scene-tanaka-hello-end = Mr Tanaka nods, satisfied, and goes back to his pigeons.
+scene-tanaka-name = Tell Mr Tanaka your name
+scene-tanaka-name-start = Mr Tanaka taps his chest, then points at you.
+scene-tanaka-name-end = Mr Tanaka says your name over to himself, twice, as if filing it away.
+scene-tanaka-numbers = Count with Mr Tanaka
+scene-tanaka-numbers-start = Mr Tanaka holds up his fingers: time to learn to count.
 
 # What a reply does (action-<name>), and on a mix-up what was asked (asked-<name>).
 # Concept values arrive as learner names: $item = "tea", $count = "three".
@@ -32,3 +37,8 @@ asked-hello = { $npc } was saying hello.
 asked-tanaka = Mr Tanaka was telling you his name.
 asked-sit = Mr Tanaka was offering you a seat.
 asked-bye = { $npc } was saying goodbye.
+asked-ask = Mr Tanaka was asking your name.
+asked-nice = Mr Tanaka was saying he's pleased to meet you.
+asked-understand = Mr Tanaka was asking if you understand Japanese.
+asked-numbers = { $npc } asked you to count along.
+asked-next = Mr Tanaka wanted the next number: { $number }.

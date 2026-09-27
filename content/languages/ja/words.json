@@ -184,5 +184,99 @@
     "itsutsu"
    ]
   }
+ },
+ {
+  "id": "ja-namae",
+  "w": "名前",
+  "lv": "N5",
+  "readings": [
+   "なまえ",
+   "namae"
+  ],
+  "forms": {
+   "お名前": [
+    "おなまえ",
+    "onamae"
+   ]
+  }
+ },
+ {
+  "id": "ja-wa",
+  "w": "は",
+  "lv": "N5",
+  "readings": [
+   "wa"
+  ]
+ },
+ {
+  "id": "ja-watashi",
+  "w": "わたし",
+  "lv": "N5",
+  "readings": [
+   "watashi"
+  ]
+ },
+ {
+  "id": "ja-yoroshiku",
+  "w": "よろしくお願いします",
+  "lv": "N5",
+  "readings": [
+   "よろしくおねがいします",
+   "yoroshiku onegai shimasu"
+  ]
+ },
+ {
+  "id": "ja-nihongo",
+  "w": "日本語",
+  "lv": "N5",
+  "readings": [
+   "にほんご",
+   "nihongo"
+  ]
+ },
+ {
+  "id": "ja-wakarimasu",
+  "w": "わかります",
+  "lv": "N5",
+  "readings": [
+   "wakarimasu"
+  ],
+  "forms": {
+   "わかりません": [
+    "wakarimasen"
+   ]
+  }
+ },
+ {
+  "id": "ja-iie",
+  "w": "いいえ",
+  "lv": "N5",
+  "readings": [
+   "iie"
+  ]
+ },
+ {
+  "id": "ja-ja",
+  "w": "じゃあ",
+  "lv": "N5",
+  "readings": [
+   "jā"
+  ]
+ },
+ {
+  "id": "ja-mata",
+  "w": "また",
+  "lv": "N5",
+  "readings": [
+   "mata"
+  ]
+ },
+ {
+  "id": "ja-hai",
+  "w": "はい",
+  "lv": "N5",
+  "readings": [
+   "hai"
+  ]
  }
 ]
