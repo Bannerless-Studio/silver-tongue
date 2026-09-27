@@ -1,6 +1,6 @@
 # TUI revamp: panels, fading readings, a real notebook
 
-Status: approved in conversation 2026-09-27. Branch `tui-revamp`, off `main`.
+Status: approved in conversation 2026-09-27. Branch `tui-revamp`, off `main`. Ships as **0.16.1**.
 
 ## Goal
 
@@ -38,7 +38,7 @@ bordered panels, each with a title and an optional right-hand label, joined by `
 ├ Your reply ────────────────────────────────┤
 │ 1) 我要一碗牛肉面。  — I'd like beef noodles │
 │ 2) 多少钱？          — how much?             │
-└ [1-3] reply · [w] help · [n] notebook ── Silver Tongue v0.17.0 · by Bannerless Studio ┘
+└ [1-3] reply · [w] help · [n] notebook ── Silver Tongue v0.16.1 · by Bannerless Studio ┘
 ```
 
 - **Header.** Place on the left of the top border, day and slot on the right.
@@ -167,6 +167,6 @@ light background stays readable. `Color` gains `blue` and `white` (`ansi.ts` 34,
 
 ## Release
 
-No change to core. It still ships a release, since core and silver-tongue always release at the
-same version: whichever minor is next when this merges (0.17.0 if it lands before D2, which has
-claimed 0.17.0; otherwise 0.18.0), with a `CHANGELOG.md` entry in plain words.
+A patch: silver-tongue **0.16.1**, with a `CHANGELOG.md` entry in plain words. Core is not
+touched and not released; every package keeps `@silver-tongue/core@^0.15.1`. D2 still releases both
+as 0.17.0.
