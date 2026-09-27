@@ -8,6 +8,7 @@ import type { Hud } from "../game";
 import type { GuideStep } from "../guide";
 import type { Objective } from "../objective";
 import type { Strings } from "../strings";
+import { versionTag } from "../version";
 import { el } from "./dom";
 
 /** Wayfinding's part of the objective card (main.ts, from wayfind.ts). */
@@ -39,7 +40,7 @@ export class HudView {
     /** the music is on (the ♪ chip is the music's); none: the chip is core's sound */
     private music?: () => boolean,
   ) {
-    this.node.append(this.chips, this.objective);
+    this.node.append(this.chips, this.objective, versionTag());
   }
 
   /** Draws the last render again (the ♪ chip after the music changed outside the model). */

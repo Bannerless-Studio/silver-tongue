@@ -7,6 +7,7 @@
 // (Settings). No framework; styles in start.css (the game's one UI skin).
 import { cleanName, MAX_NAME_LENGTH, PLAYER_MARK, type CatalogEntry } from "@silver-tongue/core";
 import { FALLBACK_UI, type IntroData } from "../../locale";
+import { versionTag } from "../version";
 import { createHintChip } from "./hint-chip";
 import * as S from "./strings";
 
@@ -289,6 +290,7 @@ export function mountStartFlow(root: HTMLElement, config: StartConfig): StartFlo
       { className: "st-screen st-title", role: "button", tabindex: "0", "aria-label": t("title.tap"), onclick: start },
       h("div", { className: "st-logo" }, h("h1", { text: t("game.title") }), h("div", { className: "st-seal", text: settingText(e.setting, "title") })),
       h("div", { className: "st-tap", "aria-hidden": "true", text: t("title.tap") }),
+      versionTag(),
     );
     (s as HTMLElement & { startFlow?: () => void }).startFlow = start;
     return s;

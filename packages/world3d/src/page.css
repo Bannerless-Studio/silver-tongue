@@ -95,6 +95,11 @@ h2, h3 { font-family: var(--font-display); font-weight: 400; letter-spacing: 0.0
 .obj-next { font-size: 0.78rem; opacity: 0.55; }
 .hud .obj-go { pointer-events: auto !important; display: inline-block; margin-top: 0.3em; padding: 0.15em 0.65em; font-size: 0.8rem; background: var(--gold); color: var(--ink); box-shadow: var(--chip-lift); }
 .hud .obj-go:hover { background-color: #f0c465; }
+/* the build's version (build.mjs, src/version.ts): a muted corner tag on the loading card, the
+   start flow's title screen and the HUD (page.css alone positions it: fixed bottom-right wins over
+   wherever it sits in the DOM); Settings prints the same value in full (.settings-version below). */
+.build-version { position: fixed; right: max(6px, env(safe-area-inset-right)); bottom: max(4px, env(safe-area-inset-bottom)); z-index: 1; font-family: var(--font-body); font-size: 10px; line-height: 1; opacity: 0.45; white-space: nowrap; pointer-events: none !important; }
+.st-title .build-version { color: var(--paper); }
 /* the screen-edge arrow at an off-screen target: a gold badge turned towards it, the name and distance under it */
 .way-edge { position: fixed; left: 0; top: 0; width: 0; height: 0; z-index: 4; pointer-events: none !important; will-change: transform; }
 .way-edge-arrow { position: absolute; left: -17px; top: -17px; width: 34px; height: 34px; border-radius: 50%; background: var(--gold); border: 2px solid var(--ink); box-shadow: var(--chip-lift); }
@@ -262,6 +267,8 @@ dialog h2 { margin: 0 0 0.5em; font-size: clamp(1.4rem, 6vw, 1.9rem); line-heigh
 .set-name input { flex: 1; min-width: 0; font: inherit; font-size: 1.1rem; padding: 0.35em 0.5em; border: var(--border); border-radius: var(--radius-sm); background: #fffdf7; user-select: text; -webkit-user-select: text; }
 .set-msg { min-height: 1.2em; font-size: 0.85rem; color: var(--jade); margin: 0; }
 .set-msg.err { color: var(--lacquer); }
+/* the build's version, in full (version.ts versionLine; .build-version above is the muted corner tag everywhere else) */
+.settings-version { margin: 0.2em 0 0; font-size: 0.8rem; color: var(--ink-soft); text-align: center; }
 .set-row input[type="range"] { width: 100%; accent-color: var(--jade); min-height: 32px; }
 .menu .err { color: var(--bad); margin: 0; }
 

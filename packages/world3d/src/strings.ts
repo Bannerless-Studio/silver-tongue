@@ -115,6 +115,9 @@ const FALLBACK: Record<string, string> = {
   "settings-intro": "Replay the six words",
   "settings-guide": "First-steps guide",
   "settings-switch-failed": "That course didn't load; this one goes on.",
+  // the build's version (version.ts), in full at the foot of Settings; a muted corner tag
+  // everywhere else (page.css .build-version) shows the bare value, no label
+  "settings-version": "Version: {version}",
   // the first-steps guide (guide.ts)
   "guide-hide": "Hide guide",
   "guide-show": "Show guide",

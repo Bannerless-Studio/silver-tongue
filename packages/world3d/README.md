@@ -756,6 +756,11 @@ replay the six words. They and the guide's Hide / Show are kept in `silver-tongu
 music's volume one ♪ tap away) with the voices back on: the player who reported it muted to stop
 the music and lost the voices with it, so voices back with the music still off is what they wanted.
 
+The build's version (`src/version.ts`, `build.mjs`: git short sha + UTC build time, `+` if the tree
+was dirty, `dev` under `--dev`) shows as a muted corner tag on the loading card, the title screen
+and the HUD (`.build-version`), in full as "Version: …" at the foot of Settings, and on
+`window.world3d.version`, so a bug report or a screenshot can always say which build it was.
+
 ## Audio buses
 
 `src/audio.ts`: word clips stay on the `AudioPlayer` (web-common's element). Music, ambience and

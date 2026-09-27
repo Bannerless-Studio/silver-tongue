@@ -60,6 +60,7 @@ import { PointerControls } from "./touch";
 import { LoadingScreen } from "./ui/loading";
 import { Overlay } from "./ui/overlay";
 import type { Insets } from "./ui/viewport";
+import { VERSION } from "./version";
 import { AssetCache, drawCalls, SceneSpace, setOutlineScale } from "./world";
 import { SEE_THROUGH, SeeThroughControl, SeeThroughDetector } from "./seethrough";
 import { GuideMarker } from "./marker";
@@ -1351,6 +1352,8 @@ async function main() {
   // For scripted browser checks: read the model, drive the game without pixel-hunting.
   Object.assign(window, {
     world3d: {
+      /** the build's stamp (version.ts): the git sha + build time it was made from, or "dev" */
+      version: VERSION,
       /** the game's model plus `cutscene`: the fly-over playing / done / null (never played) */
       model: () => (game ? { ...game.model, cutscene: flyoverState } : undefined),
       state: () => game?.core.state,

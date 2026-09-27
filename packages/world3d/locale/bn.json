@@ -125,6 +125,7 @@
     "settings-intro": "ছয়টি শব্দ আবার দেখুন",
     "settings-guide": "প্রথম ধাপের গাইড",
     "settings-switch-failed": "ওই কোর্সটা লোড হয়নি; এটাই চলছে।",
+    "settings-version": "সংস্করণ: {version}",
     "guide-hide": "গাইড লুকান",
     "guide-show": "গাইড দেখান",
     "guide-label": "গাইড",

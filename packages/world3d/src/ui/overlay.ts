@@ -10,6 +10,7 @@
 import type { Course, RenderedLine, WordId } from "@silver-tongue/core";
 import type { DayCard, FeedItem, Game, Gloss, UiModel } from "../game";
 import type { GuideStep } from "../guide";
+import { versionLine } from "../version";
 import { BubbleView } from "./bubble";
 import { el } from "./dom";
 import { HudView, type WayCard } from "./hud";
@@ -657,7 +658,8 @@ export class Overlay {
   /**
    * Menu → Settings: reading language, course (with the coming-soon ones greyed), name, the four
    * sound switches (music volume, voice, sound effects, ambience with Light / Full under it), replay
-   * the six words. Switching course goes through courses.ts (main.ts).
+   * the six words, then the build's version in full (version.ts versionLine). Switching course goes
+   * through courses.ts (main.ts).
    */
   private settingsView(body: HTMLElement, back: () => void) {
     const { s } = this.game;
@@ -760,6 +762,7 @@ export class Overlay {
         row(s("settings-ambience"), el("div", { className: "set-options" }, ambienceOn, ambienceBtn)),
         el("div", { className: "set-options" }, intro),
         msg,
+        versionLine(s),
       ),
       back2,
     );

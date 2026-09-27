@@ -241,6 +241,17 @@ describe("the loading screen after boot", () => {
     expect(root.hidden).toBe(false); // a failure stays until its button
   });
 
+  it("a progress tick that lands after a failure (a room's assets streaming in behind an unrelated failed fetch) doesn't blank the message", () => {
+    const { screen, $ } = make();
+    void screen.fail("Couldn't load the game. Check your connection.", "Failed to fetch", "retry");
+    expect($("item").textContent).toBe("Couldn't load the game. Check your connection.");
+    let s = reduceLoad(emptyLoad, { type: "start", name: "a.glb", bytes: 100 });
+    s = reduceLoad(s, { type: "progress", name: "a.glb", loaded: 40 });
+    screen.render(loadSummary(s));
+    expect($("item").textContent).toBe("Couldn't load the game. Check your connection.");
+    expect($("err").textContent).toBe("Failed to fetch");
+  });
+
   it("the connection back presses Retry once per failure", async () => {
     const { screen } = make();
     let n = 0;

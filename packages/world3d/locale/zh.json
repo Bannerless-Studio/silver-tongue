@@ -125,6 +125,7 @@
     "settings-intro": "重看六个词",
     "settings-guide": "新手引导",
     "settings-switch-failed": "那门课没加载成功；继续玩这一门。",
+    "settings-version": "版本：{version}",
     "guide-hide": "隐藏引导",
     "guide-show": "显示引导",
     "guide-label": "引导",

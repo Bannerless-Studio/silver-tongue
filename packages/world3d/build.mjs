@@ -28,6 +28,7 @@
 // Assets come from the vendored packages/world3d/assets (refreshed from the make-it-in-china
 // library by `npm run assets:sync`); WORLD3D_ASSETS overrides it (any library dir with index.json).
 import { build, context } from "esbuild";
+import { execSync } from "node:child_process";
 import { cpSync, copyFileSync, existsSync, rmSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -40,6 +41,22 @@ const dev = args.includes("--dev");
 const port = Number(process.env.PORT ?? 8173);
 const assetsSrc = process.env.WORLD3D_ASSETS ?? join(here, "assets");
 const dist = join(here, "dist");
+
+/**
+ * The build's stamp: the git short sha (7) of HEAD and a UTC timestamp, "+" appended when
+ * packages/world3d had uncommitted changes (git status --porcelain); "dev" under --dev, which
+ * never sits still long enough for a sha + time to mean much. Baked into main.js (esbuild
+ * `define` __ST_VERSION__, src/version.ts) and into index.html (writeHtml: the <html> tag and the
+ * static loading card both, so a build can be told apart before any JS runs).
+ */
+function buildVersion() {
+  if (dev) return "dev";
+  const sha = execSync("git rev-parse --short=7 HEAD", { cwd: repo, encoding: "utf8" }).trim();
+  const dirty = execSync("git status --porcelain -- packages/world3d", { cwd: repo, encoding: "utf8" }).trim() !== "";
+  const stamp = new Date().toISOString().slice(0, 16).replace("T", " ");
+  return `${sha}${dirty ? "+" : ""} · ${stamp} UTC`;
+}
+const version = buildVersion();
 
 const coursesSrc = join(repo, "dist", "courses");
 if (!existsSync(join(coursesSrc, "index.json"))) throw new Error(`no ${join(coursesSrc, "index.json")}: run npm run build:course first`);
@@ -173,18 +190,20 @@ function copyAudio(catalog) {
 }
 
 const TITLE = "Silver Tongue";
-/** the loading screen's card as plain HTML (src/preload.js draws the same, in the page's language, a moment later) */
+/** the loading screen's card as plain HTML (src/preload.js draws the same, in the page's language, a moment later); the version tag (page.css .build-version) is baked in, no JS needed to show it */
 const loadingCard = (bytesText, item) =>
-  `<div class="ld-card"><h1 class="ld-title">${TITLE}</h1><div class="ld-bar"><div class="ld-fill"></div></div><p class="ld-line"><b class="ld-pct">0%</b><span class="ld-bytes">${bytesText}</span></p><p class="ld-item">${item}</p><p class="ld-slow" hidden></p><button class="ld-retry st-btn primary" type="button"></button><p class="ld-err"></p></div>`;
+  `<div class="ld-card"><h1 class="ld-title">${TITLE}</h1><div class="ld-bar"><div class="ld-fill"></div></div><p class="ld-line"><b class="ld-pct">0%</b><span class="ld-bytes">${bytesText}</span></p><p class="ld-item">${item}</p><p class="ld-slow" hidden></p><button class="ld-retry st-btn primary" type="button"></button><p class="ld-err"></p><span class="build-version" aria-hidden="true">${version}</span></div>`;
 
 /**
  * index.html with the CSS inlined: the UI skin (start/start.css, the start flow's design system)
  * first, then page.css. --dev: the module script as is (chunk names change under watch); a build
- * fills the loading card and the preloader in after esbuild (inlinePreloader).
+ * fills the loading card and the preloader in after esbuild (inlinePreloader). The <html> tag
+ * carries the version too (data-version), on every path.
  */
 function writeHtml() {
   const css = readFileSync(join(here, "src", "start", "start.css"), "utf8") + "\n" + readFileSync(join(here, "src", "page.css"), "utf8");
   let html = readFileSync(join(here, "src", "index.html"), "utf8").replace("/*CSS*/", () => css);
+  html = html.replace('<html data-version="">', `<html data-version="${version}">`);
   if (dev) html = html.replace("<!--LOADING-->", loadingCard("", "Loading…")).replace("<!--BOOT-->", `<script type="module" src="./main.js"></script>`);
   writeFileSync(join(dist, "index.html"), html);
 }
@@ -292,7 +311,7 @@ const ctx = await context({
   target: "es2022",
   minify: !dev,
   sourcemap: dev ? "inline" : false,
-  define: { __AUDIO_ROOT__: JSON.stringify(audioRoot) },
+  define: { __AUDIO_ROOT__: JSON.stringify(audioRoot), __ST_VERSION__: JSON.stringify(version) },
   legalComments: "none",
   metafile: true,
   logLevel: dev ? "info" : "warning",
@@ -308,6 +327,6 @@ if (dev) {
   const kb = (n) => `${Math.round(n / 1024)} KB`;
   const chunks = existsSync(join(dist, "chunks")) ? readdirSync(join(dist, "chunks")).map((f) => `${f} ${kb(statSync(join(dist, "chunks", f)).size)}`) : [];
   console.log(
-    `built packages/world3d/dist: sound + title + barks ${kb(sounds)}${MUSIC_OGG_ONLY ? ` (music .ogg only: over the 15 MB budget with both, -${kb(musicM4aBytes())})` : " (.ogg + .m4a)"}, courses/ ${catalog.map((e) => `${e.id} (${e.learners.join(", ")})`).join(", ")}, audio ${clips ? `${clips[0]} clips in courses/<course>/audio/ (${kb(clips[1])}${clips[2] ? `, ${clips[2]} missing` : ""})` : `loaded from ${audioRoot}courses/<course>/audio/`}, index.html ${kb(statSync(join(dist, "index.html")).size)} (preloader ${preload} B), main.js ${kb(statSync(join(dist, "main.js")).size)} + chunks/ ${chunks.join(", ") || "none"}, assets/ ${kb(size(join(dist, "assets")))} (${glbs} GLBs); total ${kb(size(dist))}`,
+    `built packages/world3d/dist: version ${version}, sound + title + barks ${kb(sounds)}${MUSIC_OGG_ONLY ? ` (music .ogg only: over the 15 MB budget with both, -${kb(musicM4aBytes())})` : " (.ogg + .m4a)"}, courses/ ${catalog.map((e) => `${e.id} (${e.learners.join(", ")})`).join(", ")}, audio ${clips ? `${clips[0]} clips in courses/<course>/audio/ (${kb(clips[1])}${clips[2] ? `, ${clips[2]} missing` : ""})` : `loaded from ${audioRoot}courses/<course>/audio/`}, index.html ${kb(statSync(join(dist, "index.html")).size)} (preloader ${preload} B), main.js ${kb(statSync(join(dist, "main.js")).size)} + chunks/ ${chunks.join(", ") || "none"}, assets/ ${kb(size(join(dist, "assets")))} (${glbs} GLBs); total ${kb(size(dist))}`,
   );
 }

@@ -8,6 +8,7 @@
 import { FALLBACK_UI, UI_LOCALES, type LoadingText } from "../../locale";
 import { progressLabel, type LoadSummary } from "../loading";
 import type { RetryAction } from "../preload.js";
+import { versionTag } from "../version";
 
 /** The fallback UI language's strings (locale/en.json `loading`), for a screen made without any. */
 export const LOADING_FALLBACK: LoadingText = UI_LOCALES[FALLBACK_UI].loading;
@@ -70,7 +71,7 @@ export class LoadingScreen {
     this.button.addEventListener("click", () => this.press());
     this.detail = document.createElement("p");
     this.detail.className = "ld-err";
-    card.append(h, bar, line, this.item, this.slowLine, this.button, this.detail);
+    card.append(h, bar, line, this.item, this.slowLine, this.button, this.detail, versionTag());
     root.classList.remove("error");
     root.append(card);
     this.render(null);
@@ -122,8 +123,14 @@ export class LoadingScreen {
     for (const w of waiting) w();
   }
 
-  /** The bar for a summary (null: nothing counted yet). */
+  /**
+   * The bar for a summary (null: nothing counted yet). A no-op while a failure holds the screen:
+   * fail() puts its message in .ld-item (page.css restyles it for .error); a progress tick that
+   * lands after it (a room's assets streaming in behind an unrelated failed fetch, say) must not
+   * blank that message out from under it.
+   */
   render(p: LoadSummary | null) {
+    if (this.failed) return;
     const f = p ? p.fraction : 0;
     const pc = Math.floor(f * 100);
     this.fill.style.width = `${(f * 100).toFixed(1)}%`;
