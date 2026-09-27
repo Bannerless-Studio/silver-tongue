@@ -26,6 +26,11 @@ export function makeText(ftl: string, locale: string): Text {
  */
 export const UI_KEYS: Record<string, string[]> = {
   hud: ["day", "slot", "slots", "currency", "wallet", "rank", "parcel", "rentLate"],
+  "hud-top": ["day", "slot", "slots"],
+  "hud-rent": ["days"],
+  "hud-rent-late": [],
+  "hud-parcel": [],
+  credit: [],
   "rank-0": [],
   "rank-1": [],
   "rank-2": [],

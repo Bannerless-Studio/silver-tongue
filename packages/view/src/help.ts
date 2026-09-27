@@ -1,4 +1,4 @@
-import type { Course, RenderedLine, WordId } from "@silver-tongue/core";
+import { wordState, type Course, type GameState, type RenderedLine, type WordId } from "@silver-tongue/core";
 
 export interface WordCard {
   word: WordId;
@@ -107,11 +107,26 @@ export function wordCard(course: Course, id: WordId): WordCard {
   return { word: id, text: w.w, readings: w.readings ?? [], gloss: w.gloss, clips: w.audio ?? [] };
 }
 
+/** Each word's last (plainest) reading, space-separated; "" when none has one. */
+function lineReading(course: Course, line: RenderedLine): string {
+  return line.tokens.flatMap((tk) => course.words[tk.word]?.readings?.at(-1) ?? []).join(" ");
+}
+
 /** What asking about a whole line shows; undefined when the line has no meaning written. */
 export function sentenceCard(course: Course, line: RenderedLine): SentenceCard | undefined {
   if (!line.meaning) return undefined;
-  const reading = line.tokens.flatMap((tk) => course.words[tk.word]?.readings?.at(-1) ?? []).join(" ");
-  return { text: line.text, reading, meaning: line.meaning, clips: line.audio ?? [] };
+  return { text: line.text, reading: lineReading(course, line), meaning: line.meaning, clips: line.audio ?? [] };
+}
+
+/**
+ * The reading shown under a line an NPC says, while any word in it isn't known yet. Undefined once
+ * every word is known, when no word has a reading, or when the reading only repeats the words.
+ */
+export function readingRow(course: Course, state: GameState, line: RenderedLine, now: number): string | undefined {
+  if (line.tokens.every((tk) => wordState(state.words[tk.word], now) === "known")) return undefined;
+  const reading = lineReading(course, line);
+  const words = line.tokens.map((tk) => line.text.slice(tk.start, tk.end)).join(" ");
+  return reading && reading !== words ? reading : undefined;
 }
 
 export interface FirstTimeWord {

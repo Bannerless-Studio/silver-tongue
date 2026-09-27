@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { fixtureWithText } from "../src/testing";
-import { firstTimeGloss, firstTimeWords, sentenceCard, shortGloss, wordCard } from "../src/index";
+import { newGame, type WordRecord } from "@silver-tongue/core";
+import { line } from "@silver-tongue/core/testing";
+import { fixtureWithText, spacedWithText } from "../src/testing";
+import { firstTimeGloss, firstTimeWords, readingRow, sentenceCard, shortGloss, wordCard } from "../src/index";
 
 describe("help cards", () => {
   const course = fixtureWithText();
@@ -53,5 +55,30 @@ describe("help cards", () => {
     const line = course.scenes[0].exchanges[0].variants[""].npc;
     expect(firstTimeGloss(course, line, new Set(["w_ni", "w_hao"]))).toBe("你 nǐ you · 好 hǎo good");
     expect(firstTimeGloss(course, line, new Set())).toBeUndefined();
+  });
+});
+
+describe("reading row", () => {
+  const course = fixtureWithText();
+  const known: WordRecord = { right: 3, wrong: 0, streak: 3, helps: 0, lapsed: false, firstSeen: 0, lastSeen: 0 };
+  const said = line(["你", "w_ni"], ["好", "w_hao"], ["！", null]);
+
+  it("gives the line's reading while any word in it isn't known", () => {
+    const state = newGame(course);
+    state.words = { w_ni: { ...known } };
+    expect(readingRow(course, state, said, 0)).toBe("nǐ hǎo");
+  });
+
+  it("drops it once every word is known", () => {
+    const state = newGame(course);
+    state.words = { w_ni: { ...known }, w_hao: { ...known } };
+    expect(readingRow(course, state, said, 0)).toBeUndefined();
+  });
+
+  it("has none for words without readings, or when the reading is the words themselves", () => {
+    const state = newGame(course);
+    expect(readingRow(course, state, line(["茶", "w_cha"]), 0)).toBeUndefined();
+    const spaced = spacedWithText();
+    expect(readingRow(spaced, newGame(spaced), line(["mi", "w_ni"]), 0)).toBeUndefined();
   });
 });

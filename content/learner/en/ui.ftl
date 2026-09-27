@@ -7,6 +7,16 @@ hud = Day { $day } · slot { $slot }/{ $slots } · { $currency }{ $wallet }{ $pa
     [yes] { " · rent due" }
    *[no] {""}
 }
+# The top border (right) and the HUD row under it.
+hud-top = Day { $day } · slot { $slot }/{ $slots }
+hud-rent = { $days ->
+    [0] rent due tonight
+    [one] rent due tomorrow
+   *[other] rent in { $days } days
+}
+hud-rent-late = rent late
+hud-parcel = parcel
+credit = by Bannerless Studio
 
 rank-0 = Pidgin
 rank-1 = Getting By
