@@ -128,6 +128,15 @@ describe("tui app", () => {
     expect(term.screen().join("\n")).toMatch(/An old man on a bench is watching you\s*\nwith open curiosity\./);
   });
 
+  it("names the game and its studio above the opening story, once", () => {
+    const { term } = setup();
+    const s = term.screen().join("\n");
+    expect(s).toMatch(/Silver Tongue *│\n│ by Bannerless Studio/);
+    expect(s.indexOf("by Bannerless Studio")).toBeLessThan(s.indexOf("You arrive with"));
+    const under = setup((st) => (st.scenesDone.intro = 1));
+    expect(under.term.screen().join("\n")).not.toContain("Bannerless");
+  });
+
   it("skips the story when the game is already under way", () => {
     const { term } = setup((s) => {
       s.scenesDone.intro = 1;
