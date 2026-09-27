@@ -85,7 +85,7 @@ function replyInput(course: Course, state: GameState, right: boolean, rng: () =>
 }
 
 /** The next place on a shortest walk from `from` to any place in `targets`, or undefined. */
-function stepToward(course: Course, from: string, targets: Set<string>): string | undefined {
+export function stepToward(course: Course, from: string, targets: Set<string>): string | undefined {
   const prev = new Map<string, string>([[from, from]]);
   const queue = [from];
   while (queue.length) {

@@ -1,5 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { parseKeyScript, parseKeyToken, parsePlaytestArgs } from "../src/playtest";
+import { newGame } from "@silver-tongue/core";
+import { fixtureCourse } from "@silver-tongue/core/testing";
+import { makeText, placeMenu } from "@silver-tongue/view";
+import {
+  computeWalkPath,
+  menuIndexFor,
+  parseKeyScript,
+  parseKeyToken,
+  parsePlaytestArgs,
+  resolvePlaceId,
+  resolveSceneId,
+} from "../src/playtest";
 
 describe("parseKeyToken", () => {
   it("presses a bare character as itself, lower-cased", () => {
@@ -60,6 +71,79 @@ describe("parseKeyScript", () => {
   });
 });
 
+describe("resolvePlaceId / resolveSceneId", () => {
+  const course = fixtureCourse();
+  const t = makeText(course.learnerFtl, course.learner);
+
+  it("resolves a place by its id", () => {
+    expect(resolvePlaceId(course, t, "noodle_shop")).toBe("noodle_shop");
+  });
+
+  it("resolves a place by its rendered label, case-insensitively", () => {
+    // the fixture course has no learner Fluent source, so a missing message renders as its own id
+    expect(resolvePlaceId(course, t, "PLACE-noodle_shop")).toBe("noodle_shop");
+  });
+
+  it("throws, listing the places it has, for an unknown place", () => {
+    expect(() => resolvePlaceId(course, t, "atlantis")).toThrow(/no place "atlantis".*street.*noodle_shop/s);
+  });
+
+  it("resolves a scene by its id or rendered label", () => {
+    expect(resolveSceneId(course, t, "intro")).toBe("intro");
+    expect(resolveSceneId(course, t, "SCENE-intro")).toBe("intro");
+  });
+
+  it("throws for an unknown scene", () => {
+    expect(() => resolveSceneId(course, t, "nope")).toThrow(/no scene "nope"/);
+  });
+});
+
+describe("menuIndexFor", () => {
+  const course = fixtureCourse();
+  const t = makeText(course.learnerFtl, course.learner);
+
+  it("finds a go/talk/sleep item by place or scene id against a sample rendered menu", () => {
+    const atStreet = placeMenu(course, newGame(course), t);
+    expect(menuIndexFor(atStreet, { kind: "go", place: "noodle_shop" })).toBe(0);
+    expect(menuIndexFor(atStreet, { kind: "sleep" })).toBe(atStreet.length - 1);
+
+    const atShop = placeMenu(course, { ...newGame(course), place: "noodle_shop" }, t);
+    expect(menuIndexFor(atShop, { kind: "talk", scene: "intro" })).toBe(0);
+    expect(menuIndexFor(atShop, { kind: "go", place: "street" })).toBe(1);
+  });
+
+  it("returns -1 when the wanted item isn't in the menu", () => {
+    const atStreet = placeMenu(course, newGame(course), t);
+    expect(menuIndexFor(atStreet, { kind: "talk", scene: "intro" })).toBe(-1);
+    expect(menuIndexFor(atStreet, { kind: "go", place: "atlantis" })).toBe(-1);
+  });
+});
+
+describe("computeWalkPath", () => {
+  const course = fixtureCourse();
+
+  it("returns no hops when already there", () => {
+    expect(computeWalkPath(course, "street", "street")).toEqual([]);
+  });
+
+  it("returns the one-hop path between the fixture's two linked places", () => {
+    expect(computeWalkPath(course, "street", "noodle_shop")).toEqual(["noodle_shop"]);
+    expect(computeWalkPath(course, "noodle_shop", "street")).toEqual(["street"]);
+  });
+
+  it("walks multiple hops along a longer chain", () => {
+    const chained = structuredClone(course);
+    chained.world.places = { street: { links: ["noodle_shop"] }, noodle_shop: { links: ["street", "market"] }, market: { links: ["noodle_shop"] } };
+    expect(computeWalkPath(chained, "street", "market")).toEqual(["noodle_shop", "market"]);
+  });
+
+  it("throws when no path exists", () => {
+    const island = structuredClone(course);
+    island.world.places = { ...island.world.places, island: { links: [] } };
+    expect(() => computeWalkPath(island, "street", "island")).toThrow(/no path from "street" to "island"/);
+  });
+});
+
 describe("parsePlaytestArgs", () => {
   it("defaults run to \"run\", cols/rows to 80x24, seed to 1", () => {
     const args = parsePlaytestArgs([]);
@@ -96,5 +180,17 @@ describe("parsePlaytestArgs", () => {
     expect(() => parsePlaytestArgs(["--run", "a b"])).toThrow(/--run/);
     expect(() => parsePlaytestArgs(["--resume", "a/b"])).toThrow(/--resume/);
     expect(parsePlaytestArgs(["--run", "scene_1-ok"]).run).toBe("scene_1-ok");
+  });
+
+  it("reads --goto, --start, --play and --sleep", () => {
+    expect(parsePlaytestArgs(["--goto", "Market Street"]).goto).toBe("Market Street");
+    expect(parsePlaytestArgs(["--start", "street-hello"]).start).toBe("street-hello");
+    expect(parsePlaytestArgs(["--play", "street-hello"]).play).toBe("street-hello");
+    expect(parsePlaytestArgs(["--sleep"]).sleep).toBe(true);
+    expect(parsePlaytestArgs([]).sleep).toBe(false);
+  });
+
+  it("rejects passing both --start and --play", () => {
+    expect(() => parsePlaytestArgs(["--start", "a", "--play", "b"])).toThrow(/only one of --start or --play/);
   });
 });
