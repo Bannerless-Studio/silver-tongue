@@ -165,9 +165,8 @@ export interface SoundEntry {
   description?: string;
 }
 
-export const CROSSFADE_S = 1.5;
-/** gentle fade used only when the single music source first starts */
-export const MUSIC_FADE_IN_S = 2;
+/** Timing for each non-looping music play/rest cycle, in seconds. */
+export const MUSIC_CYCLE = { fadeIn: 3, rest: 25, fadeOut: 2 } as const;
 /** hard ceiling for the music bus, independent of the persisted/UI slider value */
 export const MUSIC_BUS_CAP = 0.35;
 /** interiors duck the music by 6 dB */
@@ -420,6 +419,8 @@ interface Voice {
   id: string;
   src: AudioBufferSourceNode | null;
   gain: GainNode;
+  /** Web Audio clock time at which a future-scheduled voice becomes audible. */
+  scheduledAt?: number;
   /** a load in progress was superseded */
   cancelled?: boolean;
 }
@@ -436,6 +437,8 @@ export class SoundMixer {
   private entries = new Map<string, SoundEntry>();
   private music: Voice | null = null;
   private musicWanted: { track: string; gain: number } | null = null;
+  /** Invalidates natural-end handlers when music is stopped or replaced. */
+  private musicCycle = 0;
   private ambient = new Map<string, Voice>();
   private ambientWanted: Record<string, number> = {};
   private _muted: boolean;
@@ -465,7 +468,8 @@ export class SoundMixer {
   }
   /** what the music bus plays now (for world3d.sound()) */
   get playing(): { music: string | null; ambient: Record<string, number> } {
-    return { music: this.music?.id ?? null, ambient: { ...this.ambientWanted } };
+    const music = this.music && (!this.music.scheduledAt || !this.ctx || this.music.scheduledAt <= this.ctx.currentTime) ? this.music.id : null;
+    return { music, ambient: { ...this.ambientWanted } };
   }
 
   /** Inside a user gesture: makes / resumes the context, then starts what is wanted. */
@@ -535,7 +539,13 @@ export class SoundMixer {
   }
 
   /** A looping (or once-through) voice on a bus, fading in to `gain`. */
-  private startVoice(id: string, kind: AudioKind, gain: number, fade: number): Voice | null {
+  private startVoice(
+    id: string,
+    kind: AudioKind,
+    gain: number,
+    fade: number,
+    opts: { at?: number; ended?: (voice: Voice) => void } = {},
+  ): Voice | null {
     const ctx = this.ctx;
     const bus = this.buses[kind];
     if (!ctx || !bus) return null;
@@ -549,12 +559,22 @@ export class SoundMixer {
       src.buffer = buf;
       src.loop = this.entries.get(id)?.loop ?? false;
       src.connect(g);
-      src.start();
+      const at = Math.max(ctx.currentTime, opts.at ?? ctx.currentTime);
+      voice.scheduledAt = at;
+      src.onended = () => {
+        try {
+          src.disconnect();
+          g.disconnect();
+        } catch {
+          // already detached
+        }
+        opts.ended?.(voice);
+      };
+      src.start(at);
       voice.src = src;
-      const now = ctx.currentTime;
-      g.gain.cancelScheduledValues(now);
-      g.gain.setValueAtTime(0, now);
-      g.gain.linearRampToValueAtTime(gain, now + fade);
+      g.gain.cancelScheduledValues(ctx.currentTime);
+      g.gain.setValueAtTime(0, at);
+      g.gain.linearRampToValueAtTime(gain, at + fade);
     });
     return voice;
   }
@@ -568,27 +588,50 @@ export class SoundMixer {
     v.gain.gain.setValueAtTime(v.gain.gain.value, now);
     v.gain.gain.linearRampToValueAtTime(0, now + fade);
     try {
-      v.src?.stop(now + fade + 0.05);
+      v.src?.stop(now + fade);
     } catch {
       // never started
     }
   }
 
-  /** The music bed: another track crossfades over 1.5 s; the same one only moves its gain. */
+  /** Start one play of the music, then schedule its next play on the Web Audio clock after rest. */
+  private startMusic(track: string, gain: number, at?: number): Voice | null {
+    const cycle = this.musicCycle;
+    return this.startVoice(track, "music", gain, MUSIC_CYCLE.fadeIn, {
+      at,
+      ended: (voice) => {
+        if (voice.cancelled || cycle !== this.musicCycle || this.music !== voice) return;
+        const wanted = this.musicWanted;
+        if (!wanted || wanted.track !== track) return;
+        this.music = this.startMusic(track, wanted.gain, (this.ctx?.currentTime ?? 0) + MUSIC_CYCLE.rest);
+      },
+    });
+  }
+
+  /** The music bed: each non-looping play is followed by a silent rest, then plays again. */
   setMusic(track: string, gain = 1, force = false) {
     const voiceGain = Number.isFinite(gain) ? Math.max(0, Math.min(1, gain)) : 0;
     const same = this.musicWanted && this.musicWanted.track === track && Math.abs(this.musicWanted.gain - voiceGain) < 1e-3;
     this.musicWanted = { track, gain: voiceGain };
     if (!this.ctx || (same && !force && this.music)) return;
-    if (this.music?.id === track) {
+    if (this.music?.id === track && (this.music.scheduledAt ?? 0) <= this.ctx.currentTime) {
       const now = this.ctx.currentTime;
       this.music.gain.gain.cancelScheduledValues(now);
       this.music.gain.gain.setValueAtTime(this.music.gain.gain.value, now);
-      this.music.gain.gain.linearRampToValueAtTime(voiceGain, now + CROSSFADE_S / 2);
+      this.music.gain.gain.linearRampToValueAtTime(voiceGain, now + MUSIC_CYCLE.fadeOut);
       return;
     }
-    if (this.music) this.stopVoice(this.music, CROSSFADE_S);
-    this.music = this.startVoice(track, "music", voiceGain, this.music ? CROSSFADE_S : MUSIC_FADE_IN_S);
+    this.musicCycle++;
+    if (this.music) this.stopVoice(this.music, MUSIC_CYCLE.fadeOut);
+    this.music = this.startMusic(track, voiceGain);
+  }
+
+  /** Fade out the current music and cancel any source waiting through its silent rest. */
+  stopMusic() {
+    this.musicWanted = null;
+    this.musicCycle++;
+    if (this.music) this.stopVoice(this.music, MUSIC_CYCLE.fadeOut);
+    this.music = null;
   }
 
   /** Each ambient loop at its gain: started when first heard, eased (0.4 s) as the gains move. */

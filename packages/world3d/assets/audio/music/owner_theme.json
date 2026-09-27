@@ -4,9 +4,14 @@
     "start": 0.0,
     "end": 119.0
   },
-  "integratedLufs": -23.9,
-  "lra": 2.9,
+  "loop": false,
+  "fades": {
+    "inS": 2.0,
+    "outS": 4.0
+  },
+  "integratedLufs": -24.0,
+  "lra": 3.1,
   "truePeakDb": -12.2,
-  "durationS": 116.0,
-  "generated": "2026-09-27T11:10:57+00:00"
+  "durationS": 119.0,
+  "generated": "2026-09-27T11:18:33+00:00"
 }

@@ -5,9 +5,9 @@
     "file_ogg": "assets/audio/music/owner_theme.ogg",
     "file_m4a": "assets/audio/music/owner_theme.m4a",
     "metadata": "assets/audio/music/owner_theme.json",
-    "seconds": 116.0,
-    "loop": true,
-    "description": "Fiazul Haque's own theme, mastered as a quiet background bed for every music scene."
+    "seconds": 119.0,
+    "loop": false,
+    "description": "The theme composed by Rook, mastered as a quiet background bed with soft head and tail fades."
   },
   {
     "id": "canal_water",

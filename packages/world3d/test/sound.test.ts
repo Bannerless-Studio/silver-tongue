@@ -10,7 +10,6 @@ import {
   AMBIENT_BEDS,
   AMBIENT_LIGHT_CAPS,
   ambientFor,
-  CROSSFADE_S,
   distanceToPath,
   dbToGain,
   EVENING_AT,
@@ -18,7 +17,7 @@ import {
   footstep,
   musicFor,
   MUSIC_BUS_CAP,
-  MUSIC_FADE_IN_S,
+  MUSIC_CYCLE,
   SoundMixer,
   nearness,
   PIER_RANGE_M,
@@ -42,35 +41,54 @@ const manifest: SoundEntry[] = JSON.parse(readFileSync(MANIFEST, "utf8"));
 type FakeParam = {
   value: number;
   ramps: number[];
+  rampTimes: number[];
+  setTimes: number[];
   setTargetAtTime(value: number): void;
   cancelScheduledValues(): void;
-  setValueAtTime(value: number): void;
-  linearRampToValueAtTime(value: number): void;
+  setValueAtTime(value: number, at: number): void;
+  linearRampToValueAtTime(value: number, at: number): void;
 };
-type FakeNode = { connections: unknown[]; connect(destination: unknown): unknown };
+type FakeNode = { connections: unknown[]; connect(destination: unknown): unknown; disconnect(): void };
 
 function audioHarness() {
+  const clock = { currentTime: 0 };
   const param = (value = 0): FakeParam => {
     const p: FakeParam = {
       value,
       ramps: [],
+      rampTimes: [],
+      setTimes: [],
       setTargetAtTime(next) { p.value = next; },
       cancelScheduledValues() {},
-      setValueAtTime(next) { p.value = next; },
-      linearRampToValueAtTime(next) { p.value = next; p.ramps.push(next); },
+      setValueAtTime(next, at) { p.value = next; p.setTimes.push(at); },
+      linearRampToValueAtTime(next, at) { p.value = next; p.ramps.push(next); p.rampTimes.push(at); },
     };
     return p;
   };
   const node = (): FakeNode => {
-    const n: FakeNode = { connections: [], connect(destination) { n.connections.push(destination); return destination; } };
+    const n: FakeNode = {
+      connections: [],
+      connect(destination) { n.connections.push(destination); return destination; },
+      disconnect() { n.connections = []; },
+    };
     return n;
   };
   const gains: Array<FakeNode & { gain: FakeParam }> = [];
   const compressors: Array<FakeNode & { threshold: FakeParam; knee: FakeParam; ratio: FakeParam; attack: FakeParam; release: FakeParam }> = [];
-  const sources: Array<FakeNode & { loop: boolean; starts: number; buffer: unknown; playbackRate: FakeParam; start(): void; stop(): void }> = [];
+  const sources: Array<FakeNode & {
+    loop: boolean;
+    starts: number;
+    startTimes: number[];
+    stopTimes: number[];
+    buffer: unknown;
+    playbackRate: FakeParam;
+    onended: (() => void) | null;
+    start(at?: number): void;
+    stop(at?: number): void;
+  }> = [];
   const destination = node();
   const context = {
-    currentTime: 0,
+    get currentTime() { return clock.currentTime; },
     state: "running",
     destination,
     resume: async () => {},
@@ -85,7 +103,12 @@ function audioHarness() {
       return compressor;
     },
     createBufferSource: () => {
-      const source = { ...node(), loop: false, starts: 0, buffer: null as unknown, playbackRate: param(1), start() { source.starts++; }, stop() {} };
+      const source = {
+        ...node(), loop: false, starts: 0, startTimes: [] as number[], stopTimes: [] as number[],
+        buffer: null as unknown, playbackRate: param(1), onended: null as (() => void) | null,
+        start(at = context.currentTime) { source.starts++; source.startTimes.push(at); },
+        stop(at = context.currentTime) { source.stopTimes.push(at); },
+      };
       sources.push(source);
       return source;
     },
@@ -93,14 +116,22 @@ function audioHarness() {
   } as unknown as MixerContext;
   const mixer = new SoundMixer({
     base: "",
-    manifest: [{ id: "owner_theme", kind: "music", file_ogg: "assets/audio/music/owner_theme.ogg", seconds: 208, loop: true }],
+    manifest: [
+      { id: "owner_theme", kind: "music", file_ogg: "assets/audio/music/owner_theme.ogg", seconds: 119, loop: false },
+      { id: "other_theme", kind: "music", file_ogg: "assets/audio/music/other_theme.ogg", seconds: 60, loop: false },
+    ],
     format: "ogg",
     context: () => context,
     fetchBytes: async () => new ArrayBuffer(0),
     musicVolume: 5,
   });
   const settle = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
-  return { mixer, gains, compressors, sources, destination, settle };
+  const end = async (source: (typeof sources)[number], at: number) => {
+    clock.currentTime = at;
+    source.onended?.();
+    await settle();
+  };
+  return { mixer, gains, compressors, sources, destination, setTime: (at: number) => { clock.currentTime = at; }, settle, end };
 }
 
 describe("format", () => {
@@ -130,11 +161,10 @@ describe("the music bus", () => {
     expect(inside.track).toBe("owner_theme");
     expect(20 * Math.log10(inside.gain)).toBeCloseTo(-6, 6);
     expect(dbToGain(0)).toBe(1);
-    expect(CROSSFADE_S).toBe(1.5);
-    expect(MUSIC_FADE_IN_S).toBe(2);
+    expect(MUSIC_CYCLE).toEqual({ fadeIn: 3, rest: 25, fadeOut: 2 });
   });
 
-  it("keeps one looping source for the same track and routes only music through the compressor", async () => {
+  it("plays a non-looping source with a three-second fade-in and routes only music through the compressor", async () => {
     const h = audioHarness();
     h.mixer.setMusic("owner_theme", 1);
     h.mixer.unlock();
@@ -144,7 +174,10 @@ describe("the music bus", () => {
 
     expect(h.sources).toHaveLength(1);
     expect(h.sources[0].starts).toBe(1);
-    expect(h.sources[0].loop).toBe(true);
+    expect(h.sources[0].loop).toBe(false);
+    expect(h.gains[4].gain.setTimes).toContain(0);
+    expect(h.gains[4].gain.ramps.at(-1)).toBe(0.5);
+    expect(h.gains[4].gain.rampTimes).toContain(MUSIC_CYCLE.fadeIn);
     expect(h.compressors).toHaveLength(1);
     const [master, musicBus, ambientBus, sfxBus, musicVoice] = h.gains;
     expect(master.connections).toEqual([h.destination]);
@@ -153,6 +186,56 @@ describe("the music bus", () => {
     expect(ambientBus.connections).toEqual([master]);
     expect(sfxBus.connections).toEqual([master]);
     expect(musicVoice.connections).toEqual([musicBus]);
+  });
+
+  it("rests silently for 25 seconds after the end, then the Web Audio clock starts a fresh play", async () => {
+    const h = audioHarness();
+    h.mixer.setMusic("owner_theme", 1);
+    h.mixer.unlock();
+    await h.settle();
+
+    await h.end(h.sources[0], 119);
+    expect(h.sources).toHaveLength(2);
+    expect(h.sources[1].startTimes).toEqual([119 + MUSIC_CYCLE.rest]);
+    expect(h.mixer.playing.music).toBeNull();
+    h.setTime(119 + MUSIC_CYCLE.rest - 0.001);
+    expect(h.mixer.playing.music).toBeNull();
+    h.setTime(119 + MUSIC_CYCLE.rest);
+    expect(h.mixer.playing.music).toBe("owner_theme");
+    expect(h.gains[5].gain.rampTimes.at(-1)).toBe(119 + MUSIC_CYCLE.rest + MUSIC_CYCLE.fadeIn);
+  });
+
+  it("a stop during the rest cancels the scheduled restart", async () => {
+    const h = audioHarness();
+    h.mixer.setMusic("owner_theme");
+    h.mixer.unlock();
+    await h.settle();
+    await h.end(h.sources[0], 119);
+
+    const waiting = h.sources[1];
+    h.mixer.stopMusic();
+    expect(waiting.stopTimes.at(-1)).toBe(119 + MUSIC_CYCLE.fadeOut);
+    await h.end(waiting, 119 + MUSIC_CYCLE.fadeOut);
+    expect(h.sources).toHaveLength(2);
+    expect(h.mixer.playing.music).toBeNull();
+  });
+
+  it("a track change during the rest cancels it and starts the new track immediately", async () => {
+    const h = audioHarness();
+    h.mixer.setMusic("owner_theme");
+    h.mixer.unlock();
+    await h.settle();
+    await h.end(h.sources[0], 119);
+
+    const waiting = h.sources[1];
+    h.mixer.setMusic("other_theme");
+    await h.settle();
+    expect(waiting.stopTimes.at(-1)).toBe(119 + MUSIC_CYCLE.fadeOut);
+    expect(h.sources[2].startTimes).toEqual([119]);
+    expect(h.sources[2].loop).toBe(false);
+    await h.end(waiting, 119 + MUSIC_CYCLE.fadeOut);
+    expect(h.sources).toHaveLength(3);
+    expect(h.mixer.playing.music).toBe("other_theme");
   });
 
   it.each([
@@ -343,7 +426,8 @@ describe("the vendored sounds", () => {
     for (const id of used) expect(ids, id).toContain(id);
     for (const e of manifest)
       for (const f of [e.file_ogg, e.file_m4a]) expect(existsSync(fileURLToPath(new URL(`../${f}`, import.meta.url))), f).toBe(true);
-    for (const id of ["owner_theme", ...AMBIENT_BEDS]) expect(manifest.find((e) => e.id === id)!.loop, id).toBe(true);
+    expect(manifest.find((e) => e.id === "owner_theme")!.loop).toBe(false);
+    for (const id of AMBIENT_BEDS) expect(manifest.find((e) => e.id === id)!.loop, id).toBe(true);
     // a peaceful canal town: nothing in the set is (or is named as) traffic, engines, horns or sirens
     for (const e of manifest) {
       expect(e.description, e.id).toBeTruthy();
