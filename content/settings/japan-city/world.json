@@ -18,16 +18,25 @@
   "apartment": {
    "links": [
     "shotengai"
+   ],
+   "after": [
+    "tanaka-name"
    ]
   },
   "ramen": {
    "links": [
     "shotengai"
+   ],
+   "after": [
+    "tanaka-name"
    ]
   },
   "konbini": {
    "links": [
     "shotengai"
+   ],
+   "after": [
+    "tanaka-numbers"
    ]
   }
  },

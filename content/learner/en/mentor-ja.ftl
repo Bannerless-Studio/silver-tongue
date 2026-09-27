@@ -8,3 +8,6 @@ note-tsu = For counting things, one to nine, Japanese has its own numbers ending
 
 note-wa-ga-title = は and が
 note-wa-ga = は (written "ha", said wa) marks what you're talking about: わたしは…です, "as for me, I'm …". が (ga) marks the thing itself, often something new or asked about: お金がありません, "there's no money". When in doubt, は for "as for", が before あります.
+
+note-o-title = を
+note-o = を (written "wo", said o) marks the thing an action is done to: お茶をください, "tea, please" (literally "please give tea"); ラーメンを食べます, "I eat ramen". It comes straight after the thing.

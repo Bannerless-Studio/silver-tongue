@@ -16,5 +16,11 @@
   "trigger": {
    "word": "ja-ga"
   }
+ },
+ {
+  "id": "o",
+  "trigger": {
+   "word": "ja-o"
+  }
  }
 ]

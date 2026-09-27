@@ -420,5 +420,73 @@
     "hatarakimasen deshita"
    ]
   }
+ },
+ {
+  "id": "ja-irasshaimase",
+  "w": "いらっしゃいませ",
+  "lv": "N5",
+  "readings": [
+   "irasshaimase"
+  ]
+ },
+ {
+  "id": "ja-ramen",
+  "w": "ラーメン",
+  "lv": "N5",
+  "readings": [
+   "rāmen"
+  ]
+ },
+ {
+  "id": "ja-tabemasu",
+  "w": "食べます",
+  "lv": "N5",
+  "readings": [
+   "たべます",
+   "tabemasu"
+  ],
+  "forms": {
+   "食べました": [
+    "たべました",
+    "tabemashita"
+   ],
+   "食べませんでした": [
+    "たべませんでした",
+    "tabemasen deshita"
+   ]
+  }
+ },
+ {
+  "id": "ja-ne",
+  "w": "ね",
+  "lv": "N5",
+  "readings": [
+   "ne"
+  ]
+ },
+ {
+  "id": "ja-ashita",
+  "w": "明日",
+  "lv": "N5",
+  "readings": [
+   "あした",
+   "ashita"
+  ]
+ },
+ {
+  "id": "ja-o",
+  "w": "を",
+  "lv": "N5",
+  "readings": [
+   "o"
+  ]
+ },
+ {
+  "id": "ja-kudasai",
+  "w": "ください",
+  "lv": "N5",
+  "readings": [
+   "kudasai"
+  ]
  }
 ]

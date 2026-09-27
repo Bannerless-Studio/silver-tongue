@@ -5,3 +5,5 @@ ja-wa = topic
 ja-no = of
 ja-ga = subject
 ja-de = at
+ja-ne = right?
+ja-o = object

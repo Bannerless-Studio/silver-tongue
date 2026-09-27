@@ -35,8 +35,17 @@ scene-apartment-rent = Talk about rent
 scene-apartment-rent-start = The landlady waits in the doorway with a notebook.
 scene-apartment-rent-end = The landlady writes 5,000 on a slip of paper and tapes it to your door. It's due every week.
 
+scene-ramen-intro = Ask about work
+scene-ramen-intro-start = A man in a white headband waves you in from behind the counter.
+scene-ramen-intro-end = The owner ties a towel round your head: you have a job.
+scene-ramen-shift = Work a shift
+
 # What a reply does (action-<name>), and on a mix-up what was asked (asked-<name>).
 # Concept values arrive as learner names: $item = "tea", $count = "three".
+action-fetch = You bring { $item }.
+asked-fetch = The owner wanted { $item }.
+action-serve = You set down { $count } { $item }s.
+asked-serve = The owner wanted { $count } { $item }s.
 
 # Conversations: what was asked, shown after a wrong reply. These are shared by every scene that
 # uses the action, so they say "they" unless only one person ever uses it.
@@ -57,3 +66,8 @@ asked-rent = The landlady was asking if you understand about the rent.
 asked-amount = The landlady was telling you the rent.
 asked-money = The landlady was asking if you have money.
 asked-worked = The landlady was asking if you've worked at the ramen shop.
+asked-welcome = { $npc } was welcoming you in.
+asked-ate = The owner was asking if you've eaten ramen.
+asked-work = The owner was asking if you'll work.
+asked-water = The owner was showing you the water.
+asked-tea = The owner was showing you the tea.

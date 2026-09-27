@@ -1,0 +1,74 @@
+{
+ "id": "ramen-intro",
+ "place": "ramen",
+ "npc": "ramen_owner",
+ "stage": 1,
+ "after": [
+  "tanaka-name"
+ ],
+ "requires": {},
+ "repeatable": false,
+ "trustGain": 1,
+ "exchanges": [
+  {
+   "id": "welcome",
+   "slots": {},
+   "expect": {
+    "action": "welcome"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "ate",
+   "slots": {},
+   "expect": {
+    "action": "ate"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "work",
+   "slots": {},
+   "expect": {
+    "action": "work"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "water",
+   "slots": {},
+   "expect": {
+    "action": "water"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "tea",
+   "slots": {},
+   "expect": {
+    "action": "tea"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "bye",
+   "slots": {},
+   "expect": {
+    "action": "bye"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  }
+ ]
+}

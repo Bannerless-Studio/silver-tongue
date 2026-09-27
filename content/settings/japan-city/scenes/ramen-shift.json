@@ -1,0 +1,52 @@
+{
+ "id": "ramen-shift",
+ "place": "ramen",
+ "npc": "ramen_owner",
+ "stage": 1,
+ "after": [
+  "ramen-intro",
+  "tanaka-numbers"
+ ],
+ "requires": {
+  "trust": {
+   "ramen_owner": 1
+  }
+ },
+ "repeatable": true,
+ "trustGain": 1,
+ "exchanges": [
+  {
+   "id": "drink",
+   "slots": {
+    "item": "drinks"
+   },
+   "expect": {
+    "action": "fetch",
+    "item": "$item"
+   },
+   "hinges": [
+    "$item"
+   ],
+   "pay": 200,
+   "missCost": 100
+  },
+  {
+   "id": "order",
+   "slots": {
+    "item": "drinks",
+    "count": "numbers_2_5"
+   },
+   "expect": {
+    "action": "serve",
+    "item": "$item",
+    "count": "$count"
+   },
+   "hinges": [
+    "$item",
+    "$count"
+   ],
+   "pay": 800,
+   "missCost": 200
+  }
+ ]
+}
