@@ -1,5 +1,8 @@
 name: ci
 on: [push, pull_request]
+permissions:
+  contents: read
+  packages: read # the private @bannerless-studio/silver-tongue-core
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -10,6 +13,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+        env:
+          GITHUB_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: npm run typecheck
       - run: npm run build:course
       - run: npm test

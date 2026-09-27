@@ -2,6 +2,28 @@
 
 Every release of Silver Tongue, newest first.
 
+## 0.16.0 (2026-09-27)
+
+- The game's rules engine (`@silver-tongue/core`) is now closed source. It lives in the private repository `Bannerless-Studio/silver-tongue-core`, and this repository uses a compiled copy of it. The front ends, the course content and the tools stay open here. Your saved games are unchanged and carry on in every version.
+- Silver Tongue is no longer published to npm. `npx silver-tongue` still runs 0.15.0, the last version released there, but it won't get updates. To play the latest version, use the web pages or run it from a clone (below).
+- Versions up to 0.15.0 were released under the MIT License and stay that way. From 0.16.0 the engine is proprietary. Its license lets games and tools published by Bannerless Studio use it; anyone else needs written permission.
+
+### Getting access to core
+
+To build or run this repository you need read access to the engine package.
+
+1. **Ask for access.** Open an issue in this repository saying who you are and what you are building. If you're approved, you'll get Read access to the package `@bannerless-studio/silver-tongue-core` on GitHub Packages.
+2. **Make a token.** In GitHub, go to Settings → Developer settings → Personal access tokens and create a classic token with only the `read:packages` scope. If you use the GitHub CLI, run `gh auth refresh -h github.com -s read:packages` instead.
+3. **Install with the token set:**
+   ```sh
+   export GITHUB_PACKAGES_TOKEN=<your token>   # or: export GITHUB_PACKAGES_TOKEN=$(gh auth token)
+   npm install
+   ```
+   The repository's `.npmrc` sends `@bannerless-studio` packages to GitHub Packages and reads the token from that variable. Nothing else changes: code still imports `@silver-tongue/core` and `@silver-tongue/core/testing`.
+4. **In GitHub Actions:** the repository has to be added under the package's *Manage Actions access* settings. Then give the job `permissions: packages: read` and set `GITHUB_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}` on `npm ci`. A repository outside the Bannerless-Studio org can't use its own `GITHUB_TOKEN` for this: store a personal token with `read:packages` as a secret and use that.
+
+If `npm install` fails with `401` or `403` on `npm.pkg.github.com`, the token is missing, lacks `read:packages`, or hasn't been granted access to the package yet.
+
 ## 0.15.0 (2026-09-27)
 
 - The visual novel now plays itself. Each line stays as long as it takes to read it and to hear it said, and a tap still hurries it on. If you would rather choose every line, turn it off in settings.

@@ -10,17 +10,17 @@ flowchart LR
   L --> B[tools: build-course + checker]
   S[content/settings + art] --> B
   LR[content/learner] --> B
-  B -- dist/courses/&lt;id&gt;/ --> C[packages/core]
+  B -- dist/courses/&lt;id&gt;/ --> C[@silver-tongue/core: private package]
   C -- events --> V[packages/view]
   V --> T[packages/tui]
   V --> VN[packages/vn-web: visual novel]
-  T --> N[packages/tui-node: terminal + npx bundle]
+  T --> N[packages/tui-node: terminal + CLI bundle]
   T --> W[packages/tui-web: text page]
   WC[packages/web-common] --> W
   WC --> VN
 ```
 
-- `packages/core`: all game rules. `core.send(input) → events`. No DOM, no Node APIs, no rendering. Randomness and time are injected.
+- `@silver-tongue/core`: all game rules. `core.send(input) → events`. Closed source: lives in the private repo `Bannerless-Studio/silver-tongue-core` and arrives here as a compiled package (`npm:@bannerless-studio/silver-tongue-core`, GitHub Packages). Test fixtures: `@silver-tongue/core/testing`.
 - `packages/tui`: text front end written against the `Terminal` interface. It never keeps game state; everything comes from core events and `core.state`.
 - `packages/tui-node`: the Node `Terminal` backend and the `silver-tongue` CLI bundle.
 - `packages/view`: presentation logic both front ends share (menus, narration, help cards, notebook, settings, text). Pure: no terminal, no DOM, no I/O.
@@ -32,20 +32,21 @@ flowchart LR
 ## Commands
 
 ```sh
+export GITHUB_PACKAGES_TOKEN=$(gh auth token)   # before npm install/ci: reads the private core package (needs gh auth refresh -s read:packages)
 npm test                 # vitest, all packages
 npm run typecheck        # tsc
 npm run build:course     # content -> dist/courses/<course>/<learner>.json + index.json (fails on any checker error); one course: npm run build:course -- zh-china
 npm run play             # play from source in this terminal
 npm run import:zh        # re-import the zh pack from vendor/vocab-engine
 npm run audio            # every course (or one: -- zh-china): make missing clips with edge-tts (pipx install edge-tts) + ffmpeg trim, delete unused ones
-npm run bundle -w silver-tongue   # build packages/tui-node/dist for npm/npx
+npm run bundle -w silver-tongue   # build packages/tui-node/dist (a local build; nothing is published to npm any more)
 npm run build:vn         # the visual novel page -> packages/vn-web/dist
 npm run build:site       # both pages into site/, as GitHub Pages serves them (visual novel at /, text game at /text/)
 ```
 
 ## Rules
 
-- Always keep core free of I/O and rendering; front ends talk to it only through `send` and `state`.
+- Front ends talk to core only through `send` and `state`. Never copy core's source into this repo; a change to the rules is made in `silver-tongue-core`, released there, then picked up here by bumping the `@silver-tongue/core` version in every package that depends on it.
 - Always run `npm run build:course` after changing anything under `content/`; never ship a course with checker errors. A changed line needs its clip: run `npm run audio` and commit `content/audio/`.
 - Never edit generated files: `content/languages/zh/words.json`, `content/languages/zh/pack.json` (except `stages`), `content/learner/en/glosses-zh.ftl`, `content/audio/`, `dist/`. Re-run the import or the build instead.
 - `content/learner/<l>/glosses-<lang>-short.ftl` is hand-edited, not generated: curated 1-3 word display glosses for words the short-gloss heuristic (`packages/view/src/help.ts`) can't shorten well on its own. `npm run build:course` warns (without failing) when a stage word has none and needs one.

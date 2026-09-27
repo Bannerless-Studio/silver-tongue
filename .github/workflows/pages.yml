@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  packages: read # the private @bannerless-studio/silver-tongue-core
   pages: write
   id-token: write
 
@@ -26,6 +27,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+        env:
+          GITHUB_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: npm run build:course
       - run: npm run build:site
       - uses: actions/upload-pages-artifact@v4
