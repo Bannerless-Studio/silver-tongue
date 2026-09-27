@@ -289,16 +289,28 @@ export function createGame(opts: GameOptions): Game {
   const hear = (clips: string[] | undefined, slow = false) => {
     if (clips?.length) queue.push(slow ? { clips, slow } : { clips });
   };
-  /** Says everything queued, unless sound is off. Barks' clips go to their own player. */
-  const flush = () => {
-    const barks = queue.filter((x) => x.clips.every(isBarkClip)).map((x) => ({ ...x, clips: x.clips.map((c) => c.slice(BARK_CLIP.length)) }));
-    const words = queue.filter((x) => !x.clips.every(isBarkClip));
+  /**
+   * The one chokepoint that loads and plays clips: every path that opens a bubble with a clip
+   * (a story line, a reaction, a reply's or word's ▶, the bark's own line, a slow replay) queues
+   * through hear() and reaches its player here, via flush() (say(), dispatch()'s end, helpWord()).
+   * A `BARK_CLIP`-prefixed entry goes to the bark player, stripped of the prefix and following the
+   * sound setting the same way; everything else goes to the course's, on soundOn(). Never called
+   * with clips still carrying the prefix past this point: nothing downstream re-derives the route.
+   */
+  const speak = (lines: Speech[]) => {
+    const barks = lines.filter((x) => x.clips.every(isBarkClip)).map((x) => ({ ...x, clips: x.clips.map((c) => c.slice(BARK_CLIP.length)) }));
+    const words = lines.filter((x) => !x.clips.every(isBarkClip));
     if (words.length && soundOn()) opts.audio!.play(words);
     if (barks.length && opts.barkAudio?.available && core.state.sound !== false) {
       opts.audio?.stop();
       opts.barkAudio.play(barks);
     }
+  };
+  /** Speaks everything queued, unless sound is off (speak()). */
+  const flush = () => {
+    const lines = queue;
     queue = [];
+    speak(lines);
   };
   const native = uiLanguage(opts.ui ?? course.learner);
   let forms: ReturnType<typeof wordForms> | null = null;

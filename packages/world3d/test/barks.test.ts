@@ -7,9 +7,11 @@ import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { availableSceneIds, createCore, moneyBlocked, newGame } from "@silver-tongue/core";
 import { describe, expect, it } from "vitest";
+import type { AudioLike } from "@silver-tongue/tui-web/src/web-audio";
 import { BARKS } from "../barks";
 import { UI_LOCALES } from "../locale";
 import { BARK_CLIP, BarkPicker, barkTokens, FALLBACK_ROLE, npcRole, spaceFigures, type BarkBook } from "../src/barks";
+import { createAudioPlayer } from "../src/audio";
 import { createGame } from "../src/game";
 import { LAYOUT, LayoutIndex } from "../src/layout";
 import { CHROME_KEYS } from "../src/strings";
@@ -22,6 +24,28 @@ const AUDIO = fileURLToPath(new URL("../barks/audio/", import.meta.url));
 
 /** A seeded rng (mulberry32-ish LCG) for repeatable picks. */
 const seeded = (seed = 7) => () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
+
+/** A real (not stubbed) audio element, as audio.test.ts's: play() resolves at once and records its src. */
+type FakeEl = AudioLike & { played: string[] };
+function fakeEl(): FakeEl {
+  return {
+    src: "",
+    playbackRate: 1,
+    defaultPlaybackRate: 1,
+    onended: null,
+    onerror: null,
+    played: [],
+    play() {
+      this.played.push(this.src);
+      return Promise.resolve();
+    },
+    pause() {},
+  };
+}
+const noWait = (_ms: number, cb: () => void) => {
+  cb();
+  return { cancel() {} };
+};
 
 describe("bark picker", () => {
   it("picks at random among a role's lines, never the same one twice in a row", () => {
@@ -220,6 +244,52 @@ describe("a bark in the game", () => {
     game.sleep(); // rejected (not at home) or not: the bark is gone either way
     expect(game.model.bark).toBeNull();
     expect(game.model.reply).toBeNull();
+  });
+});
+
+// Not the fakeAudio() stub above (game.ts's own wiring only): the real AudioPlayer chain
+// (src/audio.ts createAudioPlayer, tui-web's createWebAudio) with a fake <audio> element, so a
+// regression that leaves a clip loaded (src set) but never played (a bark's own bug, once: the
+// element's src was set - so the network fetch fired - but play() on it never ran) fails a test.
+describe("a bark reaches the real audio element's play(), same as a story line", () => {
+  function setupReal() {
+    const core = createCore(course, newGame(course), { now: () => 1_000_000, rng: () => 0.42 });
+    const courseEl = fakeEl();
+    const barkEl = fakeEl();
+    const audio = createAudioPlayer({ base: "audio/course/", audio: courseEl, wait: noWait });
+    const barkAudio = createAudioPlayer({ base: "audio/barks/zh/", audio: barkEl, wait: noWait }, { ext: "ogg" });
+    const game = createGame({ course, core, now: () => 1_000_000, audio, barks: new BarkPicker(book, seeded()), barkAudio });
+    game.setName("Mina");
+    return { game, core, courseEl, barkEl };
+  }
+
+  it("a bark's clip plays on the bark element (its own .ogg), never on the course's", () => {
+    const { game, courseEl, barkEl } = setupReal();
+    const line = book.roles.egg_seller.lines[0];
+    expect(line.clip, "egg_seller's line has a clip").toBeTruthy();
+    game.bark({ id: "bark:extra:2", name: "Egg seller", role: "egg_seller" }, line);
+    expect(barkEl.played).toEqual([`audio/barks/zh/${line.clip}.ogg`]);
+    expect(courseEl.played).toEqual([]);
+  });
+
+  it("a story line still plays on the course element (.mp3), unaffected by the bark wiring", () => {
+    const { game, courseEl, barkEl } = setupReal();
+    game.talkTo("wang");
+    const clip = game.model.bubble!.line.audio![0];
+    expect(courseEl.played).toEqual([`audio/course/${clip}.mp3`]);
+    expect(barkEl.played).toEqual([]);
+  });
+
+  it("a word tapped inside a bark says the word on the course element, not the bark one", () => {
+    const { game, courseEl, barkEl } = setupReal();
+    const line = book.roles.egg_seller.lines[0];
+    game.bark({ id: "bark:extra:2", name: "Egg seller", role: "egg_seller" }, line);
+    expect(barkEl.played.length).toBe(1);
+    const w = game.model.bubble!.line.tokens[0].word;
+    const clip = course.words[w].audio![0];
+    game.helpWord(w);
+    expect(courseEl.played).toEqual([`audio/course/${clip}.mp3`]);
+    expect(barkEl.played.length).toBe(1); // unchanged: the word tap didn't touch the bark player
   });
 });
 
