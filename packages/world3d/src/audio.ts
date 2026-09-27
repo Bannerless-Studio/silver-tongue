@@ -144,8 +144,10 @@ export function unlockAudioOnGesture(player: Pick<AudioPlayer, "unlock" | "unloc
 //            (capped 0.25) play by day, crickets_evening (capped 0.2) by evening; every other bed
 //            is silent until Settings turns ambience to "full" (AMBIENT_LIGHT_CAPS).
 //   sfx      one-shots: ui_*, bubble, tiles, coin, jingle, fail, doors, notebook, skip, bell, steps
-// Nothing starts before the first gesture (unlock() inside it resumes the context). Word clips stay
-// on the AudioPlayer above (web-common's element), untouched.
+// Each bus has its own switch (prefs.ts): music its volume (0 = off; the HUD's ♪), sfx and ambient
+// setSfx / setAmbience, each touching its own bus only. Nothing starts before the first gesture
+// (unlock() inside it resumes the context). Word clips and barks stay on the AudioPlayer above
+// (web-common's element), switched by prefs.voice through core's setSound, untouched here.
 // ---------------------------------------------------------------------------------------------
 export type AudioFormat = "ogg" | "m4a";
 export type AudioKind = "music" | "ambient" | "sfx";
@@ -410,9 +412,14 @@ export interface MixerDeps {
   /** makes the AudioContext (called inside the first gesture) */
   context: () => MixerContext | null;
   fetchBytes: (url: string) => Promise<ArrayBuffer>;
+  /** everything off (the master gain): kept for tests and tools; the page uses the switches below */
   muted?: boolean;
   /** 0..1 */
   musicVolume?: number;
+  /** the sound effects bus on (default on) */
+  sfx?: boolean;
+  /** the ambience bus on (default on): off, no bed starts or downloads */
+  ambience?: boolean;
 }
 
 interface Voice {
@@ -444,10 +451,14 @@ export class SoundMixer {
   private _muted: boolean;
   private _musicVolume: number;
   private _musicGain: number;
+  private _sfx: boolean;
+  private _ambience: boolean;
 
   constructor(private deps: MixerDeps) {
     for (const e of deps.manifest) this.entries.set(e.id, e);
     this._muted = !!deps.muted;
+    this._sfx = deps.sfx ?? true;
+    this._ambience = deps.ambience ?? true;
     this._musicVolume = 0;
     this._musicGain = 0;
     this.setMusicVolume(deps.musicVolume ?? 0);
@@ -458,6 +469,12 @@ export class SoundMixer {
   }
   get muted(): boolean {
     return this._muted;
+  }
+  get sfxOn(): boolean {
+    return this._sfx;
+  }
+  get ambienceOn(): boolean {
+    return this._ambience;
   }
   get musicVolume(): number {
     return this._musicVolume;
@@ -487,7 +504,7 @@ export class SoundMixer {
       this.master.connect(this.ctx.destination);
       for (const k of ["music", "ambient", "sfx"] as const) {
         const g = this.ctx.createGain();
-        g.gain.value = k === "music" ? this._musicGain : 1;
+        g.gain.value = k === "music" ? this._musicGain : k === "sfx" ? (this._sfx ? 1 : 0) : this._ambience ? 1 : 0;
         if (k === "music") {
           const limiter = this.ctx.createDynamicsCompressor();
           limiter.threshold.value = -24;
@@ -501,7 +518,7 @@ export class SoundMixer {
         this.buses[k] = g;
       }
       // the short ones ahead, so the first tap has its click
-      for (const e of this.deps.manifest) if (e.kind === "sfx") void this.buffer(e.id);
+      if (this._sfx) for (const e of this.deps.manifest) if (e.kind === "sfx") void this.buffer(e.id);
     }
     if (this.ctx.state !== "running") void this.ctx.resume().catch(() => {});
     if (this.musicWanted) this.setMusic(this.musicWanted.track, this.musicWanted.gain, true);
@@ -511,6 +528,48 @@ export class SoundMixer {
   setMuted(on: boolean) {
     this._muted = on;
     if (this.ctx && this.master) this.master.gain.setTargetAtTime(on ? 0 : 1, this.ctx.currentTime, 0.05);
+  }
+
+  /**
+   * The manifest, when it comes after the mixer was made (main.ts never waits on it): its entries
+   * join, and the music and ambience wanted now start again with them (what started before had no file).
+   */
+  setManifest(list: SoundEntry[]) {
+    this.deps.manifest = list;
+    for (const e of list) {
+      this.entries.set(e.id, e);
+      this.buffers.delete(e.id);
+    }
+    if (!this.ctx) return;
+    if (this._sfx) for (const e of list) if (e.kind === "sfx") void this.buffer(e.id);
+    if (this.musicWanted) {
+      this.musicCycle++;
+      if (this.music) this.stopVoice(this.music, 0);
+      this.music = null;
+      this.setMusic(this.musicWanted.track, this.musicWanted.gain, true);
+    }
+    for (const v of this.ambient.values()) this.stopVoice(v, 0);
+    this.ambient.clear();
+    this.setAmbient(this.ambientWanted, true);
+  }
+
+  /** The sound effects bus on / off (UI taps, the bubble, doors, coins, the bell…); nothing else. */
+  setSfx(on: boolean) {
+    this._sfx = on;
+    const bus = this.buses.sfx;
+    if (this.ctx && bus) bus.gain.setTargetAtTime(on ? 1 : 0, this.ctx.currentTime, 0.05);
+  }
+
+  /** The ambience bus on / off: off fades every bed out and starts none; on starts what is wanted now. */
+  setAmbience(on: boolean) {
+    if (on === this._ambience) return;
+    this._ambience = on;
+    const bus = this.buses.ambient;
+    if (this.ctx && bus) bus.gain.setTargetAtTime(on ? 1 : 0, this.ctx.currentTime, 0.05);
+    if (!on) {
+      for (const v of this.ambient.values()) this.stopVoice(v, 0.4);
+      this.ambient.clear();
+    } else this.setAmbient(this.ambientWanted, true);
   }
 
   setMusicVolume(v: number) {
@@ -640,7 +699,7 @@ export class SoundMixer {
     if (!changed) return;
     this.ambientWanted = { ...levels };
     const ctx = this.ctx;
-    if (!ctx) return;
+    if (!ctx || !this._ambience) return;
     for (const [id, level] of Object.entries(levels)) {
       let v = this.ambient.get(id);
       if (!v && level > 0) {
@@ -656,7 +715,7 @@ export class SoundMixer {
   sfx(id: string, opts: { rate?: number; gain?: number } = {}) {
     const ctx = this.ctx;
     const bus = this.buses.sfx;
-    if (!ctx || !bus || this._muted || ctx.state !== "running") return;
+    if (!ctx || !bus || this._muted || !this._sfx || ctx.state !== "running") return;
     const asked = ctx.currentTime;
     void this.buffer(id).then((buf) => {
       if (!buf || ctx.currentTime - asked > 0.25) return; // too late to still belong to its moment

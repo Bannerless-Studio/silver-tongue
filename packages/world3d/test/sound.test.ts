@@ -32,7 +32,17 @@ import {
   type MixerContext,
 } from "../src/audio";
 import { deckAt, gridClass, LAYOUT } from "../src/layout";
-import { DEFAULT_PREFS, loadPrefs, OLD_DEFAULT_MUSIC, PREFS_KEY, savePrefs } from "../src/prefs";
+import { DEFAULT_PREFS, loadPrefs, musicSlider, musicTap, OLD_DEFAULT_MUSIC, PREFS_KEY, savePrefs, type Prefs } from "../src/prefs";
+import { SoundSwitches } from "../src/sounds";
+import { createCore, newGame } from "@silver-tongue/core";
+import { BARKS } from "../barks";
+import { BarkPicker } from "../src/barks";
+import { createGame } from "../src/game";
+import { course, fakeAudio, makeGame } from "./helpers";
+import { UI_LOCALES } from "../locale";
+import { CHROME_KEYS } from "../src/strings";
+import { HudView } from "../src/ui/hud";
+import { fire, installFakeDom, type FakeElement } from "./fake-dom";
 
 const town = LAYOUT.town;
 const MANIFEST = fileURLToPath(new URL("../assets/audio/manifest.json", import.meta.url));
@@ -50,7 +60,7 @@ type FakeParam = {
 };
 type FakeNode = { connections: unknown[]; connect(destination: unknown): unknown; disconnect(): void };
 
-function audioHarness() {
+function audioHarness(extra: { manifest?: SoundEntry[]; sfx?: boolean; ambience?: boolean } = {}) {
   const clock = { currentTime: 0 };
   const param = (value = 0): FakeParam => {
     const p: FakeParam = {
@@ -116,7 +126,7 @@ function audioHarness() {
   } as unknown as MixerContext;
   const mixer = new SoundMixer({
     base: "",
-    manifest: [
+    manifest: extra.manifest ?? [
       { id: "owner_theme", kind: "music", file_ogg: "assets/audio/music/owner_theme.ogg", seconds: 119, loop: false },
       { id: "other_theme", kind: "music", file_ogg: "assets/audio/music/other_theme.ogg", seconds: 60, loop: false },
     ],
@@ -124,6 +134,8 @@ function audioHarness() {
     context: () => context,
     fetchBytes: async () => new ArrayBuffer(0),
     musicVolume: 5,
+    ...(extra.sfx !== undefined ? { sfx: extra.sfx } : {}),
+    ...(extra.ambience !== undefined ? { ambience: extra.ambience } : {}),
   });
   const settle = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
   const end = async (source: (typeof sources)[number], at: number) => {
@@ -442,16 +454,18 @@ describe("prefs", () => {
     const data = new Map<string, string>();
     return { getItem: (k: string) => data.get(k) ?? null, setItem: (k: string, v: string) => void data.set(k, v), removeItem: (k: string) => void data.delete(k), keys: () => [...data.keys()], data };
   };
-  it("sound and quiet music on by default, ambience light by default, and the guide, apart from the shared settings key; junk and blocked storage: defaults", () => {
+  it("voice, effects, ambience and quiet music on by default, ambience light by default, and the guide, apart from the shared settings key; junk and blocked storage: defaults", () => {
     const kv = kvOf();
     expect(loadPrefs(kv)).toEqual(DEFAULT_PREFS);
+    expect(DEFAULT_PREFS).toMatchObject({ voice: true, sfx: true, ambience: true });
     expect(DEFAULT_PREFS.music).toBe(0.6);
     expect(DEFAULT_PREFS.music * MUSIC_BUS_CAP).toBeLessThanOrEqual(0.25);
     expect(DEFAULT_PREFS.ambienceFull).toBe(false);
-    savePrefs(kv, { sound: false, music: 0.3, musicSet: true, ambienceFull: true, guideHidden: true, pathHidden: true });
-    expect(loadPrefs(kv)).toEqual({ sound: false, music: 0.3, musicSet: true, ambienceFull: true, guideHidden: true, pathHidden: true });
+    const all: Prefs = { voice: false, sfx: false, ambience: true, music: 0.3, musicLast: 0.3, musicSet: true, ambienceFull: true, guideHidden: true, pathHidden: true };
+    savePrefs(kv, all);
+    expect(loadPrefs(kv)).toEqual(all);
     expect([...kv.keys()]).toEqual([PREFS_KEY]);
-    kv.data.set(PREFS_KEY, '{"music": 7, "sound": "x", "ambienceFull": "x"}');
+    kv.data.set(PREFS_KEY, '{"music": 7, "voice": "x", "sfx": 1, "ambience": null, "ambienceFull": "x", "musicLast": 9}');
     expect(loadPrefs(kv)).toEqual(DEFAULT_PREFS);
     const blocked = { ...kv, getItem: () => { throw new Error("no"); } };
     expect(loadPrefs(blocked)).toEqual(DEFAULT_PREFS);
@@ -472,11 +486,173 @@ describe("prefs", () => {
     }
   });
 
+  it("the old single sound switch: off keeps effects, ambience and music off (music one ♪ tap away), brings the voices back; on changes nothing", () => {
+    const kv = kvOf();
+    kv.data.set(PREFS_KEY, JSON.stringify({ sound: false, music: 0.45, musicSet: true, ambienceFull: true }));
+    expect(loadPrefs(kv)).toEqual({ ...DEFAULT_PREFS, voice: true, sfx: false, ambience: false, music: 0, musicLast: 0.45, musicSet: true, ambienceFull: true });
+    // an unflagged default volume: nothing to remember, ♪ brings back the default
+    kv.data.set(PREFS_KEY, JSON.stringify({ sound: false, music: OLD_DEFAULT_MUSIC }));
+    const p = loadPrefs(kv);
+    expect(p).toMatchObject({ sfx: false, ambience: false, music: 0, musicLast: DEFAULT_PREFS.music, musicSet: true });
+    kv.data.set(PREFS_KEY, JSON.stringify({ sound: true, music: 0.45 }));
+    expect(loadPrefs(kv)).toMatchObject({ voice: true, sfx: true, ambience: true, music: 0.45 });
+    // the new switches win over an old `sound` still in the blob, and `sound` isn't written back
+    kv.data.set(PREFS_KEY, JSON.stringify({ sound: false, sfx: true, ambience: true, voice: false, music: 0.5, musicSet: true }));
+    const q = loadPrefs(kv);
+    expect(q).toMatchObject({ voice: false, sfx: true, ambience: true, music: 0.5 });
+    savePrefs(kv, q);
+    expect(JSON.parse(kv.data.get(PREFS_KEY)!)).not.toHaveProperty("sound");
+  });
+
+  it("♪ taps the music off and back to the volume it had; at 0 it brings back the last volume above 0, else the default", () => {
+    expect(musicTap({ music: 0.3 })).toEqual({ music: 0, musicLast: 0.3, musicSet: true });
+    expect(musicTap({ music: 0, musicLast: 0.3 })).toEqual({ music: 0.3, musicLast: 0.3, musicSet: true });
+    expect(musicTap({ music: 0 })).toEqual({ music: DEFAULT_PREFS.music, musicLast: DEFAULT_PREFS.music, musicSet: true });
+    // the slider: a volume above 0 is the one ♪ brings back; sliding to 0 keeps the last one
+    let p: Pick<Prefs, "music" | "musicLast"> = { music: 0.6 };
+    p = { ...p, ...musicSlider(p, 0.25) };
+    p = { ...p, ...musicSlider(p, 0) };
+    expect(p).toEqual({ music: 0, musicLast: 0.25, musicSet: true });
+    p = { ...p, ...musicTap(p) };
+    expect(p.music).toBe(0.25);
+    // tap, tap: where it started
+    const q = { music: 0.4 };
+    expect(musicTap({ ...q, ...musicTap(q) }).music).toBe(0.4);
+  });
+
   it("falls back to the music default for non-finite, out-of-range, and non-number storage", () => {
     const kv = kvOf();
     for (const music of [5, -1, Number.NaN, "x"]) {
       kv.data.set(PREFS_KEY, JSON.stringify({ music }));
       expect(loadPrefs(kv).music).toBe(DEFAULT_PREFS.music);
     }
+  });
+});
+
+describe("the four sound switches", () => {
+  const manifest: SoundEntry[] = [
+    { id: "owner_theme", kind: "music", file_ogg: "a/m.ogg", seconds: 119, loop: false },
+    { id: "canal_water", kind: "ambient", file_ogg: "a/w.ogg", seconds: 30, loop: true },
+    { id: "ui_tap", kind: "sfx", file_ogg: "a/t.ogg", seconds: 1, loop: false },
+  ];
+  /** A real mixer on the fake context, a real game with fake voice players, the switches over both. */
+  function rig(prefs: Prefs = { ...DEFAULT_PREFS }) {
+    const h = audioHarness({ manifest, sfx: prefs.sfx, ambience: prefs.ambience });
+    h.mixer.setMusicVolume(prefs.music);
+    h.mixer.unlock();
+    const [master, musicBus, ambientBus, sfxBus] = h.gains;
+    const core = createCore(course, { ...newGame(course), player: "Mina" }, { now: () => 1_000_000, rng: () => 0.42 });
+    const audio = fakeAudio();
+    const barkAudio = fakeAudio();
+    const book = BARKS[course.language.code]!;
+    const game = createGame({ course, core, now: () => 1_000_000, audio, barks: new BarkPicker(book, () => 0.3), barkAudio });
+    let saves = 0;
+    const sw = new SoundSwitches(prefs, () => saves++, {
+      musicVolume: (v) => h.mixer.setMusicVolume(v),
+      voice: (on) => game.setSound(on),
+      sfx: (on) => h.mixer.setSfx(on),
+      ambience: (on) => h.mixer.setAmbience(on),
+    });
+    const bark = () => game.bark({ id: "bark:extra:2", name: "Egg seller", role: "egg_seller" }, book.roles.egg_seller.lines[0]);
+    const buses = () => ({ master: master.gain.value, music: musicBus.gain.value, ambient: ambientBus.gain.value, sfx: sfxBus.gain.value });
+    return { h, sw, prefs, game, audio, barkAudio, bark, buses, saves: () => saves };
+  }
+
+  it("each switch silences its own bus and nothing else, and is saved", async () => {
+    const r = rig();
+    const before = r.buses();
+    expect(before).toMatchObject({ master: 1, ambient: 1, sfx: 1 });
+    expect(before.music).toBeGreaterThan(0);
+    r.sw.setSfx(false);
+    expect(r.buses()).toEqual({ ...before, sfx: 0 });
+    r.sw.setSfx(true);
+    r.sw.setAmbience(false);
+    expect(r.buses()).toEqual({ ...before, ambient: 0 });
+    r.sw.setAmbience(true);
+    expect(r.sw.tapMusic()).toBe(false);
+    expect(r.buses()).toEqual({ ...before, music: 0 });
+    expect(r.sw.tapMusic()).toBe(true);
+    expect(r.buses()).toEqual(before);
+    r.sw.setVoice(false);
+    expect(r.buses()).toEqual(before); // the voices aren't on the mixer
+    expect(r.game.core.state.sound).toBe(false);
+    expect(r.saves()).toBe(7);
+    expect(r.prefs).toMatchObject({ voice: false, sfx: true, ambience: true, music: DEFAULT_PREFS.music });
+  });
+
+  it("effects off: no one-shot plays; ambience off: no bed starts (none downloads) until it is on again", async () => {
+    const r = rig({ ...DEFAULT_PREFS, sfx: false, ambience: false });
+    const sources = () => r.h.sources.length;
+    r.h.mixer.sfx("ui_tap");
+    r.h.mixer.setAmbient({ canal_water: 0.3 });
+    await r.h.settle();
+    expect(sources()).toBe(0);
+    r.sw.setAmbience(true);
+    await r.h.settle();
+    expect(sources()).toBe(1); // the bed wanted all along
+    r.sw.setSfx(true);
+    r.h.mixer.sfx("ui_tap");
+    await r.h.settle();
+    expect(sources()).toBe(2);
+    r.sw.setAmbience(false);
+    expect(r.h.sources[0].stopTimes.length).toBe(1); // the bed fades out
+  });
+
+  it("voice off: no word clip and no bark is said (what plays stops), while music and effects go on; a tap on ▶ still says it", async () => {
+    const r = rig();
+    r.h.mixer.setMusic("owner_theme");
+    r.bark();
+    expect(r.barkAudio.plays).toHaveLength(1);
+    r.game.endBark();
+    r.sw.setVoice(false);
+    expect(r.audio.stops + r.barkAudio.stops).toBeGreaterThan(0);
+    r.bark();
+    r.game.talkTo("wang");
+    expect(r.barkAudio.plays).toHaveLength(1);
+    expect(r.audio.plays).toEqual([]);
+    // the rest of the sound goes on
+    r.h.mixer.sfx("ui_tap");
+    await r.h.settle();
+    expect(r.h.sources.some((x) => x.starts > 0)).toBe(true);
+    expect(r.h.mixer.musicGain).toBeGreaterThan(0);
+    expect(r.h.mixer.playing.music).toBe("owner_theme");
+    // an explicit tap (say it again, a ▶) plays anyway: the player asked for exactly that
+    r.game.replay();
+    expect(r.audio.plays).toEqual([[{ clips: r.game.model.bubble!.audio }]]);
+    r.sw.setVoice(true);
+  });
+});
+
+describe("the ♪ chip", () => {
+  it("with the mixer it is the music's: its label follows the music, a tap asks for the other state, refresh() redraws it", () => {
+    installFakeDom();
+    const { game } = makeGame({ ...newGame(course), player: "Mina" });
+    let on = true;
+    const taps: boolean[] = [];
+    const hud = new HudView(game.s, game.t, (x) => taps.push(x), () => {}, () => on);
+    hud.render(game.model.hud);
+    const chip = () => (hud.node as unknown as FakeElement).querySelector(".chip.sound")!;
+    expect(chip().textContent).toBe("♪");
+    expect(chip().classList.contains("music")).toBe(true);
+    fire(chip(), "click");
+    expect(taps).toEqual([false]);
+    on = false;
+    hud.refresh();
+    expect(chip().textContent).toBe("♪ off");
+    expect(chip().getAttribute("aria-pressed")).toBe("false");
+    // core's sound off (voice) doesn't touch it
+    game.setSound(false);
+    hud.render(game.model.hud);
+    expect(chip().textContent).toBe("♪ off");
+    on = true;
+    hud.render(game.model.hud);
+    expect(chip().textContent).toBe("♪");
+  });
+
+  it("the switches' and the ♪'s strings are in bn and zh", () => {
+    const keys = ["settings-voice", "settings-sfx", "settings-sound-on", "settings-sound-off", "music-toggle", "music-menu-on", "music-menu-off", "music-off-toast"];
+    for (const k of keys) expect(CHROME_KEYS, k).toContain(k);
+    for (const ui of ["bn", "zh"]) for (const k of keys) expect(UI_LOCALES[ui].game?.[k], `${ui} ${k}`).toBeTruthy();
+    expect(CHROME_KEYS).not.toContain("settings-sound");
   });
 });

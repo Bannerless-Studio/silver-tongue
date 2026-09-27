@@ -49,5 +49,14 @@
     "lang.fr": "French",
     "setting.china-city.title": "Make it in China",
     "setting.china-city.place": "a canal town"
+  },
+  "loading": {
+    "loading": "Loading the game…",
+    "slow": "Slow connection, still loading…",
+    "failed": "Couldn't load the game. Check your connection.",
+    "file": "The game can't load from a file. Serve this folder from a web server and reload.",
+    "retry": "Retry",
+    "reload": "Reload",
+    "webgl": "This browser can't run 3D (WebGL is off). Try Chrome or Firefox, or enable hardware acceleration."
   }
 }

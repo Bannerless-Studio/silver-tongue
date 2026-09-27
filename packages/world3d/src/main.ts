@@ -15,8 +15,8 @@
 import * as THREE from "three";
 import { cleanName, type CatalogEntry, type Course } from "@silver-tongue/core";
 import { decodeSave, encodeSave, sessionLines } from "@silver-tongue/tui";
-import { fromLocalStorage, type KeyValue } from "@silver-tongue/web-common";
-import { COMING_SOON, NATIVE_NAMES } from "../locale";
+import { fromLocalStorage, SETTINGS_KEY, type KeyValue } from "@silver-tongue/web-common";
+import { COMING_SOON, FALLBACK_UI, NATIVE_NAMES, UI_LOCALES } from "../locale";
 import { BARKS } from "../barks";
 import { turnToward } from "./anim";
 import { BarkPicker, spaceFigures, type Figure } from "./barks";
@@ -37,6 +37,7 @@ import {
   type SoundEntry,
   type SoundPhase,
 } from "./audio";
+import { JsonFetcher, ModuleLoadError, retrying, StartWatch, WebGLError } from "./boot";
 import { CAMERA, CameraRig, outlineScale } from "./camera";
 import { PlayerCarry } from "./carry";
 import { applyStart, loadCatalog, rememberedStart, resumePick, type Picked } from "./courses";
@@ -47,7 +48,9 @@ import { MoveInput, toGround } from "./input";
 import { deckAt, gridClass, heldProp, LAYOUT, LayoutIndex, STREET, type AssetIndex, type CameraPath, type Stand, type Vec3 } from "./layout";
 import { emptyLoad, loadPlan, loadSummary, reduceLoad } from "./loading";
 import { Player } from "./player";
+import { pickLocale, type RetryAction } from "./preload.js";
 import { loadPrefs, savePrefs } from "./prefs";
+import { SoundSwitches } from "./sounds";
 import { nearestPrompt, promptTargets, SpaceNav, TALK_RANGE, type Arrival, type PromptTarget } from "./spaces";
 import type { IntroSource, StartConfig, StartResult } from "./start/flow";
 import { clipsFor, courseIntro } from "./start/intro";
@@ -63,6 +66,10 @@ import { GuideMarker } from "./marker";
 import { daySteps, edgeArrow, findPath, LostTimer, nextSteps, resolveTarget, type PathGrid, type WayTarget } from "./wayfind";
 import { EdgeArrowView, PathTrail, spaceGrid } from "./wayview";
 import type { WebSessions } from "@silver-tongue/web-common";
+
+// First thing: the page's preloader (preload.js, inlined in index.html) stops treating errors as
+// its own, and the LoadingScreen below takes #loading over.
+(window as { __stBooted?: boolean }).__stBooted = true;
 
 /**
  * Where courses/<id>/audio/ is, relative to the page (build.mjs): "../" on Pages (the site's shared
@@ -93,13 +100,50 @@ try {
   // stays noStorage
 }
 
-const loading = new LoadingScreen(document.querySelector<HTMLElement>("#loading")!);
+/** `?ui=bn` / `?ui=zh`: the chrome in that UI language whatever the reading language (a preview until such a course exists). */
+const uiOverride = new URLSearchParams(location.search).get("ui") ?? undefined;
+// The loading screen in the language the preloader picked: ?ui=, the remembered reading language, the browser's.
+let settingsJson: string | null = null;
+try {
+  settingsJson = kv.getItem(SETTINGS_KEY);
+} catch {
+  // no storage
+}
+const loading = new LoadingScreen(
+  document.querySelector<HTMLElement>("#loading")!,
+  "Silver Tongue",
+  UI_LOCALES[pickLocale(UI_LOCALES, location.search, settingsJson, navigator.languages ?? [navigator.language], FALLBACK_UI)].loading,
+);
 /** the loading screen's hold for the start (the town's first views); released at the first frame */
 const startHold = loading.hold();
 const uiRoot = document.querySelector<HTMLElement>("#ui")!;
 const startRoot = document.querySelector<HTMLElement>("#start")!;
-/** `?ui=bn` / `?ui=zh`: the chrome in that UI language whatever the reading language (a preview until such a course exists). */
-const uiOverride = new URLSearchParams(location.search).get("ui") ?? undefined;
+
+// Every wait on the way to the title (boot.ts): each startup step is tracked, so no progress for
+// 15 s says "Slow connection", 60 s rejects the steps (aborting what is in flight) into their
+// retry loops; every JSON aborts itself after 60 s without a byte; the connection coming back
+// presses a failure's Retry once.
+/** aborts the GLBs in flight (set once the AssetCache exists) */
+let abortAssets = () => {};
+const startWatch = new StartWatch({
+  slowMs: 15_000,
+  failMs: 60_000,
+  onSlow: (on) => loading.slow(on),
+  onStall: () => {
+    json.abortAll();
+    abortAssets();
+  },
+});
+const json = new JsonFetcher({ fetch: (url, init) => fetch(url, init), stallMs: 60_000, onBytes: () => startWatch.poke() });
+window.addEventListener("online", () => loading.online());
+
+/** A step's failure on the loading screen: the message for what went wrong, the error small under it; resolves at Retry. */
+function askRetry(e: unknown, action: RetryAction): Promise<void> {
+  console.error(e);
+  const t = loading.text;
+  const message = e instanceof WebGLError ? t.webgl : location.protocol === "file:" ? t.file : t.failed;
+  return loading.fail(message, e instanceof Error ? e.message : String(e), action);
+}
 /**
  * `?promo=1` (README "Promo capture"): a fixed new game ("Mei"), no start flow, no six-words intro,
  * no 5 s fly-over on open (world3d.promo("flyover") plays the full one instead, on demand), the
@@ -113,10 +157,22 @@ const prefs = loadPrefs(kv);
 // touch-action / overscroll-behavior); the first gesture unlocks audio.
 for (const ev of ["gesturestart", "gesturechange", "dblclick"]) document.addEventListener(ev, (e) => e.preventDefault(), { passive: false });
 
-async function fetchJson<T>(path: string): Promise<T> {
-  const res = await fetch(path);
-  if (!res.ok) throw new Error(`${path}: ${res.status}`);
-  return (await res.json()) as T;
+/** Every JSON the page loads (boot.ts JsonFetcher: aborted after 60 s without a byte, its bytes progress for the StartWatch). */
+function fetchJson<T>(path: string): Promise<T> {
+  return json.get<T>(path);
+}
+
+/** The renderer, on the stage; no WebGL: a WebGLError (the loading screen says so). */
+function makeRenderer(): THREE.WebGLRenderer {
+  let r: THREE.WebGLRenderer;
+  try {
+    r = new THREE.WebGLRenderer({ antialias: window.devicePixelRatio < 2, powerPreference: "high-performance" });
+  } catch (e) {
+    throw new WebGLError(`WebGL: ${(e as Error)?.message ?? String(e)}`);
+  }
+  r.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  document.querySelector("#stage")!.append(r.domElement);
+  return r;
 }
 
 /** The safe-area insets (notch, home bar) in CSS px, read through a probe padded by env(safe-area-inset-*). */
@@ -135,18 +191,25 @@ function safeInsets(): Insets {
 async function main() {
   // The town loads first thing, while the catalog and the start flow run (it needs no course), and
   // only what its first views show (loading.ts loadPlan): the rest streams in after the first frame.
+  // A failed try runs again from where it stopped (the renderer, the index and the loaded GLBs kept).
   let load = emptyLoad;
-  const worldReady = (async () => {
-    const index = await fetchJson<AssetIndex>(`${ASSETS}/index.json`);
-    const L = new LayoutIndex(LAYOUT, index);
-    const renderer = new THREE.WebGLRenderer({ antialias: window.devicePixelRatio < 2, powerPreference: "high-performance" });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    document.querySelector("#stage")!.append(renderer.domElement);
-    const assets = new AssetCache(ASSETS, L);
-    assets.onLoad = (e) => {
-      load = reduceLoad(load, e);
-      if (loading.visible) loading.render(loadSummary(load));
-    };
+  let madeRenderer: THREE.WebGLRenderer | null = null;
+  let madeLayout: LayoutIndex | null = null;
+  let madeAssets: AssetCache | null = null;
+  const loadWorld = async () => {
+    const renderer = (madeRenderer ??= makeRenderer()); // first: no WebGL says so at once
+    const L = (madeLayout ??= new LayoutIndex(LAYOUT, await fetchJson<AssetIndex>(`${ASSETS}/index.json`)));
+    if (!madeAssets) {
+      const a = new AssetCache(ASSETS, L);
+      a.onLoad = (e) => {
+        load = reduceLoad(load, e);
+        startWatch.poke();
+        if (loading.visible) loading.render(loadSummary(load));
+      };
+      abortAssets = () => a.abort();
+      madeAssets = a;
+    }
+    const assets = madeAssets;
     const bagSpec = LAYOUT.player.errandProp;
     const bagAsset = heldProp(bagSpec)?.asset;
     const plan = loadPlan(L, { character: LAYOUT.player.character, errandProp: bagAsset });
@@ -157,26 +220,21 @@ async function main() {
     // The parcel of an errand, in the player's hands while core has one (state.errand).
     const carry = new PlayerCarry(player.actor, bagAsset ? await assets.instance(bagAsset) : null, bagSpec);
     return { L, renderer, assets, plan, spaces, player, carry };
-  })();
-  worldReady.catch(() => {}); // reported where it is awaited
+  };
+  /** the town, tried until it loads (never rejects: each failure waits on the loading screen's button) */
+  const worldReady = retrying(() => startWatch.track(loadWorld()), askRetry);
+  // Music, ambience and effects never hold the start up: their manifest comes in behind (setManifest).
+  const manifestReady = fetchJson<SoundEntry[]>(`${ASSETS}/audio/manifest.json`).catch(() => [] as SoundEntry[]);
 
   // The catalog first: no reading language to say anything in before it (as tui-web).
-  let catalog: CatalogEntry[];
-  try {
-    catalog = await loadCatalog(fetchJson);
-  } catch (e) {
-    loading.error("The game could not load. Serve this page from a web server and reload.");
-    console.error(e);
-    return;
-  }
+  const catalog: CatalogEntry[] = await retrying(() => startWatch.track(loadCatalog(fetchJson)), askRetry);
 
   // Music, ambience and effects: one mixer for the page; it starts at the first gesture.
   const probe = typeof Audio === "undefined" ? undefined : new Audio();
   const canPlayType = probe ? (m: string) => probe.canPlayType(m) : undefined;
-  const manifest = await fetchJson<SoundEntry[]>(`${ASSETS}/audio/manifest.json`).catch(() => [] as SoundEntry[]);
   const mixer = new SoundMixer({
     base: "./",
-    manifest,
+    manifest: [],
     format: pickFormat(canPlayType),
     canPlayType,
     context: () => {
@@ -188,9 +246,11 @@ async function main() {
       if (!r.ok) throw new Error(`${url}: ${r.status}`);
       return r.arrayBuffer();
     },
-    muted: !prefs.sound,
     musicVolume: prefs.music,
+    sfx: prefs.sfx,
+    ambience: prefs.ambience,
   });
+  void manifestReady.then((m) => mixer.setManifest(m));
   const unlockEvents = ["pointerup", "touchend", "click", "keydown"] as const;
   const unlockMixer = () => {
     mixer.unlock();
@@ -271,7 +331,17 @@ async function main() {
         introCourse = pendingPick.course;
         return courseIntro(pendingPick.course);
       });
-    const flow = (await import("./start/flow")).mountStartFlow(startRoot, {
+    // its own chunk: tracked (a stall says so), and a failed import can only be mended by a reload
+    const flowModule = await retrying(
+      () =>
+        startWatch.track(
+          import("./start/flow").catch((e: unknown) => {
+            throw new ModuleLoadError(`the start screens didn't load: ${(e as Error)?.message ?? String(e)}`);
+          }),
+        ),
+      askRetry,
+    );
+    const flow = flowModule.mountStartFlow(startRoot, {
       catalog,
       remembered,
       comingSoon: COMING_SOON,
@@ -313,7 +383,8 @@ async function main() {
     }
   }
 
-  let picked: Picked | null = promoMode ? null : await resumePick(deps, catalog);
+  // a returning player's course; a failure or a stall: the start flow (choosing there loads it again)
+  let picked: Picked | null = promoMode ? null : await startWatch.track(resumePick(deps, catalog)).catch(() => null);
   let startName: string | null = null;
   // move / pointers exist before the flow can reset them (declared below, used by runStartFlow)
   let pointers: PointerControls | undefined;
@@ -323,7 +394,7 @@ async function main() {
     // catalog's first), a fixed name so a promo run is the same game every time.
     const remembered = rememberedStart(kv);
     const entry0 = catalog.find((e) => e.id === remembered.course) ?? catalog[0];
-    picked = await applyStart(deps, catalog, { learner: remembered.learner ?? entry0.learners[0], course: entry0.id });
+    picked = await retrying(() => startWatch.track(applyStart(deps, catalog, { learner: remembered.learner ?? entry0.learners[0], course: entry0.id })), askRetry);
     startName = "Mei";
   } else if (!picked) {
     const r = await startFlowPick({ ...rememberedStart(kv) });
@@ -334,14 +405,7 @@ async function main() {
   document.documentElement.lang = course.learner;
   audio = wordAudio(entry);
 
-  let world: Awaited<typeof worldReady>;
-  try {
-    world = await worldReady;
-  } catch (e) {
-    loading.error(`Couldn't start: ${(e as Error).message}`);
-    console.error(e);
-    return;
-  }
+  const world = await worldReady;
   const { L, renderer, assets, plan, spaces, player, carry } = world;
   const street = spaces.get("street")!;
   const rig = new CameraRig(renderer.domElement);
@@ -468,7 +532,7 @@ async function main() {
     loading.render(loadSummary(load));
     const release = loading.hold(300);
     try {
-      return await ensureSpace(id);
+      return await startWatch.track(ensureSpace(id)); // a stall: back where the player was (goInto)
     } finally {
       release();
     }
@@ -552,13 +616,15 @@ async function main() {
     figuresFor = null;
   }
 
-  /** Sound on / off everywhere: music, ambience, effects (the mixer) and the word clips (core's setSound). */
-  function setSound(on: boolean) {
-    prefs.sound = on;
-    savePrefs(kv, prefs);
-    mixer.setMuted(!on);
-    if (game && game.model.hud.sound !== "none" && (game.model.hud.sound === "on") !== on) game.setSound(on);
-  }
+  /** The four sound switches (sounds.ts), each on its own bus: music, voices (core's setSound), effects, ambience. */
+  const sounds = new SoundSwitches(prefs, () => savePrefs(kv, prefs), {
+    musicVolume: (v) => mixer.setMusicVolume(v),
+    voice: (on) => {
+      if (game && game.model.hud.sound !== "none" && (game.model.hud.sound === "on") !== on) game.setSound(on);
+    },
+    sfx: (on) => mixer.setSfx(on),
+    ambience: (on) => mixer.setAmbience(on),
+  });
 
   /** A language's name for the Settings lists, in the chrome's language. */
   const languageName = (code: string) => {
@@ -597,7 +663,7 @@ async function main() {
       if (prompt) use(prompt);
     },
     sfx,
-    onSound: setSound,
+    music: { on: () => sounds.musicOn, tap: () => sounds.tapMusic() },
     guide: {
       hidden: () => guide.hidden,
       // Offered all game: past the first steps it still quiets wayfinding's "lost?" reminder.
@@ -634,7 +700,9 @@ async function main() {
         ],
         course: course.id,
         name: game?.core.state.player ?? "",
-        sound: prefs.sound,
+        voice: prefs.voice,
+        sfx: prefs.sfx,
+        ambience: prefs.ambience,
         music: prefs.music,
         ambienceFull: prefs.ambienceFull,
       }),
@@ -655,12 +723,10 @@ async function main() {
         if (!game) return null;
         return cleanName(name) && game.setName(name) ? null : game.s("settings-name-bad");
       },
-      setMusic: (v) => {
-        prefs.music = v;
-        prefs.musicSet = true;
-        savePrefs(kv, prefs);
-        mixer.setMusicVolume(v);
-      },
+      setMusic: (v) => sounds.setMusic(v),
+      setVoice: (on) => sounds.setVoice(on),
+      setSfx: (on) => sounds.setSfx(on),
+      setAmbience: (on) => sounds.setAmbience(on),
       setAmbienceFull: (on) => {
         prefs.ambienceFull = on;
         savePrefs(kv, prefs);
@@ -737,8 +803,8 @@ async function main() {
     game = opened.game;
     // The start flow's name (core cleanName rules, saved with the game as the name dialog's was).
     if (opts.name && course.needsName && !game.core.state.player) game.setName(opts.name);
-    // The sound setting holds across games: a save made with the word clips off follows it.
-    if (game.model.hud.sound !== "none" && (game.model.hud.sound === "on") !== prefs.sound) game.setSound(prefs.sound);
+    // The voice switch holds across games: a save made with the word clips off follows prefs.voice.
+    if (game.model.hud.sound !== "none" && (game.model.hud.sound === "on") !== prefs.voice) game.setSound(prefs.voice);
     sessions = opened.sessions;
     mixupSeq = game.model.mixups?.seq ?? 0;
     // A save made inside the noodle shop resumes inside it.
@@ -1349,8 +1415,8 @@ async function main() {
       info: () => ({ calls: renderer.info.render.calls, triangles: renderer.info.render.triangles, batching: { ...space.batching, now: drawCalls(space.scene) }, pixelRatio: renderer.getPixelRatio(), seeThroughPass: { sampleMs: +seeDetector.lastSampleMs.toFixed(2), readMs: +seeDetector.lastReadMs.toFixed(2), bytesPerFocus: SEE_THROUGH.sampleSize ** 2 * 4 }, cutscene: flyover ? { t: flyover.path.t, duration: flyover.path.duration } : null, cutsceneState: flyoverState }),
       /** touch input: the last joystick vector, pointers down, whether the stick is out; the layout in use */
       touch: () => ({ ...pointers!.debug(), touchUi: overlay.touch, layout: overlay.screen }),
-      /** sound: unlocked, muted, music volume, the music bed and ambient gains wanted now */
-      sound: () => ({ unlocked: mixer.unlocked, muted: mixer.muted, musicVolume: mixer.musicVolume, ...mixer.playing }),
+      /** sound: unlocked, muted, music volume, the switches, the music bed and ambient gains wanted now */
+      sound: () => ({ unlocked: mixer.unlocked, muted: mixer.muted, musicVolume: mixer.musicVolume, voice: prefs.voice, sfx: mixer.sfxOn, ambience: mixer.ambienceOn, ...mixer.playing }),
       /** play one sound effect by id (checks) */
       sfx: (id: string) => mixer.sfx(id),
       /** the first-steps guide's step (null: none / over / hidden) */
@@ -1427,7 +1493,5 @@ async function main() {
   });
 }
 
-main().catch((e: unknown) => {
-  loading.error(`Couldn't start: ${(e as Error).message}`);
-  console.error(e);
-});
+// Anything else that throws on the way in: the failure screen, with Reload (main can't be run twice).
+main().catch((e: unknown) => void askRetry(e, "reload"));

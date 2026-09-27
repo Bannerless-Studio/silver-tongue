@@ -222,7 +222,7 @@ export interface Game {
   sentence(line: RenderedLine): Gloss | undefined;
   /** says the bubble again, slowly if it was a slow repeat (the TUI's [r]) */
   replay(): void;
-  /** says these clips (a reply option's or a gloss's play button; the TUI's [p]) */
+  /** says these clips (a reply option's or a gloss's play button; the TUI's [p]): a tap, played even with the voices off */
   say(clips: string[] | undefined, slow?: boolean): void;
   /** sound on or off (the TUI's [m]); nothing when there is no audio here */
   setSound(on: boolean): void;
@@ -248,7 +248,7 @@ export const INPUT_AFFORDANCES: Record<Input["type"], { tui: string; world3d: st
   visitMentor: { tui: "menu: Ask <mentor> about the language", world3d: "mentor button, or talk to the mentor", api: "visitMentor" },
   setName: { tui: "name prompt", world3d: "the start flow's name step (a new game), Menu → Settings → name; the name dialog for a save without one", api: "setName" },
   sleep: { tui: "menu: Sleep", world3d: "the bed at home (prompt / tap), or the Sleep button at home", api: "sleep" },
-  setSound: { tui: "[m] sound on / off", world3d: "the ♪ chip in the HUD, or Menu → Sound", api: "setSound" },
+  setSound: { tui: "[m] sound on / off", world3d: "Menu → Settings → Voice (the word clips and barks; the HUD's ♪ is the music's), or the ♪ chip / Menu → Sound / M on a page without the mixer", api: "setSound" },
 };
 
 /** A word's readings as the TUI's word help and notebook show them: all of them, most native first. */
@@ -286,6 +286,12 @@ export function createGame(opts: GameOptions): Game {
   let queue: Speech[] = [];
   let tileReply: string[] = []; // the right reply's clips, said if the tiles match
   const soundOn = () => !!opts.audio?.available && core.state.sound !== false;
+  /**
+   * The next flush answers an explicit tap (a ▶, "say it again", a word or the whole sentence
+   * looked up): it plays even with the voices off (prefs.voice, core's state.sound), because the
+   * player asked for exactly that clip. Everything said on its own follows the switch.
+   */
+  let tapped = false;
   const hear = (clips: string[] | undefined, slow = false) => {
     if (clips?.length) queue.push(slow ? { clips, slow } : { clips });
   };
@@ -294,23 +300,26 @@ export function createGame(opts: GameOptions): Game {
    * (a story line, a reaction, a reply's or word's ▶, the bark's own line, a slow replay) queues
    * through hear() and reaches its player here, via flush() (say(), dispatch()'s end, helpWord()).
    * A `BARK_CLIP`-prefixed entry goes to the bark player, stripped of the prefix and following the
-   * sound setting the same way; everything else goes to the course's, on soundOn(). Never called
-   * with clips still carrying the prefix past this point: nothing downstream re-derives the route.
+   * sound setting the same way; everything else goes to the course's, on soundOn() (or `asked`:
+   * an explicit tap, see `tapped`). Never called with clips still carrying the prefix past this
+   * point: nothing downstream re-derives the route.
    */
-  const speak = (lines: Speech[]) => {
+  const speak = (lines: Speech[], asked = false) => {
     const barks = lines.filter((x) => x.clips.every(isBarkClip)).map((x) => ({ ...x, clips: x.clips.map((c) => c.slice(BARK_CLIP.length)) }));
     const words = lines.filter((x) => !x.clips.every(isBarkClip));
-    if (words.length && soundOn()) opts.audio!.play(words);
-    if (barks.length && opts.barkAudio?.available && core.state.sound !== false) {
+    if (words.length && opts.audio?.available && (asked || core.state.sound !== false)) opts.audio.play(words);
+    if (barks.length && opts.barkAudio?.available && (asked || core.state.sound !== false)) {
       opts.audio?.stop();
       opts.barkAudio.play(barks);
     }
   };
-  /** Speaks everything queued, unless sound is off (speak()). */
+  /** Speaks everything queued, unless the voices are off and no tap asked for it (speak()). */
   const flush = () => {
     const lines = queue;
+    const asked = tapped;
     queue = [];
-    speak(lines);
+    tapped = false;
+    speak(lines, asked);
   };
   const native = uiLanguage(opts.ui ?? course.learner);
   let forms: ReturnType<typeof wordForms> | null = null;
@@ -680,6 +689,7 @@ export function createGame(opts: GameOptions): Game {
     const w = course.words[word];
     if (!w) return undefined;
     hear(w.audio);
+    tapped = true;
     if (model.bark) flush();
     else send({ type: "helpWord", word });
     const reading = wordReadings(w);
@@ -694,12 +704,14 @@ export function createGame(opts: GameOptions): Game {
     const reading = b?.reading ?? lineReading(course, line);
     const audio = b ? b.audio : (line.audio ?? []);
     const slow = !!b?.slow;
-    say(audio, slow);
+    say(audio, slow, true);
     return { text: line.text, ...(reading ? { reading } : {}), gloss: line.meaning, audio, ...(slow ? { slow } : {}) };
   }
 
-  function say(clips: string[] | undefined, slow = false) {
+  /** Says clips now; `asked`: an explicit tap, played even with the voices off (tapped). */
+  function say(clips: string[] | undefined, slow = false, asked = false) {
     hear(clips, slow);
+    if (asked) tapped = true;
     flush();
   }
 
@@ -787,8 +799,8 @@ export function createGame(opts: GameOptions): Game {
     giveUpTiles,
     helpWord,
     sentence,
-    replay: () => say(model.bubble?.audio, model.bubble?.slow),
-    say,
+    replay: () => say(model.bubble?.audio, model.bubble?.slow, true),
+    say: (clips, slow) => say(clips, slow, true),
     setSound,
     sleep: () => void send({ type: "sleep" }),
     visitMentor: () => void send({ type: "visitMentor" }),

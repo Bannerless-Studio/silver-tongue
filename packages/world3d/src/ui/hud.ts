@@ -1,5 +1,7 @@
-// HUD: day, wallet, slots left today, rank, where you are, the parcel you carry, the sound chip
-// (tap: on / off, as the TUI's [m]); under it the objective card: step n/N of today, the objective
+// HUD: day, wallet, slots left today, rank, where you are, the parcel you carry, the ♪ chip
+// (with the page's mixer, `music`: the music only, off / back to its volume, prefs.ts musicTap;
+// voices, effects and ambience have their own switches in Settings; without it: core's sound on /
+// off, as the TUI's [m]); under it the objective card: step n/N of today, the objective
 // line, or the first-steps guide's step while there is one (guide.ts), tagged "Guide"; the next
 // step greyed; "Take me there" (wayfind.ts, main.ts).
 import type { Hud } from "../game";
@@ -26,20 +28,33 @@ export class HudView {
   private last = "";
   private lastObjective = "";
   private lastText = "";
+  private lastWallet: number | null = null;
+  private args: Parameters<HudView["render"]> | null = null;
 
   constructor(
     private s: Strings,
     private t: (id: string) => string,
     private onSound: (on: boolean) => void,
     private onTake: () => void = () => {},
+    /** the music is on (the ♪ chip is the music's); none: the chip is core's sound */
+    private music?: () => boolean,
   ) {
     this.node.append(this.chips, this.objective);
   }
 
+  /** Draws the last render again (the ♪ chip after the music changed outside the model). */
+  refresh() {
+    if (!this.args) return;
+    this.last = "";
+    this.render(...this.args);
+  }
+
   render(h: Hud, o?: Objective, guide?: GuideStep | null, way?: WayCard | null) {
-    const key = JSON.stringify(h);
+    this.args = [h, o, guide, way];
+    const key = JSON.stringify([h, this.music?.() ?? null]);
     if (key !== this.last) {
-      const bump = this.last && JSON.parse(this.last).wallet !== h.wallet;
+      const bump = this.lastWallet !== null && this.lastWallet !== h.wallet;
+      this.lastWallet = h.wallet;
       this.last = key;
       this.wallet = el("span", { className: `chip wallet${bump ? " bump" : ""}${h.rentLate ? " late" : ""}`, textContent: `${h.currency}${h.wallet}` });
       // Long and short wording in each chip: page.css shows the short one on a portrait phone (one row).
@@ -93,6 +108,16 @@ export class HudView {
 
   /** ♪ / ♪ off: a button (the HUD is otherwise untappable); "no audio" is only a label. */
   private soundChip(sound: Hud["sound"]): HTMLElement {
+    if (this.music) {
+      const on = this.music();
+      const b = el("button", { className: `chip sound music ${on ? "on" : "off"}`, textContent: this.t(on ? "sound-on" : "sound-off"), title: this.s("music-toggle") });
+      b.setAttribute("aria-pressed", String(on));
+      b.addEventListener("click", (e) => {
+        e.stopPropagation();
+        this.onSound(!on);
+      });
+      return b;
+    }
     const text = this.t(`sound-${sound}`);
     if (sound === "none") return el("span", { className: "chip sound none", textContent: text });
     const b = el("button", { className: `chip sound ${sound}`, textContent: text, title: this.s("sound-toggle") });

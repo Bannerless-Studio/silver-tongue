@@ -122,6 +122,12 @@ export function reduceLoad(s: LoadState, e: LoadEvent): LoadState {
   if (e.type === "reset") return emptyLoad;
   const i = s.items.findIndex((x) => x.name === e.name);
   if (e.type === "start") {
+    // a file that failed and is asked for again (a Retry, the next door) counts from 0 again
+    if (i >= 0 && s.items[i].failed) {
+      const items = s.items.slice();
+      items[i] = { name: e.name, total: items[i].total, loaded: 0, done: false };
+      return { items };
+    }
     if (i >= 0) return s;
     return { items: [...s.items, { name: e.name, total: e.bytes && e.bytes > 0 ? e.bytes : null, loaded: 0, done: false }] };
   }

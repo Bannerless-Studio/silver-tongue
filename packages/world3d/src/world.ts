@@ -10,6 +10,7 @@ import { CharacterActor, type ActorOptions } from "./actor";
 import { turnToward } from "./anim";
 import { buildCountryside, flyoverViews, hazeColour, HORIZON, moveClouds, type Part } from "./horizon";
 import { CANOPIES, markSeeThrough, patchSeeThrough, seeAttribute, SEE_ATTR, SEE_FRAG, SEE_FRAG_PARS, SEE_ID0, SEE_NEVER, SEE_OCCLUDER, SEE_VERT, SEE_VERT_PARS, SEE_THROUGH, seeSpecFor, seeUniforms, type Occluder, type SeeSpec } from "./seethrough";
+import { ModuleLoadError } from "./boot";
 import { figureId } from "./barks";
 import { CHARACTER_KINDS, type LoadEvent } from "./loading";
 import { anchorToWorld, heldProp, yawFor, type Blocker, type Box2, type HeldPropSpec, type LayoutIndex, type Placement, type SpaceLayout, type Vec3 } from "./layout";
@@ -267,6 +268,8 @@ export class AssetCache {
    * imported on first use: its own chunk (build.mjs splitting), fetched while the page starts up.
    */
   private loader: Promise<GLTFLoader> | null = null;
+  /** every GLB request's manager: abort() stops them all (a stalled start, boot.ts StartWatch) */
+  private manager = new THREE.LoadingManager();
   private templates = new Map<string, Promise<THREE.Object3D>>();
   readonly toon = new Toon();
   /** the templates loaded so far */
@@ -283,9 +286,19 @@ export class AssetCache {
 
   private gltfLoader(): Promise<GLTFLoader> {
     this.loader ??= Promise.all([import("three/examples/jsm/loaders/GLTFLoader.js"), import("three/examples/jsm/libs/meshopt_decoder.module.js")]).then(
-      ([{ GLTFLoader }, { MeshoptDecoder }]) => new GLTFLoader().setMeshoptDecoder(MeshoptDecoder),
+      ([{ GLTFLoader }, { MeshoptDecoder }]) => new GLTFLoader(this.manager).setMeshoptDecoder(MeshoptDecoder),
+      (e: unknown) => {
+        this.loader = null;
+        // the browser keeps a failed module until the page reloads: the loading screen offers Reload
+        throw new ModuleLoadError(`the GLTF loader didn't load: ${(e as Error)?.message ?? e}`);
+      },
     );
     return this.loader;
+  }
+
+  /** Stops every GLB on its way (their templates fail, and load again when asked for next). */
+  abort() {
+    this.manager.abort();
   }
 
   private async fetchGltf(url: string, name: string): Promise<GLTF> {
@@ -317,6 +330,7 @@ export class AssetCache {
         },
         (e: unknown) => {
           this.onLoad?.({ type: "fail", name });
+          this.templates.delete(name); // asked for again (a Retry, the next door), it loads again
           throw e;
         },
       );

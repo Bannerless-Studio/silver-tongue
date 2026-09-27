@@ -5,6 +5,8 @@
 // live here and come in through this one module.
 //
 // - <ui>.json `start`: the start flow's strings (design/start/strings.js, vendored as is).
+// - <ui>.json `loading`: the loading screen's strings, before and after the game's JS runs (every
+//   UI language has them all: the page picks one before it knows anything else).
 // - <ui>.json `game`: the game chrome over src/strings.ts FALLBACK (English there; partial here,
 //   a missing key falls back to English).
 // - intro-<language>.json: the start flow's six words for a course in that language
@@ -16,8 +18,19 @@ import introZh from "./intro-zh.json";
 import native from "./native-names.json";
 
 export type StringTable = Record<string, string | string[]>;
+/** The loading screen's strings (build.mjs inlines them for src/preload.js; ui/loading.ts after boot). */
+export interface LoadingText {
+  loading: string;
+  slow: string;
+  failed: string;
+  file: string;
+  retry: string;
+  reload: string;
+  webgl: string;
+}
 export interface UiLocale {
   start: StringTable;
+  loading: LoadingText;
   game?: Record<string, string>;
 }
 

@@ -43,8 +43,15 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #edd9b8; col
 .ld-pct { font-family: var(--font-display); font-weight: 400; font-size: 1.25rem; color: var(--gold); }
 .ld-bytes { color: var(--paper-deep); font-variant-numeric: tabular-nums; }
 .ld-item { min-height: 1.3em; margin: 0.35em 0 0; font-size: 0.85rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#loading.error .ld-bar, #loading.error .ld-line { display: none; }
+#loading.error .ld-bar, #loading.error .ld-line, #loading.error .ld-slow { display: none; }
 #loading.error .ld-item { color: var(--paper); font-size: 1rem; white-space: normal; }
+/* a stall (no byte for 15 s: preload.js before the game's JS, ui/loading.ts after) and the failure's Retry / Reload with the error in small type */
+.ld-slow { margin: 0.5em 0 0; font-size: 0.9rem; color: var(--gold); }
+.ld-retry, .ld-err { display: none; }
+/* a failure shows over the start flow too (#start 60): a player never goes through the title to find the game can't start */
+#loading.error { z-index: 65; }
+#loading.error .ld-retry { display: inline-flex; margin-top: 1.1em; }
+#loading.error .ld-err { display: block; margin: 0.9em 0 0; font-size: 0.72rem; color: var(--muted); overflow-wrap: anywhere; }
 @media (prefers-reduced-motion: reduce) { .ld-fill { transition: none; } }
 /* the start flow (start/flow.ts) over everything, the loading screen included (the town loads underneath) */
 #start.st-root { z-index: 60; }

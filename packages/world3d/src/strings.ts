@@ -27,6 +27,11 @@ const FALLBACK: Record<string, string> = {
   "sound-menu-off": "Sound: off",
   "sound-menu-none": "Sound: no audio here",
   "sound-toggle": "Turn sound on or off",
+  // the HUD's ♪ with the page's mixer: the music only (voices, effects, ambience: Settings)
+  "music-toggle": "Turn music on or off",
+  "music-menu-on": "Music: on",
+  "music-menu-off": "Music: off",
+  "music-off-toast": "Music off · tap ♪ to turn on",
   "name-go": "Start",
   "slots-left": "{n} left today",
   day: "Day {n}",
@@ -98,7 +103,9 @@ const FALLBACK: Record<string, string> = {
   "settings-name-save": "Save",
   "settings-name-saved": "Name saved",
   "settings-name-bad": "That name can't be used.",
-  "settings-sound": "Sound",
+  // the four sound switches (prefs.ts): the music slider, then voice, sound effects, ambience (On / Off)
+  "settings-voice": "Voice",
+  "settings-sfx": "Sound effects",
   "settings-sound-on": "On",
   "settings-sound-off": "Off",
   "settings-music": "Music volume",

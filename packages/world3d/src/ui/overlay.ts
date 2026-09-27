@@ -34,8 +34,11 @@ export interface OverlayHooks {
   onPrompt(): void;
   /** a sound effect (audio.ts SoundMixer) */
   sfx?(id: string): void;
-  /** sound on / off from the HUD chip, M, the menu or Settings (word clips, music, effects) */
-  onSound?(on: boolean): void;
+  /**
+   * The music (main.ts, prefs.ts musicTap): the HUD's ♪ chip, M and Menu's "Music" button tap it
+   * off (volume 0) and back on (the volume it had). Without it those drive core's sound (word clips).
+   */
+  music?: { on(): boolean; tap(): boolean };
   /** Menu → Settings */
   settings?: SettingsHooks;
   /** Menu → Hide / Show guide */
@@ -50,7 +53,12 @@ export interface SettingsView {
   courses: { id: string; label: string; soon?: boolean }[];
   course: string;
   name: string;
-  sound: boolean;
+  /** the voices: word clips and barks */
+  voice: boolean;
+  /** the sound effects bus */
+  sfx: boolean;
+  /** the ambience bus (ambienceFull applies while it is on) */
+  ambience: boolean;
   /** 0..1 */
   music: number;
   /** ambience plays every bed, not just the quiet default (audio.ts AMBIENT_LIGHT_CAPS) */
@@ -64,6 +72,9 @@ export interface SettingsHooks {
   /** an error message, or null when the name was taken */
   setName(name: string): string | null;
   setMusic(v: number): void;
+  setVoice(on: boolean): void;
+  setSfx(on: boolean): void;
+  setAmbience(on: boolean): void;
   setAmbienceFull(on: boolean): void;
   replayIntro(): void;
 }
@@ -172,10 +183,17 @@ export class Overlay {
     } else if (h === "word" && m.bubble && this.bubble.pulseWord()) this.highlighted.add(h);
   }
 
-  /** Sound on / off from any control: the hook (main.ts) when there is one, else core's setSound. */
+  /** Core's sound on / off (the word clips): the ♪ chip, M and Menu → Sound when there is no mixer (no `music` hook). */
   private toggleSound(on: boolean) {
-    if (this.hooks.onSound) this.hooks.onSound(on);
-    else this.game.setSound(on);
+    this.game.setSound(on);
+  }
+
+  /** The ♪ tap with the mixer: music off (a 3 s toast says how to get it back) or on again; nothing else. */
+  private tapMusic(): boolean {
+    const on = this.hooks.music!.tap();
+    if (!on) this.toast(this.game.s("music-off-toast"), "note", 3000);
+    this.hud?.refresh();
+    return on;
   }
 
   /** A new viewport size / safe area: the phone layout's rects as CSS custom properties and classes on <html>. */
@@ -224,7 +242,14 @@ export class Overlay {
     this.hud?.node.remove();
     this.bubble?.node.remove();
     this.replies?.node.remove();
-    this.hud = new HudView(s, t, (on) => this.toggleSound(on), () => this.hooks.way?.takeMeThere());
+    const music = this.hooks.music;
+    this.hud = new HudView(
+      s,
+      t,
+      (on) => (music ? void this.tapMusic() : this.toggleSound(on)),
+      () => this.hooks.way?.takeMeThere(),
+      music ? () => music.on() : undefined,
+    );
     const sfx = (id: string) => this.hooks.sfx?.(id);
     this.bubble = new BubbleView(this.course, s, {
       onWord: (w, at) => this.lookUp(w, at),
@@ -387,14 +412,14 @@ export class Overlay {
     }
   }
 
-  private toast(text: string, tone: string) {
+  private toast(text: string, tone: string, fixedMs?: number) {
     const node = el("div", { className: `toast ${tone}` });
     // "Title\nbody" (mentor notes): bold title, then the body.
     const [head, ...body] = text.split("\n");
     if (body.length) node.append(el("b", { textContent: head }), ...body.map((p) => el("div", { textContent: p })));
     else node.textContent = head;
     this.toasts.append(node);
-    const ms = 2600 + text.length * (tone === "story" || tone === "note" ? 55 : 30);
+    const ms = fixedMs ?? 2600 + text.length * (tone === "story" || tone === "note" ? 55 : 30);
     setTimeout(() => node.classList.add("out"), ms);
     setTimeout(() => node.remove(), ms + 600);
     while (this.toasts.children.length > 5) this.toasts.firstElementChild?.remove();
@@ -521,7 +546,7 @@ export class Overlay {
     if (!this.dayCardView.open) this.dayCardView.showModal();
   }
 
-  /** The menu: saved games, export / import a save line, new game, settings, sound, the guide, how to play. */
+  /** The menu: saved games, export / import a save line, new game, settings, music (or sound), the guide, how to play. */
   openMenu() {
     const { t, s } = this.game;
     const body = el("div", { className: "menu-body" });
@@ -569,10 +594,20 @@ export class Overlay {
       b.setAttribute("aria-pressed", String(way.pathShown()));
       return b;
     };
-    /** Sound on / off (setSound, and the music and effects), as the HUD chip; relabels itself. */
+    /** Music on / off as the HUD's ♪ with the mixer (main.ts), else core's sound (the word clips); relabels itself. */
     const sound = () => {
-      // With the mixer (main.ts) the setting is the prefs' sound; without it, core's (the HUD chip's).
-      const state = (): "on" | "off" | "none" => (this.hooks.settings ? (this.hooks.settings.current().sound ? "on" : "off") : this.game.model.hud.sound);
+      const music = this.hooks.music;
+      if (music) {
+        const label = () => s(music.on() ? "music-menu-on" : "music-menu-off");
+        const b = button(label(), () => {
+          this.tapMusic();
+          b.textContent = label();
+          b.setAttribute("aria-pressed", String(music.on()));
+        }, "sound");
+        b.setAttribute("aria-pressed", String(music.on()));
+        return b;
+      }
+      const state = (): "on" | "off" | "none" => this.game.model.hud.sound;
       const label = () => s(`sound-menu-${state()}`);
       const b = button(label(), () => {
         const h = state();
@@ -620,8 +655,9 @@ export class Overlay {
   }
 
   /**
-   * Menu → Settings: reading language, course (with the coming-soon ones greyed), name, sound,
-   * music volume, replay the six words. Switching course goes through courses.ts (main.ts).
+   * Menu → Settings: reading language, course (with the coming-soon ones greyed), name, the four
+   * sound switches (music volume, voice, sound effects, ambience with Light / Full under it), replay
+   * the six words. Switching course goes through courses.ts (main.ts).
    */
   private settingsView(body: HTMLElement, back: () => void) {
     const { s } = this.game;
@@ -665,31 +701,43 @@ export class Overlay {
     name.addEventListener("keydown", (e) => {
       if (e.key === "Enter") saveName.click();
     });
-    const soundBtn = el("button", {});
-    const soundLabel = () => {
-      const on = hooks.current().sound;
-      soundBtn.textContent = s(on ? "settings-sound-on" : "settings-sound-off");
-      soundBtn.setAttribute("aria-pressed", String(on));
-    };
-    soundLabel();
-    soundBtn.addEventListener("click", () => {
-      this.toggleSound(!hooks.current().sound);
-      soundLabel();
-    });
     const music = el("input", { type: "range", min: "0", max: "100", step: "5", value: String(Math.round(cur.music * 100)) });
     music.setAttribute("aria-label", s("settings-music"));
-    music.addEventListener("input", () => hooks.setMusic(Number(music.value) / 100));
+    music.addEventListener("input", () => {
+      hooks.setMusic(Number(music.value) / 100);
+      this.hud?.refresh();
+    });
     const ambienceBtn = el("button", {});
     const ambienceLabel = () => {
       const on = hooks.current().ambienceFull;
       ambienceBtn.textContent = s(on ? "settings-ambience-full" : "settings-ambience-light");
       ambienceBtn.setAttribute("aria-pressed", String(on));
+      // Light / Full only matters while ambience plays
+      ambienceBtn.disabled = !hooks.current().ambience;
     };
     ambienceLabel();
     ambienceBtn.addEventListener("click", () => {
       hooks.setAmbienceFull(!hooks.current().ambienceFull);
       ambienceLabel();
     });
+    /** An On / Off switch for one bus; relabels itself (and `after` whatever depends on it). */
+    const onOff = (get: () => boolean, set: (on: boolean) => void, after: () => void = () => {}) => {
+      const b = el("button", {});
+      const label = () => {
+        b.textContent = s(get() ? "settings-sound-on" : "settings-sound-off");
+        b.setAttribute("aria-pressed", String(get()));
+      };
+      label();
+      b.addEventListener("click", () => {
+        set(!get());
+        label();
+        after();
+      });
+      return b;
+    };
+    const voiceBtn = onOff(() => hooks.current().voice, (on) => hooks.setVoice(on));
+    const sfxBtn = onOff(() => hooks.current().sfx, (on) => hooks.setSfx(on));
+    const ambienceOn = onOff(() => hooks.current().ambience, (on) => hooks.setAmbience(on), ambienceLabel);
     const intro = el("button", { textContent: s("settings-intro") });
     intro.addEventListener("click", () => {
       this.menu.close();
@@ -706,9 +754,10 @@ export class Overlay {
         row(s("settings-reading"), pick(cur.learners, (x) => x.code === cur.learner, (x) => void switchTo(cur.course, x.code))),
         row(s("settings-course"), pick(cur.courses, (x) => x.id === cur.course, (x) => void switchTo(x.id, cur.learner), (x) => !!x.soon)),
         row(s("settings-name"), el("div", { className: "set-name" }, name, saveName)),
-        row(s("settings-sound"), el("div", { className: "set-options" }, soundBtn)),
         row(s("settings-music"), music),
-        row(s("settings-ambience"), el("div", { className: "set-options" }, ambienceBtn)),
+        row(s("settings-voice"), el("div", { className: "set-options" }, voiceBtn)),
+        row(s("settings-sfx"), el("div", { className: "set-options" }, sfxBtn)),
+        row(s("settings-ambience"), el("div", { className: "set-options" }, ambienceOn, ambienceBtn)),
         el("div", { className: "set-options" }, intro),
         msg,
       ),
@@ -760,8 +809,9 @@ export class Overlay {
       return true;
     }
     // The TUI's sound keys: M sound on / off, R says the bubble again.
-    if (e.key.toLowerCase() === "m" && (m.hud.sound !== "none" || this.hooks.onSound)) {
-      this.toggleSound(this.hooks.settings ? !this.hooks.settings.current().sound : m.hud.sound !== "on");
+    if (e.key.toLowerCase() === "m" && (m.hud.sound !== "none" || this.hooks.music)) {
+      if (this.hooks.music) this.tapMusic();
+      else this.toggleSound(m.hud.sound !== "on");
       return true;
     }
     if (e.key.toLowerCase() === "r" && m.bubble) {

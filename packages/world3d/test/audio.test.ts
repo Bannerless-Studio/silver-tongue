@@ -254,7 +254,7 @@ describe("game.ts: what is said (as app.ts)", () => {
     expect(a.plays.at(-1)).toEqual([{ clips: b.audio, slow: true }]);
   });
 
-  it("sound off: nothing is said until it is turned on again; soundSet toggles the HUD chip", () => {
+  it("voice off (core's sound): nothing is said by itself until it is turned on again, only what a tap asks for; soundSet toggles the HUD chip", () => {
     const a = fakeAudio();
     const { game } = makeGame(named(), undefined, a);
     expect(game.model.hud.sound).toBe("on");
@@ -264,12 +264,16 @@ describe("game.ts: what is said (as app.ts)", () => {
     expect(game.model.hud.sound).toBe("off");
     expect(a.stops).toBeGreaterThan(0);
     game.talkTo("wang");
-    game.replay();
     expect(a.plays).toEqual([]);
+    // say it again, a ▶, a word or the sentence looked up: the player asked for that clip
+    game.replay();
+    expect(a.plays).toEqual([[{ clips: game.model.bubble!.audio }]]);
+    game.say(["x"]);
+    expect(a.plays.at(-1)).toEqual([{ clips: ["x"] }]);
     game.setSound(true);
     expect(game.model.hud.sound).toBe("on");
     game.replay();
-    expect(a.plays).toEqual([[{ clips: game.model.bubble!.audio }]]);
+    expect(a.plays).toHaveLength(3);
   });
 
   it("no audio here: the HUD says so and the sound toggle does nothing (as the TUI's [m])", () => {

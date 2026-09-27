@@ -55,14 +55,74 @@ The one-off build (`npm run build`), measured 2026-09-27:
 | ambience (.ogg + .m4a) | 3,404 | eight beds at Vorbis q2 / AAC 64k (measured after the peaceful-town audio; four beds at q4 / 96k were 2,419) |
 | effects (.ogg + .m4a) | 384 | |
 | title backdrop (`assets/ui/title`) | 291 | six JPEGs |
-| main.js + chunks/ | 315 + 724 | chunks: three core 579, GLTF loader 43, meshopt decoder 26, shared 44 (all modulepreloaded); start flow 13 and orbit camera 19 lazy |
-| index.html | 44 | start.css + page.css inlined |
+| main.js + chunks/ | 331 + 729 | chunks: three core 580, GLTF loader 43, meshopt decoder 26, shared 41 + 6 (all fetched by the preloader, see Loading); start flow 13 and orbit camera 19 lazy |
+| index.html | 49 | start.css + page.css inlined; the preloader (3 KB) and its data (the files, the loading strings) |
 | courses/ | 344 | |
-| **total** | **14,861** | 180 KB above the 14,681 KB comparison build; includes barks and all eight ambient beds |
+| **total** | **14,887** | 180 KB above the 14,681 KB comparison build; includes barks and all eight ambient beds |
 
 A browser without Vorbis (older Safari) has no music in the one-off build; its ambience and
 effects play from the .m4a. The next saving (both music formats under 15 MB): the ambience as
 .ogg only.
+
+## Loading
+
+The way to the title screen never sits silent and never sits forever: every wait has visible
+progress, a stall message and a way out.
+
+- **Before the game's JS runs** (`src/preload.js`, ES5, inlined into index.html by `build.mjs`,
+  under 3 KB; its data beside it as JSON, `#ld-text`): the loading card is in the HTML ("Loading the
+  game… 0.0 / 1.0 MB", the total written in at build time). The preloader fetches main.js and every
+  chunk it starts with, in parallel, counting bytes as they stream, then adds the
+  `<script type="module" src="./main.js">` itself: the module graph comes from the HTTP cache
+  those fetches filled (no `modulepreload` links: they would download every file a second time).
+  The fonts' stylesheet doesn't block the first paint (`media="print"` until it loads).
+- **Stall**: no byte for 15 s shows "Slow connection, still loading…" under the bar; 45 s (60 s
+  once the game's JS runs) aborts what is in flight and shows the failure.
+- **Failure**: a fetch that rejects or isn't 200 (a stale cached page naming chunks that are gone:
+  404, within a second), the module script's error, any error or unhandled rejection before
+  `main.ts` sets `window.__stBooted`: "Couldn't load the game. Check your connection." with
+  **Retry** (the fetches again; a second failure, or any failure once the module script has run,
+  offers **Reload**: a module graph that failed can't be imported again) and the error in small
+  type. The browser coming back online presses Retry once by itself. Opened from `file://`: it
+  says to serve the folder instead.
+- **After the game's JS runs** (`src/boot.ts`, `src/ui/loading.ts`, `main.ts`): the same card
+  and the same `Watchdog` / `retryAction`. Every startup step is tracked by a `StartWatch` (15 s
+  without progress: the slow line; 60 s: the steps fail with a `StallError`, the GLBs and JSON in
+  flight are aborted); every JSON goes through `JsonFetcher` (aborted after 60 s without a byte);
+  each failure waits on the screen's button and runs its step again (`retrying`: Retry twice, then
+  Reload), keeping what already loaded. No WebGL: "This browser can't run 3D (WebGL is off). Try
+  Chrome or Firefox, or enable hardware acceleration." with Reload.
+- **Music, ambience and effects never hold it up**: the mixer fetches nothing before the first
+  gesture (`audio.ts` `unlock()`), and main.ts never awaits the sound manifest (`setManifest` when
+  it lands; a failed one: a silent mixer).
+- The strings are in every UI language (`locale/<ui>.json` `loading`), picked by `?ui=`, the
+  remembered reading language, then the browser's.
+
+Every await between the page and the title screen (a new player's title; a returning player's
+first frame):
+
+| step | progress | no progress | throws |
+| --- | --- | --- | --- |
+| fonts stylesheet | none | not render-blocking: the page paints with system fonts | same |
+| main.js + 5 chunks (preloader `fetch`) | bar by bytes | 15 s slow line; 45 s aborted: failure, Retry | failure, Retry (then Reload); online: one Retry |
+| module script (HTTP cache) and its evaluation | bar at 100 % | 15 s slow line; 60 s without boot: failure, Reload | `onerror` / error / rejection before boot: failure, Reload |
+| `new THREE.WebGLRenderer` (sync) | none | none | `WebGLError`: the WebGL message, Reload |
+| `assets/index.json` | slow-line watch (bytes) | 15 s slow; 60 s `StallError`: failure, Retry | failure, Retry (the town step again) |
+| GLTF loader + meshopt decoder import | slow-line watch | as above | `ModuleLoadError`: failure, Reload |
+| `assets.preload(plan.first)` (the first frame's GLBs) | bar by bytes | as above; the GLBs aborted (`AssetCache.abort`) | failure, Retry (failed templates dropped, loaded ones kept) |
+| `SceneSpace.create(street)`, the player, the bag | (from the templates just loaded) | as above | as above |
+| `courses/index.json` (catalog) | slow-line watch | 15 s slow; 60 s: failure, Retry | failure, Retry (`file://`: serve the folder) |
+| `assets/audio/manifest.json` | none | never awaited (its own 60 s abort) | never awaited: a silent mixer |
+| `resumePick`: the remembered course's file | slow-line watch | 60 s: the start flow (choosing there loads it again) | the start flow |
+| `?promo=1`: `applyStart` | slow-line watch | failure, Retry | failure, Retry |
+| the start flow's chunk | slow-line watch | 60 s: failure, Retry (the import again) | `ModuleLoadError`: failure, Reload |
+| the start flow's intro course (`applyStart`) | the flow's busy state | aborted at 60 s: no intro words | no intro words (flow.ts) |
+| after the flow: `applyStart` | none (the flow is up) | aborted at 60 s: the flow again | the flow again (`startFlowPick`) |
+| `await worldReady` | the bar | as above (never rejects) | as above |
+| anything else in `main()` | none | none | failure, Reload |
+
+A door whose room hasn't landed is tracked the same way (the slow line on its loading screen;
+60 s: aborted, the player stays outside).
 
 ## Loading and streaming
 
@@ -79,12 +139,12 @@ effects play from the .m4a. The next saving (both music formats under 15 MB): th
   people are in, nearest door first. A door whose room hasn't landed waits behind the loading
   screen, shown only after 300 ms; a save made inside a room goes in once it lands.
 - **Audio** never waits: the mixer fetches nothing before the first gesture (audio.ts); its
-  manifest is fetched after the town load has started.
+  manifest is fetched after the town load has started and never awaited (see Loading).
 - **Screen**: title, a bar with percent and MB (bytes from `index.json`, the loader's progress per
   file; a count when a size is unknown: `reduceLoad` / `loadSummary`), the file loading now;
   z-order under the start flow, over the game and the fly-over's bars.
 - **Chunks**: esbuild splitting (`build.mjs`); the GLTF loader and meshopt decoder are imported on
-  first use and modulepreloaded with main.js's own chunks.
+  first use and fetched by the preloader with main.js's own chunks (see Loading).
 
 **Audio clips** (`content/audio/<language>`, for zh 870 clips, all referenced by the course, about
 7.1 MB) would take dist/ further past the 15 MB budget, so a one-off build doesn't copy
@@ -163,8 +223,12 @@ courses/<id>/<learner>.json (courses.ts) ─► core ◄─ inputs ── game.t
 - `src/guide.ts`: the first-steps guide (see First-steps guide); `src/marker.ts` its 3D marker.
 - `src/barks.ts` + `barks/` (outside `src/`, as `locale/`): what everyone outside the course says
   (see Barks): `barks/<language>.json` (roles and lines), `barks/index.ts` (`BARKS`), `barks/audio/`.
-- `src/prefs.ts`: the 3D game's own settings (`silver-tongue:world3d:prefs`: sound, music
-  volume, guide hidden), apart from the shared key tui-web rewrites whole.
+- `src/prefs.ts`: the 3D game's own settings (`silver-tongue:world3d:prefs`: the four sound
+  switches, voice, effects, ambience and the music volume with the one ♪ brings back, the guide
+  hidden), apart from the shared key tui-web rewrites whole; `src/sounds.ts` puts each switch on
+  its own bus.
+- `src/preload.js` (the page's first script), `src/boot.ts` (the startup watch, the JSON fetch that
+  can't hang, the retry loop): see Loading.
 - `src/game.ts`: the only module that talks to core. No DOM, no three.js, so it runs under vitest.
   - `dispatch(events)` is the one event dispatcher. Its `switch` covers every `GameEvent`, and the
     `never` default fails the typecheck when core adds an event.
@@ -277,7 +341,9 @@ courses/<id>/<learner>.json (courses.ts) ─► core ◄─ inputs ── game.t
   back 25% so the room's width fits. `CAMERA.mode = "orbit"` is the one-line switch to Jamil's
   orbit camera.
 - `src/ui/`: the HTML/CSS overlay. No text is drawn in WebGL.
-  - HUD: place, day, wallet, slots left, rank, the ♪ sound chip (tap: on / off), and a parcel chip ("Parcel for School") while an
+  - HUD: place, day, wallet, slots left, rank, the ♪ chip (the music: tap it off, a 3 s toast
+    "Music off · tap ♪ to turn on", tap it back to its volume; voice, effects and ambience are
+    Settings' own switches), and a parcel chip ("Parcel for School") while an
     errand is on; under it the objective line and the rent timer.
   - Place banner (name + description) on entering a place.
   - The floating prompt: one button over the nearest thing to use, "E · Talk to Old Wang",
@@ -302,7 +368,7 @@ courses/<id>/<learner>.json (courses.ts) ─► core ◄─ inputs ── game.t
   - Day summary card after sleeping: earned, mix-ups, food, rent (or "not paid"), change, wallet.
   - Menu: saved games (tui's `sessionLines`), export / import a save line (tui's
     `encodeSave` / `decodeSave`, same `st1:` lines as tui-web and the terminal game), new game
-    (the start flow again), Settings, sound on / off, Hide / Show guide, how to play.
+    (the start flow again), Settings, Music: on / off (the ♪'s tap), Hide / Show guide, how to play.
   - Name prompt (only a save without a name: new games are named in the start flow), mentor
     button, sleep button (at home only).
   - Hint chips: every bubble line and reply option carries its meaning hidden under a small "?"
@@ -400,8 +466,8 @@ case).
 | menu "<npc>: <scene> · needs ¥N" (a scene waiting for money) | the same line as a toast on talking to that NPC; a reply's price in the reply panel | none |
 | start list "Choose a course" (several courses, none remembered) | the start flow's "I speak…" / "I want to learn…" cards (`src/start/flow.ts`), while the town loads underneath; a returning player with a save skips it | none |
 | settings remembered (`silver-tongue:settings`: course, reading language) | the same key and helpers (`loadWebSettings` / `saveWebSettings`, `chooseStart`, `learnerFor`, via `courses.ts` `resumePick` / `applyStart`) | none |
-| [o] settings: switch course, reading language, sound | Menu → Settings: reading language, course, name, sound, music volume, replay the six words (switching goes through `courses.ts` `applyStart`, as tui-web's `switchTo`) | none |
-| [m] sound on / off; bottom right "♪ [m]" / "♪ off [m]" / "no audio" | the ♪ chip in the HUD (tap: on / off; "no audio" when there's none), Menu → Sound, or M | `setSound` (not logged; `state.sound`) |
+| [o] settings: switch course, reading language, sound | Menu → Settings: reading language, course, name, music volume, voice, sound effects, ambience, replay the six words (switching goes through `courses.ts` `applyStart`, as tui-web's `switchTo`) | none |
+| [m] sound on / off; bottom right "♪ [m]" / "♪ off [m]" / "no audio" | Menu → Settings → Voice (the word clips and barks); the HUD's ♪, Menu → Music and M are the music's (without the page's mixer they are core's sound, "no audio" when there's none) | `setSound` (not logged; `state.sound`) |
 | lines said as they come (line clips; reactions in each NPC's voice, `reactionAudio`; the player's reply, picked or right tiles) | the same, through `src/audio.ts` (one element, clips in order with a 300 ms beat, slow repeats at 0.8) | none |
 | [r] say the last line again (slowly after a slow repeat) | ▶ on the bubble, or R | none |
 | [s] whole sentence says the line; [p] play the word / sentence looked up | "…" says the sentence; ▶ in the gloss popover; ▶ on each reply option says it without picking | none |
@@ -414,7 +480,7 @@ mix-up shrug), walletChanged (toast + float + day card), trustChanged, wordState
 pulse), sceneEnded, unlocked, rankChanged, dayEnded (night fade + card), noteReady, playerNamed,
 mentorVisited, errandStarted (toast; the bag goes into the player's hands, HUD chip, objective),
 errandEnded (toast; the bag is put down, the wages float as a delivery), inputRejected (toast),
-soundSet (the HUD's ♪ chip from `state.sound`; off stops what is playing). What is said is
+soundSet (Settings' Voice from `state.sound`, or the ♪ chip without the mixer; off stops what is playing; a tap on ▶ / say it again / a word / the sentence still plays). What is said is
 queued per call as app.ts does (lineSpoken, lineRephrased slow or not, npcReacted's
 `reactionAudio[reaction][npc]`, actionPerformed on right tiles) and played once the batch is in.
 
@@ -672,10 +738,15 @@ lines, place banners and everything from the course stay in the course's reading
 ## Settings (Menu → Settings)
 
 Reading language (the course's `learners`), course (the catalog, with the coming-soon languages
-greyed), name (`setName`), sound on / off (music, ambience, effects and the word clips: core's
-`setSound` follows), music volume, Ambience: Light / Full (`ambienceFull`, below), replay the six
-words. Sound, volume, the ambience mode and the guide's Hide / Show are kept in
-`silver-tongue:world3d:prefs` (`src/prefs.ts`).
+greyed), name (`setName`), then four sound switches, each on its own bus and nothing else
+(`src/sounds.ts`): Music (the volume slider, 0 = off; the HUD's ♪ taps it off and back to its
+last volume above 0, else 0.6), Voice On / Off (the word clips and barks: core's `setSound`; an
+explicit tap on ▶, say it again, a word or the sentence still plays), Sound effects On / Off (UI
+taps, the bubble, doors, coins, the bell…: the sfx bus), Ambience On / Off (the ambient bus; no bed
+starts or downloads while off) with Light / Full under it (`ambienceFull`, below; only while on);
+replay the six words. They and the guide's Hide / Show are kept in `silver-tongue:world3d:prefs`
+(`src/prefs.ts`). An old single `sound: false` migrates to effects, ambience and music off (the
+music's volume one ♪ tap away) with the voices back on.
 
 ## Audio buses
 
@@ -684,8 +755,8 @@ effects (make-it-in-china `tools/audio/`, vendored in `assets/audio/` with its
 `manifest.json`) play on a `SoundMixer` over Web Audio (iOS ignores an element's volume): master →
 music / ambient / sfx gains. `pickFormat` takes `.ogg` where `canPlayType` says Vorbis, else
 `.m4a`; an entry the build shipped in one format falls back to it (`fileFor`). Nothing plays
-before the first gesture (`unlock()` makes / resumes the context inside it); the mute and the
-music volume persist (prefs). The choices are pure (`test/sound.test.ts`):
+before the first gesture (`unlock()` makes / resumes the context inside it); the music volume and
+the effects and ambience switches (`setSfx` / `setAmbience`, each its own bus) persist (prefs). The choices are pure (`test/sound.test.ts`):
 
 | bus | what | when |
 | --- | --- | --- |
@@ -927,7 +998,10 @@ that role said last).
   timing, the objective card's DOM, the strings in bn / zh, the draw calls (3).
 - `test/sound.test.ts`: the buses' pure choices: format by `canPlayType`, music by phase /
   daylight / interior, ambience by the real town's water distance / daylight / zone, footstep
-  surfaces on the real grid and decks, the stride clock, event effects; the vendored manifest; prefs.
+  surfaces on the real grid and decks, the stride clock, event effects; the vendored manifest; prefs
+  (the old single `sound` migrated, the ♪ tap and the slider's remembered volume); the four
+  switches, each silencing its own bus only, voice off saying no bark or word clip while music
+  and effects go on (an explicit tap still plays).
 - `test/horizon.test.ts`: the far edge and the clouds against every view (above; it also checks
   that the old edge and the old cloud fail it), the seams between the landscape GLBs, the
   countryside (the ramp on the apron, skirt and mountains' feet, no colour step at the ring in any
@@ -938,6 +1012,13 @@ that role said last).
   by click, a pointer / touch press that lifts on the row, or Enter / Space; the row itself does.
 - `test/loading.test.ts`: the load plan (every asset once, the first frame's set, NPCs by distance,
   nearest door first) and the progress reducer (bytes, count fallback, server length).
+- `test/preload.test.ts`: the preloader's byte accounting (a stale page's sizes), the watchdog
+  (fake timers), the retry state machine, the language it picks, and the runner on a fake page:
+  the bar by bytes, the module script, a 404, a stall, Retry then Reload, back online, errors
+  before and after boot, `file://`.
+- `test/boot.test.ts`: the startup watch over pending steps, the JSON fetch that aborts itself,
+  the retry loop (Reload for no WebGL and a failed module), the loading screen's slow line,
+  failure, shared Retry and online retry, the bar across a retry.
 - `test/barks.test.ts`: the picker (every line comes up, never the same twice in a row, even with a
   constant rng; an unknown role says passerby's), every figure in the merged town and every interior
   mapped to a role of its own (none falls back) and counted as world.ts builds them, every story NPC

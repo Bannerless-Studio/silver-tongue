@@ -27,7 +27,7 @@
 //
 // Assets come from the vendored packages/world3d/assets (refreshed from the make-it-in-china
 // library by `npm run assets:sync`); WORLD3D_ASSETS overrides it (any library dir with index.json).
-import { context } from "esbuild";
+import { build, context } from "esbuild";
 import { cpSync, copyFileSync, existsSync, rmSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -172,19 +172,29 @@ function copyAudio(catalog) {
   return [n, bytes, missing];
 }
 
-/** index.html with the CSS inlined: the UI skin (start/start.css, the start flow's design system) first, then page.css. */
+const TITLE = "Silver Tongue";
+/** the loading screen's card as plain HTML (src/preload.js draws the same, in the page's language, a moment later) */
+const loadingCard = (bytesText, item) =>
+  `<div class="ld-card"><h1 class="ld-title">${TITLE}</h1><div class="ld-bar"><div class="ld-fill"></div></div><p class="ld-line"><b class="ld-pct">0%</b><span class="ld-bytes">${bytesText}</span></p><p class="ld-item">${item}</p><p class="ld-slow" hidden></p><button class="ld-retry st-btn primary" type="button"></button><p class="ld-err"></p></div>`;
+
+/**
+ * index.html with the CSS inlined: the UI skin (start/start.css, the start flow's design system)
+ * first, then page.css. --dev: the module script as is (chunk names change under watch); a build
+ * fills the loading card and the preloader in after esbuild (inlinePreloader).
+ */
 function writeHtml() {
   const css = readFileSync(join(here, "src", "start", "start.css"), "utf8") + "\n" + readFileSync(join(here, "src", "page.css"), "utf8");
-  const html = readFileSync(join(here, "src", "index.html"), "utf8").replace("/*CSS*/", () => css);
+  let html = readFileSync(join(here, "src", "index.html"), "utf8").replace("/*CSS*/", () => css);
+  if (dev) html = html.replace("<!--LOADING-->", loadingCard("", "Loading…")).replace("<!--BOOT-->", `<script type="module" src="./main.js"></script>`);
   writeFileSync(join(dist, "index.html"), html);
 }
 
 /**
- * <link rel="modulepreload"> in index.html for every chunk main.js imports, and for the GLTF
- * loader's and the meshopt decoder's (imported on first use, needed at once): the browser fetches
- * them alongside main.js instead of after it. The start flow and the orbit camera stay lazy.
+ * The files the page starts with: main.js, every chunk it imports, and the GLTF loader's and the
+ * meshopt decoder's (imported on first use, needed at once). The start flow and the orbit camera
+ * stay lazy. [url relative to the page, bytes].
  */
-function preloadChunks(meta) {
+function startFiles(meta) {
   const main = Object.entries(meta.outputs).find(([, o]) => o.entryPoint?.endsWith("src/main.ts"))?.[0];
   if (!main) return;
   const want = new Set();
@@ -199,9 +209,48 @@ function preloadChunks(meta) {
   };
   walk(main);
   const rel = (p) => "./" + relative(dist, resolve(p)).split(sep).join("/");
-  const links = [...want].map((p) => `    <link rel="modulepreload" href="${rel(p)}" />`).join("\n");
+  return [main, ...want].map((p) => [rel(p), statSync(resolve(p)).size]);
+}
+
+/** most the inlined preloader may weigh (index.html's own script, before any module; its data, the files and the strings, sit apart in #ld-text) */
+const PRELOAD_BUDGET = 3000;
+
+/**
+ * index.html's loading card ("Loading the game… 0.0 / 1.0 MB") and the preloader (src/preload.js,
+ * ES5, minified, inlined; beside it as JSON, #ld-text: the files with their sizes, the loading
+ * strings of every UI language, the watchdog's times):
+ * it fetches the start files with a byte bar, a stall line, a failure with Retry, then adds the
+ * module script (no modulepreload links: they would fetch every file a second time). Returns its bytes.
+ */
+async function inlinePreloader(meta) {
+  const files = startFiles(meta);
+  if (!files) throw new Error("no main.js in the metafile");
+  const loc = (l) => JSON.parse(readFileSync(join(here, "locale", `${l}.json`), "utf8")).loading;
+  const langs = Object.fromEntries(["en", "bn", "zh"].map((l) => [l, loc(l)]));
+  const s = Object.fromEntries(Object.entries(langs).map(([l, t]) => [l, { loading: t.loading, slow: t.slow, failed: t.failed, file: t.file, retry: t.retry, reload: t.reload }]));
+  const cfg = { files, entry: files[0][0], s, fallback: "en", key: "silver-tongue:settings", slowMs: 15000, failMs: 45000, moduleMs: 60000 };
+  const out = await build({
+    stdin: { contents: `import { boot } from "./preload.js";\nboot(window, document);`, resolveDir: join(here, "src"), sourcefile: "preload-entry.js" },
+    bundle: true,
+    format: "iife",
+    target: "es5",
+    minify: true,
+    write: false,
+    legalComments: "none",
+    charset: "utf8",
+    logLevel: "warning",
+  });
+  const js = out.outputFiles[0].text.trim();
+  if (/<\/script|<!--/i.test(js)) throw new Error("the preloader can't be inlined: it has </script or <!--");
+  const bytes = Buffer.byteLength(js);
+  if (bytes > PRELOAD_BUDGET) throw new Error(`the inlined preloader is ${bytes} bytes, over its ${PRELOAD_BUDGET}`);
+  const total = files.reduce((n, f) => n + f[1], 0);
   const f = join(dist, "index.html");
-  writeFileSync(f, readFileSync(f, "utf8").replace("  </head>", `${links}\n  </head>`));
+  const html = readFileSync(f, "utf8")
+    .replace("<!--LOADING-->", () => loadingCard(`0.0 / ${(total / 1048576).toFixed(1)} MB`, langs.en.loading))
+    .replace("<!--BOOT-->", () => `<script type="application/json" id="ld-text">${JSON.stringify(cfg).replace(/</g, "\\u003c")}</script>\n    <script>${js}</script>`);
+  writeFileSync(f, html);
+  return bytes;
 }
 
 /** Total bytes under a directory. */
@@ -255,10 +304,10 @@ if (dev) {
 } else {
   const result = await ctx.rebuild();
   await ctx.dispose();
-  preloadChunks(result.metafile);
+  const preload = await inlinePreloader(result.metafile);
   const kb = (n) => `${Math.round(n / 1024)} KB`;
   const chunks = existsSync(join(dist, "chunks")) ? readdirSync(join(dist, "chunks")).map((f) => `${f} ${kb(statSync(join(dist, "chunks", f)).size)}`) : [];
   console.log(
-    `built packages/world3d/dist: sound + title + barks ${kb(sounds)}${MUSIC_OGG_ONLY ? ` (music .ogg only: over the 15 MB budget with both, -${kb(musicM4aBytes())})` : " (.ogg + .m4a)"}, courses/ ${catalog.map((e) => `${e.id} (${e.learners.join(", ")})`).join(", ")}, audio ${clips ? `${clips[0]} clips in courses/<course>/audio/ (${kb(clips[1])}${clips[2] ? `, ${clips[2]} missing` : ""})` : `loaded from ${audioRoot}courses/<course>/audio/`}, index.html ${kb(statSync(join(dist, "index.html")).size)}, main.js ${kb(statSync(join(dist, "main.js")).size)} + chunks/ ${chunks.join(", ") || "none"}, assets/ ${kb(size(join(dist, "assets")))} (${glbs} GLBs); total ${kb(size(dist))}`,
+    `built packages/world3d/dist: sound + title + barks ${kb(sounds)}${MUSIC_OGG_ONLY ? ` (music .ogg only: over the 15 MB budget with both, -${kb(musicM4aBytes())})` : " (.ogg + .m4a)"}, courses/ ${catalog.map((e) => `${e.id} (${e.learners.join(", ")})`).join(", ")}, audio ${clips ? `${clips[0]} clips in courses/<course>/audio/ (${kb(clips[1])}${clips[2] ? `, ${clips[2]} missing` : ""})` : `loaded from ${audioRoot}courses/<course>/audio/`}, index.html ${kb(statSync(join(dist, "index.html")).size)} (preloader ${preload} B), main.js ${kb(statSync(join(dist, "main.js")).size)} + chunks/ ${chunks.join(", ") || "none"}, assets/ ${kb(size(join(dist, "assets")))} (${glbs} GLBs); total ${kb(size(dist))}`,
   );
 }

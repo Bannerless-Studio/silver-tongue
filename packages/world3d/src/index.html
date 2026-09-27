@@ -14,9 +14,10 @@
     <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png" />
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
     <title>Silver Tongue 3D</title>
-    <!-- the UI skin's faces (start/start.css): Lilita One for display, Noto Serif SC for the lines; system fallbacks offline -->
+    <!-- the UI skin's faces (start/start.css): Lilita One for display, Noto Serif SC for the lines; system fallbacks offline.
+         Not render-blocking (media="print" until it loads): on a bad connection the page and its loading bar paint at once. -->
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&amp;family=Noto+Serif+SC:wght@600&amp;display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&amp;family=Noto+Serif+SC:wght@600&amp;display=swap" media="print" onload="this.media='all'" />
     <style>
 /*CSS*/
     </style>
@@ -24,8 +25,9 @@
   <body>
     <main id="stage"></main>
     <div id="ui"></div>
-    <div id="loading"><div class="ld-card"><h1 class="ld-title">Silver Tongue</h1><p class="ld-item">Loading…</p></div></div>
+    <div id="loading"><!--LOADING--></div>
     <div id="start"></div>
-    <script type="module" src="./main.js"></script>
+    <!-- build.mjs: the preloader (src/preload.js), which adds the module script; --dev: the module script -->
+    <!--BOOT-->
   </body>
 </html>

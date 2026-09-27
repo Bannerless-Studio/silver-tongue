@@ -89,6 +89,7 @@ class ClassList {
 export class FakeElement extends Target {
   readonly tagName: string;
   className = "";
+  hidden = false;
   attributes = new Map<string, string>();
   childNodes: (FakeElement | TextNode)[] = [];
   style: Record<string, string> & { setProperty?: (k: string, v: string) => void } = {};
@@ -155,6 +156,10 @@ export class FakeElement extends Target {
   }
   append(...kids: (FakeElement | TextNode | string)[]) {
     this.childNodes.push(...this.adopt(kids));
+  }
+  appendChild<T extends FakeElement | TextNode>(n: T): T {
+    this.append(n);
+    return n;
   }
   prepend(...kids: (FakeElement | TextNode | string)[]) {
     this.childNodes.unshift(...this.adopt(kids));
