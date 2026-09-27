@@ -13,13 +13,13 @@ import {
   type WordId,
 } from "@silver-tongue/core";
 import type { AudioOut, Speech, SpeechSpeed } from "@silver-tongue/view";
-import { notebookLines } from "./notebook";
+import { notebookBody, notebookGroups, notebookHead, type NotebookView } from "./notebook";
 import { lineSpans, wrapItems } from "./screen";
 import { innerWidth, NARROW, renderFrame, type Panel } from "./panel";
 import { strWidth, wrapLine } from "./width";
 import type { Key, StyledLine, Terminal } from "./terminal";
 import {
-  actionNarration, firstTimeGloss, hudValues, introLines, makeText, placeMenu, readingRow, sentenceCard, settingsRows, tileEcho, waitingForMoney, wordCard,
+  actionNarration, firstTimeGloss, hudValues, introLines, makeText, notebookEntries, placeMenu, readingRow, sentenceCard, settingsRows, tileEcho, waitingForMoney, wordCard,
   type HudValues, type SettingsScreen, type Text,
 } from "@silver-tongue/view";
 
@@ -80,7 +80,7 @@ export function startApp(opts: AppOptions): App {
   let tileInput: number[] = [];
   let lastLine: RenderedLine | null = null;
   let notebookFrom: Mode = "explore"; // where closing the notebook returns to
-  let notebookTop = 0; // first notebook line on screen
+  let nbView: NotebookView = { tab: "words", group: 0, word: 0, open: false, top: 0 };
   let settingsFrom: Mode = "explore"; // where closing settings returns to
   let handedOver = false; // another course or reading language took over: this app is done
   let resuming = false;
@@ -492,12 +492,15 @@ export function startApp(opts: AppOptions): App {
     const h = hudValues(course, s, t, opts.now());
     const top = { title: t(`place-${s.place}`), right: t("hud-top", { day: h.day, slot: h.slot, slots: h.slots }) };
     if (mode === "notebook") {
-      const lines = notebookLines(course, s, t, opts.now()).flatMap((l) => wrapLine(l, innerWidth(cols)));
-      const bodyRows = Math.max(1, rows - 2);
-      notebookTop = Math.max(0, Math.min(notebookTop, lines.length - bodyRows));
-      const page = lines.slice(notebookTop, notebookTop + bodyRows);
+      const book = notebookEntries(course, s, t, opts.now());
+      const head = notebookHead(book, t, nbView.tab);
+      const headRows = head.flatMap((l) => wrapLine(l, innerWidth(cols))).length;
+      const height = Math.max(1, rows - 3 - headRows); // top border, the rule under the head, bottom border
+      const body = notebookBody(book, t, nbView, cols, height);
+      nbView = { ...nbView, top: body.top };
       const footer = t("keys-notebook");
-      term.write(renderFrame({ ...top, panels: [{ lines: page }], footer, footerRight: footerRight(footer, cols) }, cols, rows));
+      const frame = { title: t("notebook-title"), right: book.rankLabel, panels: [{ lines: head }, { lines: body.lines }], footer };
+      term.write(renderFrame({ ...frame, footerRight: footerRight(footer, cols) }, cols, rows));
       return;
     }
     const [footerId, count] =
@@ -546,9 +549,26 @@ export function startApp(opts: AppOptions): App {
       return render();
     }
     if (mode === "notebook") {
+      const groups = notebookGroups(notebookEntries(course, core.state, t, opts.now()), t);
+      const g = Math.max(0, Math.min(nbView.group, groups.length - 1));
+      const words = groups[g]?.words ?? [];
+      const v = nbView;
       if (key.name === "escape" || key.name === "n") mode = notebookFrom;
-      else if (key.name === "down") notebookTop += 1;
-      else if (key.name === "up") notebookTop = Math.max(0, notebookTop - 1);
+      else if (key.name === "1" || key.name === "2") nbView = { ...v, tab: key.name === "1" ? "words" : "notes", top: 0 };
+      else if (v.tab === "notes") {
+        if (key.name === "down") nbView = { ...v, top: v.top + 1 };
+        else if (key.name === "up") nbView = { ...v, top: Math.max(0, v.top - 1) };
+      } else if (key.name === "left" || key.name === "right") {
+        const next = Math.max(0, Math.min(groups.length - 1, g + (key.name === "right" ? 1 : -1)));
+        nbView = { ...v, group: next, word: 0, open: false };
+      } else if (key.name === "up" || key.name === "down") {
+        const next = Math.max(0, Math.min(words.length - 1, v.word + (key.name === "down" ? 1 : -1)));
+        nbView = { ...v, group: g, word: next, open: false };
+      } else if (key.name === "return") nbView = { ...v, open: !v.open };
+      else if (key.name === "p") {
+        hear(words[v.word]?.clips);
+        flush();
+      }
       return render();
     }
     if (SETTINGS_MODES.includes(mode)) {
@@ -565,7 +585,7 @@ export function startApp(opts: AppOptions): App {
     }
     if (key.name === "n" && mode !== "help") {
       notebookFrom = mode;
-      notebookTop = 0;
+      nbView = { tab: "words", group: 0, word: 0, open: false, top: 0 };
       mode = "notebook";
       return render();
     }

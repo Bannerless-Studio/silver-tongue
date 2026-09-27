@@ -654,21 +654,24 @@ describe("tui app", () => {
     expect(term.screen().join("\n")).toMatch(/Cook: .+。/);
   });
 
-  it("opens the notebook with n, scrolls it, and goes back where it was", () => {
+  it("opens the notebook with n: words by group, notes, and back where it was", () => {
     const { term, core } = setup();
     term.press("1", "1");
     term.press(rightKey(core));
     term.press("n");
     let s = term.screen();
+    expect(s[0]).toMatch(/Notebook ─+ Speaks: Pidgin/);
     expect(s.join("\n")).toContain("Stage 1: 0 of 12 words known");
-    expect(s.at(-1)).toContain("[↑↓] scroll");
-    term.resize(64, 5);
-    const top = term.screen()[1];
+    expect(s.join("\n")).toMatch(/▸ Recent \(\d+\)/);
+    expect(s.at(-1)).toContain("[esc] back");
+    // the chosen word: the right-hand column's row that starts with ▸
+    const chosen = () => term.screen().map((l) => l.split(" │ ")[1] ?? "").find((r) => r.startsWith("▸ "));
+    const first = chosen();
+    expect(first).toBeDefined();
     term.press("down");
-    expect(term.screen()[1]).not.toBe(top);
-    term.press("up");
-    expect(term.screen()[1]).toBe(top);
-    term.resize(64, 20);
+    expect(chosen()).not.toBe(first);
+    term.press("2");
+    expect(term.screen().join("\n")).toContain("No notes yet.");
     term.press("escape");
     s = term.screen();
     expect(s.join("\n")).toContain("Your reply");

@@ -94,7 +94,15 @@ reject-no-mentor = There's nobody here to explain things.
 note-hint = { $npc } seems to have something to tell you.
 mentor-nothing = { $npc } has nothing new to explain today.
 
-keys-notebook = [↑↓] scroll · [esc] back
+keys-notebook = [esc] back · [1-2] words/notes · [↑↓] word · [←→] group · [enter] more · [p] play
+notebook-title = Notebook
+notebook-words = Words
+notebook-recent = Recent
+notebook-notes-empty = No notes yet. Ask around; someone will explain things.
+notebook-label-new = new
+notebook-label-met = met
+notebook-label-shaky = shaky
+notebook-label-known = known
 notebook-rank = Speaks: { $rank }
 notebook-progress = Stage { $stage }: { $known } of { $total } words known · { $heard } heard
 notebook-empty = Nothing yet. Words you hear are written down here.
