@@ -85,7 +85,9 @@ function play(opened: Opened) {
   const page: Page = {
     catalog,
     audioAvailable: l.audio.available,
-    prefs,
+    // A getter, because this page is built once per game and the preferences outlive it: a plain
+    // property here would freeze the row's seed at the values the game started with.
+    get prefs() { return prefs; },
     setPref: (patch) => {
       prefs = { ...prefs, ...patch };
       updateWebSettings(kv, patch);

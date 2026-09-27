@@ -66,8 +66,8 @@ export function Backlog({ vn, view, onClose }: { vn: Vn; view: VnView; onClose: 
 
 export function Menu({ vn, page, onClose, onGames }: { vn: Vn; page: Page; onClose: () => void; onGames: () => void }) {
   const [screen, setScreen] = useState<SettingsScreen>("main");
-  // Settings shows its own copy, which is safe because this screen is unmounted with the overlay
-  // and seeded from the page again each time the player opens it.
+  // Settings shows its own copy, so a press repaints the row; it is seeded from the page, which is
+  // live, and this screen is unmounted with the overlay and seeded again each time it is opened.
   const [prefs, setPrefs] = useState(page.prefs);
   const rows = settingsRows(screen, { course: vn.course, catalog: page.catalog as CatalogEntry[], state: vn.core.state, t: vn.t, audioAvailable: page.audioAvailable });
   const title = screen === "main" ? vn.t("vn-settings") : screen === "course" ? vn.t("settings-pick-course") : vn.t("settings-pick-reading");
