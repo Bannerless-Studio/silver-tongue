@@ -104,6 +104,12 @@ export interface World {
   mentor?: Mentor;
   /** The place the player sleeps. Without it, sleep works anywhere. */
   home?: string;
+  /**
+   * The scene whose completion grants the player their home. Before it's done, sleep works
+   * anywhere (a rough night); once it's done, `home` (if set) applies as usual. Without this,
+   * behaviour is unchanged: `home` (if set) always applies.
+   */
+  homeScene?: string;
 }
 
 /** A usage note the mentor explains once its trigger is met: a word seen, or a scene done. */
@@ -296,7 +302,8 @@ export type GameEvent =
   | { type: "sceneEnded"; scene: string; earned: number }
   | { type: "unlocked"; scene: string }
   | { type: "rankChanged"; rank: number }
-  | { type: "dayEnded"; day: number }
+  /** rough: true when this sleep happened away from home, before `world.homeScene` was done */
+  | { type: "dayEnded"; day: number; rough?: boolean }
   /** a mentor note's trigger was met; the mentor can now explain it */
   | { type: "noteReady"; note: string }
   | { type: "playerNamed"; name: string }

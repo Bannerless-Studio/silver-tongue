@@ -55,9 +55,12 @@ export function placeMenu(course: Course, state: GameState, t: Text): MenuItem[]
   for (const p of course.world.places[state.place].links) {
     items.push({ kind: "go", label: t("menu-go", { place: t(`place-${p}`) }), input: { type: "goTo", place: p }, place: p });
   }
-  // Away from home, sleep still works (it just says so and sends you home first): says where home is.
-  const home = course.world.home;
-  const sleepLabel = home && state.place !== home ? `${t("menu-sleep")} — ${t("menu-go-home", { place: t(`place-${home}`) })}` : t("menu-sleep");
+  // Before the home scene is done, sleep works anywhere (a rough night), so the "go home first"
+  // hint would be wrong; only show it once the player actually has a home to be sent back to.
+  const { home, homeScene } = course.world;
+  const hasHome = !homeScene || (state.scenesDone[homeScene] ?? 0) > 0;
+  const sleepLabel =
+    hasHome && home && state.place !== home ? `${t("menu-sleep")} — ${t("menu-go-home", { place: t(`place-${home}`) })}` : t("menu-sleep");
   return [...items.slice(0, MAX_PLACE_ITEMS), { kind: "sleep", label: sleepLabel, input: { type: "sleep" } }];
 }
 

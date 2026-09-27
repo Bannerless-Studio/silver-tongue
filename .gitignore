@@ -4,3 +4,4 @@ dist/
 *.part
 site/
 .cache/
+tsconfig.tsbuildinfo

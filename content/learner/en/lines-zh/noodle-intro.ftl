@@ -15,7 +15,7 @@ count = { $number ->
    *[5] How many cups? One, two, three, four...
 }
 count-reply = { -number }!
-count-alt1 = Three cups!
+count-alt1 = Fine!
 count-alt2 = I'm hungry.
 
 like = Do you like noodles?

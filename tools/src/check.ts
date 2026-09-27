@@ -193,6 +193,11 @@ export function checkCourse(input: CheckInput): string[] {
       if (!reaches(world.places, id, world.home)) errors.push(`world: home "${world.home}" can't be reached from "${id}"`);
     }
   }
+  if (world.homeScene !== undefined) {
+    const scene = course.scenes.find((s) => s.id === world.homeScene);
+    if (!scene) errors.push(`world: homeScene "${world.homeScene}" is not a scene`);
+    else if (scene.repeatable) errors.push(`world: homeScene "${world.homeScene}" can't be repeatable`);
+  }
   for (const [id, n] of Object.entries(world.npcs)) {
     if (!world.places[n.place]) errors.push(`world: npc "${id}" is at unknown place "${n.place}"`);
   }

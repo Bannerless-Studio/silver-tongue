@@ -175,7 +175,8 @@ describe("build-course (real content)", () => {
       expect(seen.has("room"), `${from} reaches room`).toBe(true);
     }
     // Main Street no longer links to the room, so its description says where the room went.
-    expect(course!.learnerFtl.match(/^place-street-desc = (.*)$/m)![1]).toContain("your room");
+    // ("a room for you", not "your room": before the landlord scene, it isn't the player's yet.)
+    expect(course!.learnerFtl.match(/^place-street-desc = (.*)$/m)![1]).toContain("a room for you");
   });
 
   it("Miss Gao sends parcels to the three places on Station Road, each with one drop-off", () => {

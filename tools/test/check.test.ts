@@ -291,6 +291,16 @@ describe("checkCourse", () => {
     expect(errors).toContain('world: home "attic" can\'t be reached from "noodle_shop"');
   });
 
+  it("needs homeScene to name a scene that exists and isn't repeatable", () => {
+    const c = fixtureCourse();
+    c.world.homeScene = "intro";
+    expect(checkCourse(input({ course: c }))).toEqual([]);
+    c.world.homeScene = "no-such-scene";
+    expect(checkCourse(input({ course: c }))).toContain('world: homeScene "no-such-scene" is not a scene');
+    c.world.homeScene = "shift"; // repeatable in the fixture
+    expect(checkCourse(input({ course: c }))).toContain('world: homeScene "shift" can\'t be repeatable');
+  });
+
   it("counts the mentor's visit in their place's menu", () => {
     const c = fixtureCourse();
     // 2 scenes + 5 exits = 7: allowed, until the mentor sits here too.

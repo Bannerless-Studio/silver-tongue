@@ -205,7 +205,7 @@ export function createVn(opts: VnOptions): Vn {
           break;
         case "dayEnded":
           // core.state already holds the new day when events are applied
-          queue.push({ text: t("day-ended", { day: e.day }), day: core.state.day });
+          queue.push({ text: t(e.rough ? "day-ended-rough" : "day-ended", { day: e.day }), day: core.state.day });
           break;
         case "inputRejected":
           toast(t(`reject-${e.reason}`), "bad");

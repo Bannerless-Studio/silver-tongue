@@ -55,9 +55,9 @@ export function addTrust(state: GameState, npc: string, amount: number): GameEve
  * Late rent never stacks: paying once clears it, however many weeks passed. There is no debt
  * by design (spec: "rent pressure is soft").
  */
-export function endDay(course: Course, state: GameState): GameEvent[] {
+export function endDay(course: Course, state: GameState, rough?: boolean): GameEvent[] {
   const { foodPerDay, rentPerWeek } = course.world;
-  const events: GameEvent[] = [{ type: "dayEnded", day: state.day }];
+  const events: GameEvent[] = [{ type: "dayEnded", day: state.day, ...(rough ? { rough: true as const } : {}) }];
   events.push(...changeWallet(state, -foodPerDay, "food"));
   if (state.day % 7 === 0 || state.rentLate) {
     if (state.wallet >= rentPerWeek) {

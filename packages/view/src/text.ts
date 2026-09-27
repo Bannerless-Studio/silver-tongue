@@ -81,6 +81,7 @@ export const UI_KEYS: Record<string, string[]> = {
   "menu-needs-money": ["npc", "scene", "currency", "cost"],
   "rank-up": ["rank"],
   "day-ended": ["day"],
+  "day-ended-rough": ["day"],
   "notice-bad-save": [],
   "notice-read-only": [],
   "resume-title": [],

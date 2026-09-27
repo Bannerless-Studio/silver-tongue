@@ -15,3 +15,17 @@ Shipped: reply glosses while a word is not yet known; first-time word line under
 - Phase 2 gate: no end-of-phase scene exists; the game just runs out of scenes. Needs a closing scene at the locked gate.
 - Practice scenes (street-practice etc.) run a fixed script and repeat the same exchange (对不起→没关系 twice). Design wants repeatable practice drawn from the player's shaky words. Core feature gap; do after the HSK 1 pass.
 - "Old Wang seems to have something to tell you." shows after every scene end once a note is pending. Verify it is one line per note, not per scene end.
+
+## Review of iteration 1 (commit db5a61c) — remaining items
+
+Fixed at once: noodle-intro count-alt1 "三个杯子！" was a correct answer offered as wrong (now 很好！).
+
+- unlocked-many joins "scene · place" labels with " · " too; a cross-place batch is unreadable. Use ", " between scenes or put the place in brackets. (packages/tui/src/app.ts unlockedLabel)
+- `log = []` on sceneStarted also runs when resuming mid-scene at startup and wipes the place description that session.
+- Quitting mid-scene after a noteReady loses the one-time mentor hint; re-derive from core.state.notes.ready on startup.
+- mpg123 ignores speed; hide the Speed row (or say "not with mpg123") when it is the player.
+- menu.ts comment on sleep-away contradicts core; reconcile with the home-key rule.
+- Content: hospital-checkup `sit` says 在医院里 while in the hospital (→ 请在这里坐十分钟); shop-intro 哪个苹果很好？ → 哪个苹果好？; street-hungry and noodle-intro share the identical like exchange.
+- Untrack tsconfig.tsbuildinfo and ignore it.
+- VN ignores MenuItem.disabled (no dimming); web-phase item.
+- help.ts isPureAside is not depth-aware ("(a) b (c)"); no course gloss triggers it today.

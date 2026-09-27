@@ -358,6 +358,49 @@ describe("tui app", () => {
     expect(s).toContain("Day 2 · slot 0/4");
   });
 
+  it("sleeps rough away from home before the home scene is done, and says so", () => {
+    const { term } = setup(
+      (s) => (s.place = "noodle_shop"),
+      (c) => {
+        c.world.home = "street";
+        c.world.homeScene = "intro";
+      },
+    );
+    term.press("3"); // sleep: not home, but the home scene isn't done, so it still works
+    const s = term.screen().join("\n");
+    expect(s).toContain("Day 1 is over. You sleep rough by the road.");
+    expect(s).toContain("Day 2 · slot 0/4");
+  });
+
+  it("goes back to home-only sleep, without rough wording, once the home scene is done", () => {
+    const { term } = setup(
+      (s) => {
+        s.place = "noodle_shop";
+        s.scenesDone.intro = 1;
+      },
+      (c) => {
+        c.world.home = "street";
+        c.world.homeScene = "intro";
+      },
+    );
+    term.press("2"); // sleep, away from home: rejected, same as a course without homeScene
+    expect(term.screen().join("\n")).toContain("You want your own bed. Head home first.");
+  });
+
+  it("doesn't hint 'go home first' on the sleep item before the home scene is done", () => {
+    const { term } = setup(
+      (s) => (s.place = "noodle_shop"),
+      (c) => {
+        c.world.home = "street";
+        c.world.homeScene = "intro";
+      },
+    );
+    const frame = term.frames.at(-1)!;
+    const line = frame.find((l) => l.some((span) => span.text.includes("Sleep")))!;
+    expect(line.map((span) => span.text).join("")).toContain("Sleep (end the day)");
+    expect(line.map((span) => span.text).join("")).not.toContain("go home first");
+  });
+
   it("a save made mid-scene resumes in the scene", () => {
     const first = setup();
     first.term.press("1", "1");

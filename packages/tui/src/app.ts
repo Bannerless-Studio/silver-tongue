@@ -257,7 +257,7 @@ export function startApp(opts: AppOptions): App {
           push([{ text: t("rank-up", { rank: t(`rank-${e.rank}`) }), color: "yellow", bold: true }]);
           break;
         case "dayEnded":
-          push([], [{ text: t("day-ended", { day: e.day }), dim: true }]);
+          push([], [{ text: t(e.rough ? "day-ended-rough" : "day-ended", { day: e.day }), dim: true }]);
           break;
         case "inputRejected":
           // The same rejection repeated (e.g. pressing sleep from the wrong place twice) replaces

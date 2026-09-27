@@ -5,7 +5,7 @@ intro-3 = A room is down the street; rent { $currency }{ $rent } a week, and foo
 intro-4 = On a bench by the road an old man is watching you. Maybe start there.
 
 place-street = Main Street
-place-street-desc = Bikes, steam and an old man on a bench; your room is down past the noodle shop.
+place-street-desc = Bikes, steam and an old man on a bench; there's a room for you down past the noodle shop.
 place-noodle_shop = Noodle Shop
 place-noodle_shop-desc = Steam everywhere, and the cook shouting orders at nobody.
 place-room = Your Room
@@ -57,7 +57,7 @@ scene-noodle-shift = Work a shift
 
 scene-room-hello = Meet the landlord
 scene-room-hello-start = A thin man in slippers opens the door before you knock.
-scene-room-hello-end = Mr Li hands you a key on a red string.
+scene-room-hello-end = Mr Li hands you a key on a red string: the room is yours.
 scene-room-rent = Talk about rent
 scene-room-rent-start = Mr Li waits at the top of the stairs, rubbing his fingers together.
 scene-room-rent-end = Mr Li nods and writes fifty on his hand. It's due every week.

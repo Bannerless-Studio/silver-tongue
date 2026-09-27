@@ -64,6 +64,7 @@ errand-ended = You hand over the parcel.
 errand-carrying = You have a parcel to deliver.
 rank-up = You're now: { $rank }
 day-ended = Day { $day } is over. You sleep.
+day-ended-rough = Day { $day } is over. You sleep rough by the road.
 reject-unknown-scene = There's nobody here for that.
 reject-in-scene = Finish the conversation first.
 reject-wrong-place = They're not here.
