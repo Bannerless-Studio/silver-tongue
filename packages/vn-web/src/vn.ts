@@ -147,7 +147,7 @@ export function createVn(opts: VnOptions): Vn {
   /** Arms the timer for a beat: its reading time, then the sound, then a short pad. */
   function arm(b: Beat) {
     disarm();
-    if (!auto || held || b.day !== undefined) return; // a new day is always a press
+    if (!auto || held || naming || b.day !== undefined) return; // a new day and a name box wait for the player
     const go = () => {
       timer = undefined;
       if (opts.audio?.busy) {
@@ -393,7 +393,8 @@ export function createVn(opts: VnOptions): Vn {
       }
       persist();
       naming = false;
-      if (!current) show();
+      if (current) arm(current); // the line the box was covering can be read now
+      else show();
       changed();
       return true;
     },

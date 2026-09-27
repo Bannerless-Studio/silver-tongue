@@ -328,14 +328,44 @@ describe("visual novel controller", () => {
     expect(c.pending.filter((w) => !w.cancelled)).toHaveLength(1); // one timer, not two
   });
 
+  it("turning auto-advance off takes the clock off the line, and says so", () => {
+    const c = clock();
+    const s = setup(undefined, undefined, { wait: c.wait });
+    let told = 0;
+    s.vn.subscribe(() => told++);
+    expect(c.pending.filter((w) => !w.cancelled)).toHaveLength(1);
+    s.vn.setAuto(false);
+    expect(c.pending.filter((w) => !w.cancelled)).toHaveLength(0);
+    expect(told).toBe(1); // the settings row re-renders
+  });
+
+  it("the name box stops the clock on the line it is covering", () => {
+    const c = clock();
+    const s = setup(undefined, (course) => (course.needsName = true), { wait: c.wait });
+    expect(s.vn.view().phase.kind).toBe("name");
+    expect(c.pending.filter((w) => !w.cancelled)).toHaveLength(0);
+  });
+
+  it("a name gives the line behind it its full reading time", () => {
+    const c = clock();
+    const s = setup(undefined, (course) => (course.needsName = true), { wait: c.wait });
+    c.pending.forEach((w) => w.fire()); // however long the player took at the box
+    expect(s.vn.setName("Mei")).toBe(true);
+    const p = s.vn.view().phase;
+    expect(p).toMatchObject({ kind: "beat", beat: { text: "You arrive with ¥20 and no words." } });
+    if (p.kind !== "beat") return;
+    const live = c.pending.filter((w) => !w.cancelled);
+    expect(live).toHaveLength(1);
+    expect(live[0].ms).toBe(dwellMs(p.beat)); // the whole reading time, from now
+  });
+
   it("a press takes the line straight away, and the timer it cancelled does nothing after", () => {
     const c = clock();
     const s = setup(undefined, undefined, { wait: c.wait });
     const first = c.pending[0];
     s.vn.advance();
     expect(c.pending).toHaveLength(2);
-    first.fire();
-    expect(c.pending.filter((w) => !w.cancelled)).toHaveLength(1); // only the new line's
+    first.fire(); // the timer the press cancelled, dead like clearTimeout
     expect(s.vn.view().phase).toMatchObject({ kind: "beat", beat: { text: "An old man on a bench is watching you with open curiosity." } });
   });
 });
