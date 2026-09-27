@@ -139,7 +139,10 @@ export function unlockAudioOnGesture(player: Pick<AudioPlayer, "unlock" | "unloc
 //            the edge, silent from 25 m), boat_creak by the pier; birds_day by day (fewer, with
 //            cicadas_day, in the afternoon), crickets_evening in the evening; willow_wind everywhere,
 //            stronger near the great tree, whose temple_bell_far rings every 30 s within 30 m;
-//            market_murmur (distant voices, a bicycle bell; no traffic) in the market
+//            market_murmur (distant voices, a bicycle bell; no traffic) in the market. Default
+//            ("light", prefs.ambienceFull false): only canal_water (capped 0.35) and birds_day
+//            (capped 0.25) play by day, crickets_evening (capped 0.2) by evening; every other bed
+//            is silent until Settings turns ambience to "full" (AMBIENT_LIGHT_CAPS).
 //   sfx      one-shots: ui_*, bubble, tiles, coin, jingle, fail, doors, notebook, skip, bell, steps
 // Nothing starts before the first gesture (unlock() inside it resumes the context). Word clips stay
 // on the AudioPlayer above (web-common's element), untouched.
@@ -177,6 +180,16 @@ export const TREE_RANGE_M = 30;
 export const PIER_RANGE_M = 15;
 /** every ambient loop ambientFor sets (all present in each result, 0 when silent) */
 export const AMBIENT_BEDS = ["canal_water", "birds_day", "cicadas_day", "crickets_evening", "willow_wind", "temple_bell_far", "market_murmur", "boat_creak"] as const;
+/**
+ * Ambience "light" (prefs.ambienceFull false, the default): each bed here plays, capped to this
+ * gain; every bed not listed is silent until Settings turns ambience to "full". crickets_evening
+ * is the one evening bed, so it still plays quietly rather than leaving the evening silent.
+ */
+export const AMBIENT_LIGHT_CAPS: Partial<Record<(typeof AMBIENT_BEDS)[number], number>> = {
+  canal_water: 0.35,
+  birds_day: 0.25,
+  crickets_evening: 0.2,
+};
 /** grid vertex heights (cm) below the waterline: the canal and the lake (terrain_town_walkable water_y −0.6 m) */
 export const WATER_BELOW_CM = -60;
 
@@ -258,8 +271,10 @@ export function musicFor(s: SoundScene): { track: string; gain: number } {
  *   willow_wind      0.2 everywhere outdoors, up to 0.5 at the great tree (30 m)
  *   temple_bell_far  0.6 × nearness to the great tree (30 m)
  *   market_murmur    0.5 in the market (in play)
+ * `full` false (prefs.ambienceFull off, the default): only AMBIENT_LIGHT_CAPS' beds play, each
+ * capped to its light gain; every other bed comes back 0.
  */
-export function ambientFor(s: SoundScene): Record<string, number> {
+export function ambientFor(s: SoundScene, full = true): Record<string, number> {
   const out: Record<string, number> = Object.fromEntries(AMBIENT_BEDS.map((id) => [id, 0]));
   if (s.phase === "title" || s.interior) return out;
   const round = (v: number) => Math.round(v * 1000) / 1000;
@@ -274,7 +289,10 @@ export function ambientFor(s: SoundScene): Record<string, number> {
   out.willow_wind = round(0.2 + 0.3 * tree);
   out.temple_bell_far = round(0.6 * tree);
   if (s.phase === "game" && s.place === MARKET_PLACE) out.market_murmur = 0.5;
-  return out;
+  if (full) return out;
+  const light: Record<string, number> = Object.fromEntries(AMBIENT_BEDS.map((id) => [id, 0]));
+  for (const [id, cap] of Object.entries(AMBIENT_LIGHT_CAPS)) light[id] = Math.min(out[id] ?? 0, cap);
+  return light;
 }
 
 export type Surface = "stone" | "grass" | "wood";
@@ -422,7 +440,7 @@ export class SoundMixer {
   constructor(private deps: MixerDeps) {
     for (const e of deps.manifest) this.entries.set(e.id, e);
     this._muted = !!deps.muted;
-    this._musicVolume = deps.musicVolume ?? 0.8;
+    this._musicVolume = deps.musicVolume ?? 0;
   }
 
   get unlocked(): boolean {

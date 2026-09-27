@@ -651,8 +651,9 @@ lines, place banners and everything from the course stay in the course's reading
 
 Reading language (the course's `learners`), course (the catalog, with the coming-soon languages
 greyed), name (`setName`), sound on / off (music, ambience, effects and the word clips: core's
-`setSound` follows), music volume, replay the six words. Sound, volume and the guide's Hide /
-Show are kept in `silver-tongue:world3d:prefs` (`src/prefs.ts`).
+`setSound` follows), music volume, Ambience: Light / Full (`ambienceFull`, below), replay the six
+words. Sound, volume, the ambience mode and the guide's Hide / Show are kept in
+`silver-tongue:world3d:prefs` (`src/prefs.ts`).
 
 ## Audio buses
 
@@ -690,6 +691,26 @@ music volume persist (prefs). The choices are pure (`test/sound.test.ts`):
 | sfx | `step_<surface>_1..4` | footsteps, one every half stride of the walk clip (`StrideClock`, the rig's `stride_m`), one of four at random, ±10 % pitch; surface: grid class 1 grass, 2-4 stone, the stone arch stone, the wooden bridge and the pier wood, indoors wood |
 
 `world3d.sound()` shows what the mixer wants now; `world3d.sfx(id)` plays one.
+
+**Defaults**: quiet. Music starts at volume 0 (`prefs.music`; `musicSet` remembers a real slider
+move, so a `music: 0.8` from before this build's old default is read as never set, not as a
+choice); Settings → Music volume turns it on immediately, the title screen and the fly-over
+included (both play through the same mixer bus). Ambience starts "light" (`prefs.ambienceFull`
+false): only `canal_water` and `birds_day` play, each capped well under its full gain, plus
+`crickets_evening` in the evening (the one evening bed, so the evening isn't silent); every other
+bed is off until Settings → Ambience is set to "Full" (`AMBIENT_LIGHT_CAPS` in `src/audio.ts`).
+Door / coin / bell one-shots and every voice (word clips, barks) are unaffected by either setting.
+
+| bed | light (default) | full |
+| --- | --- | --- |
+| `canal_water` | capped 0.35 | 1 − d / 25 m to the nearest water |
+| `birds_day` | capped 0.25 | 0.6 morning / 0.4 afternoon |
+| `crickets_evening` | capped 0.2 | 0.7 from `EVENING_AT` |
+| `cicadas_day` | off | 0.35 in the afternoon |
+| `willow_wind` | off | 0.2, up to 0.5 at the great tree |
+| `temple_bell_far` | off | 0.6 × nearness to the great tree |
+| `boat_creak` | off | 0.6 × nearness to the pier |
+| `market_murmur` | off | 0.5 in the market |
 
 A quiet canal town: nothing in the set reads as urban, traffic or emergency (no engines, horns,
 sirens, broadband roar; the music's pads hold their pitch). How each clip was checked, and the

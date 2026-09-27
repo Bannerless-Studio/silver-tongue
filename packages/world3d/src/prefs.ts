@@ -1,16 +1,24 @@
 // The 3D game's own settings, apart from the shared `silver-tongue:settings` (course + reading
 // language, which tui-web also reads and rewrites whole): sound on / off for music, ambience and
-// effects (word clips follow core's setSound as well), the music volume, whether the first-steps
-// guide (and wayfinding's "lost?" reminder) is hidden (and whether its note after the first bark
-// was shown), and whether the ground path hint is off. Unreadable or blocked storage: the defaults.
+// effects (word clips follow core's setSound as well), the music volume, whether ambience plays
+// its full set of beds or just the quiet default (ambienceFull), whether the first-steps guide
+// (and wayfinding's "lost?" reminder) is hidden (and whether its note after the first bark was
+// shown), and whether the ground path hint is off. Unreadable or blocked storage: the defaults.
 import type { KeyValue } from "@silver-tongue/web-common";
 
 export const PREFS_KEY = "silver-tongue:world3d:prefs";
+
+/** the music volume this build shipped with before "quiet by default": a stored 0.8 with no musicSet is never a real choice */
+export const OLD_DEFAULT_MUSIC = 0.8;
 
 export interface Prefs {
   sound: boolean;
   /** 0..1 */
   music: number;
+  /** the player moved the music slider at least once: music holds its stored value even at 0 or at OLD_DEFAULT_MUSIC */
+  musicSet: boolean;
+  /** ambience plays every bed (Settings "Ambience: Full") rather than just the quiet default (AMBIENT_LIGHT_CAPS) */
+  ambienceFull: boolean;
   guideHidden: boolean;
   /** Menu → Show path: off (wayfinding's ground path hint; on by default) */
   pathHidden: boolean;
@@ -18,15 +26,23 @@ export interface Prefs {
   barkHint?: boolean;
 }
 
-export const DEFAULT_PREFS: Prefs = { sound: true, music: 0.8, guideHidden: false, pathHidden: false };
+export const DEFAULT_PREFS: Prefs = { sound: true, music: 0, musicSet: false, ambienceFull: false, guideHidden: false, pathHidden: false };
 
 export function loadPrefs(kv: KeyValue): Prefs {
   try {
     const d = JSON.parse(kv.getItem(PREFS_KEY) ?? "null") as Partial<Prefs> | null;
     if (!d || typeof d !== "object") return { ...DEFAULT_PREFS };
+    const musicSet = d.musicSet === true;
+    const storedMusic = typeof d.music === "number" && d.music >= 0 && d.music <= 1 ? d.music : undefined;
+    // musicSet: honour whatever was stored (even 0, even the old default). Not musicSet: a prefs
+    // blob from before this flag existed; only a value other than the old default can be a real
+    // choice (the old default was written for every player, touched or not), else the new default.
+    const music = musicSet ? (storedMusic ?? DEFAULT_PREFS.music) : storedMusic !== undefined && storedMusic !== OLD_DEFAULT_MUSIC ? storedMusic : DEFAULT_PREFS.music;
     return {
       sound: typeof d.sound === "boolean" ? d.sound : DEFAULT_PREFS.sound,
-      music: typeof d.music === "number" && d.music >= 0 && d.music <= 1 ? d.music : DEFAULT_PREFS.music,
+      music,
+      musicSet,
+      ambienceFull: typeof d.ambienceFull === "boolean" ? d.ambienceFull : DEFAULT_PREFS.ambienceFull,
       guideHidden: typeof d.guideHidden === "boolean" ? d.guideHidden : DEFAULT_PREFS.guideHidden,
       pathHidden: typeof d.pathHidden === "boolean" ? d.pathHidden : DEFAULT_PREFS.pathHidden,
       ...(d.barkHint === true ? { barkHint: true } : {}),

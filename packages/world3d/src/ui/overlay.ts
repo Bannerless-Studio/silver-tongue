@@ -53,6 +53,8 @@ export interface SettingsView {
   sound: boolean;
   /** 0..1 */
   music: number;
+  /** ambience plays every bed, not just the quiet default (audio.ts AMBIENT_LIGHT_CAPS) */
+  ambienceFull: boolean;
 }
 
 export interface SettingsHooks {
@@ -62,6 +64,7 @@ export interface SettingsHooks {
   /** an error message, or null when the name was taken */
   setName(name: string): string | null;
   setMusic(v: number): void;
+  setAmbienceFull(on: boolean): void;
   replayIntro(): void;
 }
 
@@ -676,6 +679,17 @@ export class Overlay {
     const music = el("input", { type: "range", min: "0", max: "100", step: "5", value: String(Math.round(cur.music * 100)) });
     music.setAttribute("aria-label", s("settings-music"));
     music.addEventListener("input", () => hooks.setMusic(Number(music.value) / 100));
+    const ambienceBtn = el("button", {});
+    const ambienceLabel = () => {
+      const on = hooks.current().ambienceFull;
+      ambienceBtn.textContent = s(on ? "settings-ambience-full" : "settings-ambience-light");
+      ambienceBtn.setAttribute("aria-pressed", String(on));
+    };
+    ambienceLabel();
+    ambienceBtn.addEventListener("click", () => {
+      hooks.setAmbienceFull(!hooks.current().ambienceFull);
+      ambienceLabel();
+    });
     const intro = el("button", { textContent: s("settings-intro") });
     intro.addEventListener("click", () => {
       this.menu.close();
@@ -694,6 +708,7 @@ export class Overlay {
         row(s("settings-name"), el("div", { className: "set-name" }, name, saveName)),
         row(s("settings-sound"), el("div", { className: "set-options" }, soundBtn)),
         row(s("settings-music"), music),
+        row(s("settings-ambience"), el("div", { className: "set-options" }, ambienceBtn)),
         el("div", { className: "set-options" }, intro),
         msg,
       ),

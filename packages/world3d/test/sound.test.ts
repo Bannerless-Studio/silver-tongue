@@ -8,6 +8,7 @@ import { describe, expect, it } from "vitest";
 import {
   AFTERNOON_AT,
   AMBIENT_BEDS,
+  AMBIENT_LIGHT_CAPS,
   ambientFor,
   CROSSFADE_S,
   distanceToPath,
@@ -28,7 +29,7 @@ import {
   type SoundEntry,
 } from "../src/audio";
 import { deckAt, gridClass, LAYOUT } from "../src/layout";
-import { DEFAULT_PREFS, loadPrefs, PREFS_KEY, savePrefs } from "../src/prefs";
+import { DEFAULT_PREFS, loadPrefs, OLD_DEFAULT_MUSIC, PREFS_KEY, savePrefs } from "../src/prefs";
 
 const town = LAYOUT.town;
 const MANIFEST = fileURLToPath(new URL("../assets/audio/manifest.json", import.meta.url));
@@ -134,6 +135,33 @@ describe("the ambient bus", () => {
     expect(distanceToPath([[0, 0, 0], [10, 0, 0]], -4, 3)).toBeCloseTo(5);
     expect(distanceToPath([], 0, 0)).toBe(Infinity);
   });
+  it("light (prefs.ambienceFull off, the default): only canal_water, birds_day, crickets_evening, each capped; everything else silent", () => {
+    const near = { phase: "game" as const, daylight: 0, interior: false, place: "market", waterDistance: 0, treeDistance: 0, pierDistance: 0 };
+    const full = ambientFor(near, true);
+    const light = ambientFor(near, false);
+    expect(Object.keys(light).sort()).toEqual([...AMBIENT_BEDS].sort());
+    // the full mix, right at the water / tree / pier, in the market: every other bed would be well above its light cap
+    expect(full.canal_water).toBeGreaterThan(AMBIENT_LIGHT_CAPS.canal_water!);
+    expect(full.birds_day).toBeGreaterThan(AMBIENT_LIGHT_CAPS.birds_day!);
+    expect(full.willow_wind).toBeGreaterThan(0);
+    expect(full.temple_bell_far).toBeGreaterThan(0);
+    expect(full.boat_creak).toBeGreaterThan(0);
+    expect(full.market_murmur).toBeGreaterThan(0);
+    expect(light.canal_water).toBe(AMBIENT_LIGHT_CAPS.canal_water);
+    expect(light.birds_day).toBe(AMBIENT_LIGHT_CAPS.birds_day);
+    for (const id of ["cicadas_day", "willow_wind", "temple_bell_far", "market_murmur", "boat_creak"] as const) expect(light[id], id).toBe(0);
+    // evening: crickets_evening is the one bed light mode still plays, capped lower than full
+    const evening = { phase: "game" as const, daylight: EVENING_AT, interior: false };
+    const fullEve = ambientFor(evening, true);
+    const lightEve = ambientFor(evening, false);
+    expect(fullEve.crickets_evening).toBeGreaterThan(AMBIENT_LIGHT_CAPS.crickets_evening!);
+    expect(lightEve.crickets_evening).toBe(AMBIENT_LIGHT_CAPS.crickets_evening);
+    // default argument: full (existing call sites unaffected)
+    expect(ambientFor(near)).toEqual(full);
+    // title / interior: silent in both modes
+    for (const s of [ambientFor({ phase: "title", daylight: 0, interior: false }, false), ambientFor({ phase: "game", daylight: 0, interior: true }, false)])
+      expect(Object.values(s).every((v) => v === 0)).toBe(true);
+  });
 });
 
 describe("footsteps", () => {
@@ -218,16 +246,37 @@ describe("the vendored sounds", () => {
 });
 
 describe("prefs", () => {
-  it("sound, music volume and the guide, apart from the shared settings key; junk and blocked storage: defaults", () => {
+  const kvOf = () => {
     const data = new Map<string, string>();
-    const kv = { getItem: (k: string) => data.get(k) ?? null, setItem: (k: string, v: string) => void data.set(k, v), removeItem: (k: string) => void data.delete(k), keys: () => [...data.keys()] };
+    return { getItem: (k: string) => data.get(k) ?? null, setItem: (k: string, v: string) => void data.set(k, v), removeItem: (k: string) => void data.delete(k), keys: () => [...data.keys()], data };
+  };
+  it("sound, music off by default (quiet by default), ambience light by default, and the guide, apart from the shared settings key; junk and blocked storage: defaults", () => {
+    const kv = kvOf();
     expect(loadPrefs(kv)).toEqual(DEFAULT_PREFS);
-    savePrefs(kv, { sound: false, music: 0.3, guideHidden: true, pathHidden: true });
-    expect(loadPrefs(kv)).toEqual({ sound: false, music: 0.3, guideHidden: true, pathHidden: true });
-    expect([...data.keys()]).toEqual([PREFS_KEY]);
-    data.set(PREFS_KEY, '{"music": 7, "sound": "x"}');
+    expect(DEFAULT_PREFS.music).toBe(0);
+    expect(DEFAULT_PREFS.ambienceFull).toBe(false);
+    savePrefs(kv, { sound: false, music: 0.3, musicSet: true, ambienceFull: true, guideHidden: true, pathHidden: true });
+    expect(loadPrefs(kv)).toEqual({ sound: false, music: 0.3, musicSet: true, ambienceFull: true, guideHidden: true, pathHidden: true });
+    expect([...kv.keys()]).toEqual([PREFS_KEY]);
+    kv.data.set(PREFS_KEY, '{"music": 7, "sound": "x", "ambienceFull": "x"}');
     expect(loadPrefs(kv)).toEqual(DEFAULT_PREFS);
     const blocked = { ...kv, getItem: () => { throw new Error("no"); } };
     expect(loadPrefs(blocked)).toEqual(DEFAULT_PREFS);
+  });
+  it("a stored music volume from before 'quiet by default' with no musicSet is never-set: an old 0.8 becomes the new default 0; a real legacy choice is kept", () => {
+    const kv = kvOf();
+    // an old prefs blob, written when the default was 0.8 and this player never touched the slider
+    kv.data.set(PREFS_KEY, JSON.stringify({ sound: true, music: OLD_DEFAULT_MUSIC, guideHidden: false, pathHidden: false }));
+    expect(loadPrefs(kv).music).toBe(0);
+    expect(loadPrefs(kv).musicSet).toBe(false);
+    // an old prefs blob where the player did move the slider (any value but the old default)
+    kv.data.set(PREFS_KEY, JSON.stringify({ sound: true, music: 0.3, guideHidden: false, pathHidden: false }));
+    expect(loadPrefs(kv).music).toBe(0.3);
+    // an explicit musicSet, even at the old default's value or at 0, is honoured as a real choice
+    kv.data.set(PREFS_KEY, JSON.stringify({ sound: true, music: OLD_DEFAULT_MUSIC, musicSet: true, guideHidden: false, pathHidden: false }));
+    expect(loadPrefs(kv).music).toBe(OLD_DEFAULT_MUSIC);
+    kv.data.set(PREFS_KEY, JSON.stringify({ sound: true, music: 0, musicSet: true, guideHidden: false, pathHidden: false }));
+    expect(loadPrefs(kv).music).toBe(0);
+    expect(loadPrefs(kv).musicSet).toBe(true);
   });
 });

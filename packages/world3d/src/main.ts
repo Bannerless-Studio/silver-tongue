@@ -632,6 +632,7 @@ async function main() {
         name: game?.core.state.player ?? "",
         sound: prefs.sound,
         music: prefs.music,
+        ambienceFull: prefs.ambienceFull,
       }),
       // As tui-web's switchTo: another reading language goes on with the game as played (its
       // save is the course's, whatever the reading language); another course plays its last game.
@@ -652,8 +653,13 @@ async function main() {
       },
       setMusic: (v) => {
         prefs.music = v;
+        prefs.musicSet = true;
         savePrefs(kv, prefs);
         mixer.setMusicVolume(v);
+      },
+      setAmbienceFull: (on) => {
+        prefs.ambienceFull = on;
+        savePrefs(kv, prefs);
       },
       replayIntro: () => {
         const intro = courseIntro(course);
@@ -1005,7 +1011,7 @@ async function main() {
       const m = musicFor(scene);
       mixer.setMusic(m.track, m.gain);
     }
-    mixer.setAmbient(ambientFor(scene));
+    mixer.setAmbient(ambientFor(scene, prefs.ambienceFull));
   }
 
   /** Footsteps in step with the walk clip, by the surface underfoot. Off for now (player's request, 2026-09-27); the clips stay for a later, softer set. */
