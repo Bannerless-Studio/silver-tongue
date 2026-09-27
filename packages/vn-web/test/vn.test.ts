@@ -288,6 +288,22 @@ describe("visual novel controller", () => {
     expect(s.vn.view().phase).toMatchObject({ kind: "beat", beat: { text: "An old man on a bench is watching you with open curiosity." } });
   });
 
+  it("a clip started during the pad is not cut off", () => {
+    const c = clock();
+    let busy = false;
+    const audio = { available: true, get busy() { return busy; }, play: () => {}, stop: () => {} };
+    const s = setup(undefined, undefined, { wait: c.wait, audio });
+    c.pending[0].fire(); // the reading time is up, nothing is playing
+    expect(c.last().ms).toBe(200);
+    busy = true; // the player asks for the line again in the pad
+    c.last().fire();
+    expect(s.vn.view().phase).toMatchObject({ kind: "beat", beat: { text: "You arrive with ¥20 and no words." } });
+    expect(c.last().ms).toBe(200); // still waiting for the clip
+    busy = false;
+    c.last().fire();
+    expect(s.vn.view().phase).toMatchObject({ kind: "beat", beat: { text: "An old man on a bench is watching you with open curiosity." } });
+  });
+
   it("waits while an overlay is open, and gives the line its time again after", () => {
     const c = clock();
     const s = setup(undefined, undefined, { wait: c.wait });
@@ -357,6 +373,28 @@ describe("visual novel controller", () => {
     const live = c.pending.filter((w) => !w.cancelled);
     expect(live).toHaveLength(1);
     expect(live[0].ms).toBe(dwellMs(p.beat)); // the whole reading time, from now
+  });
+
+  it("a second submit of the same name does nothing", () => {
+    const c = clock();
+    const s = setup(undefined, (course) => (course.needsName = true), { wait: c.wait });
+    expect(s.vn.setName("Mei")).toBe(true);
+    const logged = s.core.state.log.length;
+    const armed = c.pending.length;
+    expect(s.vn.setName("Mei")).toBe(true);
+    expect(s.core.state.log.length).toBe(logged);
+    expect(c.pending).toHaveLength(armed); // the line keeps the clock it already had
+  });
+
+  it("a controller the page has walked away from stops for good", () => {
+    const c = clock();
+    const s = setup(undefined, undefined, { wait: c.wait });
+    s.vn.stop();
+    expect(c.pending.filter((w) => !w.cancelled)).toHaveLength(0);
+    s.vn.hold(true); // an overlay opens and closes on a controller nobody is looking at
+    s.vn.hold(false);
+    s.vn.setAuto(true);
+    expect(c.pending.filter((w) => !w.cancelled)).toHaveLength(0);
   });
 
   it("a press takes the line straight away, and the timer it cancelled does nothing after", () => {

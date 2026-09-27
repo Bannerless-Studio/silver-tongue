@@ -68,6 +68,8 @@ export interface Vn {
   hold(held: boolean): void;
   /** the player turned auto-advance on or off in settings */
   setAuto(on: boolean): void;
+  /** the page is throwing this controller away: nothing must move on after that */
+  stop(): void;
   choose(n: number): void;
   talkTo(npc: string): void;
   placeTile(i: number): void;
@@ -86,6 +88,10 @@ export const BACKLOG_LIMIT = 200;
 /** A menu or reply shown less than this long ago ignores taps: the second half of a double tap lands on the new screen. */
 export const SETTLE_MS = 350;
 const TOAST_LIMIT = 4;
+/** How often the controller asks whether a clip is still going. */
+const POLL_MS = 200;
+/** The quiet moment after a line, and after the last sound it waited for. */
+const PAD_MS = 200;
 
 /**
  * The visual novel's side of play: turns core events into beats the player taps through, and taps
@@ -119,6 +125,7 @@ export function createVn(opts: VnOptions): Vn {
   let timer: { cancel(): void } | undefined;
   let held = false;
   let auto = opts.autoAdvance !== false;
+  let closed = false;
   const listeners = new Set<() => void>();
 
   const changed = () => listeners.forEach((f) => f());
@@ -148,16 +155,18 @@ export function createVn(opts: VnOptions): Vn {
   function arm(b: Beat) {
     disarm();
     if (!auto || held || naming || b.day !== undefined) return; // a new day and a name box wait for the player
+    const pad = () => {
+      timer = undefined;
+      if (opts.audio?.busy) { timer = wait(PAD_MS, pad); return; } // the player started a clip in the pad
+      if (!held) advance();
+    };
     const go = () => {
       timer = undefined;
       if (opts.audio?.busy) {
-        timer = wait(200, go);
+        timer = wait(POLL_MS, go);
         return;
       }
-      timer = wait(200, () => {
-        timer = undefined;
-        if (!held) advance();
-      });
+      timer = wait(PAD_MS, pad);
     };
     timer = wait(dwellMs(b), go);
   }
@@ -321,13 +330,18 @@ export function createVn(opts: VnOptions): Vn {
       return () => listeners.delete(fn);
     },
     advance,
+    stop() {
+      closed = true;
+      disarm();
+    },
     hold(on) {
-      if (on === held) return;
+      if (closed || on === held) return;
       held = on;
       if (on) disarm();
       else if (current) arm(current);
     },
     setAuto(on) {
+      if (closed) return;
       auto = on;
       if (auto && current) arm(current);
       else disarm();
@@ -385,6 +399,7 @@ export function createVn(opts: VnOptions): Vn {
       say(speech(clips));
     },
     setName(name) {
+      if (!naming) return true;
       const events = core.send({ type: "setName", name });
       if (events.some((e) => e.type === "inputRejected")) {
         toast(t("reject-bad-name"), "bad");
