@@ -26,6 +26,9 @@ export interface WebAudioDeps {
 const BEAT_MS = 300;
 /** Clips failing to load one after another: the clips aren't there (a page saved without its audio folder). */
 const FAILS_TO_GIVE_UP = 3;
+/** A backstop for a load that never reports an end, not a length: the longest clip in a course is
+ *  3.6s, and even that one is under 7s at the slowest rate. */
+const STALL_BACKSTOP_MS = 20_000;
 
 /**
  * Plays clips through one audio element, in order with a beat between them, at the rate the page asks
@@ -36,6 +39,9 @@ export function createWebAudio(deps: WebAudioDeps): AudioOut {
   const el = deps.audio;
   let queue: { clip: string; slow: boolean }[] = [];
   let timer: { cancel(): void } | undefined;
+  // Its own handle, never `timer`: the beat only exists once a clip has ended, the backstop only
+  // while one is playing, and that is by accident, not by design.
+  let stall: { cancel(): void } | undefined;
   let run = 0; // each play() or stop() starts a new run; events from an older one do nothing
   let fails = 0;
   let speaking = false;
@@ -48,6 +54,8 @@ export function createWebAudio(deps: WebAudioDeps): AudioOut {
     speaking = true;
     const done = () => {
       if (mine !== run) return;
+      stall?.cancel();
+      stall = undefined;
       if (queue.length) {
         timer = deps.wait(BEAT_MS, () => next(mine));
         return;
@@ -64,6 +72,8 @@ export function createWebAudio(deps: WebAudioDeps): AudioOut {
     };
     el.src = `${deps.base}${item.clip}.mp3`;
     el.defaultPlaybackRate = el.playbackRate = clipRate(deps.rate?.() ?? 1, item.slow);
+    // A load that stalls fires no event at all, so without this nothing ever ends the clip.
+    stall = deps.wait(STALL_BACKSTOP_MS, done);
     // Refused (no key pressed yet): nothing will end, so go on as if it had.
     el.play().catch(() => done());
   };
@@ -74,6 +84,8 @@ export function createWebAudio(deps: WebAudioDeps): AudioOut {
     speaking = false;
     timer?.cancel();
     timer = undefined;
+    stall?.cancel();
+    stall = undefined;
     el?.pause();
   };
 
