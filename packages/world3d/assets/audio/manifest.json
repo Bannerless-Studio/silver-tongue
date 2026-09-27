@@ -1,51 +1,13 @@
 [
   {
-    "id": "title_theme",
+    "id": "owner_theme",
     "kind": "music",
-    "file_ogg": "assets/audio/music/title_theme.ogg",
-    "file_m4a": "assets/audio/music/title_theme.m4a",
-    "seconds": 53.333,
+    "file_ogg": "assets/audio/music/owner_theme.ogg",
+    "file_m4a": "assets/audio/music/owner_theme.m4a",
+    "metadata": "assets/audio/music/owner_theme.json",
+    "seconds": 207.828,
     "loop": true,
-    "gain_db": 1.11,
-    "bpm": 72,
-    "key": "C gong",
-    "description": "Title screen: koto and shakuhachi over a soft pad in C gong pentatonic, looping."
-  },
-  {
-    "id": "town_day",
-    "kind": "music",
-    "file_ogg": "assets/audio/music/town_day.ogg",
-    "file_m4a": "assets/audio/music/town_day.m4a",
-    "seconds": 66.667,
-    "loop": true,
-    "gain_db": 2.58,
-    "bpm": 72,
-    "key": "C gong",
-    "description": "Town by day: sparse shakuhachi melody, koto arpeggios, a steady pad and drone."
-  },
-  {
-    "id": "town_evening",
-    "kind": "music",
-    "file_ogg": "assets/audio/music/town_evening.ogg",
-    "file_m4a": "assets/audio/music/town_evening.m4a",
-    "seconds": 80.0,
-    "loop": true,
-    "gain_db": 2.43,
-    "bpm": 60,
-    "key": "A yu",
-    "description": "Town in the evening: slower, darker A yu pentatonic bed."
-  },
-  {
-    "id": "cutscene_flyover",
-    "kind": "music",
-    "file_ogg": "assets/audio/music/cutscene_flyover.ogg",
-    "file_m4a": "assets/audio/music/cutscene_flyover.m4a",
-    "seconds": 24.0,
-    "loop": false,
-    "gain_db": 0.86,
-    "bpm": 72,
-    "key": "C gong",
-    "description": "Fly-over cutscene: rises to a held chord that crossfades into town_day."
+    "description": "Fiazul Haque's own theme, mastered as a quiet background bed for every music scene."
   },
   {
     "id": "canal_water",

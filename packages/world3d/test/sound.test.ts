@@ -17,6 +17,9 @@ import {
   fileFor,
   footstep,
   musicFor,
+  MUSIC_BUS_CAP,
+  MUSIC_FADE_IN_S,
+  SoundMixer,
   nearness,
   PIER_RANGE_M,
   pickFormat,
@@ -27,6 +30,7 @@ import {
   waterDistance,
   WATER_RANGE_M,
   type SoundEntry,
+  type MixerContext,
 } from "../src/audio";
 import { deckAt, gridClass, LAYOUT } from "../src/layout";
 import { DEFAULT_PREFS, loadPrefs, OLD_DEFAULT_MUSIC, PREFS_KEY, savePrefs } from "../src/prefs";
@@ -34,6 +38,70 @@ import { DEFAULT_PREFS, loadPrefs, OLD_DEFAULT_MUSIC, PREFS_KEY, savePrefs } fro
 const town = LAYOUT.town;
 const MANIFEST = fileURLToPath(new URL("../assets/audio/manifest.json", import.meta.url));
 const manifest: SoundEntry[] = JSON.parse(readFileSync(MANIFEST, "utf8"));
+
+type FakeParam = {
+  value: number;
+  ramps: number[];
+  setTargetAtTime(value: number): void;
+  cancelScheduledValues(): void;
+  setValueAtTime(value: number): void;
+  linearRampToValueAtTime(value: number): void;
+};
+type FakeNode = { connections: unknown[]; connect(destination: unknown): unknown };
+
+function audioHarness() {
+  const param = (value = 0): FakeParam => {
+    const p: FakeParam = {
+      value,
+      ramps: [],
+      setTargetAtTime(next) { p.value = next; },
+      cancelScheduledValues() {},
+      setValueAtTime(next) { p.value = next; },
+      linearRampToValueAtTime(next) { p.value = next; p.ramps.push(next); },
+    };
+    return p;
+  };
+  const node = (): FakeNode => {
+    const n: FakeNode = { connections: [], connect(destination) { n.connections.push(destination); return destination; } };
+    return n;
+  };
+  const gains: Array<FakeNode & { gain: FakeParam }> = [];
+  const compressors: Array<FakeNode & { threshold: FakeParam; knee: FakeParam; ratio: FakeParam; attack: FakeParam; release: FakeParam }> = [];
+  const sources: Array<FakeNode & { loop: boolean; starts: number; buffer: unknown; playbackRate: FakeParam; start(): void; stop(): void }> = [];
+  const destination = node();
+  const context = {
+    currentTime: 0,
+    state: "running",
+    destination,
+    resume: async () => {},
+    createGain: () => {
+      const gain = { ...node(), gain: param(1) };
+      gains.push(gain);
+      return gain;
+    },
+    createDynamicsCompressor: () => {
+      const compressor = { ...node(), threshold: param(), knee: param(), ratio: param(), attack: param(), release: param() };
+      compressors.push(compressor);
+      return compressor;
+    },
+    createBufferSource: () => {
+      const source = { ...node(), loop: false, starts: 0, buffer: null as unknown, playbackRate: param(1), start() { source.starts++; }, stop() {} };
+      sources.push(source);
+      return source;
+    },
+    decodeAudioData: async () => ({}),
+  } as unknown as MixerContext;
+  const mixer = new SoundMixer({
+    base: "",
+    manifest: [{ id: "owner_theme", kind: "music", file_ogg: "assets/audio/music/owner_theme.ogg", seconds: 208, loop: true }],
+    format: "ogg",
+    context: () => context,
+    fetchBytes: async () => new ArrayBuffer(0),
+    musicVolume: 5,
+  });
+  const settle = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
+  return { mixer, gains, compressors, sources, destination, settle };
+}
 
 describe("format", () => {
   const plays = (...ok: string[]) => (m: string) => (ok.some((k) => m.includes(k)) ? "probably" : "");
@@ -44,7 +112,7 @@ describe("format", () => {
     expect(pickFormat(undefined)).toBeNull();
   });
   it("an entry the build shipped in one format only falls back to it when the browser plays it", () => {
-    const music: SoundEntry = { id: "town_day", kind: "music", file_ogg: "assets/audio/music/town_day.ogg", seconds: 66, loop: true };
+    const music: SoundEntry = { id: "owner_theme", kind: "music", file_ogg: "assets/audio/music/owner_theme.ogg", seconds: 208, loop: true };
     expect(fileFor(music, "ogg")).toBe(music.file_ogg);
     expect(fileFor(music, "m4a", plays("mp4"))).toBeNull();
     expect(fileFor(music, "m4a", plays("mp4", "ogg"))).toBe(music.file_ogg);
@@ -52,17 +120,57 @@ describe("format", () => {
 });
 
 describe("the music bus", () => {
-  it("title → fly-over → the town by daylight; inside a building −6 dB", () => {
-    expect(musicFor({ phase: "title", daylight: 0, interior: false })).toEqual({ track: "title_theme", gain: 1 });
-    expect(musicFor({ phase: "cutscene", daylight: 0, interior: false }).track).toBe("cutscene_flyover");
-    expect(musicFor({ phase: "game", daylight: 0, interior: false })).toEqual({ track: "town_day", gain: 1 });
-    expect(musicFor({ phase: "game", daylight: EVENING_AT - 0.01, interior: false }).track).toBe("town_day");
-    expect(musicFor({ phase: "game", daylight: EVENING_AT, interior: false }).track).toBe("town_evening");
+  it("keeps the owner's theme through title, fly-over and town; inside a building −6 dB", () => {
+    expect(musicFor({ phase: "title", daylight: 0, interior: false })).toEqual({ track: "owner_theme", gain: 1 });
+    expect(musicFor({ phase: "cutscene", daylight: 0, interior: false }).track).toBe("owner_theme");
+    expect(musicFor({ phase: "game", daylight: 0, interior: false })).toEqual({ track: "owner_theme", gain: 1 });
+    expect(musicFor({ phase: "game", daylight: EVENING_AT - 0.01, interior: false }).track).toBe("owner_theme");
+    expect(musicFor({ phase: "game", daylight: EVENING_AT, interior: false }).track).toBe("owner_theme");
     const inside = musicFor({ phase: "game", daylight: 0.25, interior: true });
-    expect(inside.track).toBe("town_day");
+    expect(inside.track).toBe("owner_theme");
     expect(20 * Math.log10(inside.gain)).toBeCloseTo(-6, 6);
     expect(dbToGain(0)).toBe(1);
     expect(CROSSFADE_S).toBe(1.5);
+    expect(MUSIC_FADE_IN_S).toBe(2);
+  });
+
+  it("keeps one looping source for the same track and routes only music through the compressor", async () => {
+    const h = audioHarness();
+    h.mixer.setMusic("owner_theme", 1);
+    h.mixer.unlock();
+    await h.settle();
+    h.mixer.setMusic("owner_theme", 0.5);
+    await h.settle();
+
+    expect(h.sources).toHaveLength(1);
+    expect(h.sources[0].starts).toBe(1);
+    expect(h.sources[0].loop).toBe(true);
+    expect(h.compressors).toHaveLength(1);
+    const [master, musicBus, ambientBus, sfxBus, musicVoice] = h.gains;
+    expect(master.connections).toEqual([h.destination]);
+    expect(musicBus.connections).toEqual([h.compressors[0]]);
+    expect(h.compressors[0].connections).toEqual([master]);
+    expect(ambientBus.connections).toEqual([master]);
+    expect(sfxBus.connections).toEqual([master]);
+    expect(musicVoice.connections).toEqual([musicBus]);
+  });
+
+  it.each([
+    [5, 1],
+    [-1, 0],
+    [Number.NaN, 0],
+    [Number.POSITIVE_INFINITY, 0],
+  ])("clamps music voice gain %s to finite [0,1] before the capped bus", async (asked, expected) => {
+    const h = audioHarness();
+    h.mixer.setMusic("owner_theme", asked);
+    h.mixer.unlock();
+    await h.settle();
+    const voiceGain = h.gains[4].gain.ramps.at(-1);
+    expect(voiceGain).toBe(expected);
+    expect(voiceGain).toBeGreaterThanOrEqual(0);
+    expect(voiceGain).toBeLessThanOrEqual(1);
+    expect(h.gains[1].gain.value).toBeLessThanOrEqual(MUSIC_BUS_CAP);
+    expect(voiceGain! * h.gains[1].gain.value).toBeLessThanOrEqual(MUSIC_BUS_CAP);
   });
 });
 
@@ -226,7 +334,7 @@ describe("the vendored sounds", () => {
   it("every id the game plays is in the manifest, with both files vendored", () => {
     const ids = new Set(manifest.map((e) => e.id));
     const used = [
-      "title_theme", "cutscene_flyover", "town_day", "town_evening",
+      "owner_theme",
       ...AMBIENT_BEDS,
       "ui_tap", "ui_confirm", "ui_back", "ui_page", "ui_reveal", "tile_place", "tile_undo", "bubble_open", "bubble_close",
       "coin", "success_jingle", "fail_soft", "door_open", "door_close", "notebook_open", "cutscene_skip", "bell_temple",
@@ -235,7 +343,7 @@ describe("the vendored sounds", () => {
     for (const id of used) expect(ids, id).toContain(id);
     for (const e of manifest)
       for (const f of [e.file_ogg, e.file_m4a]) expect(existsSync(fileURLToPath(new URL(`../${f}`, import.meta.url))), f).toBe(true);
-    for (const id of ["town_day", "town_evening", "title_theme", ...AMBIENT_BEDS]) expect(manifest.find((e) => e.id === id)!.loop, id).toBe(true);
+    for (const id of ["owner_theme", ...AMBIENT_BEDS]) expect(manifest.find((e) => e.id === id)!.loop, id).toBe(true);
     // a peaceful canal town: nothing in the set is (or is named as) traffic, engines, horns or sirens
     for (const e of manifest) {
       expect(e.description, e.id).toBeTruthy();
@@ -250,10 +358,11 @@ describe("prefs", () => {
     const data = new Map<string, string>();
     return { getItem: (k: string) => data.get(k) ?? null, setItem: (k: string, v: string) => void data.set(k, v), removeItem: (k: string) => void data.delete(k), keys: () => [...data.keys()], data };
   };
-  it("sound, music off by default (quiet by default), ambience light by default, and the guide, apart from the shared settings key; junk and blocked storage: defaults", () => {
+  it("sound and quiet music on by default, ambience light by default, and the guide, apart from the shared settings key; junk and blocked storage: defaults", () => {
     const kv = kvOf();
     expect(loadPrefs(kv)).toEqual(DEFAULT_PREFS);
-    expect(DEFAULT_PREFS.music).toBe(0);
+    expect(DEFAULT_PREFS.music).toBe(0.6);
+    expect(DEFAULT_PREFS.music * MUSIC_BUS_CAP).toBeLessThanOrEqual(0.25);
     expect(DEFAULT_PREFS.ambienceFull).toBe(false);
     savePrefs(kv, { sound: false, music: 0.3, musicSet: true, ambienceFull: true, guideHidden: true, pathHidden: true });
     expect(loadPrefs(kv)).toEqual({ sound: false, music: 0.3, musicSet: true, ambienceFull: true, guideHidden: true, pathHidden: true });
@@ -263,20 +372,27 @@ describe("prefs", () => {
     const blocked = { ...kv, getItem: () => { throw new Error("no"); } };
     expect(loadPrefs(blocked)).toEqual(DEFAULT_PREFS);
   });
-  it("a stored music volume from before 'quiet by default' with no musicSet is never-set: an old 0.8 becomes the new default 0; a real legacy choice is kept", () => {
+  it("migrates unflagged historical defaults while preserving legacy and explicitly flagged choices", () => {
     const kv = kvOf();
-    // an old prefs blob, written when the default was 0.8 and this player never touched the slider
-    kv.data.set(PREFS_KEY, JSON.stringify({ sound: true, music: OLD_DEFAULT_MUSIC, guideHidden: false, pathHidden: false }));
-    expect(loadPrefs(kv).music).toBe(0);
-    expect(loadPrefs(kv).musicSet).toBe(false);
-    // an old prefs blob where the player did move the slider (any value but the old default)
-    kv.data.set(PREFS_KEY, JSON.stringify({ sound: true, music: 0.3, guideHidden: false, pathHidden: false }));
-    expect(loadPrefs(kv).music).toBe(0.3);
-    // an explicit musicSet, even at the old default's value or at 0, is honoured as a real choice
-    kv.data.set(PREFS_KEY, JSON.stringify({ sound: true, music: OLD_DEFAULT_MUSIC, musicSet: true, guideHidden: false, pathHidden: false }));
-    expect(loadPrefs(kv).music).toBe(OLD_DEFAULT_MUSIC);
-    kv.data.set(PREFS_KEY, JSON.stringify({ sound: true, music: 0, musicSet: true, guideHidden: false, pathHidden: false }));
-    expect(loadPrefs(kv).music).toBe(0);
-    expect(loadPrefs(kv).musicSet).toBe(true);
+    for (const musicSet of [undefined, false]) {
+      for (const music of [0, OLD_DEFAULT_MUSIC]) {
+        kv.data.set(PREFS_KEY, JSON.stringify({ music, musicSet }));
+        expect(loadPrefs(kv)).toMatchObject({ music: DEFAULT_PREFS.music, musicSet: false });
+      }
+      kv.data.set(PREFS_KEY, JSON.stringify({ music: 0.45, musicSet }));
+      expect(loadPrefs(kv)).toMatchObject({ music: 0.45, musicSet: false });
+    }
+    for (const music of [0, OLD_DEFAULT_MUSIC]) {
+      kv.data.set(PREFS_KEY, JSON.stringify({ music, musicSet: true }));
+      expect(loadPrefs(kv)).toMatchObject({ music, musicSet: true });
+    }
+  });
+
+  it("falls back to the music default for non-finite, out-of-range, and non-number storage", () => {
+    const kv = kvOf();
+    for (const music of [5, -1, Number.NaN, "x"]) {
+      kv.data.set(PREFS_KEY, JSON.stringify({ music }));
+      expect(loadPrefs(kv).music).toBe(DEFAULT_PREFS.music);
+    }
   });
 });

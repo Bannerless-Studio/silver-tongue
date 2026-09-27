@@ -133,8 +133,8 @@ export function unlockAudioOnGesture(player: Pick<AudioPlayer, "unlock" | "unloc
 // three buses under one master gain, on Web Audio (iOS ignores an audio element's volume, and
 // crossfades, distance fades and pitch need gains and playback rates). The choices are pure
 // functions below (tests: test/audio.test.ts); SoundMixer only plays what they pick.
-//   music    title_theme → cutscene_flyover → town_day / town_evening by daylight, 1.5 s crossfades;
-//            inside a building the music ducks −6 dB
+//   music    owner_theme throughout title, fly-over and town; scene changes never restart it;
+//            inside a building it ducks −6 dB, and its bus is hard-capped and compressed
 //   ambient  a quiet canal town, outdoors only: canal_water by distance to the canal / lake (full at
 //            the edge, silent from 25 m), boat_creak by the pier; birds_day by day (fewer, with
 //            cicadas_day, in the afternoon), crickets_evening in the evening; willow_wind everywhere,
@@ -156,6 +156,8 @@ export interface SoundEntry {
   kind: AudioKind;
   file_ogg?: string;
   file_m4a?: string;
+  /** optional generated measurement/provenance sidecar managed with the audio files */
+  metadata?: string;
   seconds: number;
   loop: boolean;
   gain_db?: number;
@@ -164,6 +166,10 @@ export interface SoundEntry {
 }
 
 export const CROSSFADE_S = 1.5;
+/** gentle fade used only when the single music source first starts */
+export const MUSIC_FADE_IN_S = 2;
+/** hard ceiling for the music bus, independent of the persisted/UI slider value */
+export const MUSIC_BUS_CAP = 0.35;
 /** interiors duck the music by 6 dB */
 export const INTERIOR_DUCK_DB = -6;
 /** daylight (0 morning .. 1 evening, world3d.daylight()) from which the evening bed plays */
@@ -255,10 +261,7 @@ export function distanceToPath(path: readonly (readonly number[])[], x: number, 
 
 /** The music bed for the moment, and its gain (interiors duck it). */
 export function musicFor(s: SoundScene): { track: string; gain: number } {
-  if (s.phase === "title") return { track: "title_theme", gain: 1 };
-  if (s.phase === "cutscene") return { track: "cutscene_flyover", gain: 1 };
-  const track = s.daylight >= EVENING_AT ? "town_evening" : "town_day";
-  return { track, gain: s.interior ? dbToGain(INTERIOR_DUCK_DB) : 1 };
+  return { track: "owner_theme", gain: s.phase === "game" && s.interior ? dbToGain(INTERIOR_DUCK_DB) : 1 };
 }
 
 /**
@@ -394,6 +397,7 @@ export interface MixerContext {
   readonly destination: AudioNode;
   resume(): Promise<void>;
   createGain(): GainNode;
+  createDynamicsCompressor(): DynamicsCompressorNode;
   createBufferSource(): AudioBufferSourceNode;
   decodeAudioData(data: ArrayBuffer): Promise<AudioBuffer>;
 }
@@ -436,11 +440,14 @@ export class SoundMixer {
   private ambientWanted: Record<string, number> = {};
   private _muted: boolean;
   private _musicVolume: number;
+  private _musicGain: number;
 
   constructor(private deps: MixerDeps) {
     for (const e of deps.manifest) this.entries.set(e.id, e);
     this._muted = !!deps.muted;
-    this._musicVolume = deps.musicVolume ?? 0;
+    this._musicVolume = 0;
+    this._musicGain = 0;
+    this.setMusicVolume(deps.musicVolume ?? 0);
   }
 
   get unlocked(): boolean {
@@ -451,6 +458,10 @@ export class SoundMixer {
   }
   get musicVolume(): number {
     return this._musicVolume;
+  }
+  /** effective gain applied to the music bus after the hard safety cap */
+  get musicGain(): number {
+    return this._musicGain;
   }
   /** what the music bus plays now (for world3d.sound()) */
   get playing(): { music: string | null; ambient: Record<string, number> } {
@@ -472,8 +483,17 @@ export class SoundMixer {
       this.master.connect(this.ctx.destination);
       for (const k of ["music", "ambient", "sfx"] as const) {
         const g = this.ctx.createGain();
-        g.gain.value = k === "music" ? this._musicVolume : 1;
-        g.connect(this.master);
+        g.gain.value = k === "music" ? this._musicGain : 1;
+        if (k === "music") {
+          const limiter = this.ctx.createDynamicsCompressor();
+          limiter.threshold.value = -24;
+          limiter.knee.value = 0;
+          limiter.ratio.value = 12;
+          limiter.attack.value = 0.003;
+          limiter.release.value = 0.25;
+          g.connect(limiter);
+          limiter.connect(this.master);
+        } else g.connect(this.master);
         this.buses[k] = g;
       }
       // the short ones ahead, so the first tap has its click
@@ -490,9 +510,10 @@ export class SoundMixer {
   }
 
   setMusicVolume(v: number) {
-    this._musicVolume = Math.max(0, Math.min(1, v));
+    this._musicVolume = Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0;
+    this._musicGain = Math.max(0, Math.min(MUSIC_BUS_CAP, this._musicVolume * MUSIC_BUS_CAP));
     const bus = this.buses.music;
-    if (this.ctx && bus) bus.gain.setTargetAtTime(this._musicVolume, this.ctx.currentTime, 0.05);
+    if (this.ctx && bus) bus.gain.setTargetAtTime(this._musicGain, this.ctx.currentTime, 0.05);
   }
 
   private buffer(id: string): Promise<AudioBuffer | null> {
@@ -555,18 +576,19 @@ export class SoundMixer {
 
   /** The music bed: another track crossfades over 1.5 s; the same one only moves its gain. */
   setMusic(track: string, gain = 1, force = false) {
-    const same = this.musicWanted && this.musicWanted.track === track && Math.abs(this.musicWanted.gain - gain) < 1e-3;
-    this.musicWanted = { track, gain };
+    const voiceGain = Number.isFinite(gain) ? Math.max(0, Math.min(1, gain)) : 0;
+    const same = this.musicWanted && this.musicWanted.track === track && Math.abs(this.musicWanted.gain - voiceGain) < 1e-3;
+    this.musicWanted = { track, gain: voiceGain };
     if (!this.ctx || (same && !force && this.music)) return;
     if (this.music?.id === track) {
       const now = this.ctx.currentTime;
       this.music.gain.gain.cancelScheduledValues(now);
       this.music.gain.gain.setValueAtTime(this.music.gain.gain.value, now);
-      this.music.gain.gain.linearRampToValueAtTime(gain, now + CROSSFADE_S / 2);
+      this.music.gain.gain.linearRampToValueAtTime(voiceGain, now + CROSSFADE_S / 2);
       return;
     }
     if (this.music) this.stopVoice(this.music, CROSSFADE_S);
-    this.music = this.startVoice(track, "music", gain, CROSSFADE_S);
+    this.music = this.startVoice(track, "music", voiceGain, this.music ? CROSSFADE_S : MUSIC_FADE_IN_S);
   }
 
   /** Each ambient loop at its gain: started when first heard, eased (0.4 s) as the gains move. */

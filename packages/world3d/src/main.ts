@@ -289,7 +289,7 @@ async function main() {
         },
       },
     });
-    if (!opts.introOnly) mixer.setMusic("title_theme");
+    if (!opts.introOnly) mixer.setMusic("owner_theme");
     return flow.result.then((r) => {
       flow.destroy();
       startOpen = false;
@@ -1006,7 +1006,7 @@ async function main() {
       treeDistance: nav.space === STREET && treeAt ? Math.hypot(player.position.x - treeAt[0], player.position.z - treeAt[1]) : Infinity,
       pierDistance: nav.space === STREET && pierPath ? distanceToPath(pierPath, player.position.x, player.position.z) : Infinity,
     };
-    // The start flow's music is its own (title_theme from the first tap); a replayed intro keeps the town's.
+    // The start flow starts owner_theme on the first tap; a replayed intro keeps that same source running.
     if (!startOpen || !game) {
       const m = musicFor(scene);
       mixer.setMusic(m.track, m.gain);

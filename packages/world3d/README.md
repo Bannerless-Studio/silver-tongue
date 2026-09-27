@@ -51,14 +51,14 @@ The one-off build (`npm run build`), measured 2026-09-27:
 | part | KB | note |
 | --- | ---: | --- |
 | GLBs (`assets/`, 116, meshopt) | 5,470 | 1,569 KB gzipped; raw 10,471 (2,885 gzipped) before meshopt |
-| music (`assets/audio/music`, .ogg only) | 2,469 | the .m4a (2,677 KB) stays behind: with it the total passes 15 MB (`build.mjs` MUSIC_OGG_ONLY) |
+| music (`assets/audio/music`, .ogg only) | 2,624 | the .m4a (3,300 KB) stays behind: with it the total passes 15 MB (`build.mjs` MUSIC_OGG_ONLY) |
 | ambience (.ogg + .m4a) | 3,404 | eight beds at Vorbis q2 / AAC 64k (measured after the peaceful-town audio; four beds at q4 / 96k were 2,419) |
 | effects (.ogg + .m4a) | 384 | |
 | title backdrop (`assets/ui/title`) | 291 | six JPEGs |
-| main.js + chunks/ | 251 + 702 | chunks: three core 579, GLTF loader 43, meshopt decoder 26, shared 41 (all modulepreloaded); start flow 13 and orbit camera 19 lazy |
-| index.html | 41 | start.css + page.css inlined |
+| main.js + chunks/ | 315 + 724 | chunks: three core 579, GLTF loader 43, meshopt decoder 26, shared 44 (all modulepreloaded); start flow 13 and orbit camera 19 lazy |
+| index.html | 44 | start.css + page.css inlined |
 | courses/ | 344 | |
-| **total** | **12,429** | was 17,387 before meshopt; 14,570 now, with the barks (1,356) and the eight ambient beds |
+| **total** | **14,861** | 180 KB above the 14,681 KB comparison build; includes barks and all eight ambient beds |
 
 A browser without Vorbis (older Safari) has no music in the one-off build; its ambience and
 effects play from the .m4a. The next saving (both music formats under 15 MB): the ambience as
@@ -493,11 +493,9 @@ wooden one, a lake with a pier to the west, hills, and mountains 360-400 m out u
   azimuth 36°, 19 m, fov 30°, aim 1 m over the plaza), so the hand-over to `CameraRig.snap` doesn't
   jump (`test/cutscene.test.ts`, to 1e-3, landscape and portrait; also checked numerically: no
   frame-to-frame speed over 3x the path's mean, the camera stays over the ground throughout). The
-  overlay (and the name dialog) waits underneath. `cutscene_flyover`'s music (24 s, unlooped)
-  crossfades to the town's own bed the moment the fly-over ends, played out or skipped
-  (`SoundMixer.setMusic`, 1.5 s linear fade both ways): that crossfade is driven by the phase flag
-  alone, not by any stored duration, so it fades cleanly whichever way the now-shorter fly-over
-  ends.
+  overlay (and the name dialog) waits underneath. The looping `owner_theme` keeps playing when the
+  fly-over ends or is skipped: `SoundMixer.setMusic` sees the unchanged ID and preserves the same
+  source, so the scene transition cannot restart or gap the music.
 - **Far edge** (`src/horizon.ts`, checked by `test/horizon.test.ts`; `npx tsx
   packages/world3d/scripts/horizon-report.ts` prints the tables): the apron ends at r 760 m and
   mountains_far only covers the bearings 300°-140°, so the fly-over saw a floating disc. world3d
@@ -630,7 +628,7 @@ mounted in `#start` over the loading screen once the catalog is in, while the to
 
 1. **Title**: Ken Burns over six frames of the fly-over (`assets/ui/title/`, JPEG q80, from
    `town_layout/cutscene_frames`), "Tap to start". That tap is the first gesture: it unlocks the
-   mixer and starts `title_theme`.
+   mixer and starts `owner_theme`.
 2. **I speak…**: every reading language in the catalog (one card today: English). The chrome
    switches to the pick (en / bn / zh start strings; the game chrome's bn / zh partial, see below).
 3. **I want to learn…**: the courses for that reader, and `COMING_SOON` (ja, ko, es) greyed.
@@ -658,7 +656,7 @@ words. Sound, volume, the ambience mode and the guide's Hide / Show are kept in
 ## Audio buses
 
 `src/audio.ts`: word clips stay on the `AudioPlayer` (web-common's element). Music, ambience and
-effects (make-it-in-china `tools/audio/make_audio.py`, vendored in `assets/audio/` with its
+effects (make-it-in-china `tools/audio/`, vendored in `assets/audio/` with its
 `manifest.json`) play on a `SoundMixer` over Web Audio (iOS ignores an element's volume): master →
 music / ambient / sfx gains. `pickFormat` takes `.ogg` where `canPlayType` says Vorbis, else
 `.m4a`; an entry the build shipped in one format falls back to it (`fileFor`). Nothing plays
@@ -667,9 +665,7 @@ music volume persist (prefs). The choices are pure (`test/sound.test.ts`):
 
 | bus | what | when |
 | --- | --- | --- |
-| music | `title_theme` | the start flow (from its first tap) |
-| music | `cutscene_flyover` | the fly-over |
-| music | `town_day` / `town_evening` | in play, by daylight (`EVENING_AT` 0.6 of the day's slots); 1.5 s crossfades; inside a building −6 dB |
+| music | `owner_theme` | the start flow (from its first tap), fly-over and town; one looping source continues without a scene-change restart; inside a building −6 dB |
 | ambient | `canal_water` | outdoors, 1 − d / 25 m to the nearest water vertex of the walk grid (heights under −0.6 m: canal, lake; `waterDistance`, a chamfer transform) |
 | ambient | `boat_creak` | outdoors, 0.6 × (1 − d / 15 m) to the pier's deck path (`distanceToPath`) |
 | ambient | `birds_day` | outdoors: 0.6 in the morning, 0.4 in the afternoon (`AFTERNOON_AT` 0.4 of the day's slots) |
@@ -692,10 +688,19 @@ music volume persist (prefs). The choices are pure (`test/sound.test.ts`):
 
 `world3d.sound()` shows what the mixer wants now; `world3d.sfx(id)` plays one.
 
-**Defaults**: quiet. Music starts at volume 0 (`prefs.music`; `musicSet` remembers a real slider
-move, so a `music: 0.8` from before this build's old default is read as never set, not as a
-choice); Settings → Music volume turns it on immediately, the title screen and the fly-over
-included (both play through the same mixer bus). Ambience starts "light" (`prefs.ambienceFull`
+**Music: Fiazul Haque.** The author's own composition is rendered from the source named in
+`assets/audio/music/owner_theme.json`. The rule is that it stays unobtrusive and cannot become
+loud: the shipped file is mastered to −24 LUFS integrated with a −6 dBTP target, the mixer
+multiplies the 0..1 slider by the hard `MUSIC_BUS_CAP` of 0.35, and a −24 dB / 12:1 compressor
+guards the music bus. `test/music-loudness.test.ts` checks the metadata, re-measures the Ogg with
+ffmpeg where available, and proves that normal and tampered slider values cannot exceed the cap.
+Music, barks, word clips and sound effects otherwise remain on separate paths.
+
+**Defaults**: quiet background music starts at slider volume 0.6, an effective bus gain of 0.21
+(`prefs.music`; `musicSet` remembers a real slider move, so unflagged historical defaults of
+`music: 0` and `music: 0.8` migrate to 0.6, while another valid legacy choice is kept).
+The title screen, fly-over and town share the same continuously playing theme. Ambience starts
+"light" (`prefs.ambienceFull`
 false): only `canal_water` and `birds_day` play, each capped well under its full gain, plus
 `crickets_evening` in the evening (the one evening bed, so the evening isn't silent); every other
 bed is off until Settings → Ambience is set to "Full" (`AMBIENT_LIGHT_CAPS` in `src/audio.ts`).
@@ -713,7 +718,7 @@ Door / coin / bell one-shots and every voice (word clips, barks) are unaffected 
 | `market_murmur` | off | 0.5 in the market |
 
 A quiet canal town: nothing in the set reads as urban, traffic or emergency (no engines, horns,
-sirens, broadband roar; the music's pads hold their pitch). How each clip was checked, and the
+sirens or broadband roar). How each clip was checked, and the
 generator rules that keep it so: make-it-in-china `tools/audio/README.md` ("Peaceful by
 construction"); the manifest's `description` says what each clip is, and `test/sound.test.ts`
 fails on an id or description naming traffic.

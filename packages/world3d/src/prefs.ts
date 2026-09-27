@@ -26,7 +26,7 @@ export interface Prefs {
   barkHint?: boolean;
 }
 
-export const DEFAULT_PREFS: Prefs = { sound: true, music: 0, musicSet: false, ambienceFull: false, guideHidden: false, pathHidden: false };
+export const DEFAULT_PREFS: Prefs = { sound: true, music: 0.6, musicSet: false, ambienceFull: false, guideHidden: false, pathHidden: false };
 
 export function loadPrefs(kv: KeyValue): Prefs {
   try {
@@ -35,9 +35,10 @@ export function loadPrefs(kv: KeyValue): Prefs {
     const musicSet = d.musicSet === true;
     const storedMusic = typeof d.music === "number" && d.music >= 0 && d.music <= 1 ? d.music : undefined;
     // musicSet: honour whatever was stored (even 0, even the old default). Not musicSet: a prefs
-    // blob from before this flag existed; only a value other than the old default can be a real
-    // choice (the old default was written for every player, touched or not), else the new default.
-    const music = musicSet ? (storedMusic ?? DEFAULT_PREFS.music) : storedMusic !== undefined && storedMusic !== OLD_DEFAULT_MUSIC ? storedMusic : DEFAULT_PREFS.music;
+    // blob from before this flag existed; 0 and 0.8 were both shipped defaults, while another
+    // valid value records a real legacy slider choice.
+    const historicalDefault = storedMusic === 0 || storedMusic === OLD_DEFAULT_MUSIC;
+    const music = musicSet ? (storedMusic ?? DEFAULT_PREFS.music) : storedMusic !== undefined && !historicalDefault ? storedMusic : DEFAULT_PREFS.music;
     return {
       sound: typeof d.sound === "boolean" ? d.sound : DEFAULT_PREFS.sound,
       music,

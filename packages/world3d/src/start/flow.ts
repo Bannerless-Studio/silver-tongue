@@ -13,7 +13,7 @@ import * as S from "./strings";
 export interface StartHooks {
   /** ui_tap, ui_confirm, ui_back, ui_reveal, ui_page */
   sfx?: (id: string) => void;
-  /** title_theme, once, at the first tap / key on the title */
+  /** owner_theme, once, at the first tap / key on the title */
   music?: (id: string) => void;
   /** an intro word's Listen button */
   say?: (wordId: string) => void;
@@ -279,7 +279,7 @@ export function mountStartFlow(root: HTMLElement, config: StartConfig): StartFlo
       sfx("ui_confirm");
       if (!state.musicStarted) {
         state.musicStarted = true;
-        safeHook(hooks.music, "title_theme");
+        safeHook(hooks.music, "owner_theme");
       }
       go("speak");
     };

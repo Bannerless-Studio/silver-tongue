@@ -72,7 +72,7 @@ describe("the start flow", () => {
     expect($(".st-backdrop img")).not.toBeNull();
     // Tap to start: the music starts on this first gesture, once.
     $(".st-title")!.click();
-    expect(music).toEqual(["title_theme"]);
+    expect(music).toEqual(["owner_theme"]);
     expect(root.dataset.screen).toBe("speak");
     // One reading language: its card is already chosen.
     const speak = $$(".st-card");
