@@ -651,7 +651,7 @@ asked-deliver = They wanted it taken to the { $place }.
     }
   };
 
-  it("says when you take a parcel and when you hand it over, and the status line and menu never say where it goes", () => {
+  it("says nothing extra for taking a parcel (the header's own marker already says it), but does say when you hand it over", () => {
     const { core, term } = setup(
       (s) => { s.place = "noodle_shop"; s.scenesDone = { intro: 1 }; },
       (c) => { addErrand(c); c.learnerFtl += ERRAND_TEXT; },
@@ -659,7 +659,7 @@ asked-deliver = They wanted it taken to the { $place }.
     pressItem(term, "Take a parcel");
     answerAll(core, term);
     const taken = term.screen().join("\n");
-    expect(taken).toContain("You're carrying a parcel.");
+    expect(taken).not.toContain("You're carrying a parcel."); // the header's "· parcel" already says so
     expect(taken).not.toContain("New: Deliver the parcel");
     // The reply's own narration may name the place; the status line and the menu must not.
     const screen = term.screen();
@@ -681,14 +681,6 @@ asked-deliver = They wanted it taken to the { $place }.
     const { term } = setup((s) => { s.errand = { to: "street" }; s.rentLate = true; });
     term.resize(40, 16);
     for (const l of term.frames.at(-1)!) expect(lineWidth(l)).toBe(40);
-  });
-
-  it("reminds you of the parcel above the menu, where a phone-width screen still shows it", () => {
-    const { term } = setup((s) => { s.errand = { to: "street" }; });
-    term.resize(40, 16);
-    const menu = term.screen().slice(1).join("\n");
-    expect(menu).toContain("You have a parcel to deliver.");
-    expect(setup().term.screen().slice(1).join("\n")).not.toContain("parcel to deliver");
   });
 
   it("shows money spent in a shop as shopping", () => {

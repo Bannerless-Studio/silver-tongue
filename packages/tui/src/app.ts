@@ -91,6 +91,11 @@ export function startApp(opts: AppOptions): App {
   let speed: SpeechSpeed = opts.speed?.value ?? "slow";
   let currentNpc: string | undefined; // the scene's NPC, for hints that name who asked
   let pendingNotes = new Set<string>(); // notes ready while a scene ran, shown once explore mode is back
+  // Shown once per batch of ready-unread notes: set the moment the hint is shown, cleared only when
+  // the mentor explains them all (pendingNotes goes back to empty). Without this, every scene that
+  // readies another note (on top of ones the player already hasn't visited the mentor for) would
+  // show the hint again.
+  let noteHintShown = false;
   let visitedPlaces = new Set<string>(); // places whose name+description have already logged this session
   let lastRejectReason: string | undefined; // the previous log line's reject reason, to collapse a repeat
 
@@ -251,7 +256,8 @@ export function startApp(opts: AppOptions): App {
           }
           break;
         case "errandStarted":
-          push([{ text: t("errand-started"), color: "cyan" }]);
+          // The header's own "· parcel" marker already says this; a log line would be the third
+          // time this scene told the player (after the scene's own narration).
           break;
         case "errandEnded":
           push([{ text: t("errand-ended"), color: "cyan" }]);
@@ -278,15 +284,18 @@ export function startApp(opts: AppOptions): App {
           if (!e.notes.length) push([{ text: t("mentor-nothing", { npc: npcName(e.npc) }), dim: true }]);
           for (const id of e.notes) push([{ text: t(`note-${id}-title`), bold: true }], [{ text: t(`note-${id}`) }], []);
           for (const id of e.notes) pendingNotes.delete(id);
+          if (!pendingNotes.size) noteHintShown = false;
           break;
         case "wordStateChanged":
           break;
       }
     }
-    // A note readied mid-scene surfaces once we're back in explore mode, not mid-conversation.
-    if (mode === "explore" && pendingNotes.size && course.world.mentor) {
+    // A note readied mid-scene surfaces once we're back in explore mode, not mid-conversation, and
+    // only the first time: a player who hasn't visited the mentor yet sees this once, not again for
+    // every further scene that readies another note on top of the ones already waiting.
+    if (mode === "explore" && pendingNotes.size && !noteHintShown && course.world.mentor) {
       push([{ text: t("note-hint", { npc: npcName(course.world.mentor.npc) }), color: "magenta" }]);
-      pendingNotes.clear();
+      noteHintShown = true;
     }
   }
 
@@ -390,12 +399,9 @@ export function startApp(opts: AppOptions): App {
       return [[{ text: t(title), dim: true }], ...settingsChoices().map((r, i) => [{ text: `${i + 1}) ${r.label}` }])];
     }
     if (mode === "explore") {
-      // The status line's parcel marker is cut off on narrow screens; this line wraps instead.
-      const parcel: StyledLine[] = core.state.errand ? [[{ text: t("errand-carrying"), color: "cyan" }]] : [];
       // Scenes here that wait only for money: shown, not offered, so an empty shop says why.
       const waiting: StyledLine[] = waitingForMoney(course, core.state, t).map((text) => [{ text, dim: true }]);
       return [
-        ...parcel,
         ...waiting,
         [{ text: t("menu-title"), dim: true }],
         ...menu().map((m, i) => [

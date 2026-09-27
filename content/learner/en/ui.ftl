@@ -61,7 +61,6 @@ unlocked = New: { $scene }
 unlocked-many = New: { $scenes }
 errand-started = You're carrying a parcel.
 errand-ended = You hand over the parcel.
-errand-carrying = You have a parcel to deliver.
 rank-up = You're now: { $rank }
 day-ended = Day { $day } is over. You sleep.
 day-ended-rough = Day { $day } is over. You sleep rough by the road.
