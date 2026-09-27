@@ -26,6 +26,17 @@ describe("help cards", () => {
     expect(shortGloss("to buy")).toBe("to buy");
   });
 
+  it("only treats a sense as a pure aside when its own parens wrap the whole thing (depth-aware)", () => {
+    // The leading "(a)" closes before the sense ends, so it isn't a single wrap: real content ("b")
+    // outside it survives, instead of the old bug's "a) b (c" (stripping just the outer chars).
+    expect(shortGloss("(a) b (c)")).toBe("b");
+    // Doesn't end in ")", so it was never a candidate for isPureAside either way.
+    expect(shortGloss("(V+好) done")).toBe("done");
+    // Nested parens: dropAsides itself doesn't unwrap nesting, a separate, pre-existing limitation;
+    // this only checks isPureAside doesn't wrongly swallow the whole sense as one aside.
+    expect(shortGloss("((a)) b")).toBe(") b");
+  });
+
   it("glosses words met for the first time, once each, in order, dropping every sense past the first", () => {
     const c = fixtureWithText();
     c.words.w_hao.gloss = "good; appropriate; proper";

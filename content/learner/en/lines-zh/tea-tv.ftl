@@ -8,8 +8,8 @@ tv-reply = Yes! I love television.
 tv-alt1 = It's cold today!
 tv-alt2 = Three o'clock.
 
-all = We all watch television.
-all-reply = We all watch!
+all = We all watch television!
+all-reply = OK, we all watch!
 all-alt1 = The weather's cold.
 all-alt2 = Ten minutes.
 
@@ -18,7 +18,7 @@ phone-reply = OK!
 phone-alt1 = We all watch!
 phone-alt2 = At noon.
 
-sorry = Sorry! It's my mother.
+sorry = Sorry, it's my mother.
 sorry-reply = How is your mother?
 sorry-alt1 = We all watch!
 sorry-alt2 = OK, television on!
@@ -28,7 +28,7 @@ see-reply = I see it! It's big!
 see-alt1 = How is your mother?
 see-alt2 = We all watch!
 
-film = The film's on! No talking!
+film = The film's good. No talking!
 film-reply = OK, I won't talk.
 film-alt1 = I see it! It's big!
 film-alt2 = How is your mother?

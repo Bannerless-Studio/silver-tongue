@@ -3,7 +3,7 @@ open-reply = It's noon!
 open-alt1 = I'm hungry.
 open-alt2 = How are you?
 
-many = The restaurant's small! So many people!
+many = The restaurant's small! How many people?
 many-reply = So many!
 many-alt1 = I'll go and buy cups.
 many-alt2 = It's noon!
@@ -23,14 +23,14 @@ these-reply = OK, these dishes.
 these-alt1 = I see him!
 these-alt2 = So many!
 
-price = That young woman wants vegetables. How much?
-price-reply = Her? Ten kuai.
+price = That young woman, ten kuai!
+price-reply = OK, ten kuai for her!
 price-alt1 = OK, these dishes.
 price-alt2 = I'm hungry.
 
 eat = Right, we eat! Which dish do you want?
 eat-reply = I want this one.
-eat-alt1 = Her? Ten kuai.
+eat-alt1 = OK, ten kuai for her!
 eat-alt2 = So many!
 
 taste = How's the food?

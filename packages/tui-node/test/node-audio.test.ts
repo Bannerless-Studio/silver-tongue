@@ -103,6 +103,13 @@ describe("createNodeAudio", () => {
     expect(played(f)).toEqual(["/a/x.mp3"]);
   });
 
+  it("exposes the chosen player, so a caller can tell mpg123 apart (no clean speed control)", () => {
+    const mpg123 = PLAYERS.find((p) => p.cmd === "mpg123")!;
+    expect(createNodeAudio({ dir: "/a", player, ...fakes() }).player).toBe(player);
+    expect(createNodeAudio({ dir: "/a", player: mpg123, ...fakes() }).player?.cmd).toBe("mpg123");
+    expect(createNodeAudio({ dir: "/a", player: undefined, ...fakes() }).player).toBeUndefined();
+  });
+
   it("is unavailable with no player, and after a spawn error, and never throws", () => {
     expect(createNodeAudio({ dir: "/a", player: undefined, ...fakes() }).available).toBe(false);
     const f = fakes();

@@ -124,8 +124,20 @@ describe("tui app", () => {
     term.press(rightKey(core));
     term.press(rightKey(core));
     const s = term.screen().join("\n");
-    expect(s).toContain("New: Serve drinks · scene-extra1 · scene-extra2");
+    expect(s).toContain("New: Serve drinks, scene-extra1, scene-extra2");
     expect(s).not.toContain("New: Serve drinks\n"); // not one line per scene
+  });
+
+  it("keeps a cross-place batch readable: ', ' between scenes, ' · place' only on the elsewhere ones", () => {
+    const { term, core } = setup(undefined, (c) => {
+      const extra = structuredClone(c.scenes[1]); // "shift": requires trust.cook >= 1, like the new ones
+      c.scenes.push({ ...extra, id: "extra1", place: "street" }, { ...extra, id: "extra2" });
+    });
+    term.press("1", "1"); // intro ends, unlocking shift (here), extra1 (street) and extra2 (here) at once
+    term.press(rightKey(core));
+    term.press(rightKey(core));
+    const s = term.screen().join("\n");
+    expect(s).toContain("New: Serve drinks, scene-extra1 · The street, scene-extra2");
   });
 
   it("shows each reply's meaning, dimmed, so a beginner can pick one", () => {
@@ -415,6 +427,26 @@ describe("tui app", () => {
     // The intro scene is unpaid: no "Done." line, just the trust it unlocks a new scene with.
     expect(term.screen().join("\n")).not.toContain("Done.");
     expect(term.screen().join("\n")).toContain("New: Serve drinks");
+  });
+
+  it("keeps the place description when resuming mid-scene at startup", () => {
+    const first = setup();
+    first.term.press("1", "1");
+    const course = fixtureWithText();
+    const core = createCore(course, first.core.state, { now: () => T0, rng: mulberry32(2) });
+    const term = new FakeTerminal();
+    startApp({ course, core, term, now: () => T0, save: () => true, quit: () => {} });
+    expect(term.screen().join("\n")).toContain("Steam everywhere."); // place desc survives the resume
+  });
+
+  it("re-shows a pending mentor hint on resume, even though quitting lost it from memory", () => {
+    // The note went ready in a previous session and was never shown (quit mid-scene): only
+    // core.state.notes.ready remembers it across the restart.
+    const { term } = setup(
+      (s) => (s.notes.ready = ["hao"]),
+      (c) => (c.world.mentor = { npc: "cook", after: "intro" }),
+    );
+    expect(term.screen().join("\n")).toContain("Cook seems to have something to tell you.");
   });
 
   it("keeps working on a very short screen", () => {

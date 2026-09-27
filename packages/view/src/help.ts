@@ -34,9 +34,22 @@ function glossSenses(gloss: string): string[] {
   return senses.map((s) => s.trim()).filter(Boolean);
 }
 
-/** True once a sense is nothing but one "(...)" aside, e.g. "(question particle)". */
+/**
+ * True once a sense is nothing but one "(...)" aside, e.g. "(question particle)". Depth-aware: a
+ * leading "(" that closes before the sense's end (as in "(a) b (c)") isn't a single wrap around
+ * the whole sense, even though the sense still starts with "(" and ends with ")".
+ */
 function isPureAside(sense: string): boolean {
-  return /^\(.*\)$/.test(sense);
+  if (!sense.startsWith("(") || !sense.endsWith(")")) return false;
+  let depth = 0;
+  for (let i = 0; i < sense.length; i++) {
+    if (sense[i] === "(") depth++;
+    else if (sense[i] === ")") {
+      depth--;
+      if (depth === 0 && i !== sense.length - 1) return false;
+    }
+  }
+  return depth === 0;
 }
 
 /**

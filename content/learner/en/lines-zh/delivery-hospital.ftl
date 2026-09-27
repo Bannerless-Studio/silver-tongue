@@ -3,7 +3,7 @@ who-reply = I'm Miss Gao's friend.
 who-alt1 = My name is Old Wang.
 who-alt2 = Where is the school?
 
-doctor = Thank you! I'm a doctor.
+doctor = Thank you! I work in the hospital, I'm a doctor.
 doctor-reply = Hello, doctor!
 doctor-alt1 = Goodbye, Miss Gao!
 doctor-alt2 = I'm hungry.

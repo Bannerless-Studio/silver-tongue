@@ -76,7 +76,7 @@ interface QueuedClip {
  * `deps.rate` currently says (slower still for a slow repeat). A player that fails turns sound off
  * for the session.
  */
-export function createNodeAudio(deps: NodeAudioDeps): AudioOut {
+export function createNodeAudio(deps: NodeAudioDeps): AudioOut & { player: Player | undefined } {
   let broken = !deps.player;
   let queue: QueuedClip[] = [];
   let proc: Proc | undefined;
@@ -132,6 +132,8 @@ export function createNodeAudio(deps: NodeAudioDeps): AudioOut {
       next(run);
     },
     stop,
+    // The chosen player, so a caller can tell when it's one (mpg123) that ignores speed.
+    player: deps.player,
   };
 }
 

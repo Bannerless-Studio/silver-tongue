@@ -20,15 +20,17 @@ Shipped: reply glosses while a word is not yet known; first-time word line under
 
 Fixed at once: noodle-intro count-alt1 "三个杯子！" was a correct answer offered as wrong (now 很好！).
 
-- unlocked-many joins "scene · place" labels with " · " too; a cross-place batch is unreadable. Use ", " between scenes or put the place in brackets. (packages/tui/src/app.ts unlockedLabel)
-- `log = []` on sceneStarted also runs when resuming mid-scene at startup and wipes the place description that session.
-- Quitting mid-scene after a noteReady loses the one-time mentor hint; re-derive from core.state.notes.ready on startup.
-- mpg123 ignores speed; hide the Speed row (or say "not with mpg123") when it is the player.
-- menu.ts comment on sleep-away contradicts core; reconcile with the home-key rule.
-- Content: hospital-checkup `sit` says 在医院里 while in the hospital (→ 请在这里坐十分钟); shop-intro 哪个苹果很好？ → 哪个苹果好？; street-hungry and noodle-intro share the identical like exchange.
+- [x] unlocked-many joins "scene · place" labels with " · " too; a cross-place batch is unreadable. Use ", " between scenes or put the place in brackets. (packages/tui/src/app.ts unlockedLabel) — fixed: scenes now join with ", ", each scene keeps its own " · place" suffix; test in packages/tui/test/app.test.ts.
+- [x] `log = []` on sceneStarted also runs when resuming mid-scene at startup and wipes the place description that session. — fixed: skipped when `resuming` is true; test added.
+- [x] Quitting mid-scene after a noteReady loses the one-time mentor hint; re-derive from core.state.notes.ready on startup. — fixed: `pendingNotes` is seeded from `core.state.notes.ready` before `describeRun` runs at startup; test added.
+- [x] mpg123 ignores speed; hide the Speed row (or say "not with mpg123") when it is the player. — fixed: createNodeAudio now exposes the chosen `player`; main.ts omits the `speed` option to startApp when it's mpg123, so no Speed row is offered. Test in packages/tui-node/test/node-audio.test.ts.
+- [x] menu.ts comment on sleep-away contradicts core; reconcile with the home-key rule. — checked: the comment (packages/view/src/menu.ts) already matches core's rule (rough sleep anywhere before `world.homeScene` is done, home-only after); no change needed.
+- [x] Content: hospital-checkup `sit` says 在医院里 while in the hospital (→ 请在这里坐十分钟); shop-intro 哪个苹果很好？ → 哪个苹果好？; street-hungry and noodle-intro share the identical like exchange. — hospital-checkup/shop-intro fixed (see note below); street-hungry/noodle-intro duplicate exchange not touched (out of this brief's scope).
 - Untrack tsconfig.tsbuildinfo and ignore it.
 - VN ignores MenuItem.disabled (no dimming); web-phase item.
-- help.ts isPureAside is not depth-aware ("(a) b (c)"); no course gloss triggers it today.
+- [x] help.ts isPureAside is not depth-aware ("(a) b (c)"); no course gloss triggers it today. — fixed: isPureAside now tracks paren depth so a leading "(...)" that closes before the sense ends isn't treated as wrapping the whole sense; tests added in packages/view/test/help.test.ts.
+
+Content fix note (hospital-checkup/shop-intro): sit → 请在这里坐下十分钟。("Please sit down here for ten minutes.", using 坐下 instead of bare 坐 to keep the word "下" 's own course-wide coverage at 3 scenes); apples → 哪个苹果好？. Removing 在医院里 from `sit` dropped 里's coverage to 2 scenes, so delivery-hospital's `doctor` line was extended (谢谢！我在医院里工作，我是医生。/ "Thank you! I work in the hospital, I'm a doctor.") to give it a third, legitimate first-use (a wrong-reply alt can't introduce an unmet word, so it had to go in a main NPC line). `npm run build:course -- zh-china` and `npm run audio -- zh-china` both ran clean.
 
 ## Iteration 2 — days 2–9 (room-rent, delivery-*, tea-*, taxi-*, class-*, stairs-*, shop-*, noodle-kitchen/lunch, hospital-checkup)
 

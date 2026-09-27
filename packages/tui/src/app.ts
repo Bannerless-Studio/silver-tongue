@@ -174,8 +174,9 @@ export function startApp(opts: AppOptions): App {
           mode = "scene";
           currentNpc = e.npc;
           // The intro and place description above would otherwise bury every screen of the
-          // conversation; the frame's title still says where we are.
-          log = [];
+          // conversation; the frame's title still says where we are. Resuming mid-scene at startup
+          // is the exception: the place description was just pushed above and is worth keeping.
+          if (!resuming) log = [];
           push([]);
           // A repeatable scene played before has already told its story; the second run is only news.
           if (!resuming && !(core.state.scenesDone[e.scene] ?? 0)) narrate(`scene-${e.scene}-start`);
@@ -241,7 +242,9 @@ export function startApp(opts: AppOptions): App {
           if (unlockedCount >= 3) {
             if (!unlockedShown) {
               unlockedShown = true;
-              push([{ text: t("unlocked-many", { scenes: unlockedNames.join(" · ") }), color: "green" }]);
+              // Scenes are joined with ", " so a "scene · place" label's own " · " separator stays
+              // unambiguous even when the batch spans several places.
+              push([{ text: t("unlocked-many", { scenes: unlockedNames.join(", ") }), color: "green" }]);
             }
           } else {
             push([{ text: t("unlocked", { scene: unlockedLabel(e.scene) }), color: "green" }]);
@@ -592,6 +595,9 @@ export function startApp(opts: AppOptions): App {
   if (opts.notice) push([{ text: t(opts.notice), color: "yellow" }]);
   tellIntro();
   enterPlace(core.state.place);
+  // A note readied mid-scene, then quitting before it was shown, would otherwise lose the one-time
+  // hint: core.state.notes.ready survives a save, so it's the source of truth on resume too.
+  pendingNotes = new Set(core.state.notes.ready);
   resuming = true;
   apply(describeRun(course, core.state)); // a save made mid-scene resumes in the scene
   flush();

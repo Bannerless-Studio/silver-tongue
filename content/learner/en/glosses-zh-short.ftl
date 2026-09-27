@@ -59,3 +59,7 @@ w0126 = to watch
 # gloss is only "root; stem" - the pack never lists this word's measure-word sense at all, but
 # every line in this course uses it as the classifier for books (这本书, 十本书).
 w0103 = (measure word)
+w0115 = o'clock
+w0074 = character
+w0100 = month
+w0094 = day

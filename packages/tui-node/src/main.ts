@@ -229,6 +229,18 @@ function play(session: Chosen, savePath: string, carried?: { state: GameState; r
   const core = createCore(session.course, state, { now: Date.now, rng: mulberry32(Date.now() >>> 0) });
   audio = createNodeAudio(nodeAudioDeps(session.clips, () => speed));
   const { dir } = session;
+  // mpg123 has no clean rate control (see rateArgs): offering a Speed row that does nothing would
+  // be worse than not offering it.
+  const speedOption =
+    audio.player?.cmd === "mpg123"
+      ? undefined
+      : {
+          value: speed,
+          onChange: (s: SpeechSpeed) => {
+            speed = s;
+            updateSettings(root, { speed: s });
+          },
+        };
   startApp({
     course: session.course,
     core,
@@ -237,13 +249,7 @@ function play(session: Chosen, savePath: string, carried?: { state: GameState; r
     notice,
     version: pkg.version,
     audio,
-    speed: {
-      value: speed,
-      onChange: (s) => {
-        speed = s;
-        updateSettings(root, { speed: s });
-      },
-    },
+    speed: speedOption,
     save: readOnly ? undefined : (s) => writeSave(savePath, s),
     quit: () => bail(0),
     settings: dir

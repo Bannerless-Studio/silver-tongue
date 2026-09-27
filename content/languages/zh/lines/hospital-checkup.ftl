@@ -1,6 +1,6 @@
 # You caught a cold in the rain; the doctor you deliver to looks you over.
 
-sit = 在医院里，请坐下，十分钟。
+sit = 请在这里坐下十分钟。
 sit-reply = 谢谢，医生。
 sit-alt1 = 我叫老王。
 sit-alt2 = 我现在去！

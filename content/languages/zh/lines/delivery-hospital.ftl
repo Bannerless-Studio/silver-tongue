@@ -3,7 +3,7 @@ who-reply = 我是高小姐的朋友。
 who-alt1 = 我叫老王。
 who-alt2 = 学校在哪里？
 
-doctor = 谢谢！我是医生。
+doctor = 谢谢！我在医院里工作，我是医生。
 doctor-reply = 你好，医生！
 doctor-alt1 = 再见，高小姐！
 doctor-alt2 = 我饿了。
