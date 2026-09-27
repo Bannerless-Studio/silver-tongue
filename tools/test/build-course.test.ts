@@ -497,3 +497,16 @@ describe("courses and the catalog", () => {
     expect(Object.values(course!.words).find((w) => w.w === "你")!.readings).toEqual(["nǐ", "ni"]);
   });
 });
+
+describe("word forms", () => {
+  it("copies a word's forms onto the built word", () => {
+    const { course, errors } = buildChanged((dir) => {
+      const path = join(dir, "languages", "zh", "words.json");
+      const words = JSON.parse(readFileSync(path, "utf8")) as { w: string; forms?: Record<string, string[]> }[];
+      words.find((w) => w.w === "谢谢")!.forms = { "谢谢你": ["xièxie nǐ"] };
+      writeFileSync(path, JSON.stringify(words));
+    });
+    expect(errors).toEqual([]);
+    expect(Object.values(course!.words).find((w) => w.w === "谢谢")!.forms).toEqual({ "谢谢你": ["xièxie nǐ"] });
+  });
+});

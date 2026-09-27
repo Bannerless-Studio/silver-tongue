@@ -143,6 +143,7 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
       gloss: glosses?.has(w.id) ? glosses.render(w.id) : "",
       ...(shorts?.has(w.id) ? { short: shorts.render(w.id) } : {}),
       ...(w.readings ? { readings: w.readings } : w.pron ? { readings: [w.pron] } : {}),
+      ...(w.forms ? { forms: w.forms } : {}),
       ...(w.bonus ? { bonus: true } : {}),
     };
   }

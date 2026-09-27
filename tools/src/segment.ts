@@ -12,7 +12,9 @@ export function buildLexicon(words: PackWord[]): Lexicon {
   const clashes: string[] = [];
   let maxLen = 1;
   for (const w of words) {
-    for (const form of new Set([w.w, ...(w.alt ?? [])])) {
+    const formKeys = Object.keys(w.forms ?? {});
+    for (const f of formKeys) if (w.alt?.includes(f)) clashes.push(`"${f}" (${w.id}: both alt and forms)`);
+    for (const form of new Set([w.w, ...(w.alt ?? []), ...formKeys])) {
       const other = byForm.get(form);
       if (other !== undefined && other !== w.id) clashes.push(`"${form}" (${other}, ${w.id})`);
       else byForm.set(form, w.id);

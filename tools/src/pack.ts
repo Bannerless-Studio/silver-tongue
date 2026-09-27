@@ -26,6 +26,8 @@ export interface PackWord {
   pron?: string;
   /** readings, most native first; overrides pron */
   readings?: string[];
+  /** readings of each other spelling (a conjugation, a kana spelling), most native first; each key is also a form the tagger knows */
+  forms?: Record<string, string[]>;
   pos?: string;
   bonus?: boolean;
 }

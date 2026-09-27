@@ -58,3 +58,17 @@ describe("segment", () => {
     );
   });
 });
+
+describe("buildLexicon with forms", () => {
+  const eat = { id: "eat", w: "食べます", lv: "N5", forms: { "食べました": ["たべました", "tabemashita"] } };
+  it("tags a line by a word's other forms", () => {
+    const { tokens } = segment("食べました。", buildLexicon([eat]));
+    expect(tokens).toEqual([{ start: 0, end: 5, word: "eat" }]);
+  });
+  it("refuses a spelling listed both as alt and in forms", () => {
+    expect(() => buildLexicon([{ ...eat, alt: ["食べました"] }])).toThrow(/食べました.*both alt and forms/);
+  });
+  it("refuses a form two words share", () => {
+    expect(() => buildLexicon([eat, { id: "ate", w: "食べました", lv: "N5" }])).toThrow(/"食べました" \((eat, ate|ate, eat)\)/);
+  });
+});
