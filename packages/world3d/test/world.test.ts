@@ -1087,6 +1087,90 @@ describe("see-through: whatever blocks a focus fades as a whole object", () => {
     expect(t.vis()).toBeGreaterThan(easing);
   });
 
+  // main.ts's frame, as the browser runs it: poll at the top, the rig following the player, a jump
+  // over 2 m (or a teleport) resetting, sample() every other frame (skip() on the others), and
+  // fences that signal on a later animation frame than the one that queued them (Chrome only
+  // updates a sync's status once the page yields).
+  it("WebGL2, the main.ts frame: after a teleport, 5 s of walking gets a fresh sample at least every MAX_SAMPLE_AGE_MS and the fade clears", () => {
+    const clock = fakeClock();
+    const g = fakeGl2();
+    let frameNo = 0;
+    const fences = new Map<object, number>();
+    g.gl.fenceSync = () => { const f = {}; fences.set(f, frameNo); return f; };
+    g.gl.clientWaitSync = (f: object) => (frameNo > fences.get(f)! ? g.gl.CONDITION_SATISFIED : g.gl.TIMEOUT_EXPIRED);
+    const tree = new THREE.Vector3(-17.2, 0, 6.3);
+    let covered = true;
+    // six silhouette pixels: all under the tree (id 5), or none covered
+    g.gl.getBufferSubData = (_t: number, _o: number, px: Uint8Array) => { px.fill(0); for (let i = 0; i < 6; i++) px.set(covered ? [6, 0, 0, 255] : [255, 255, 0, 255], i * 4); };
+    const stub = stubRenderer(g.gl);
+    const r = rig();
+    const detector = new SeeThroughDetector(stub.renderer);
+    const see = new SeeThroughControl();
+    see.reset();
+    const occluders = [{ id: 5, asset: "great_tree" }];
+    const player = new THREE.Vector3(0, 0, 0);
+    r.snap(player);
+    const last = player.clone();
+    let seeFrame = 0;
+    const fps = 59;
+    const frame = (vx: number, vz: number) => {
+      clock.advance(1000 / fps);
+      frameNo++;
+      detector.poll();
+      player.x += vx / fps;
+      player.z += vz / fps;
+      covered = player.distanceTo(tree) < 6;
+      r.update(1 / fps, player, false);
+      if (last.distanceToSquared(player) > 4) {
+        see.reset();
+        detector.invalidate();
+        seeFrame = 0;
+      }
+      last.copy(player);
+      if (seeFrame++ % 2 === 0) detector.sample(stub.source, r.camera, player, 0);
+      else detector.skip(0);
+      see.update(1 / fps, [player], occluders, [detector.current(0)]);
+    };
+    try {
+      for (let i = 0; i < 60; i++) frame(0, 0);
+      // world3d.teleport(-20, 3): player.place, see.reset, detector.invalidate, between two frames
+      player.set(-20, 0, 3);
+      see.reset();
+      detector.invalidate();
+      for (let i = 0; i < 3 * fps; i++) frame(0, 0); // stand while the rig glides over and settles
+      expect(see.status(occluders).faded).toEqual([{ id: 5, asset: "great_tree", vis: SEE_THROUGH.fadeTo, coverage: 1 }]);
+      const standing = detector.debug()[0];
+      expect(standing.silhouettePixels).toBe(6);
+      expect(standing.skipped.unmoved).toBeGreaterThan(0); // settled: passes skipped, the age just grows
+      // walk (W: away from the camera, 3.2 m/s) for 5 s
+      const az = (36 * Math.PI) / 180;
+      const before = { ...standing, skipped: { ...standing.skipped } };
+      let worst = 0;
+      let clearedAt = -1;
+      for (let i = 0; i < 5 * fps; i++) {
+        frame(-Math.sin(az) * 3.2, -Math.cos(az) * 3.2);
+        const d = detector.debug()[0];
+        if (i >= 2) worst = Math.max(worst, d.lastSampleAgeMs ?? Infinity); // the first pass lands a frame after it is queued
+        if (clearedAt < 0 && see.vis[5] === 1) clearedAt = i;
+      }
+      expect(worst).toBeLessThanOrEqual(MAX_SAMPLE_AGE_MS);
+      expect(clearedAt).toBeGreaterThan(0);
+      expect(see.status(occluders).faded).toEqual([]);
+      const walked = detector.debug()[0];
+      expect(walked).toMatchObject({ timeouts: 0, syncReads: 0, syncFallback: false, silhouettePixels: 6 });
+      expect(walked.skipped.unmoved).toBe(before.skipped.unmoved); // moving: never skipped as unmoved
+      expect(walked.skipped.pending).toBe(before.skipped.pending);
+      // every call either rendered a pass or was an off-cadence frame, half and half
+      const cadence = walked.skipped.cadence - before.skipped.cadence;
+      const passes = walked.passes - before.passes;
+      expect(cadence + passes).toBe(5 * fps);
+      expect(Math.abs(cadence - passes)).toBeLessThanOrEqual(1);
+      expect(detector.counts(0).covered.size).toBe(0);
+    } finally {
+      clock.restore();
+    }
+  });
+
   it("WebGL2: a throwing readPixels, a throwing poll and a generation mismatch all leave nothing pending", () => {
     const t = asyncRig();
     const log = quietWarn();

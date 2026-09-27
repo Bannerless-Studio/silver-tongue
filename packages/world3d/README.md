@@ -583,7 +583,12 @@ wooden one, a lake with a pier to the west, hills, and mountains 360-400 m out u
   `world3d.seeThrough("off")` / `("on")`; each returns `{ on, faded, slots }`, `faded` listing
   `{ id, asset, vis, coverage }` (coverage: the largest silhouette fraction the root covered in the
   last frame with a result), `slots` the detector's per-focus async state `{ slot, pending,
-  timeouts, syncReads, syncFallback, lastSampleAgeMs }`. Both limits are wall-clock, since animation
+  timeouts, syncReads, syncFallback, lastSampleAgeMs, passes, skipped: { pending, unmoved, cadence },
+  silhouettePixels }`: `passes` counts rendered passes, `skipped` the sample() calls that ran none
+  (a read in flight, focus and camera unmoved, an off-cadence frame), `silhouettePixels` the last
+  result's silhouette size. A standing player's `lastSampleAgeMs` grows by design (unmoved, the last
+  counts still hold); if all of `passes` and `skipped` freeze while the player walks, the frame is
+  not reaching the see-through code at all. Both limits are wall-clock, since animation
   frames are no time base (a slow or throttled frame rate stretched the old 8-poll budget into
   seconds): an async read whose fence stays unsignalled for 120 ms (`FENCE_TIMEOUT_MS`) is dropped
   and the pass re-runs, and once a slot has gone 250 ms (`MAX_SAMPLE_AGE_MS`) without a valid result

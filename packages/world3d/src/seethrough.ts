@@ -279,6 +279,10 @@ interface SlotState {
   timeouts: number;
   /** sync reads for this slot: fallback, failed queue, or forced by MAX_SAMPLE_AGE_MS */
   syncReads: number;
+  /** passes rendered for this slot (queued or read synchronously) */
+  passes: number;
+  /** why sample() ran no pass: a read in flight, nothing moved, or not a sampled frame (skip()) */
+  skipped: { pending: number; unmoved: number; cadence: number };
 }
 
 export interface SeeSlotDebug {
@@ -288,6 +292,12 @@ export interface SeeSlotDebug {
   syncReads: number;
   syncFallback: boolean;
   lastSampleAgeMs: number | null;
+  /** passes rendered for this slot since the detector was made */
+  passes: number;
+  /** calls that ran no pass, by reason (cumulative): all frozen while walking means sample() is not reached */
+  skipped: { pending: number; unmoved: number; cadence: number };
+  /** the silhouette pixel count of the slot's last result (null: none since the last invalidate) */
+  silhouettePixels: number | null;
 }
 
 export class SeeThroughDetector {
@@ -344,7 +354,7 @@ export class SeeThroughDetector {
 
   private slot(slot: number): SlotState {
     let s = this.slots.get(slot);
-    if (!s) this.slots.set(slot, (s = { stale: true, unconsumed: false, freshAt: null, staleSince: performance.now(), timeouts: 0, syncReads: 0 }));
+    if (!s) this.slots.set(slot, (s = { stale: true, unconsumed: false, freshAt: null, staleSince: performance.now(), timeouts: 0, syncReads: 0, passes: 0, skipped: { pending: 0, unmoved: 0, cadence: 0 } }));
     return s;
   }
 
@@ -494,7 +504,15 @@ export class SeeThroughDetector {
       syncReads: s.syncReads,
       syncFallback: !this.gl || this.pboFailed,
       lastSampleAgeMs: s.freshAt === null ? null : Math.round(now - s.freshAt),
+      passes: s.passes,
+      skipped: { ...s.skipped },
+      silhouettePixels: s.freshAt === null ? null : this.latest[slot]?.silhouette ?? null,
     }));
+  }
+
+  /** main.ts: a frame on which the slot is not sampled (every other frame); counted for debug() only. */
+  skip(slot: number) {
+    this.slot(slot).skipped.cadence++;
   }
 
   private moved(slot: number, camera: THREE.PerspectiveCamera, focus: THREE.Vector3): boolean {
@@ -548,10 +566,17 @@ export class SeeThroughDetector {
     const forceSync = s.stale && performance.now() - s.staleSince > MAX_SAMPLE_AGE_MS;
     const inFlight = this.pending.get(slot);
     if (inFlight) {
-      if (!forceSync) return this.latest[slot] ?? EMPTY_SAMPLE;
+      if (!forceSync) {
+        s.skipped.pending++;
+        return this.latest[slot] ?? EMPTY_SAMPLE;
+      }
       this.pending.delete(slot);
       this.release(inFlight);
-    } else if (!s.stale && !this.moved(slot, camera, focus)) return this.latest[slot] ?? EMPTY_SAMPLE;
+    } else if (!s.stale && !this.moved(slot, camera, focus)) {
+      s.skipped.unmoved++;
+      return this.latest[slot] ?? EMPTY_SAMPLE;
+    }
+    s.passes++;
     const started = performance.now();
     this.renderer.getDrawingBufferSize(this.size);
     camera.updateMatrixWorld();

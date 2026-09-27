@@ -1235,8 +1235,13 @@ async function main() {
       seeFrame = 0;
     }
     lastSeePlayer.copy(player.position);
-    if (see.on && seeFrame++ % 2 === 0) {
-      for (const [slot, p] of seeFocus.entries()) if (p) seeDetector.sample(space.scene, rig.camera, p, slot);
+    if (see.on) {
+      const due = seeFrame++ % 2 === 0;
+      for (const [slot, p] of seeFocus.entries()) {
+        if (!p) continue;
+        if (due) seeDetector.sample(space.scene, rig.camera, p, slot);
+        else seeDetector.skip(slot);
+      }
     }
     // current(): per focus, a fresh result or the last one while unmoved, else null (no evidence:
     // a result reused while a newer pass is unresolved never extends a hold). Coverage is judged
@@ -1366,7 +1371,8 @@ async function main() {
        * The see-through: seeThrough("off") / ("on") switches whole-object fades for screenshot
        * comparisons and returns the roots currently easing below opaque (each with `coverage`, its
        * largest fraction of a focus's silhouette), plus the detector's per-focus async state
-       * (slots: pending, timeouts, syncReads, syncFallback, lastSampleAgeMs).
+       * (slots: pending, timeouts, syncReads, syncFallback, lastSampleAgeMs, passes,
+       * skipped { pending, unmoved, cadence }, silhouettePixels).
        */
       seeThrough: (cmd?: "on" | "off" | boolean) => {
         if (cmd !== undefined) see.on = cmd === true || cmd === "on";
