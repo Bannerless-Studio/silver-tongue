@@ -182,6 +182,9 @@ export function startApp(opts: AppOptions): App {
       .filter((ev): ev is Extract<GameEvent, { type: "unlocked" }> => ev.type === "unlocked")
       .map((ev) => unlockedLabel(ev.scene));
     let unlockedShown = false;
+    // Places revealed together share one line: news, but one piece of it.
+    const revealed = events.flatMap((ev) => (ev.type === "placeRevealed" ? [t(`place-${ev.place}`)] : []));
+    let revealedShown = false;
     // A rejection is only worth a fresh log line the first time; a repeat of the same one replaces it.
     if (!events.some((ev) => ev.type === "inputRejected")) lastRejectReason = undefined;
     for (const e of events) {
@@ -271,6 +274,12 @@ export function startApp(opts: AppOptions): App {
             push([{ text: t("unlocked", { scene: unlockedLabel(e.scene) }), color: "green" }]);
           }
           break;
+        case "placeRevealed":
+          if (!revealedShown) {
+            revealedShown = true;
+            push([{ text: t("place-revealed", { count: revealed.length, places: revealed.join(", ") }), color: "green" }]);
+          }
+          break;
         case "errandStarted":
           // The header's own "· parcel" marker already says this; a log line would be the third
           // time this scene told the player (after the scene's own narration).
@@ -285,7 +294,7 @@ export function startApp(opts: AppOptions): App {
           push([], [{ text: t(e.rough ? "day-ended-rough" : "day-ended", { day: e.day }), dim: true }]);
           break;
         case "inputRejected":
-          // The same rejection repeated (e.g. pressing sleep from the wrong place twice) replaces
+          // The same rejection repeated (e.g. talking twice with no time left) replaces
           // the previous line instead of piling up copies of it.
           if (lastRejectReason === e.reason) log = log.slice(0, -1);
           lastRejectReason = e.reason;

@@ -23,7 +23,6 @@ menu-go = Go to { $place }
 menu-needs-money = { $npc }: { $scene } · needs { $currency }{ $cost }
 menu-mentor = Ask { $npc } about the language
 menu-no-time = no time left
-menu-go-home = go home first ({ $place })
 menu-cost-money = { " · " }{ $currency }{ $cost }
 menu-sleep = Sleep (end the day)
 menu-quit = Save and quit
@@ -62,6 +61,10 @@ scene-done = { $earned ->
 scene-done-short = Done.
 unlocked = New: { $scene }
 unlocked-many = New: { $scenes }
+place-revealed = { $count ->
+    [one] New place: { $places }
+   *[other] New places: { $places }
+}
 errand-started = You're carrying a parcel.
 errand-ended = You hand over the parcel.
 rank-up = You're now: { $rank }
@@ -71,7 +74,7 @@ reject-unknown-scene = There's nobody here for that.
 reject-in-scene = Finish the conversation first.
 reject-wrong-place = They're not here.
 reject-locked = They're not ready to talk about that yet.
-reject-no-slots = You're out of time today. Sleep first.
+reject-no-slots = You're out of time today. Go and find your bed.
 reject-stale-run = That conversation can't continue. Start it again.
 reject-no-pick = Choose a reply with the number keys.
 reject-bad-choice = There's no reply with that number.

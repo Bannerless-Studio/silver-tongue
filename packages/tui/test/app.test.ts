@@ -196,6 +196,21 @@ describe("tui app", () => {
     expect(s).not.toContain("Done.");
   });
 
+  it("announces places revealed together on one line", () => {
+    const { term, core } = setup(undefined, (c) => {
+      for (const p of ["school", "hospital"]) {
+        c.world.places[p] = { links: ["street"], after: ["intro"] };
+        c.world.places.street.links.push(p);
+      }
+    });
+    term.press("1", "1"); // to the noodle shop, then the intro
+    term.press(rightKey(core));
+    term.press(rightKey(core));
+    const s = term.screen().join("\n");
+    expect(s).toContain("New places: place-school, place-hospital");
+    expect(s.split("New place").length - 1).toBe(1);
+  });
+
   it("shows the trust line only when it unlocks a scene, and drops the number", () => {
     const { term, core } = setup();
     term.press("1", "1"); // intro ends: trust reaches the threshold that unlocks "shift"
@@ -426,7 +441,7 @@ describe("tui app", () => {
       s.slot = 4;
     });
     term.press("1", "1");
-    expect(term.screen().join("\n")).toContain("You're out of time today. Sleep first.");
+    expect(term.screen().join("\n")).toContain("You're out of time today. Go and find your bed.");
     expect(saves.length).toBe(1);
   });
 
@@ -447,16 +462,14 @@ describe("tui app", () => {
     expect(term.screen().join("\n")).toContain("You: 你好，Jamil！");
   });
 
-  it("won't sleep away from home, and says so", () => {
-    const { term, core, saves } = setup(
+  it("offers no sleep away from home", () => {
+    const { term } = setup(
       (s) => (s.place = "noodle_shop"),
       (c) => (c.world.home = "street"),
     );
-    const savedBefore = saves.length;
-    term.press("3");
-    expect(term.screen().join("\n")).toContain("You want your own bed. Head home first.");
-    expect(core.state.day).toBe(1);
-    expect(saves.length).toBe(savedBefore); // a refused input isn't saved
+    const s = term.screen().join("\n");
+    expect(s).not.toContain("Sleep (end the day)");
+    expect(s).toContain("3) Save and quit");
   });
 
   it("sleeping ends the day", () => {
@@ -467,47 +480,43 @@ describe("tui app", () => {
     expect(s).toContain("Day 2 · slot 0/4");
   });
 
-  it("sleeps rough away from home before the home scene is done, and says so", () => {
-    const { term } = setup(
-      (s) => (s.place = "noodle_shop"),
-      (c) => {
-        c.world.home = "street";
-        c.world.homeScene = "intro";
-      },
-    );
-    term.press("3"); // sleep: not home, but the home scene isn't done, so it still works
+  it("sleeps rough only at the start before the home scene is done, and says so", () => {
+    const { term } = setup(undefined, (c) => {
+      c.world.home = "noodle_shop";
+      c.world.homeScene = "intro";
+    });
+    term.press("2"); // sleep, at the start: no home yet, so a rough night
     const s = term.screen().join("\n");
     expect(s).toContain("Day 1 is over. You sleep rough by the road.");
     expect(s).toContain("Day 2 · slot 0/4");
   });
 
-  it("goes back to home-only sleep, without rough wording, once the home scene is done", () => {
+  it("offers no sleep at the home-to-be before the home scene is done", () => {
+    const { term } = setup(
+      (s) => (s.place = "noodle_shop"),
+      (c) => {
+        c.world.home = "noodle_shop";
+        c.world.homeScene = "intro";
+      },
+    );
+    expect(term.screen().join("\n")).not.toContain("Sleep (end the day)");
+  });
+
+  it("sleeps at home, without rough wording, once the home scene is done", () => {
     const { term } = setup(
       (s) => {
         s.place = "noodle_shop";
         s.scenesDone.intro = 1;
       },
       (c) => {
-        c.world.home = "street";
+        c.world.home = "noodle_shop";
         c.world.homeScene = "intro";
       },
     );
-    term.press("2"); // sleep, away from home: rejected, same as a course without homeScene
-    expect(term.screen().join("\n")).toContain("You want your own bed. Head home first.");
-  });
-
-  it("doesn't hint 'go home first' on the sleep item before the home scene is done", () => {
-    const { term } = setup(
-      (s) => (s.place = "noodle_shop"),
-      (c) => {
-        c.world.home = "street";
-        c.world.homeScene = "intro";
-      },
-    );
-    const frame = term.frames.at(-1)!;
-    const line = frame.find((l) => l.some((span) => span.text.includes("Sleep")))!;
-    expect(line.map((span) => span.text).join("")).toContain("Sleep (end the day)");
-    expect(line.map((span) => span.text).join("")).not.toContain("go home first");
+    term.press("2"); // sleep, at home
+    const s = term.screen().join("\n");
+    expect(s).toContain("Day 1 is over. You sleep.");
+    expect(s).not.toContain("rough");
   });
 
   it("a save made mid-scene resumes in the scene", () => {
@@ -1186,41 +1195,31 @@ describe("menu surprisal and place notices", () => {
     expect(line.map((span) => span.text).join("")).toContain("no time left");
     expect(line.find((span) => span.text.includes("Serve drinks"))?.dim).toBe(true);
     term.press("1"); // still selectable: choosing it gives the normal rejection
-    expect(term.screen().join("\n")).toContain("You're out of time today. Sleep first.");
+    expect(term.screen().join("\n")).toContain("You're out of time today. Go and find your bed.");
     expect(core.state.run).toBeNull();
   });
 
-  it("names home on the sleep item when away from it, without dimming it", () => {
-    const { term } = setup((s) => (s.place = "noodle_shop"), (c) => (c.world.home = "street"));
-    const frame = term.frames.at(-1)!;
-    const line = frame.find((l) => l.some((span) => span.text.includes("Sleep")))!;
-    expect(line.map((span) => span.text).join("")).toContain("3) Sleep (end the day) — go home first (The street)");
-    // Unlike a dimmed, out-of-time item, the sleep row itself isn't dimmed (only the frame's border is).
-    expect(line.find((span) => span.text.includes("Sleep"))?.dim).toBeFalsy();
-  });
-
   it("replaces a repeated identical rejection instead of piling it up", () => {
-    const { term } = setup((s) => (s.place = "noodle_shop"), (c) => (c.world.home = "street"));
-    term.press("3"); // sleep, away from home: rejected
-    term.press("3"); // the same rejection again
+    const { term } = setup((s) => {
+      s.place = "noodle_shop";
+      s.slot = 4; // slotsPerDay: nothing left today
+    });
+    term.press("1"); // talking with no slots left: rejected
+    term.press("1"); // the same rejection again
     const s = term.screen().join("\n");
-    expect(s.split("Head home first.").length - 1).toBe(1);
+    expect(s.split("find your bed.").length - 1).toBe(1);
   });
 
-  it("shows a different rejection normally after a repeated one", () => {
-    const { term } = setup(
-      (s) => {
-        s.place = "noodle_shop";
-        s.slot = 4; // slotsPerDay: nothing left today
-      },
-      (c) => (c.world.home = "street"),
-    );
-    term.press("3"); // sleep, away from home: rejected (not-home)
-    term.press("3"); // the same rejection again: replaces, doesn't stack
-    term.press("1"); // talking here with no slots left: a different rejection (no-slots)
+  it("shows a rejection again once something else happened in between", () => {
+    const { term } = setup((s) => {
+      s.place = "noodle_shop";
+      s.slot = 4; // slotsPerDay: nothing left today
+    });
+    term.press("1"); // rejected (no-slots)
+    term.press("2", "1"); // to the street and back: accepted inputs end the run of repeats
+    term.press("1"); // rejected again: a new line, not a replacement
     const s = term.screen().join("\n");
-    expect(s).toContain("Head home first.");
-    expect(s).toContain("You're out of time today. Sleep first.");
+    expect(s.split("find your bed.").length - 1).toBe(2);
   });
 
   it("prints a place's name and description only the first time it's visited this session", () => {
