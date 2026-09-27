@@ -128,11 +128,12 @@ describe("tui app", () => {
     expect(term.screen().join("\n")).toMatch(/An old man on a bench is watching you\s*\nwith open curiosity\./);
   });
 
-  it("names the game and its studio above the opening story, once", () => {
-    const { term } = setup();
+  it("names the game and its studio after the opening story, on the first screen however long the story is", () => {
+    const long = Array.from({ length: 12 }, (_, i) => `intro-${i + 1} = Story line ${i + 1}.`).join("\n");
+    const { term } = setup(undefined, (c) => (c.learnerFtl += `\n${long}\n`));
     const s = term.screen().join("\n");
     expect(s).toMatch(/Silver Tongue *│\n│ by Bannerless Studio/);
-    expect(s.indexOf("by Bannerless Studio")).toBeLessThan(s.indexOf("You arrive with"));
+    expect(s.indexOf("Story line 12.")).toBeLessThan(s.indexOf("by Bannerless Studio"));
     const under = setup((st) => (st.scenesDone.intro = 1));
     expect(under.term.screen().join("\n")).not.toContain("Bannerless");
   });

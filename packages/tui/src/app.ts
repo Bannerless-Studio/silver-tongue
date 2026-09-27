@@ -135,12 +135,15 @@ export function startApp(opts: AppOptions): App {
     if (t.has(id)) push([{ text: t(id, args), dim: true }]);
   };
 
-  /** The opening story (intro-1, intro-2, …) for a game that hasn't started yet, under the game's name and its studio. */
+  /**
+   * The opening story (intro-1, intro-2, …) for a game that hasn't started yet, then the game's name
+   * and its studio: after the story, so they are on the first screen however long the story is.
+   */
   function tellIntro() {
     const story = introLines(course, core.state, t);
     if (!story.length) return;
-    push([{ text: "Silver Tongue", bold: true, color: "cyan" }], [{ text: t("credit"), dim: true }], []);
     for (const line of story) push([{ text: line }], []);
+    push([{ text: "Silver Tongue", bold: true, color: "cyan" }], [{ text: t("credit"), dim: true }]);
   }
 
   /**
