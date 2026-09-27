@@ -406,7 +406,7 @@ case).
 | [r] say the last line again (slowly after a slow repeat) | ▶ on the bubble, or R | none |
 | [s] whole sentence says the line; [p] play the word / sentence looked up | "…" says the sentence; ▶ in the gloss popover; ▶ on each reply option says it without picking | none |
 | Barks (none in the TUI: only the story NPCs talk there) | everyone else in the town and the interiors (walkers, pets, pigeons, the egg seller, the boatman, the diner, the tea drinker) and a story NPC with nothing to talk about: "E · Talk to Egg seller" / tap the prompt within 2.3 m; a line in the course's language with its reading, the meaning under the hint chip, its clip; "…" (or a tap anywhere, E, Enter) closes it (see Barks) | none (no slot, nothing logged) |
-| See-through (none in the TUI: text never hides anyone) | whatever stands between the fixed camera and the player (or the NPC in a scene, or the figure barking) is cut away round them in a soft dither: the great tree, willows and bamboo, roofs and eaves, the pavilion, awnings, lamps, the arch's railings, interior walls; standing under a canopy dithers the whole canopy to 25 % (see Seeing it: See-through) | none |
+| See-through (none in the TUI: text never hides anyone) | roofs, walls and props between the fixed camera and the player (or the NPC in a scene, or the figure barking) are cut away round them in a soft dither: roofs and eaves, the pavilion, awnings, lamps, the arch's railings, interior walls; standing under the great tree, willows or bamboo dithers the whole canopy to 25 % instead, revealing the player without cutting a disc through it (see Seeing it: See-through) | none |
 
 Every `GameEvent` is handled in `game.ts` `dispatch`: placeEntered (banner), sceneStarted,
 lineSpoken / npcReacted / lineRephrased (bubble), replyOptions (panel), actionPerformed (narration,
@@ -560,15 +560,16 @@ wooden one, a lake with a pier to the west, hills, and mountains 360-400 m out u
 - The day: the light warms from morning to evening as slots are used (hemisphere, sun, sky dome
   and haze), a night fade on sleep, then the day card. `world3d.daylight()`.
 - See-through (`src/seethrough.ts`): the shared toon materials (and the static outline hull) cut
-  a hole round the player and the NPC they talk to: a fragment nearer the camera than the focus
-  point (1 m above the feet) by more than 0.9 m, within 2.2 m of it on screen (measured at the
-  focus depth, a 0.9 m soft band) and more than 0.3 m above their feet is dropped by a 4x4
-  ordered dither (a cutout: no blending, depth still written, no extra draw call). A per-vertex
-  tag baked into the static batches (`seeThru`) says what may be cut: the landscape, plaza disc
-  far edge and countryside never; everything else by the hole; the canopies (`CANOPIES` by asset name: the
-  great tree's leaves and its branches above the lanterns, the willows' leaves and drapes, the
-  bamboo's leaves) are also a cluster each, and while the player or the NPC talked to stands in
-  one's footprint the whole canopy eases down to 25 %. Characters, their hulls, what they hold,
+  a hole through roofs, walls and props round the player and the NPC they talk to: a fragment
+  nearer the camera than the focus point (1 m above the feet) by more than 0.9 m, within 2.2 m of
+  it on screen (measured at the focus depth, a 0.9 m soft band) and more than 0.3 m above their
+  feet is dropped by a 4x4 ordered dither (a cutout: no blending, depth still written, no extra draw call). A per-vertex
+  tag baked into the static batches (`seeThru`) says what may be cut: the landscape, plaza disc,
+  far edge and countryside never; roofs, walls and props by the hole; the canopies (`CANOPIES` by
+  asset name: the great tree's leaves and its branches above the lanterns, the willows' leaves and
+  drapes, the bamboo's leaves) are also a cluster each, and while the player or the NPC talked to stands in
+  one's footprint the whole canopy eases down to 25 %, which reveals the player under trees; the
+  hole never cuts a disc through canopy clusters. Characters, their hulls, what they hold,
   the sky, clouds, the path and the marker are never cut. Off on the fly-over. Console:
   `world3d.seeThrough("off")` / `("on")`, `world3d.seeThrough(undefined, 3)` sets the radius;
   each returns `{ on, radius, feather, margin, ramp, lift, focusDepth, faded }`.

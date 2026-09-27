@@ -1,7 +1,8 @@
-// See-through: whatever stands between the fixed camera and the player (or the NPC they talk to)
-// is cut away round them on screen, so they are never hidden. Screen-space, in the shared toon
-// materials' fragment shader (onBeforeCompile) and the static outline hull's: no un-batching, no
-// extra draw call, no transparency sorting (an ordered-dither cutout: fragments are discarded,
+// See-through: roofs, walls and props between the fixed camera and the player (or the NPC they
+// talk to) are cut away round them on screen. A canopy instead fades as a whole cluster while the
+// focus stands under it, without the hole cutting a disc through it. Screen-space, in the shared
+// toon materials' fragment shader (onBeforeCompile) and the static outline hull's: no un-batching,
+// no extra draw call, no transparency sorting (an ordered-dither cutout: fragments are discarded,
 // depth writes kept), and the hole's edge reads as a soft dither.
 //
 // Two rules, one per-vertex attribute (`seeThru`, baked into every static batch at merge time):
@@ -10,9 +11,9 @@
 //   1  the hole: a fragment is cut when it is (a) nearer the camera than a focus point by more than
 //      `margin`, (b) within `radius` m of it on screen (measured at the focus depth, `feather` soft)
 //      and (c) above the focus's feet by `lift` (the ground and decks the player stands on stay).
-//   2+k  the hole, and canopy cluster k: while a focus stands inside canopy k's footprint the whole
-//      canopy dithers down to `canopyFade` (the great tree covers a 23 x 17 m patch of the plaza:
-//      the player walks under it for long stretches, the hole alone would leave all round them dark).
+//   2+k  canopy cluster k, never cut by the hole: while a focus stands inside its footprint the
+//      whole canopy dithers down to `canopyFade` (the great tree covers a 23 x 17 m patch of the
+//      plaza, so this whole-canopy fade reveals the player while they walk under it).
 // Characters' materials (and their outline hulls), the sky, clouds, the wayfinding trail and
 // marker are never patched.
 import * as THREE from "three";
@@ -141,7 +142,7 @@ export const SEE_VERT = /* glsl */ `
   vStView = mvPosition.xyz;
   vStWorldY = (modelMatrix * vec4(transformed, 1.0)).y;
   int stId = int(${SEE_ATTR} + 0.5);
-  vStHole = stId >= 1 ? 1.0 : 0.0;
+  vStHole = stId == 1 ? 1.0 : 0.0;
   vStVis = stId >= 2 ? stCluster[min(stId - 2, ST_MAX - 1)] : 1.0;
 `;
 
@@ -255,7 +256,7 @@ export function holeAt(frag: THREE.Vector3, fragY: number, focus: THREE.Vector3,
 export function visibility(tag: number, hole: number, clusters: readonly number[] = seeUniforms.stCluster.value): number {
   const id = Math.round(tag);
   const clusterVis = id >= SEE_CLUSTER0 ? (clusters[Math.min(id - SEE_CLUSTER0, clusters.length - 1)] ?? 1) : 1;
-  return (1 - (id >= SEE_HOLE ? hole : 0)) * clusterVis;
+  return (1 - (id === SEE_HOLE ? hole : 0)) * clusterVis;
 }
 
 // ---------------------------------------------------------------------------------------------

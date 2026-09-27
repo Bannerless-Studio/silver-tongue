@@ -712,14 +712,14 @@ describe("see-through: whatever hides the player (or the NPC in a scene) is cut 
     // the ground between the camera and the feet (the plaza, a deck, a floor): never cut
     expect(hole(new THREE.Vector3(feet.x + 0.6, 0, feet.z + 0.8))).toBe(0);
     expect(hole(new THREE.Vector3(feet.x + 0.6, 0.2, feet.z + 0.8))).toBe(0);
-    // the rule's own tags: ground never, the hole, a canopy cluster also by its fade
+    // the rule's own tags: ground never, the hole cuts roofs/walls/props, a canopy only uses its cluster fade
     expect(visibility(SEE_NEVER, 1)).toBe(1);
     expect(visibility(SEE_HOLE, 1)).toBe(0);
     expect(visibility(SEE_HOLE, 0.25)).toBeCloseTo(0.75);
     const clusters = [1, 0.25];
     expect(visibility(SEE_CLUSTER0 + 1, 0, clusters)).toBe(0.25);
-    expect(visibility(SEE_CLUSTER0 + 1, 1, clusters)).toBe(0);
-    expect(visibility(SEE_CLUSTER0, 0, clusters)).toBe(1);
+    expect(visibility(SEE_CLUSTER0 + 1, 1, clusters)).toBe(0.25);
+    expect(visibility(SEE_CLUSTER0, 1, clusters)).toBe(1);
     // the radius is live
     const see = new SeeThroughControl();
     see.radius = 3;
@@ -758,6 +758,7 @@ describe("see-through: whatever hides the player (or the NPC in a scene) is cut 
     seeThroughCompile(shader);
     expect(shader.vertexShader).toContain(`attribute float ${SEE_ATTR};`);
     expect(shader.vertexShader.indexOf("vStView = mvPosition.xyz;")).toBeGreaterThan(shader.vertexShader.indexOf("#include <project_vertex>"));
+    expect(shader.vertexShader).toContain("vStHole = stId == 1 ? 1.0 : 0.0;");
     expect(shader.fragmentShader.indexOf("stSeeThrough();")).toBeGreaterThan(shader.fragmentShader.indexOf("#include <clipping_planes_fragment>"));
     expect(shader.fragmentShader).toContain("discard"); // a cutout: no blending, depth still written
     for (const k of Object.keys(seeUniforms)) expect(shader.uniforms[k]).toBe(seeUniforms[k as keyof typeof seeUniforms]);
