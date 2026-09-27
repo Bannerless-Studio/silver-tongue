@@ -1,4 +1,4 @@
-import type { Course, RenderedLine, WordId } from "@silver-tongue/core";
+import type { Course, RenderedLine, Word, WordId } from "@silver-tongue/core";
 
 export interface WordCard {
   word: WordId;
@@ -6,6 +6,8 @@ export interface WordCard {
   readings: string[];
   gloss: string;
   clips: string[];
+  /** the dictionary form, when `text` is another form of the word */
+  base?: string;
 }
 
 export interface SentenceCard {
@@ -101,16 +103,29 @@ export function displayGloss(w: { gloss: string; short?: string } | undefined): 
   return shortGloss(w?.gloss ?? "");
 }
 
-/** What looking up a word shows. */
-export function wordCard(course: Course, id: WordId): WordCard {
+/** How to say a word as it is written in a line: that form's readings, else the word's own. */
+export function readingsOf(w: Word | undefined, surface?: string): string[] {
+  return (surface !== undefined && w?.forms?.[surface]) || w?.readings || [];
+}
+
+/** What looking up a word shows; `surface` is the word as written in the line, when known. */
+export function wordCard(course: Course, id: WordId, surface?: string): WordCard {
   const w = course.words[id];
-  return { word: id, text: w.w, readings: w.readings ?? [], gloss: w.gloss, clips: w.audio ?? [] };
+  const other = surface !== undefined && surface !== w.w && w.forms?.[surface] !== undefined;
+  return {
+    word: id,
+    text: other ? surface : w.w,
+    readings: readingsOf(w, other ? surface : undefined),
+    gloss: w.gloss,
+    clips: w.audio ?? [],
+    ...(other ? { base: w.w } : {}),
+  };
 }
 
 /** What asking about a whole line shows; undefined when the line has no meaning written. */
 export function sentenceCard(course: Course, line: RenderedLine): SentenceCard | undefined {
   if (!line.meaning) return undefined;
-  const reading = line.tokens.flatMap((tk) => course.words[tk.word]?.readings?.at(-1) ?? []).join(" ");
+  const reading = line.tokens.flatMap((tk) => readingsOf(course.words[tk.word], line.text.slice(tk.start, tk.end)).at(-1) ?? []).join(" ");
   return { text: line.text, reading, meaning: line.meaning, clips: line.audio ?? [] };
 }
 
@@ -132,7 +147,8 @@ export function firstTimeWords(course: Course, line: RenderedLine, fresh: Set<Wo
     if (!fresh.has(tk.word) || seen.has(tk.word)) continue;
     seen.add(tk.word);
     const w = course.words[tk.word];
-    out.push({ word: tk.word, text: line.text.slice(tk.start, tk.end), reading: w?.readings?.at(-1) ?? "", gloss: displayGloss(w) });
+    const text = line.text.slice(tk.start, tk.end);
+    out.push({ word: tk.word, text, reading: readingsOf(w, text).at(-1) ?? "", gloss: displayGloss(w) });
   }
   return out;
 }

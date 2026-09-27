@@ -549,13 +549,14 @@ export function startApp(opts: AppOptions): App {
     } else if (mode === "help") {
       const word = n >= 0 ? helpWords()[n] : undefined;
       if (word) {
-        const card = wordCard(course, word.word);
+        const card = wordCard(course, word.word, word.text);
         lastHelp = card.clips;
         hear(lastHelp);
         send({ type: "helpWord", word: word.word });
         push([
           { text: card.text, bold: true },
           ...(card.readings.length ? [{ text: ` ${card.readings.join(" ")}`, color: "yellow" as const }] : []),
+          ...(card.base ? [{ text: ` (${card.base})`, dim: true }] : []),
           { text: ` — ${card.gloss}` },
         ]);
       }
