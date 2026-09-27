@@ -39,8 +39,8 @@ describe("notebook", () => {
   it("lists places on the left and the chosen place's words, bars and labels on the right", () => {
     const s = text({ group: 1 });
     expect(s).toMatch(/▸ Noodle shop \(2\)/);
-    expect(s).toMatch(/▸ 你 nǐ +■■■□□ known/);
-    expect(s).toMatch(/ 茶 +■□□□□ shaky/);
+    expect(s).toMatch(/▸ 你 nǐ +███░░ known/);
+    expect(s).toMatch(/ 茶 +█░░░░ shaky/);
     expect(s).toContain("you");
     expect(s).not.toContain("杯");
   });

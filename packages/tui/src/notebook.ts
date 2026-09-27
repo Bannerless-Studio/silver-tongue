@@ -42,8 +42,8 @@ function wordRows(w: NotebookWord, chosen: boolean, open: boolean, width: number
   const label = t(`notebook-label-${w.label}`);
   const tail: StyledLine = [
     { text: " " },
-    { text: "■".repeat(w.bar), ...LABEL_STYLE[w.label] },
-    { text: "□".repeat(BAR - w.bar), dim: true },
+    { text: "█".repeat(w.bar), ...LABEL_STYLE[w.label] },
+    { text: "░".repeat(BAR - w.bar), dim: true },
     { text: ` ${label}${" ".repeat(labelWidth - strWidth(label))}`, ...LABEL_STYLE[w.label] },
   ];
   const tailWidth = 1 + BAR + 1 + labelWidth;
