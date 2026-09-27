@@ -68,6 +68,7 @@ export function App({ vn, art, page }: { vn: Vn; art: Art; page: Page }) {
   }, [vn, overlay, card]);
 
   // The scene waits for the player while a notebook, a card or another tab has their attention.
+  // Each of those re-runs this effect, which syncs the hold again, so the cleanup has none to give back.
   useEffect(() => {
     const held = () => !!overlay || !!card || document.hidden;
     const sync = () => vn.hold(held());

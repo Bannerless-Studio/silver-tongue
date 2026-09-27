@@ -85,8 +85,7 @@ function play(opened: Opened) {
   const page: Page = {
     catalog,
     audioAvailable: l.audio.available,
-    // A getter, so the settings rows read the value now, not the one this controller was built with.
-    get prefs() { return prefs; },
+    prefs,
     setPref: (patch) => {
       prefs = { ...prefs, ...patch };
       updateWebSettings(kv, patch);

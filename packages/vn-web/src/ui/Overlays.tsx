@@ -66,9 +66,9 @@ export function Backlog({ vn, view, onClose }: { vn: Vn; view: VnView; onClose: 
 
 export function Menu({ vn, page, onClose, onGames }: { vn: Vn; page: Page; onClose: () => void; onGames: () => void }) {
   const [screen, setScreen] = useState<SettingsScreen>("main");
-  // A row that changes the page's settings changes no state of this screen, so it asks for the
-  // redraw that shows the new value: the page holds the truth, not this component.
-  const [, redraw] = useState(0);
+  // Settings shows its own copy, which is safe because this screen is unmounted with the overlay
+  // and seeded from the page again each time the player opens it.
+  const [prefs, setPrefs] = useState(page.prefs);
   const rows = settingsRows(screen, { course: vn.course, catalog: page.catalog as CatalogEntry[], state: vn.core.state, t: vn.t, audioAvailable: page.audioAvailable });
   const title = screen === "main" ? vn.t("vn-settings") : screen === "course" ? vn.t("settings-pick-course") : vn.t("settings-pick-reading");
   return (
@@ -83,16 +83,17 @@ export function Menu({ vn, page, onClose, onGames }: { vn: Vn; page: Page; onClo
         }}>{r.label}</button>
       ))}
       {screen === "main" && <button type="button" class="row" onClick={() => {
-        page.setPref({ speed: nextSpeed(page.prefs.speed) });
-        redraw((n) => n + 1);
-      }}>{vn.t("vn-speed", { speed: vn.t(`vn-speed-${page.prefs.speed}`) })}</button>}
+        const speed = nextSpeed(prefs.speed);
+        setPrefs({ ...prefs, speed });
+        page.setPref({ speed });
+      }}>{vn.t("vn-speed", { speed: vn.t(`vn-speed-${prefs.speed}`) })}</button>}
       {screen === "main" && <button type="button" class="row" onClick={() => {
         // Only the advance row moves the timer; the speed row is heard through the audio.
-        const autoAdvance = !page.prefs.autoAdvance;
+        const autoAdvance = !prefs.autoAdvance;
+        setPrefs({ ...prefs, autoAdvance });
         page.setPref({ autoAdvance });
-        vn.setAuto(autoAdvance);
-        redraw((n) => n + 1);
-      }}>{vn.t("vn-advance", { mode: vn.t(page.prefs.autoAdvance ? "vn-advance-auto" : "vn-advance-tap") })}</button>}
+        vn.setAuto(autoAdvance); // and this repaints the screen
+      }}>{vn.t("vn-advance", { mode: vn.t(prefs.autoAdvance ? "vn-advance-auto" : "vn-advance-tap") })}</button>}
       {screen === "main" && <button type="button" class="row" onClick={onGames}>{vn.t("vn-games")}</button>}
       {screen === "main" && page.textUrl && <a class="row" href={page.textUrl}>{vn.t("vn-play-text")}</a>}
     </Overlay>
