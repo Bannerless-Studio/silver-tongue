@@ -121,6 +121,25 @@ export function pickLocale(tables, search, settings, languages, fallback) {
  */
 export function boot(win, doc, cfg) {
   cfg = cfg || JSON.parse(doc.querySelector("#ld-text").textContent);
+  var failures = 0;
+  var cur = null;
+  function modules(a) {
+    if (a) {
+      if (!a.live) return;
+      a.phase = 1;
+      a.o.failMs = cfg.moduleMs;
+      a.dog.poke();
+    }
+    var s = doc.createElement("script");
+    s.type = "module";
+    s.src = cfg.entry;
+    s.onerror = function () {
+      fail(cfg.entry + " didn't start", a);
+    };
+    doc.body.appendChild(s);
+  }
+  // No fetch or no streamed body: no bar, the module script as it is (main.ts's screen takes over)
+  if (!win.fetch || !win.ReadableStream) return modules();
   var nav = win.navigator;
   var loc = win.location;
   var settings = "";
@@ -141,8 +160,6 @@ export function boot(win, doc, cfg) {
   var slow = q("slow");
   var btn = q("retry");
   var err = q("err");
-  var failures = 0;
-  var cur = null;
   slow.textContent = S.slow;
 
   function render(a) {
@@ -156,7 +173,7 @@ export function boot(win, doc, cfg) {
   /** Attempt `a` failed (the current one if not given; a stale attempt's news is dropped): the message, the button, the error small under it. */
   function fail(e, a) {
     a = a || cur;
-    if (a !== cur || !a.live || win.__stBooted) return;
+    if (!a || a !== cur || !a.live || win.__stBooted) return;
     a.live = false;
     a.dog.stop();
     if (a.ctrl) a.ctrl.abort();
@@ -205,7 +222,8 @@ export function boot(win, doc, cfg) {
       slowMs: cfg.slowMs,
       failMs: cfg.failMs,
       onSlow: function (on) {
-        if (a.live) slow.hidden = !on;
+        if (win.__stBooted) a.dog.stop(); // main.ts has the screen: done watching
+        else if (a.live) slow.hidden = !on;
       },
       onFail: function () {
         fail(a.phase ? cfg.entry + " didn't start" : "stalled", a);
@@ -228,20 +246,6 @@ export function boot(win, doc, cfg) {
       );
     };
     for (var i = 0; i < cfg.files.length; i++) one(cfg.files[i]);
-  }
-
-  function modules(a) {
-    if (!a.live) return;
-    a.phase = 1;
-    a.o.failMs = cfg.moduleMs;
-    a.dog.poke();
-    var s = doc.createElement("script");
-    s.type = "module";
-    s.src = cfg.entry;
-    s.onerror = function () {
-      fail(cfg.entry + " didn't start", a);
-    };
-    doc.body.appendChild(s);
   }
 
   run(); // first: `cur` is set for the listeners below

@@ -180,6 +180,12 @@ export interface GameOptions {
   barks?: BarkPicker;
   /** where barks are said (their clips, `bark:<id>`); leave out and they're silent */
   barkAudio?: AudioOut;
+  /**
+   * The voice switch (prefs.voice, main.ts): off, neither word clips nor barks are said by
+   * themselves, even when core's sound can't follow it (a course without clips: setSound does
+   * nothing there, the barks still have theirs). Leave out: core's sound alone decides.
+   */
+  voice?: () => boolean;
 }
 
 export interface Game {
@@ -285,7 +291,9 @@ export function createGame(opts: GameOptions): Game {
   // Sound, as app.ts: each call queues what people say, in order; one flush plays it.
   let queue: Speech[] = [];
   let tileReply: string[] = []; // the right reply's clips, said if the tiles match
-  const soundOn = () => !!opts.audio?.available && core.state.sound !== false;
+  /** the voices may speak by themselves: core's sound and the voice switch */
+  const voiceOn = () => core.state.sound !== false && (opts.voice?.() ?? true);
+  const soundOn = () => !!opts.audio?.available && voiceOn();
   /**
    * The next flush answers an explicit tap (a ▶, "say it again", a word or the whole sentence
    * looked up): it plays even with the voices off (prefs.voice, core's state.sound), because the
@@ -307,8 +315,8 @@ export function createGame(opts: GameOptions): Game {
   const speak = (lines: Speech[], asked = false) => {
     const barks = lines.filter((x) => x.clips.every(isBarkClip)).map((x) => ({ ...x, clips: x.clips.map((c) => c.slice(BARK_CLIP.length)) }));
     const words = lines.filter((x) => !x.clips.every(isBarkClip));
-    if (words.length && opts.audio?.available && (asked || core.state.sound !== false)) opts.audio.play(words);
-    if (barks.length && opts.barkAudio?.available && (asked || core.state.sound !== false)) {
+    if (words.length && opts.audio?.available && (asked || voiceOn())) opts.audio.play(words);
+    if (barks.length && opts.barkAudio?.available && (asked || voiceOn())) {
       opts.audio?.stop();
       opts.barkAudio.play(barks);
     }
@@ -828,6 +836,7 @@ export function openSession(
     ui?: string;
     barks?: GameOptions["barks"];
     barkAudio?: GameOptions["barkAudio"];
+    voice?: GameOptions["voice"];
   },
 ): { game: Game; opened: Opened; sessions: WebSessions } {
   const sessions = new WebSessions(kv, course, opts.now);
@@ -845,6 +854,7 @@ export function openSession(
     audio: opts.audio,
     barks: opts.barks,
     barkAudio: opts.barkAudio,
+    voice: opts.voice,
     ui: opts.ui,
   });
   return { game, opened, sessions };

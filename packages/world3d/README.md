@@ -56,7 +56,7 @@ The one-off build (`npm run build`), measured 2026-09-27:
 | effects (.ogg + .m4a) | 384 | |
 | title backdrop (`assets/ui/title`) | 291 | six JPEGs |
 | main.js + chunks/ | 331 + 729 | chunks: three core 580, GLTF loader 43, meshopt decoder 26, shared 41 + 6 (all fetched by the preloader, see Loading); start flow 13 and orbit camera 19 lazy |
-| index.html | 49 | start.css + page.css inlined; the preloader (3 KB) and its data (the files, the loading strings) |
+| index.html | 49 | start.css + page.css inlined; the preloader (3.1 KB) and its data (1.5 KB) (the files, the loading strings) |
 | courses/ | 344 | |
 | **total** | **14,887** | 180 KB above the 14,681 KB comparison build; includes barks and all eight ambient beds |
 
@@ -69,8 +69,11 @@ effects play from the .m4a. The next saving (both music formats under 15 MB): th
 The way to the title screen never sits silent and never sits forever: every wait has visible
 progress, a stall message and a way out.
 
-- **Before the game's JS runs** (`src/preload.js`, ES5, inlined into index.html by `build.mjs`,
-  under 3 KB; its data beside it as JSON, `#ld-text`): the loading card is in the HTML ("Loading the
+- **Before the game's JS runs** (`src/preload.js`, ES5, inlined into index.html by `build.mjs`:
+  about 3.1 KB minified, the build fails past `PRELOAD_BUDGET` 3,500 B; its data, the files with
+  their sizes and the loading strings of every UI language, ~1.5 KB, sits beside it as JSON,
+  `#ld-text`). A browser without `fetch` or `ReadableStream` gets the module script at once, with
+  no bar (main.ts's screen takes over). Once main.ts boots, the preloader's watchdog stops. The loading card is in the HTML ("Loading the
   game… 0.0 / 1.0 MB", the total written in at build time). The preloader fetches main.js and every
   chunk it starts with, in parallel, counting bytes as they stream, then adds the
   `<script type="module" src="./main.js">` itself: the module graph comes from the HTTP cache
@@ -93,8 +96,12 @@ progress, a stall message and a way out.
   Reload), keeping what already loaded. No WebGL: "This browser can't run 3D (WebGL is off). Try
   Chrome or Firefox, or enable hardware acceleration." with Reload.
 - **Music, ambience and effects never hold it up**: the mixer fetches nothing before the first
-  gesture (`audio.ts` `unlock()`), and main.ts never awaits the sound manifest (`setManifest` when
-  it lands; a failed one: a silent mixer).
+  gesture (`audio.ts` `unlock()`), and main.ts never awaits the sound manifest (`boot.ts`
+  `LateLoad`, on a fetcher of its own that a startup stall doesn't abort; `setManifest` when it
+  lands; a failed one is tried again when the connection comes back and at each gesture).
+- **A stall where abort can't reach the fetch** (three's `LoadingManager.abort()` needs
+  `AbortSignal.any`: Chrome 116, Safari 17.4, Firefox 124): `AssetCache.abort()` forgets every
+  template not loaded and main.ts every room being built, so Retry and the next door fetch again.
 - The strings are in every UI language (`locale/<ui>.json` `loading`), picked by `?ui=`, the
   remembered reading language, then the browser's.
 
@@ -112,7 +119,7 @@ first frame):
 | `assets.preload(plan.first)` (the first frame's GLBs) | bar by bytes | as above; the GLBs aborted (`AssetCache.abort`) | failure, Retry (failed templates dropped, loaded ones kept) |
 | `SceneSpace.create(street)`, the player, the bag | (from the templates just loaded) | as above | as above |
 | `courses/index.json` (catalog) | slow-line watch | 15 s slow; 60 s: failure, Retry | failure, Retry (`file://`: serve the folder) |
-| `assets/audio/manifest.json` | none | never awaited (its own 60 s abort) | never awaited: a silent mixer |
+| `assets/audio/manifest.json` | none | never awaited (its own 60 s abort; tried again online and at each gesture) | never awaited: tried again online and at each gesture |
 | `resumePick`: the remembered course's file | slow-line watch | 60 s: the start flow (choosing there loads it again) | the start flow |
 | `?promo=1`: `applyStart` | slow-line watch | failure, Retry | failure, Retry |
 | the start flow's chunk | slow-line watch | 60 s: failure, Retry (the import again) | `ModuleLoadError`: failure, Reload |
@@ -746,7 +753,8 @@ taps, the bubble, doors, coins, the bell…: the sfx bus), Ambience On / Off (th
 starts or downloads while off) with Light / Full under it (`ambienceFull`, below; only while on);
 replay the six words. They and the guide's Hide / Show are kept in `silver-tongue:world3d:prefs`
 (`src/prefs.ts`). An old single `sound: false` migrates to effects, ambience and music off (the
-music's volume one ♪ tap away) with the voices back on.
+music's volume one ♪ tap away) with the voices back on: the player who reported it muted to stop
+the music and lost the voices with it, so voices back with the music still off is what they wanted.
 
 ## Audio buses
 

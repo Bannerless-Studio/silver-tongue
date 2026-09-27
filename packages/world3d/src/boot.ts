@@ -156,3 +156,40 @@ export async function retrying<T>(run: () => Promise<T>, ask: (e: unknown, actio
     }
   }
 }
+
+/**
+ * Something the page can do without for now (the sound manifest): tried at once, and again at
+ * each kick() (the connection back, the next gesture) until it has loaded once; never waited on,
+ * never stopped by a StartWatch stall. `use` gets the value once it is in (at once if it is).
+ */
+export class LateLoad<T> {
+  private value: { v: T } | null = null;
+  private busy = false;
+  private users: ((v: T) => void)[] = [];
+
+  constructor(private get: () => Promise<T>) {}
+
+  get loaded(): boolean {
+    return !!this.value;
+  }
+
+  kick() {
+    if (this.value || this.busy) return;
+    this.busy = true;
+    this.get().then(
+      (v) => {
+        this.busy = false;
+        this.value = { v };
+        for (const f of this.users.splice(0)) f(v);
+      },
+      () => {
+        this.busy = false; // the next kick tries again
+      },
+    );
+  }
+
+  use(f: (v: T) => void) {
+    if (this.value) f(this.value.v);
+    else this.users.push(f);
+  }
+}

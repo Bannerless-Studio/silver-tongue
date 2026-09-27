@@ -135,7 +135,7 @@ function streamed(status = 200) {
   };
 }
 
-function page(opts: { protocol?: string; settings?: string; languages?: string[] } = {}) {
+function page(opts: { protocol?: string; settings?: string; languages?: string[]; noFetch?: boolean } = {}) {
   const doc = installFakeDom();
   const root = new FakeElement("div");
   root.id = "loading";
@@ -160,6 +160,7 @@ function page(opts: { protocol?: string; settings?: string; languages?: string[]
     location: { search: "", protocol: opts.protocol ?? "https:", reload: () => void reloads++ },
     localStorage: { getItem: () => opts.settings ?? null },
     AbortController,
+    ReadableStream: opts.noFetch ? undefined : ReadableStream,
     __stBooted: false,
     addEventListener: (type: string, f: (e: unknown) => void) => listeners.set(type, [...(listeners.get(type) ?? []), f]),
     fetch: (url: string, init: { signal?: AbortSignal }) =>
@@ -324,5 +325,32 @@ describe("the preloader on the page", () => {
     const b = page({ settings: '{"learner":"bn"}' });
     b.start();
     expect(b.$("item").textContent).toBe(UI_LOCALES.bn.loading.loading);
+  });
+});
+
+describe("the preloader where it can't count bytes", () => {
+  it("no fetch or no ReadableStream: the module script goes in at once, nothing thrown", () => {
+    const p = page({ noFetch: true });
+    expect(() => p.start()).not.toThrow();
+    expect(p.requests).toHaveLength(0);
+    expect(p.scripts().map((s) => s.src)).toEqual(["./main.js"]);
+  });
+
+  it("booted: the slow line stays down and the watchdog stops", async () => {
+    vi.useFakeTimers();
+    const p = page();
+    p.start();
+    for (const r of p.requests) {
+      const s = streamed();
+      r.resolve(s.res);
+      s.end();
+    }
+    await tick();
+    p.win.__stBooted = true;
+    vi.advanceTimersByTime(15_000);
+    expect(p.$("slow").hidden).toBe(true);
+    vi.advanceTimersByTime(100_000);
+    expect(p.root.className).toBe("");
+    vi.useRealTimers();
   });
 });

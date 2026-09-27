@@ -3,7 +3,10 @@
 // failure, Retry / Reload and the connection coming back (fake DOM).
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { UI_LOCALES } from "../locale";
-import { JsonFetcher, ModuleLoadError, rerunnable, retrying, StallError, StartWatch, WebGLError } from "../src/boot";
+import { JsonFetcher, LateLoad, ModuleLoadError, rerunnable, retrying, StallError, StartWatch, WebGLError } from "../src/boot";
+import { LAYOUT, LayoutIndex } from "../src/layout";
+import { AssetCache } from "../src/world";
+import { ASSETS, assetIndex, readGlb } from "./helpers";
 import { emptyLoad, loadSummary, reduceLoad } from "../src/loading";
 import type { RetryAction } from "../src/preload.js";
 import { LoadingScreen } from "../src/ui/loading";
@@ -265,5 +268,59 @@ describe("the bar across a retry", () => {
     expect(loadSummary(s).complete).toBe(false);
     s = reduceLoad(s, { type: "done", name: "a" });
     expect(loadSummary(s).fraction).toBe(1);
+  });
+});
+
+describe.skipIf(!assetIndex)("a stalled GLB where abort can't reach the fetch (no AbortSignal.any)", () => {
+  it("abort() forgets every template not loaded: the next ask fetches it again, a loaded one stays", async () => {
+    const L = new LayoutIndex(LAYOUT, assetIndex!);
+    const [a, b] = L.assetNames();
+    let reads = 0;
+    let hang = true;
+    // a loader whose reads hang, as a fetch the manager's abort never reaches
+    const assets = new AssetCache(ASSETS, L, {
+      read: (url) => {
+        reads++;
+        return hang && !url.endsWith(L.asset(a).path) ? new Promise<ArrayBuffer>(() => {}) : readGlb(url);
+      },
+    });
+    await assets.template(a);
+    void assets.template(b);
+    await tick();
+    expect(reads).toBe(2);
+    assets.abort();
+    expect(assets.has(a)).toBe(true);
+    expect(assets.has(b)).toBe(false);
+    hang = false;
+    await assets.template(b); // asked again: read again, and it lands
+    expect(reads).toBe(3);
+    expect(assets.loaded.has(b)).toBe(true);
+  });
+});
+
+describe("something loaded late (the sound manifest)", () => {
+  it("tried at once, again at each kick after a failure until it is in, then never again; its user gets it once", async () => {
+    let tries = 0;
+    let ok = false;
+    const late = new LateLoad(async () => {
+      tries++;
+      if (!ok) throw new StallError("stalled");
+      return ["m"];
+    });
+    const got: string[][] = [];
+    late.use((v) => got.push(v));
+    late.kick();
+    await tick();
+    expect([tries, late.loaded]).toEqual([1, false]);
+    ok = true;
+    late.kick(); // the connection back, a gesture
+    late.kick(); // one try at a time
+    await tick();
+    expect([tries, late.loaded]).toEqual([2, true]);
+    late.kick();
+    await tick();
+    expect(tries).toBe(2);
+    late.use((v) => got.push(v));
+    expect(got).toEqual([["m"], ["m"]]);
   });
 });

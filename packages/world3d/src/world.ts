@@ -296,9 +296,15 @@ export class AssetCache {
     return this.loader;
   }
 
-  /** Stops every GLB on its way (their templates fail, and load again when asked for next). */
+  /**
+   * Stops every GLB on its way and forgets every template not loaded yet, so the next ask (a
+   * Retry, the next door) fetches it again: three's LoadingManager.abort() only reaches fetches
+   * where AbortSignal.any exists (Chrome 116, Safari 17.4, Firefox 124); elsewhere a hung promise
+   * would otherwise be handed out again.
+   */
   abort() {
     this.manager.abort();
+    for (const name of [...this.templates.keys()]) if (!this.loaded.has(name)) this.templates.delete(name);
   }
 
   private async fetchGltf(url: string, name: string): Promise<GLTF> {
@@ -330,7 +336,8 @@ export class AssetCache {
         },
         (e: unknown) => {
           this.onLoad?.({ type: "fail", name });
-          this.templates.delete(name); // asked for again (a Retry, the next door), it loads again
+          // asked for again (a Retry, the next door), it loads again; a newer try (after abort()) stays
+          if (this.templates.get(name) === p) this.templates.delete(name);
           throw e;
         },
       );

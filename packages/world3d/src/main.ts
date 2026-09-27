@@ -37,7 +37,7 @@ import {
   type SoundEntry,
   type SoundPhase,
 } from "./audio";
-import { JsonFetcher, ModuleLoadError, retrying, StartWatch, WebGLError } from "./boot";
+import { JsonFetcher, LateLoad, ModuleLoadError, retrying, StartWatch, WebGLError } from "./boot";
 import { CAMERA, CameraRig, outlineScale } from "./camera";
 import { PlayerCarry } from "./carry";
 import { applyStart, loadCatalog, rememberedStart, resumePick, type Picked } from "./courses";
@@ -123,15 +123,15 @@ const startRoot = document.querySelector<HTMLElement>("#start")!;
 // 15 s says "Slow connection", 60 s rejects the steps (aborting what is in flight) into their
 // retry loops; every JSON aborts itself after 60 s without a byte; the connection coming back
 // presses a failure's Retry once.
-/** aborts the GLBs in flight (set once the AssetCache exists) */
-let abortAssets = () => {};
+/** what a stall also stops or forgets: the GLBs in flight (once the AssetCache exists), the rooms being built */
+const onStall: (() => void)[] = [];
 const startWatch = new StartWatch({
   slowMs: 15_000,
   failMs: 60_000,
   onSlow: (on) => loading.slow(on),
   onStall: () => {
     json.abortAll();
-    abortAssets();
+    for (const f of onStall) f();
   },
 });
 const json = new JsonFetcher({ fetch: (url, init) => fetch(url, init), stallMs: 60_000, onBytes: () => startWatch.poke() });
@@ -206,7 +206,7 @@ async function main() {
         startWatch.poke();
         if (loading.visible) loading.render(loadSummary(load));
       };
-      abortAssets = () => a.abort();
+      onStall.push(() => a.abort());
       madeAssets = a;
     }
     const assets = madeAssets;
@@ -223,8 +223,13 @@ async function main() {
   };
   /** the town, tried until it loads (never rejects: each failure waits on the loading screen's button) */
   const worldReady = retrying(() => startWatch.track(loadWorld()), askRetry);
-  // Music, ambience and effects never hold the start up: their manifest comes in behind (setManifest).
-  const manifestReady = fetchJson<SoundEntry[]>(`${ASSETS}/audio/manifest.json`).catch(() => [] as SoundEntry[]);
+  // Music, ambience and effects never hold the start up: their manifest comes in behind
+  // (setManifest), on a fetcher of its own (a startup stall doesn't abort it), tried again when the
+  // connection comes back and at each gesture until it is in.
+  const soundJson = new JsonFetcher({ fetch: (url, init) => fetch(url, init), stallMs: 60_000 });
+  const manifest = new LateLoad(() => soundJson.get<SoundEntry[]>(`${ASSETS}/audio/manifest.json`));
+  manifest.kick();
+  window.addEventListener("online", () => manifest.kick());
 
   // The catalog first: no reading language to say anything in before it (as tui-web).
   const catalog: CatalogEntry[] = await retrying(() => startWatch.track(loadCatalog(fetchJson)), askRetry);
@@ -250,11 +255,12 @@ async function main() {
     sfx: prefs.sfx,
     ambience: prefs.ambience,
   });
-  void manifestReady.then((m) => mixer.setManifest(m));
+  manifest.use((m) => mixer.setManifest(m));
   const unlockEvents = ["pointerup", "touchend", "click", "keydown"] as const;
   const unlockMixer = () => {
-    mixer.unlock();
-    if (mixer.unlocked) for (const ev of unlockEvents) window.removeEventListener(ev, unlockMixer, true);
+    manifest.kick();
+    if (!mixer.unlocked) mixer.unlock();
+    if (mixer.unlocked && manifest.loaded) for (const ev of unlockEvents) window.removeEventListener(ev, unlockMixer, true);
   };
   for (const ev of unlockEvents) window.addEventListener(ev, unlockMixer, true);
   const sfx = (id: string) => mixer.sfx(id);
@@ -507,6 +513,8 @@ async function main() {
 
   /** Each interior's build, started once: prefetched after the first frame, or when a door needs it first. */
   const building = new Map<string, Promise<SceneSpace>>();
+  // a stall: the rooms on their way are forgotten (a hung one would hold every later door)
+  onStall.push(() => building.clear());
   function ensureSpace(id: string): Promise<SceneSpace> {
     const have = spaces.get(id);
     if (have) return Promise.resolve(have);
@@ -620,6 +628,11 @@ async function main() {
   const sounds = new SoundSwitches(prefs, () => savePrefs(kv, prefs), {
     musicVolume: (v) => mixer.setMusicVolume(v),
     voice: (on) => {
+      // game.ts also reads prefs.voice (GameOptions.voice): a course without clips can't follow setSound
+      if (!on) {
+        audio?.stop();
+        barkPlayer?.stop();
+      }
       if (game && game.model.hud.sound !== "none" && (game.model.hud.sound === "on") !== on) game.setSound(on);
     },
     sfx: (on) => mixer.setSfx(on),
@@ -789,6 +802,7 @@ async function main() {
       ui: uiFor(course),
       barks: barks ?? undefined,
       barkAudio: (barks && barkAudio(barks.book.language)) ?? undefined,
+      voice: () => prefs.voice,
       onChange: (m) => {
         if (!ready) return;
         overlay.render(m);

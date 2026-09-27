@@ -656,3 +656,25 @@ describe("the ♪ chip", () => {
     expect(CHROME_KEYS).not.toContain("settings-sound");
   });
 });
+
+describe("the voice switch on a course without clips", () => {
+  it("setSound can't follow it there, yet the barks follow prefs.voice; a tap still says it", () => {
+    const core = createCore(course, { ...newGame(course), player: "Mina" }, { now: () => 1_000_000, rng: () => 0.42 });
+    const barkAudio = fakeAudio();
+    const book = BARKS[course.language.code]!;
+    let voice = true;
+    const game = createGame({ course, core, now: () => 1_000_000, audio: fakeAudio(false), barks: new BarkPicker(book, () => 0.3), barkAudio, voice: () => voice });
+    expect(game.model.hud.sound).toBe("none");
+    const bark = () => game.bark({ id: "bark:extra:2", name: "Egg seller", role: "egg_seller" }, book.roles.egg_seller.lines[0]);
+    bark();
+    expect(barkAudio.plays).toHaveLength(1);
+    game.endBark();
+    voice = false;
+    game.setSound(false); // nothing here: no clips
+    expect(core.state.sound).not.toBe(false);
+    bark();
+    expect(barkAudio.plays).toHaveLength(1);
+    game.replay();
+    expect(barkAudio.plays).toHaveLength(2);
+  });
+});

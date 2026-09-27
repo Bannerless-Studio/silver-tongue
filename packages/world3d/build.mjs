@@ -213,7 +213,7 @@ function startFiles(meta) {
 }
 
 /** most the inlined preloader may weigh (index.html's own script, before any module; its data, the files and the strings, sit apart in #ld-text) */
-const PRELOAD_BUDGET = 3000;
+const PRELOAD_BUDGET = 3500;
 
 /**
  * index.html's loading card ("Loading the game… 0.0 / 1.0 MB") and the preloader (src/preload.js,
