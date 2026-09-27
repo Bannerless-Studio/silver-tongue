@@ -1,34 +1,49 @@
 import { createHash } from "node:crypto";
 import { PLAYER_MARK, type Course, type RenderedLine, type Scene, type WordId, type World } from "@silver-tongue/core";
 
+/** A text-to-speech voice, optionally lower/higher (edge-tts pitch "-10Hz") or slower/faster (rate "-10%"). */
+export type Voice = string | { voice: string; pitch?: string; rate?: string };
+
 /** content/languages/<lang>/voices.json: which text-to-speech voice says what. */
 export interface Voices {
   engine: string;
   /** the player's replies; no NPC may use it */
-  player: string;
+  player: Voice;
   /** single words, in the notebook and word help */
-  words: string;
-  npcs: Record<string, string>;
+  words: Voice;
+  npcs: Record<string, Voice>;
 }
 
 /** One clip to make: its file is content/audio/<lang>/<id>.mp3. */
 export interface Clip {
   id: string;
   voice: string;
+  pitch?: string;
+  rate?: string;
   text: string;
 }
 
-export const clipId = (voice: string, text: string): string => createHash("sha1").update(`${voice}|${text}`).digest("hex").slice(0, 16);
+const parts = (v: Voice) => (typeof v === "string" ? { voice: v } : v);
+
+/** What makes two voices sound different: name, pitch and rate. */
+export const voiceKey = (v: Voice): string => {
+  const { voice, pitch, rate } = parts(v);
+  return pitch || rate ? `${voice}|${pitch ?? ""}|${rate ?? ""}` : voice;
+};
+
+/** A plain voice keeps sha1(voice|text), so clips made before pitch and rate existed keep their names. */
+export const clipId = (voice: Voice, text: string): string => createHash("sha1").update(`${voiceKey(voice)}|${text}`).digest("hex").slice(0, 16);
 
 /** A part with no letter or digit ("，", "。") has nothing to say. */
 export const speakable = (s: string) => /[\p{L}\p{N}]/u.test(s);
 
 /** The clips that say a line: one each side of the player's name, skipping a side with nothing to say. */
-export function lineClips(text: string, voice: string): Clip[] {
+export function lineClips(text: string, voice: Voice): Clip[] {
+  const { voice: name, pitch, rate } = parts(voice);
   return text
     .split(PLAYER_MARK)
     .filter(speakable)
-    .map((part) => ({ id: clipId(voice, part), voice, text: part }));
+    .map((part) => ({ id: clipId(voice, part), voice: name, ...(pitch ? { pitch } : {}), ...(rate ? { rate } : {}), text: part }));
 }
 
 /** Every NPC has a voice, none has the player's, and no two in one place sound the same. */
@@ -38,13 +53,15 @@ export function voiceProblems(voices: Voices, world: World, scenes: Scene[]): st
   for (const npc of ids) {
     const voice = voices.npcs[npc];
     if (!voice) problems.push(`voices: npc "${npc}" has no voice`);
-    else if (voice === voices.player) problems.push(`voices: npc "${npc}" uses the player's voice`);
+    else if (voiceKey(voice) === voiceKey(voices.player)) problems.push(`voices: npc "${npc}" uses the player's voice`);
   }
   ids.forEach((a, i) => {
     for (const b of ids.slice(i + 1)) {
       const place = world.npcs[a]?.place;
-      if (place && place === world.npcs[b]?.place && voices.npcs[a] && voices.npcs[a] === voices.npcs[b]) {
-        problems.push(`voices: "${a}" and "${b}" are both at ${place} with voice ${voices.npcs[a]}`);
+      const va = voices.npcs[a];
+      const vb = voices.npcs[b];
+      if (place && place === world.npcs[b]?.place && va && vb && voiceKey(va) === voiceKey(vb)) {
+        problems.push(`voices: "${a}" and "${b}" are both at ${place} with voice ${voiceKey(va)}`);
       }
     }
   });
@@ -57,13 +74,13 @@ export function voiceProblems(voices: Voices, world: World, scenes: Scene[]): st
  */
 export function assignAudio(course: Course, voices: Voices, words: Iterable<WordId>): Clip[] {
   const clips = new Map<string, Clip>();
-  const say = (text: string, voice: string | undefined): string[] => {
+  const say = (text: string, voice: Voice | undefined): string[] => {
     if (!voice) return [];
     const cs = lineClips(text, voice);
     for (const c of cs) clips.set(c.id, c);
     return cs.map((c) => c.id);
   };
-  const set = (l: RenderedLine | undefined, voice: string | undefined) => {
+  const set = (l: RenderedLine | undefined, voice: Voice | undefined) => {
     if (l) l.audio = say(l.text, voice);
   };
   for (const s of course.scenes) {

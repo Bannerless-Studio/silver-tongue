@@ -69,3 +69,30 @@ describe("assignAudio", () => {
     expect(c.words.w_hao.audio).toBeUndefined();
   });
 });
+
+describe("voices with pitch and rate", () => {
+  // sha1("zh-CN-XiaoxiaoNeural|谢谢")[0..16]: content/audio/zh is named by ids like this one
+  const PINNED = "45a75ad3bb46dc3c";
+  it("keep a plain voice's clip id exactly as before", () => {
+    expect(clipId("zh-CN-XiaoxiaoNeural", "谢谢")).toBe(PINNED);
+    expect(clipId({ voice: "zh-CN-XiaoxiaoNeural" }, "谢谢")).toBe(PINNED);
+  });
+  it("give a pitched or slowed voice its own id, and carry pitch and rate on the clip", () => {
+    const low = { voice: "K", pitch: "-10Hz" };
+    expect(clipId(low, "こんにちは")).not.toBe(clipId("K", "こんにちは"));
+    expect(clipId({ voice: "K", rate: "-10%" }, "こんにちは")).not.toBe(clipId(low, "こんにちは"));
+    expect(lineClips("こんにちは。", low)).toEqual([{ id: clipId(low, "こんにちは。"), voice: "K", pitch: "-10Hz", text: "こんにちは。" }]);
+  });
+  it("let two NPCs in one place share a voice name when pitch or rate differs", () => {
+    const w = fixtureCourse().world;
+    w.npcs.waiter = { place: "noodle_shop" };
+    const v: Voices = { ...V, npcs: { cook: "C", waiter: { voice: "C", pitch: "+10Hz" } } };
+    expect(voiceProblems(v, w, fixtureCourse().scenes)).toEqual([]);
+    const same: Voices = { ...V, npcs: { cook: "C", waiter: { voice: "C" } } };
+    expect(voiceProblems(same, w, fixtureCourse().scenes).join()).toMatch(/both at noodle_shop/);
+  });
+  it("still refuse the player's exact voice on an NPC", () => {
+    const v: Voices = { ...V, player: { voice: "P", pitch: "-5Hz" }, npcs: { cook: { voice: "P", pitch: "-5Hz" } } };
+    expect(voiceProblems(v, fixtureCourse().world, fixtureCourse().scenes).join()).toMatch(/uses the player's voice/);
+  });
+});

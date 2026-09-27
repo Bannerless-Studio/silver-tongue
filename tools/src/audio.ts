@@ -45,7 +45,9 @@ export function trimClip(file: string): boolean {
 function say(clip: Clip, file: string): boolean {
   const tmp = `${file}.part`;
   for (let attempt = 0; attempt < 3; attempt++) {
-    const r = spawnSync("edge-tts", ["--voice", clip.voice, `--text=${clip.text}`, "--write-media", tmp], { stdio: ["ignore", "ignore", "pipe"] });
+    // --pitch=-10Hz with "=", so a leading "-" isn't read as a flag
+    const args = ["--voice", clip.voice, ...(clip.pitch ? [`--pitch=${clip.pitch}`] : []), ...(clip.rate ? [`--rate=${clip.rate}`] : []), `--text=${clip.text}`, "--write-media", tmp];
+    const r = spawnSync("edge-tts", args, { stdio: ["ignore", "ignore", "pipe"] });
     if (r.status === 0 && existsSync(tmp) && trimClip(tmp)) {
       renameSync(tmp, file);
       return true;
