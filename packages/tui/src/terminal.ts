@@ -1,4 +1,4 @@
-export type Color = "cyan" | "yellow" | "green" | "red" | "magenta";
+export type Color = "cyan" | "yellow" | "green" | "red" | "magenta" | "blue" | "white";
 
 export interface Span {
   text: string;
