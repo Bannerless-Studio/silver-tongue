@@ -5,6 +5,11 @@ import * as THREE from "three";
 
 export const SEE_THROUGH = {
   sampleSize: 96,
+  /** an object fades once it covers this fraction of a focus's silhouette ("more than 40 % blocked") */
+  coverFraction: 0.4,
+  /** a faded object is released only once its coverage drops below this (hysteresis, no flicker) */
+  releaseFraction: 0.3,
+  /** floor: fewer covered pixels never fade, whatever the fraction (a far, tiny silhouette) */
   minPixels: 6,
   holdSeconds: 0.35,
   /** visibility of an occluding object */
@@ -159,14 +164,42 @@ export function silhouetteProjection(camera: THREE.PerspectiveCamera, focus: THR
   return new THREE.Matrix4().set(sx, 0, 0, -centre.x * sx, 0, sy, 0, -centre.y * sy, 0, 0, 1, 0, 0, 0, 0, 1).multiply(camera.projectionMatrix);
 }
 
-/** Extracts root ids from the RGB id target. Id zero in the target means untouched. */
-export function idHistogram(pixels: Uint8Array): Map<number, number> {
-  const counts = new Map<number, number>();
+/**
+ * The reserved RG code the character's proxy writes before the occluders: a silhouette pixel that
+ * nothing covers. Occluder codes are id + 1 (at most maxOccluders), so they never reach it.
+ */
+export const SEE_SILHOUETTE_CODE = 0xffff;
+
+/** One pass's result for one focus. */
+export interface SeeSample {
+  /** every pixel of the focus's silhouette, covered or not */
+  silhouette: number;
+  /** per occluder id: the silhouette pixels it is the front-most cover of */
+  covered: ReadonlyMap<number, number>;
+}
+
+export const EMPTY_SAMPLE: SeeSample = Object.freeze({ silhouette: 0, covered: new Map() });
+
+/**
+ * Extracts the silhouette and per-root coverage from the RGB id target. Code zero means untouched,
+ * SEE_SILHOUETTE_CODE an uncovered silhouette pixel, anything else a root id + 1. The id pass is
+ * stencil-masked to the silhouette, so every covered pixel is also a silhouette pixel.
+ */
+export function idHistogram(pixels: Uint8Array): SeeSample {
+  const covered = new Map<number, number>();
+  let silhouette = 0;
   for (let i = 0; i < pixels.length; i += 4) {
     const encoded = pixels[i] + 256 * pixels[i + 1];
-    if (encoded) counts.set(encoded - 1, (counts.get(encoded - 1) ?? 0) + 1);
+    if (!encoded) continue;
+    silhouette++;
+    if (encoded !== SEE_SILHOUETTE_CODE) covered.set(encoded - 1, (covered.get(encoded - 1) ?? 0) + 1);
   }
-  return counts;
+  return { silhouette, covered };
+}
+
+/** The fraction of the silhouette an id covers (0 for an empty silhouette). */
+export function coverage(sample: SeeSample, id: number): number {
+  return sample.silhouette > 0 ? (sample.covered.get(id) ?? 0) / sample.silhouette : 0;
 }
 
 const idMaterial = new THREE.ShaderMaterial({
@@ -190,8 +223,10 @@ function idMaterialFor(side: THREE.Side): THREE.ShaderMaterial {
   }
   return material;
 }
-const proxyMaterial = new THREE.MeshBasicMaterial({
-  colorWrite: false,
+/** The capsule stand-in for the character: depth, stencil, and the reserved silhouette code. */
+const proxyMaterial = new THREE.ShaderMaterial({
+  vertexShader: `void main() { gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: `void main() { gl_FragColor = vec4(${((SEE_SILHOUETTE_CODE & 255) / 255).toFixed(1)}, ${((SEE_SILHOUETTE_CODE >> 8) / 255).toFixed(1)}, 0.0, 1.0); }`,
   stencilWrite: true,
   stencilRef: 1,
   stencilFunc: THREE.AlwaysStencilFunc,
@@ -213,18 +248,62 @@ interface PendingRead {
   fence: WebGLSync;
   pixels: Uint8Array;
   generation: number;
+  /** performance.now() when the read was queued */
+  queuedAt: number;
+}
+
+/**
+ * Wall-clock budget for a fence (animation frames are no time base: a slow or throttled frame
+ * rate stretched a frame-count budget into seconds). Past it the read is dropped, the pass re-runs.
+ */
+export const FENCE_TIMEOUT_MS = 120;
+/**
+ * The decision is never older than this: when a pass would be skipped because a read is still in
+ * flight and the slot has gone this long without a valid result, the read is dropped and the pass
+ * re-runs with a synchronous read right away.
+ */
+export const MAX_SAMPLE_AGE_MS = 250;
+/** Consecutive async-read failures (timeouts, throws) that switch a context to the sync read for good. */
+export const ASYNC_MAX_FAILURES = 3;
+
+/** Per-slot bookkeeping: freshness of `latest[slot]` and the async read's health. */
+interface SlotState {
+  /** `latest[slot]` predates the slot's current pose (a newer pass is in flight or was dropped) */
+  stale: boolean;
+  /** a fresh result arrived that current() has not handed out yet */
+  unconsumed: boolean;
+  /** performance.now() of the last fresh result, null if none since the last invalidate */
+  freshAt: number | null;
+  /** performance.now() since which the slot has had no valid result (it went stale then) */
+  staleSince: number;
+  timeouts: number;
+  /** sync reads for this slot: fallback, failed queue, or forced by MAX_SAMPLE_AGE_MS */
+  syncReads: number;
+}
+
+export interface SeeSlotDebug {
+  slot: number;
+  pending: boolean;
+  timeouts: number;
+  syncReads: number;
+  syncFallback: boolean;
+  lastSampleAgeMs: number | null;
 }
 
 export class SeeThroughDetector {
   private readonly target = new THREE.WebGLRenderTarget(SEE_THROUGH.sampleSize, SEE_THROUGH.sampleSize, { stencilBuffer: true, depthBuffer: true, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
-  private readonly latest: Map<number, number>[] = [];
+  private readonly latest: SeeSample[] = [];
   private readonly pending = new Map<number, PendingRead>();
   private readonly poses = new Map<number, DetectionPose>();
+  private readonly slots = new Map<number, SlotState>();
   private readonly gl?: WebGL2RenderingContext;
   private generation = 0;
   lastSampleMs = 0;
   lastReadMs = 0;
   private pboFailed = false;
+  /** consecutive async-read failures on this context; reset by any applied async read */
+  private asyncFailures = 0;
+  private warned = false;
   private readonly scene = new THREE.Scene();
   private readonly camera = new THREE.PerspectiveCamera();
   private readonly proxy = new THREE.Mesh(new THREE.CapsuleGeometry(0.45, 1.1, 4, 8), proxyMaterial);
@@ -263,6 +342,40 @@ export class SeeThroughDetector {
     });
   }
 
+  private slot(slot: number): SlotState {
+    let s = this.slots.get(slot);
+    if (!s) this.slots.set(slot, (s = { stale: true, unconsumed: false, freshAt: null, staleSince: performance.now(), timeouts: 0, syncReads: 0 }));
+    return s;
+  }
+
+  /** A fresh result for the slot's remembered pose. */
+  private apply(slot: number, pixels: Uint8Array) {
+    this.latest[slot] = idHistogram(pixels);
+    const s = this.slot(slot);
+    s.stale = false;
+    s.unconsumed = true;
+    s.freshAt = performance.now();
+  }
+
+  /** The slot's pose no longer has a result coming: the next sample() runs a pass even if unmoved. */
+  private drop(slot: number) {
+    this.pending.delete(slot);
+    this.poses.delete(slot);
+    this.slot(slot).stale = true;
+  }
+
+  /** Counts toward the sync fallback; three in a row switch this context to the sync read for good. */
+  private asyncFailed(why: string) {
+    if (!this.warned) {
+      this.warned = true;
+      console.warn(`see-through: async read ${why}; the pass re-runs`);
+    }
+    if (++this.asyncFailures >= ASYNC_MAX_FAILURES && !this.pboFailed) {
+      this.pboFailed = true;
+      console.warn(`see-through: ${ASYNC_MAX_FAILURES} async reads failed in a row; using the sync read from now on`);
+    }
+  }
+
   /** Drop decisions from the previous space or a teleport, including in-flight GPU reads. */
   invalidate() {
     this.generation++;
@@ -270,53 +383,118 @@ export class SeeThroughDetector {
     this.poses.clear();
     for (const read of this.pending.values()) this.release(read);
     this.pending.clear();
+    const now = performance.now();
+    for (const s of this.slots.values()) Object.assign(s, { stale: true, unconsumed: false, freshAt: null, staleSince: now });
   }
 
   invalidateSlot(slot: number) {
-    this.latest[slot] = new Map();
-    this.poses.delete(slot);
+    this.latest[slot] = EMPTY_SAMPLE;
     const read = this.pending.get(slot);
     if (read) this.release(read);
-    this.pending.delete(slot);
+    this.drop(slot);
+    const s = this.slot(slot);
+    s.unconsumed = false;
+    s.freshAt = null;
+    s.staleSince = performance.now();
   }
 
   private release(read: PendingRead) {
-    this.gl?.deleteSync(read.fence);
-    this.gl?.deleteBuffer(read.buffer);
+    try {
+      this.gl?.deleteSync(read.fence);
+    } finally {
+      this.gl?.deleteBuffer(read.buffer);
+    }
   }
 
-  /** Polls without waiting for the GPU; call once on every animation frame. */
+  /**
+   * Polls without waiting for the GPU. main.ts calls it at the top of every animation frame and
+   * sample() calls it for its own slot, so a read that landed is used before a pass is judged stuck.
+   */
   poll() {
+    for (const slot of [...this.pending.keys()]) this.pollSlot(slot);
+  }
+
+  private pollSlot(slot: number) {
     const gl = this.gl;
-    if (!gl) return;
-    for (const [slot, read] of this.pending) {
-      const started = performance.now();
+    const read = this.pending.get(slot);
+    if (!gl || !read) return;
+    const started = performance.now();
+    // Every exit below leaves the slot either still pending (fence not yet signalled, inside
+    // FENCE_TIMEOUT_MS) or not pending with its read released; nothing can wedge the slot's pass.
+    let done = true;
+    try {
       const state = gl.clientWaitSync(read.fence, 0, 0);
-      if (state === gl.TIMEOUT_EXPIRED) continue;
-      this.pending.delete(slot);
+      if (state === gl.TIMEOUT_EXPIRED) {
+        const waited = started - read.queuedAt;
+        if (waited < FENCE_TIMEOUT_MS) {
+          done = false;
+          return;
+        }
+        this.slot(slot).timeouts++;
+        this.drop(slot);
+        this.asyncFailed(`fence unsignalled after ${Math.round(waited)} ms`);
+        return;
+      }
+      if (state === gl.WAIT_FAILED) {
+        this.drop(slot);
+        this.pboFailed = true;
+        return;
+      }
+      if (read.generation !== this.generation) {
+        this.drop(slot);
+        return;
+      }
+      const previous = gl.getParameter(gl.PIXEL_PACK_BUFFER_BINDING) as WebGLBuffer | null;
       try {
-        if (state === gl.WAIT_FAILED) {
-          this.poses.delete(slot);
-          this.pboFailed = true;
-          continue;
-        }
-        const previous = gl.getParameter(gl.PIXEL_PACK_BUFFER_BINDING) as WebGLBuffer | null;
-        try {
-          gl.bindBuffer(gl.PIXEL_PACK_BUFFER, read.buffer);
-          gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, read.pixels);
-        } finally {
-          gl.bindBuffer(gl.PIXEL_PACK_BUFFER, previous);
-        }
-        if (read.generation === this.generation) this.latest[slot] = idHistogram(read.pixels);
+        gl.bindBuffer(gl.PIXEL_PACK_BUFFER, read.buffer);
+        gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, read.pixels);
       } finally {
+        gl.bindBuffer(gl.PIXEL_PACK_BUFFER, previous);
+      }
+      this.pending.delete(slot);
+      this.apply(slot, read.pixels);
+      this.asyncFailures = 0;
+    } catch (error) {
+      this.drop(slot);
+      this.asyncFailed(`poll threw (${(error as Error)?.message ?? error})`);
+    } finally {
+      if (done) {
+        if (this.pending.get(slot) === read) this.drop(slot);
         this.release(read);
         this.lastReadMs = performance.now() - started;
       }
     }
   }
 
-  counts(slot: number): ReadonlyMap<number, number> {
-    return this.latest[slot] ?? new Map();
+  /** The slot's last result, whether or not it still describes the present pose (debug and tests). */
+  counts(slot: number): SeeSample {
+    return this.latest[slot] ?? EMPTY_SAMPLE;
+  }
+
+  /**
+   * The sample the fade may act on: a fresh result (once, even if a newer pass was queued in the
+   * same frame), or the last result while neither focus nor camera has moved since it was taken.
+   * Otherwise null (no evidence this frame), so a reused result never extends a hold.
+   */
+  current(slot: number): SeeSample | null {
+    const s = this.slots.get(slot);
+    if (!s) return null;
+    const usable = s.unconsumed || !s.stale;
+    s.unconsumed = false;
+    return usable ? this.latest[slot] ?? EMPTY_SAMPLE : null;
+  }
+
+  /** Per-slot async state for world3d.seeThrough(). */
+  debug(): SeeSlotDebug[] {
+    const now = performance.now();
+    return [...this.slots.entries()].sort(([a], [b]) => a - b).map(([slot, s]) => ({
+      slot,
+      pending: this.pending.has(slot),
+      timeouts: s.timeouts,
+      syncReads: s.syncReads,
+      syncFallback: !this.gl || this.pboFailed,
+      lastSampleAgeMs: s.freshAt === null ? null : Math.round(now - s.freshAt),
+    }));
   }
 
   private moved(slot: number, camera: THREE.PerspectiveCamera, focus: THREE.Vector3): boolean {
@@ -331,9 +509,49 @@ export class SeeThroughDetector {
     this.poses.set(slot, { focus: focus.clone(), camera: camera.position.clone(), rotation: camera.quaternion.clone(), projection: [...camera.projectionMatrix.elements] });
   }
 
-  sample(source: THREE.Scene, camera: THREE.PerspectiveCamera, focus: THREE.Vector3, slot = 0): Map<number, number> {
+  /** Queues the async read of the pass just rendered; false if it could not be queued. */
+  private queue(gl: WebGL2RenderingContext, slot: number, pixels: Uint8Array): boolean {
+    const buffer = gl.createBuffer();
+    if (!buffer) return false;
+    const previous = gl.getParameter(gl.PIXEL_PACK_BUFFER_BINDING) as WebGLBuffer | null;
+    let fence: WebGLSync | null = null;
+    let queued = false;
+    try {
+      gl.bindBuffer(gl.PIXEL_PACK_BUFFER, buffer);
+      gl.bufferData(gl.PIXEL_PACK_BUFFER, pixels.byteLength, gl.STREAM_READ);
+      gl.readPixels(0, 0, SEE_THROUGH.sampleSize, SEE_THROUGH.sampleSize, gl.RGBA, gl.UNSIGNED_BYTE, 0);
+      fence = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+      if (!fence) return false;
+      gl.flush();
+      this.pending.set(slot, { buffer, fence, pixels, generation: this.generation, queuedAt: performance.now() });
+      queued = true;
+      return true;
+    } catch (error) {
+      this.asyncFailed(`queue threw (${(error as Error)?.message ?? error})`);
+      return false;
+    } finally {
+      gl.bindBuffer(gl.PIXEL_PACK_BUFFER, previous);
+      if (!queued) {
+        if (fence) gl.deleteSync(fence);
+        gl.deleteBuffer(buffer);
+      }
+    }
+  }
+
+  sample(source: THREE.Scene, camera: THREE.PerspectiveCamera, focus: THREE.Vector3, slot = 0): SeeSample {
     this.bind(source);
-    if (this.pending.has(slot) || !this.moved(slot, camera, focus)) return this.latest[slot] ?? new Map();
+    const s = this.slot(slot);
+    this.pollSlot(slot);
+    // Waiting on the async read is fine while the decision is young. Once the slot has gone
+    // MAX_SAMPLE_AGE_MS without a valid result (a slow fence, a timed-out one, a re-queue that is
+    // slow again), any in-flight read is abandoned and this pass reads back synchronously.
+    const forceSync = s.stale && performance.now() - s.staleSince > MAX_SAMPLE_AGE_MS;
+    const inFlight = this.pending.get(slot);
+    if (inFlight) {
+      if (!forceSync) return this.latest[slot] ?? EMPTY_SAMPLE;
+      this.pending.delete(slot);
+      this.release(inFlight);
+    } else if (!s.stale && !this.moved(slot, camera, focus)) return this.latest[slot] ?? EMPTY_SAMPLE;
     const started = performance.now();
     this.renderer.getDrawingBufferSize(this.size);
     camera.updateMatrixWorld();
@@ -348,44 +566,31 @@ export class SeeThroughDetector {
     const clearColor = this.renderer.getClearColor(new THREE.Color());
     const clearAlpha = this.renderer.getClearAlpha();
     const autoClear = this.renderer.autoClear;
+    // The last result no longer describes this pose, whatever happens below; if it did until now,
+    // the decision's age starts here.
+    if (!s.stale) s.staleSince = started;
+    s.stale = true;
+    this.poses.delete(slot);
     try {
       this.renderer.autoClear = false;
       this.renderer.setClearColor(0x000000, 0);
       this.renderer.setRenderTarget(this.target);
+      // three's clear() forces the depth and stencil masks but not the colour mask, which another
+      // material may have left off: a skipped colour clear would re-read old ids.
+      this.renderer.state?.buffers.color.setMask(true);
       this.renderer.clear(true, true, true);
       this.renderer.render(this.scene, this.camera);
       const pixels = new Uint8Array(SEE_THROUGH.sampleSize ** 2 * 4);
-      const gl = this.pboFailed ? undefined : this.gl;
-      const buffer = gl?.createBuffer();
-      let queued = false;
-      if (gl && buffer) {
-        const previous = gl.getParameter(gl.PIXEL_PACK_BUFFER_BINDING) as WebGLBuffer | null;
-        let fence: WebGLSync | null = null;
-        try {
-          gl.bindBuffer(gl.PIXEL_PACK_BUFFER, buffer);
-          gl.bufferData(gl.PIXEL_PACK_BUFFER, pixels.byteLength, gl.STREAM_READ);
-          gl.readPixels(0, 0, SEE_THROUGH.sampleSize, SEE_THROUGH.sampleSize, gl.RGBA, gl.UNSIGNED_BYTE, 0);
-          fence = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
-          gl.flush();
-        } catch (error) {
-          gl.deleteBuffer(buffer);
-          throw error;
-        } finally {
-          gl.bindBuffer(gl.PIXEL_PACK_BUFFER, previous);
-        }
-        if (fence) {
-          this.pending.set(slot, { buffer, fence, pixels, generation: this.generation });
-          queued = true;
-        }
-        else gl.deleteBuffer(buffer);
-      }
-      if (!queued) {
+      const gl = this.pboFailed || forceSync ? undefined : this.gl;
+      if (!(gl && this.queue(gl, slot, pixels))) {
+        s.syncReads++;
         this.renderer.readRenderTargetPixels(this.target, 0, 0, SEE_THROUGH.sampleSize, SEE_THROUGH.sampleSize, pixels);
-        this.latest[slot] = idHistogram(pixels);
+        this.apply(slot, pixels);
         this.lastReadMs = performance.now() - started;
       }
       this.remember(slot, camera, focus);
     } finally {
+      this.renderer.state?.buffers.color.setMask(true);
       this.renderer.setRenderTarget(null);
       if (old) this.renderer.setRenderTarget(old);
       this.renderer.setViewport(viewport);
@@ -395,32 +600,53 @@ export class SeeThroughDetector {
       this.renderer.autoClear = autoClear;
     }
     this.lastSampleMs = performance.now() - started;
-    return this.latest[slot] ?? new Map();
+    return this.latest[slot] ?? EMPTY_SAMPLE;
   }
 }
 
-/** Drives the shared fade texture from pixel counts. */
+/**
+ * Drives the shared fade texture from per-focus samples. An object fades when it covers at least
+ * coverFraction of some focus's silhouette (and minPixels), stays wanted while it covers at least
+ * releaseFraction, and a hit holds it for holdSeconds after the last one.
+ */
 export class SeeThroughControl {
   on = true;
   readonly vis = new Float32Array(SEE_THROUGH.maxOccluders).fill(1);
+  /** each id's largest coverage fraction over the focuses, from the last frame with evidence */
+  readonly cover = new Float32Array(SEE_THROUGH.maxOccluders);
   private readonly want = new Uint8Array(SEE_THROUGH.maxOccluders);
   private readonly hold = new Float32Array(SEE_THROUGH.maxOccluders);
 
   reset() {
     this.vis.fill(1);
+    this.cover.fill(0);
     this.want.fill(0);
     this.hold.fill(0);
     fadeData.fill(1);
     fadeTexture.needsUpdate = true;
   }
 
-  update(dt: number, focus: readonly (THREE.Vector3 | null | undefined)[], occluders: readonly Occluder[], counts: ReadonlyMap<number, number> = new Map(), active = true) {
+  /** `samples[i]` belongs to focus i; null means no evidence for it this frame. */
+  update(dt: number, focus: readonly (THREE.Vector3 | null | undefined)[], occluders: readonly Occluder[], samples: readonly (SeeSample | null | undefined)[] = [], active = true) {
     if (occluders.length > SEE_THROUGH.maxOccluders) throw new Error(`see-through: ${occluders.length} occluders exceeds ${SEE_THROUGH.maxOccluders}`);
     const enabled = this.on && active;
+    const evidence = samples.filter((x): x is SeeSample => !!x);
     this.want.fill(0);
     for (const o of occluders) {
       if (o.id < 0 || o.id >= SEE_THROUGH.maxOccluders) throw new Error(`see-through: invalid occluder id ${o.id}`);
-      const hit = enabled && (counts.get(o.id) ?? 0) >= SEE_THROUGH.minPixels;
+      // Hysteresis: a held object needs releaseFraction to stay, a clear one coverFraction to fade.
+      const need = this.hold[o.id] > 0 ? SEE_THROUGH.releaseFraction : SEE_THROUGH.coverFraction;
+      let hit = false;
+      if (evidence.length) {
+        let best = 0;
+        for (const x of evidence) {
+          const f = coverage(x, o.id);
+          best = Math.max(best, f);
+          if ((x.covered.get(o.id) ?? 0) >= SEE_THROUGH.minPixels && f >= need) hit = true;
+        }
+        this.cover[o.id] = best;
+      }
+      hit &&= enabled;
       this.hold[o.id] = !enabled ? 0 : hit ? SEE_THROUGH.holdSeconds : Math.max(0, this.hold[o.id] - dt);
       if (hit || this.hold[o.id] > 0) this.want[o.id] = 1;
     }
@@ -437,7 +663,7 @@ export class SeeThroughControl {
   status(occluders: readonly Occluder[] = []) {
     return {
       on: this.on,
-      faded: occluders.filter((o) => this.vis[o.id] < 0.999).map((o) => ({ id: o.id, asset: o.asset, vis: +this.vis[o.id].toFixed(3) })),
+      faded: occluders.filter((o) => this.vis[o.id] < 0.999).map((o) => ({ id: o.id, asset: o.asset, vis: +this.vis[o.id].toFixed(3), coverage: +this.cover[o.id].toFixed(3) })),
     };
   }
 }

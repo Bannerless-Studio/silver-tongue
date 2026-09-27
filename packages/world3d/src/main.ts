@@ -1155,7 +1155,7 @@ async function main() {
       space.update(dt, player.position, null);
       if (done) endFlyover();
       else {
-        see.update(dt, [], space.occluders, new Map(), false); // everything opaque on the fly-over
+        see.update(dt, [], space.occluders, [], false); // everything opaque on the fly-over
         return renderer.render(space.scene, rig.camera);
       }
     }
@@ -1238,12 +1238,15 @@ async function main() {
     if (see.on && seeFrame++ % 2 === 0) {
       for (const [slot, p] of seeFocus.entries()) if (p) seeDetector.sample(space.scene, rig.camera, p, slot);
     }
-    const seeCounts = new Map<number, number>();
-    for (const [slot, p] of seeFocus.entries()) {
-      if (!p) { seeDetector.invalidateSlot(slot); continue; }
-      for (const [id, n] of seeDetector.counts(slot)) seeCounts.set(id, (seeCounts.get(id) ?? 0) + n);
-    }
-    see.update(dt, seeFocus, space.occluders, seeCounts);
+    // current(): per focus, a fresh result or the last one while unmoved, else null (no evidence:
+    // a result reused while a newer pass is unresolved never extends a hold). Coverage is judged
+    // per focus against that focus's own silhouette.
+    const seeSamples = seeFocus.map((p, slot) => {
+      if (p) return seeDetector.current(slot);
+      seeDetector.invalidateSlot(slot);
+      return null;
+    });
+    see.update(dt, seeFocus, space.occluders, seeSamples);
 
     // Speech bubble on the speaker's head: a scene started from the topic picker (or any NPC the
     // current space doesn't have, e.g. mid space-swap) can leave the actor lookup empty for a frame
@@ -1361,11 +1364,13 @@ async function main() {
       starting: () => startOpen,
       /**
        * The see-through: seeThrough("off") / ("on") switches whole-object fades for screenshot
-       * comparisons and returns the roots currently easing below opaque.
+       * comparisons and returns the roots currently easing below opaque (each with `coverage`, its
+       * largest fraction of a focus's silhouette), plus the detector's per-focus async state
+       * (slots: pending, timeouts, syncReads, syncFallback, lastSampleAgeMs).
        */
       seeThrough: (cmd?: "on" | "off" | boolean) => {
         if (cmd !== undefined) see.on = cmd === true || cmd === "on";
-        return see.status(space.occluders);
+        return { ...see.status(space.occluders), slots: seeDetector.debug() };
       },
       /**
        * Promo capture only (README "Promo capture"), console-only, never reached by normal play:

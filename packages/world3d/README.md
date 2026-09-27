@@ -561,9 +561,14 @@ wooden one, a lake with a pier to the west, hills, and mountains 360-400 m out u
   and haze), a night fade on sleep, then the day card. `world3d.daylight()`.
 - See-through (`src/seethrough.ts`): a 96×96 stencil-masked character silhouette detects the actual
   static triangles closer to the camera than the player, scene NPC, or barking figure. Each tagged
-  batched vertex carries its root id (`seeThru`); the ID pass counts pixels per root and fades a root
-  when at least six pixels cover a silhouette; the silhouette is the only trigger, canopies included
-  (standing under a tree fades it only once leaves cover the character). It samples every other
+  batched vertex carries its root id (`seeThru`). The character's capsule proxy is drawn first with a
+  reserved code (`SEE_SILHOUETTE_CODE`, 0xFFFF), then the occluders over it, so one histogram gives
+  the silhouette's pixel count and each root's covered pixels. A root fades once it covers at least
+  40 % of a focus's silhouette ("more than 40 % blocked": a lamp post across the legs stays, a roof
+  over the character fades) and at least six pixels; a faded root is released only below 30 %, so one
+  hovering at the threshold does not flicker. With two focuses each is judged against its own
+  silhouette. The silhouette is the only trigger, canopies included (standing under a tree fades it
+  only once leaves cover the character). It samples every other
   frame and skips the pass while neither camera nor focus moved (reusing the last counts); on WebGL2
   the read goes through a pixel-pack buffer and a fence polled each frame (results a frame or two
   late), WebGL1 falls back to a synchronous `readPixels`. A hit holds 0.35 s, then eases back; a
@@ -575,7 +580,17 @@ wooden one, a lake with a pier to the west, hills, and mountains 360-400 m out u
   leaves and high branches fade, trunks stay opaque. Characters, held objects, sky, clouds, path and
   marker are not patched. Fly-over keeps everything opaque. The detector adds one 96×96 render per
   focus on sampled frames (at most three focuses) and reads 36 KiB per focus. Console:
-  `world3d.seeThrough("off")` / `("on")`; each returns `{ on, faded }`.
+  `world3d.seeThrough("off")` / `("on")`; each returns `{ on, faded, slots }`, `faded` listing
+  `{ id, asset, vis, coverage }` (coverage: the largest silhouette fraction the root covered in the
+  last frame with a result), `slots` the detector's per-focus async state `{ slot, pending,
+  timeouts, syncReads, syncFallback, lastSampleAgeMs }`. Both limits are wall-clock, since animation
+  frames are no time base (a slow or throttled frame rate stretched the old 8-poll budget into
+  seconds): an async read whose fence stays unsignalled for 120 ms (`FENCE_TIMEOUT_MS`) is dropped
+  and the pass re-runs, and once a slot has gone 250 ms (`MAX_SAMPLE_AGE_MS`) without a valid result
+  while its focus or the camera moved, the next pass abandons any in-flight read and reads back
+  synchronously, so the decision is never older than that plus one sampled frame. Three failed async
+  reads in a row switch the context to the sync read. Only fresh results (or the last one while
+  neither focus nor camera moved) refresh a fade's hold, so a stuck read cannot keep an object faded.
 
 ## Promo capture
 
