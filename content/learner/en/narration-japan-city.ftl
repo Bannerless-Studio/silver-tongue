@@ -28,6 +28,13 @@ scene-tanaka-name-end = Mr Tanaka says your name over to himself, twice, as if f
 scene-tanaka-numbers = Count with Mr Tanaka
 scene-tanaka-numbers-start = Mr Tanaka holds up his fingers: time to learn to count.
 
+scene-apartment-hello = Meet the landlady
+scene-apartment-hello-start = A small woman in an apron opens the door before you knock.
+scene-apartment-hello-end = The landlady hands you a key on a wooden tag: the room is yours.
+scene-apartment-rent = Talk about rent
+scene-apartment-rent-start = The landlady waits in the doorway with a notebook.
+scene-apartment-rent-end = The landlady writes 5,000 on a slip of paper and tapes it to your door. It's due every week.
+
 # What a reply does (action-<name>), and on a mix-up what was asked (asked-<name>).
 # Concept values arrive as learner names: $item = "tea", $count = "three".
 
@@ -42,3 +49,11 @@ asked-nice = Mr Tanaka was saying he's pleased to meet you.
 asked-understand = Mr Tanaka was asking if you understand Japanese.
 asked-numbers = { $npc } asked you to count along.
 asked-next = Mr Tanaka wanted the next number: { $number }.
+asked-greet = { $npc } was saying hello.
+asked-room = The landlady was showing you your room.
+asked-key = The landlady was giving you the key.
+asked-night = The landlady was saying good night.
+asked-rent = The landlady was asking if you understand about the rent.
+asked-amount = The landlady was telling you the rent.
+asked-money = The landlady was asking if you have money.
+asked-worked = The landlady was asking if you've worked at the ramen shop.

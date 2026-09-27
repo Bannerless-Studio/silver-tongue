@@ -278,5 +278,147 @@
   "readings": [
    "hai"
   ]
+ },
+ {
+  "id": "ja-koko",
+  "w": "ここ",
+  "lv": "N5",
+  "readings": [
+   "koko"
+  ]
+ },
+ {
+  "id": "ja-no",
+  "w": "の",
+  "lv": "N5",
+  "readings": [
+   "no"
+  ]
+ },
+ {
+  "id": "ja-heya",
+  "w": "部屋",
+  "lv": "N5",
+  "readings": [
+   "へや",
+   "heya"
+  ]
+ },
+ {
+  "id": "ja-kore",
+  "w": "これ",
+  "lv": "N5",
+  "readings": [
+   "kore"
+  ]
+ },
+ {
+  "id": "ja-kagi",
+  "w": "かぎ",
+  "lv": "N5",
+  "readings": [
+   "kagi"
+  ]
+ },
+ {
+  "id": "ja-oyasuminasai",
+  "w": "おやすみなさい",
+  "lv": "N5",
+  "readings": [
+   "oyasuminasai"
+  ]
+ },
+ {
+  "id": "ja-maishu",
+  "w": "毎週",
+  "lv": "N5",
+  "readings": [
+   "まいしゅう",
+   "maishū"
+  ]
+ },
+ {
+  "id": "ja-sen",
+  "w": "千",
+  "lv": "N5",
+  "readings": [
+   "せん",
+   "sen"
+  ]
+ },
+ {
+  "id": "ja-en",
+  "w": "円",
+  "lv": "N5",
+  "readings": [
+   "えん",
+   "en"
+  ]
+ },
+ {
+  "id": "ja-okane",
+  "w": "お金",
+  "lv": "N5",
+  "readings": [
+   "おかね",
+   "okane"
+  ]
+ },
+ {
+  "id": "ja-ga",
+  "w": "が",
+  "lv": "N5",
+  "readings": [
+   "ga"
+  ]
+ },
+ {
+  "id": "ja-arimasu",
+  "w": "あります",
+  "lv": "N5",
+  "readings": [
+   "arimasu"
+  ],
+  "forms": {
+   "ありません": [
+    "arimasen"
+   ]
+  }
+ },
+ {
+  "id": "ja-ramenya",
+  "w": "ラーメン屋",
+  "lv": "N5",
+  "readings": [
+   "ラーメンや",
+   "rāmen'ya"
+  ]
+ },
+ {
+  "id": "ja-de",
+  "w": "で",
+  "lv": "N5",
+  "readings": [
+   "de"
+  ]
+ },
+ {
+  "id": "ja-hatarakimasu",
+  "w": "働きます",
+  "lv": "N5",
+  "readings": [
+   "はたらきます",
+   "hatarakimasu"
+  ],
+  "forms": {
+   "働きました": [
+    "はたらきました",
+    "hatarakimashita"
+   ],
+   "働きませんでした": [
+    "はたらきませんでした",
+    "hatarakimasen deshita"
+   ]
+  }
  }
 ]

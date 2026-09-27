@@ -10,5 +10,11 @@
   "trigger": {
    "scene": "tanaka-numbers"
   }
+ },
+ {
+  "id": "wa-ga",
+  "trigger": {
+   "word": "ja-ga"
+  }
  }
 ]

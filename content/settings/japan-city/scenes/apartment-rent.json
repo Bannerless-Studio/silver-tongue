@@ -1,0 +1,55 @@
+{
+ "id": "apartment-rent",
+ "place": "apartment",
+ "npc": "ooya",
+ "stage": 1,
+ "after": [
+  "apartment-hello",
+  "tanaka-numbers"
+ ],
+ "requires": {},
+ "repeatable": false,
+ "trustGain": 1,
+ "exchanges": [
+  {
+   "id": "rent",
+   "slots": {},
+   "expect": {
+    "action": "rent"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "amount",
+   "slots": {},
+   "expect": {
+    "action": "amount"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "money",
+   "slots": {},
+   "expect": {
+    "action": "money"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "worked",
+   "slots": {},
+   "expect": {
+    "action": "worked"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  }
+ ]
+}
