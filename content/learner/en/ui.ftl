@@ -1,12 +1,5 @@
 # Text-game UI. Every id here is required by packages/tui (UI_KEYS).
 
-hud = Day { $day } · slot { $slot }/{ $slots } · { $currency }{ $wallet }{ $parcel ->
-    [yes] { " · parcel" }
-   *[no] {""}
-}{ $rentLate ->
-    [yes] { " · rent due" }
-   *[no] {""}
-}
 # The top border (right) and the HUD row under it.
 hud-top = Day { $day } · slot { $slot }/{ $slots }
 hud-rent = { $days ->
@@ -44,7 +37,7 @@ keys-help-sentence = [{ $keys }] look up · [s] whole sentence · [p] play · [e
 help-title = Which word?
 help-sentence = The whole sentence
 help-in-replies = In the replies:
-reply-title = Your reply:
+reply-title = Your reply
 tiles-title = Build your reply: [{ $keys }] add a word · [enter] say it
 tiles-answer = You say:
 you = You

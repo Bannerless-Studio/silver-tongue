@@ -25,7 +25,6 @@ export function makeText(ftl: string, locale: string): Text {
  * which the build checks against the catalog (tools/src/build-course.ts languageNameProblems).
  */
 export const UI_KEYS: Record<string, string[]> = {
-  hud: ["day", "slot", "slots", "currency", "wallet", "rank", "parcel", "rentLate"],
   "hud-top": ["day", "slot", "slots"],
   "hud-rent": ["days"],
   "hud-rent-late": [],
