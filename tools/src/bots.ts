@@ -5,8 +5,10 @@ import {
   availableSceneIds,
   comboKey,
   createCore,
+  hasHome,
   mulberry32,
   newGame,
+  placeKnown,
   sceneCost,
   tilePieces,
   wordState,
@@ -84,8 +86,11 @@ function replyInput(course: Course, state: GameState, right: boolean, rng: () =>
   return { type: "replyTiles", tiles: [...order].reverse() };
 }
 
-/** The next place on a shortest walk from `from` to any place in `targets`, or undefined. */
-export function stepToward(course: Course, from: string, targets: Set<string>): string | undefined {
+/**
+ * The next place on a shortest walk from `from` to any place in `targets`, or undefined. Given
+ * `state`, the walk keeps to the places the player knows.
+ */
+export function stepToward(course: Course, from: string, targets: Set<string>, state?: GameState): string | undefined {
   const prev = new Map<string, string>([[from, from]]);
   const queue = [from];
   while (queue.length) {
@@ -96,6 +101,7 @@ export function stepToward(course: Course, from: string, targets: Set<string>): 
       return step;
     }
     for (const next of course.world.places[p].links) {
+      if (state && !placeKnown(course, state, next)) continue;
       if (!prev.has(next)) {
         prev.set(next, p);
         queue.push(next);
@@ -103,6 +109,11 @@ export function stepToward(course: Course, from: string, targets: Set<string>): 
     }
   }
   return undefined;
+}
+
+/** Where the player sleeps now: home once they have one, the start before; undefined if anywhere. */
+export function bedPlace(course: Course, state: GameState): string | undefined {
+  return hasHome(course, state) ? course.world.home : course.world.start;
 }
 
 /** Something worth doing, and where: lower `rank` first. */
@@ -212,14 +223,14 @@ export function runBot(course: Course, bot: Bot, opts: { days: number; seed: num
     const here = best.find((g) => g.place === s.place);
     if (s.run) input = replyInput(course, s, bot.answerRight(s.run, rng), rng);
     else if (s.slot < course.world.slotsPerDay && best.length) {
-      const step = here ? undefined : stepToward(course, s.place, new Set(best.map((g) => g.place)));
+      const step = here ? undefined : stepToward(course, s.place, new Set(best.map((g) => g.place)), s);
       if (here) input = here.input;
       else if (step) input = { type: "goTo", place: step };
     }
-    // Bed is at home: walk there before sleeping.
-    const home = course.world.home;
-    if (input.type === "sleep" && home && s.place !== home) {
-      const step = stepToward(course, s.place, new Set([home]));
+    // Walk to the bed (home, or the start before there is one) before sleeping.
+    const bed = bedPlace(course, s);
+    if (input.type === "sleep" && bed && s.place !== bed) {
+      const step = stepToward(course, s.place, new Set([bed]), s);
       if (step) input = { type: "goTo", place: step };
     }
     clock += HOUR;

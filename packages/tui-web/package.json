@@ -6,7 +6,7 @@
     "build": "node build.mjs"
   },
   "dependencies": {
-    "@silver-tongue/core": "npm:@bannerless-studio/silver-tongue-core@^0.15.1",
+    "@silver-tongue/core": "npm:@bannerless-studio/silver-tongue-core@^0.16.2",
     "@silver-tongue/tui": "*",
     "@silver-tongue/web-common": "*",
     "@xterm/addon-fit": "^0.11.0",

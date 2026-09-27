@@ -2,6 +2,11 @@
 
 Every release of Silver Tongue, newest first.
 
+## 0.16.2 (2026-09-28)
+
+- You discover the town one place at a time. At first Main Street is all you know; Old Wang points you to the noodle shop, and each new place opens as the story reaches it. The game tells you when it does ("New places: …").
+- You sleep only where there's a bed: on Main Street until the landlord gives you a room, then in your room. Elsewhere there's no Sleep choice.
+
 ## 0.16.1 (2026-09-28)
 
 - The text game has a new look. The screen is split into boxes: where you are and what day it is at the top, then your money, how many days until rent and how well you speak, then the conversation, then your choices.

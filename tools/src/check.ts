@@ -64,15 +64,15 @@ export function orderScenes(scenes: Scene[]): { ordered: Scene[]; errors: string
   return { ordered, errors: [] };
 }
 
-/** Whether `to` can be walked to from `from` along place links. */
-function reaches(places: Course["world"]["places"], from: string, to: string): boolean {
+/** Whether `to` can be walked to from `from` along place links, keeping to `open` places if given. */
+function reaches(places: Course["world"]["places"], from: string, to: string, open?: (place: string) => boolean): boolean {
   const seen = new Set([from]);
   const queue = [from];
   while (queue.length) {
     const p = queue.shift()!;
     if (p === to) return true;
     for (const next of places[p]?.links ?? []) {
-      if (seen.has(next)) continue;
+      if (seen.has(next) || (open && !open(next))) continue;
       seen.add(next);
       queue.push(next);
     }
@@ -179,7 +179,10 @@ export function checkCourse(input: CheckInput): string[] {
   }
   for (const [id, p] of Object.entries(world.places)) {
     for (const l of p.links) if (!world.places[l]) errors.push(`world: place "${id}" links to unknown place "${l}"`);
+    for (const a of p.after ?? []) if (!course.scenes.some((s) => s.id === a)) errors.push(`world: place "${id}" is after unknown scene "${a}"`);
   }
+  // The player starts there, and sleeps there before they have a home.
+  if (world.places[world.start]?.after?.length) errors.push(`world: start place "${world.start}" must be known from the start`);
   for (const [id, p] of Object.entries(world.places)) {
     // The mentor's visit is an item too, at the mentor's place.
     const mentorItem = world.mentor && world.npcs[world.mentor.npc]?.place === id ? 1 : 0;
@@ -208,6 +211,12 @@ export function checkCourse(input: CheckInput): string[] {
   for (const s of course.scenes) {
     for (const d of dupes(s.exchanges.map((e) => e.id))) errors.push(`${s.id}: exchange id "${d}" is used twice`);
     if (!world.places[s.place]) errors.push(`${s.id}: unknown place "${s.place}"`);
+    else {
+      // Once the scene opens, the player must know a way to its place.
+      const done = before.get(s.id) ?? new Set<string>();
+      const open = (place: string) => (world.places[place]?.after ?? []).every((a) => done.has(a));
+      if (!reaches(world.places, world.start, s.place, open)) errors.push(`${s.id}: opens before the player knows the way to "${s.place}"`);
+    }
     if (!world.npcs[s.npc]) errors.push(`${s.id}: unknown npc "${s.npc}"`);
     for (const a of s.after) if (!sceneIds.has(a)) errors.push(`${s.id}: after unknown scene "${a}"`);
     for (const [npc, need] of Object.entries(s.requires.trust ?? {})) {

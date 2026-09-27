@@ -1,4 +1,4 @@
-import { availableSceneIds, mentorAvailable, moneyBlocked, sceneCost, type Course, type GameState, type Input } from "@silver-tongue/core";
+import { availableSceneIds, canSleep, mentorAvailable, moneyBlocked, placeKnown, sceneCost, type Course, type GameState, type Input } from "@silver-tongue/core";
 import type { Text } from "./text";
 
 /** Scenes, exits and the mentor's visit before sleep; the content checker keeps places within it. */
@@ -25,7 +25,7 @@ function costSuffix(t: Text, cost: number, currency: string): string {
   return cost > 0 ? t("menu-cost-money", { currency, cost }) : "";
 }
 
-/** What the player can do here: talk, visit the mentor, go somewhere, sleep (always last). */
+/** What the player can do here: talk, visit the mentor, go somewhere, sleep (last, where there's a bed). */
 export function placeMenu(course: Course, state: GameState, t: Text): MenuItem[] {
   const npcName = (npc: string) => t(`npc-${npc}`);
   const items: MenuItem[] = [];
@@ -52,16 +52,14 @@ export function placeMenu(course: Course, state: GameState, t: Text): MenuItem[]
     const npc = course.world.mentor!.npc;
     items.push({ kind: "mentor", label: t("menu-mentor", { npc: npcName(npc) }), input: { type: "visitMentor" }, npc, disabled });
   }
+  // A place stays off the menu until the scenes that reveal it are done.
   for (const p of course.world.places[state.place].links) {
+    if (!placeKnown(course, state, p)) continue;
     items.push({ kind: "go", label: t("menu-go", { place: t(`place-${p}`) }), input: { type: "goTo", place: p }, place: p });
   }
-  // Before the home scene is done, sleep works anywhere (a rough night), so the "go home first"
-  // hint would be wrong; only show it once the player actually has a home to be sent back to.
-  const { home, homeScene } = course.world;
-  const hasHome = !homeScene || (state.scenesDone[homeScene] ?? 0) > 0;
-  const sleepLabel =
-    hasHome && home && state.place !== home ? `${t("menu-sleep")} — ${t("menu-go-home", { place: t(`place-${home}`) })}` : t("menu-sleep");
-  return [...items.slice(0, MAX_PLACE_ITEMS), { kind: "sleep", label: sleepLabel, input: { type: "sleep" } }];
+  // Sleep is offered only where the core allows it: home, or the start before there is a home.
+  const sleep: MenuItem[] = canSleep(course, state) ? [{ kind: "sleep", label: t("menu-sleep"), input: { type: "sleep" } }] : [];
+  return [...items.slice(0, MAX_PLACE_ITEMS), ...sleep];
 }
 
 /** Scenes here that wait only for money: shown, not offered, so an empty shop says why. */

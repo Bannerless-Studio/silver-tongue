@@ -251,6 +251,9 @@ export function createVn(opts: VnOptions): Vn {
         case "unlocked":
           toast(t("unlocked", { scene: t(`scene-${e.scene}`) }), "good");
           break;
+        case "placeRevealed":
+          toast(t("place-revealed", { count: 1, places: t(`place-${e.place}`) }), "good");
+          break;
         case "errandStarted":
           toast(t("errand-started"), "info");
           break;
