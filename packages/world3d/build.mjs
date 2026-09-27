@@ -1,4 +1,4 @@
-// Builds dist/: index.html (CSS inlined), main.js (the app with three.js) and chunks/ (split off:
+// Builds dist/: index.html (CSS inlined), main-<hash>.js (the app with three.js) and chunks/ (split off:
 // the start flow, the GLTF loader + meshopt decoder, the orbit camera), courses/ (the catalog
 // and every course file, copied from the repo's dist/courses/ as packages/web-common's copy-courses.mjs does for tui-web and vn-web; the
 // page fetches the course it plays, so it needs a web server), assets/ (only the GLBs layout.json
@@ -7,7 +7,7 @@
 // inlined. Every URL is relative, so dist/ works at any path (GitHub Pages serves it under /world3d/).
 //
 //   node build.mjs          one-off build
-//   node build.mjs --dev    build, then serve dist/ and rebuild main.js on change
+//   node build.mjs --dev    build, then serve dist/ and rebuild main.js (unhashed under --dev) on change
 //
 // Audio: each course's clips (content/audio/<language>, ~870 clips, ~7 MB) are loaded by URL as
 // they are said, never inlined. A one-off build doesn't copy them (dist/ stays near 10 MB): the page
@@ -32,6 +32,7 @@ import { execSync } from "node:child_process";
 import { cpSync, copyFileSync, existsSync, rmSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { checkDist } from "./scripts/check-dist.mjs";
 import { copyUsed } from "./scripts/used-assets.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -43,18 +44,22 @@ const assetsSrc = process.env.WORLD3D_ASSETS ?? join(here, "assets");
 const dist = join(here, "dist");
 
 /**
- * The build's stamp: the git short sha (7) of HEAD and a UTC timestamp, "+" appended when
- * packages/world3d had uncommitted changes (git status --porcelain); "dev" under --dev, which
- * never sits still long enough for a sha + time to mean much. Baked into main.js (esbuild
- * `define` __ST_VERSION__, src/version.ts) and into index.html (writeHtml: the <html> tag and the
- * static loading card both, so a build can be told apart before any JS runs).
+ * The build's stamp, two strings. `tag`, the muted corner tag: "v" + the game's version
+ * (packages/tui-node/package.json, where tui-web and vn-web read it too), "+" appended when
+ * packages/world3d had uncommitted changes (git status --porcelain). `full`, for Settings, the
+ * <html> tag and window.world3d.version: the tag, the git short sha (7) of HEAD and the UTC build
+ * time ("v0.14.0 · e8dca2a · 2026-09-28 02:00"). Both "dev" under --dev, which never sits still
+ * long enough for them to mean much. Baked into main.js (esbuild `define` __ST_VERSION__ and
+ * __ST_BUILD__, src/version.ts) and into index.html (writeHtml: data-version on <html>, the tag on
+ * the static loading card), so a build can be told apart before any JS runs.
  */
 function buildVersion() {
-  if (dev) return "dev";
+  if (dev) return { tag: "dev", full: "dev" };
+  const pkg = JSON.parse(readFileSync(join(repo, "packages", "tui-node", "package.json"), "utf8")).version;
   const sha = execSync("git rev-parse --short=7 HEAD", { cwd: repo, encoding: "utf8" }).trim();
   const dirty = execSync("git status --porcelain -- packages/world3d", { cwd: repo, encoding: "utf8" }).trim() !== "";
-  const stamp = new Date().toISOString().slice(0, 16).replace("T", " ");
-  return `${sha}${dirty ? "+" : ""} · ${stamp} UTC`;
+  const tag = `v${pkg}${dirty ? "+" : ""}`;
+  return { tag, full: `${tag} · ${sha} · ${new Date().toISOString().slice(0, 16).replace("T", " ")}` };
 }
 const version = buildVersion();
 
@@ -192,7 +197,7 @@ function copyAudio(catalog) {
 const TITLE = "Silver Tongue";
 /** the loading screen's card as plain HTML (src/preload.js draws the same, in the page's language, a moment later); the version tag (page.css .build-version) is baked in, no JS needed to show it */
 const loadingCard = (bytesText, item) =>
-  `<div class="ld-card"><h1 class="ld-title">${TITLE}</h1><div class="ld-bar"><div class="ld-fill"></div></div><p class="ld-line"><b class="ld-pct">0%</b><span class="ld-bytes">${bytesText}</span></p><p class="ld-item">${item}</p><p class="ld-slow" hidden></p><button class="ld-retry st-btn primary" type="button"></button><p class="ld-err"></p><span class="build-version" aria-hidden="true">${version}</span></div>`;
+  `<div class="ld-card"><h1 class="ld-title">${TITLE}</h1><div class="ld-bar"><div class="ld-fill"></div></div><p class="ld-line"><b class="ld-pct">0%</b><span class="ld-bytes">${bytesText}</span></p><p class="ld-item">${item}</p><p class="ld-slow" hidden></p><button class="ld-retry st-btn primary" type="button"></button><p class="ld-err"></p><span class="build-version" aria-hidden="true">${version.tag}</span></div>`;
 
 /**
  * index.html with the CSS inlined: the UI skin (start/start.css, the start flow's design system)
@@ -203,13 +208,13 @@ const loadingCard = (bytesText, item) =>
 function writeHtml() {
   const css = readFileSync(join(here, "src", "start", "start.css"), "utf8") + "\n" + readFileSync(join(here, "src", "page.css"), "utf8");
   let html = readFileSync(join(here, "src", "index.html"), "utf8").replace("/*CSS*/", () => css);
-  html = html.replace('<html data-version="">', `<html data-version="${version}">`);
+  html = html.replace('<html data-version="">', `<html data-version="${version.full}">`);
   if (dev) html = html.replace("<!--LOADING-->", loadingCard("", "Loading…")).replace("<!--BOOT-->", `<script type="module" src="./main.js"></script>`);
   writeFileSync(join(dist, "index.html"), html);
 }
 
 /**
- * The files the page starts with: main.js, every chunk it imports, and the GLTF loader's and the
+ * The files the page starts with: main-<hash>.js (first: the entry), every chunk it imports, and the GLTF loader's and the
  * meshopt decoder's (imported on first use, needed at once). The start flow and the orbit camera
  * stay lazy. [url relative to the page, bytes].
  */
@@ -239,11 +244,12 @@ const PRELOAD_BUDGET = 3500;
  * ES5, minified, inlined; beside it as JSON, #ld-text: the files with their sizes, the loading
  * strings of every UI language, the watchdog's times):
  * it fetches the start files with a byte bar, a stall line, a failure with Retry, then adds the
- * module script (no modulepreload links: they would fetch every file a second time). Returns its bytes.
+ * module script (no modulepreload links: they would fetch every file a second time). Returns its
+ * bytes and the entry (./main-<hash>.js).
  */
 async function inlinePreloader(meta) {
   const files = startFiles(meta);
-  if (!files) throw new Error("no main.js in the metafile");
+  if (!files) throw new Error("no main.ts output in the metafile");
   const loc = (l) => JSON.parse(readFileSync(join(here, "locale", `${l}.json`), "utf8")).loading;
   const langs = Object.fromEntries(["en", "bn", "zh"].map((l) => [l, loc(l)]));
   const s = Object.fromEntries(Object.entries(langs).map(([l, t]) => [l, { loading: t.loading, slow: t.slow, failed: t.failed, file: t.file, retry: t.retry, reload: t.reload }]));
@@ -269,7 +275,7 @@ async function inlinePreloader(meta) {
     .replace("<!--LOADING-->", () => loadingCard(`0.0 / ${(total / 1048576).toFixed(1)} MB`, langs.en.loading))
     .replace("<!--BOOT-->", () => `<script type="application/json" id="ld-text">${JSON.stringify(cfg).replace(/</g, "\\u003c")}</script>\n    <script>${js}</script>`);
   writeFileSync(f, html);
-  return bytes;
+  return { bytes, entry: cfg.entry };
 }
 
 /** Total bytes under a directory. */
@@ -289,21 +295,25 @@ copyStatic();
 writeHtml();
 const catalog = copyCourses();
 const clips = copyAudio(catalog);
-// Everything but main.js is in place: would both formats of the music pass the budget?
+// Everything but the scripts is in place: would both formats of the music pass the budget?
 let sounds = copySounds(false) + copyBarks();
-const MUSIC_OGG_ONLY = !bundleAudio && size(dist) + 1.2 * 1024 * 1024 > BUDGET; // + main.js
+const MUSIC_OGG_ONLY = !bundleAudio && size(dist) + 1.2 * 1024 * 1024 > BUDGET; // + the scripts
 if (MUSIC_OGG_ONLY) {
   rmSync(join(dist, "assets", "audio"), { recursive: true, force: true });
   rmSync(join(dist, "assets", "ui"), { recursive: true, force: true });
   sounds = copySounds(true) + copyBarks();
 }
 rmSync(join(dist, "chunks"), { recursive: true, force: true });
+for (const f of readdirSync(dist)) if (f.endsWith(".js")) rmSync(join(dist, f)); // an older build's main.js / main-<hash>.js
 const ctx = await context({
   entryPoints: [join(here, "src", "main.ts")],
   outdir: dist,
-  // main.js plus chunks/: what only some pages need (the start flow, a new player's; the GLTF
-  // loader and meshopt decoder, fetched while main.js starts up; the orbit camera, off) loads apart
-  entryNames: "[name]",
+  // main-<hash>.js plus chunks/: what only some pages need (the start flow, a new player's; the GLTF
+  // loader and meshopt decoder, fetched while the entry starts up; the orbit camera, off) loads apart.
+  // Every file content-hashed (Pages caches each for 10 minutes: an unhashed main.js would come
+  // from a recent visit's cache and import chunks that are gone; scripts/check-dist.mjs); --dev
+  // keeps a plain main.js (index.html names it; nothing caches a localhost watch build for long)
+  entryNames: dev ? "[name]" : "[name]-[hash]",
   chunkNames: "chunks/[name]-[hash]",
   splitting: true,
   bundle: true,
@@ -311,7 +321,7 @@ const ctx = await context({
   target: "es2022",
   minify: !dev,
   sourcemap: dev ? "inline" : false,
-  define: { __AUDIO_ROOT__: JSON.stringify(audioRoot), __ST_VERSION__: JSON.stringify(version) },
+  define: { __AUDIO_ROOT__: JSON.stringify(audioRoot), __ST_VERSION__: JSON.stringify(version.tag), __ST_BUILD__: JSON.stringify(version.full) },
   legalComments: "none",
   metafile: true,
   logLevel: dev ? "info" : "warning",
@@ -323,10 +333,12 @@ if (dev) {
 } else {
   const result = await ctx.rebuild();
   await ctx.dispose();
-  const preload = await inlinePreloader(result.metafile);
+  const { bytes: preload, entry } = await inlinePreloader(result.metafile);
+  const bad = checkDist(dist);
+  if (bad.length) throw new Error(`dist/ fails its check:\n  ${bad.join("\n  ")}`);
   const kb = (n) => `${Math.round(n / 1024)} KB`;
   const chunks = existsSync(join(dist, "chunks")) ? readdirSync(join(dist, "chunks")).map((f) => `${f} ${kb(statSync(join(dist, "chunks", f)).size)}`) : [];
   console.log(
-    `built packages/world3d/dist: version ${version}, sound + title + barks ${kb(sounds)}${MUSIC_OGG_ONLY ? ` (music .ogg only: over the 15 MB budget with both, -${kb(musicM4aBytes())})` : " (.ogg + .m4a)"}, courses/ ${catalog.map((e) => `${e.id} (${e.learners.join(", ")})`).join(", ")}, audio ${clips ? `${clips[0]} clips in courses/<course>/audio/ (${kb(clips[1])}${clips[2] ? `, ${clips[2]} missing` : ""})` : `loaded from ${audioRoot}courses/<course>/audio/`}, index.html ${kb(statSync(join(dist, "index.html")).size)} (preloader ${preload} B), main.js ${kb(statSync(join(dist, "main.js")).size)} + chunks/ ${chunks.join(", ") || "none"}, assets/ ${kb(size(join(dist, "assets")))} (${glbs} GLBs); total ${kb(size(dist))}`,
+    `built packages/world3d/dist: version ${version.full}, sound + title + barks ${kb(sounds)}${MUSIC_OGG_ONLY ? ` (music .ogg only: over the 15 MB budget with both, -${kb(musicM4aBytes())})` : " (.ogg + .m4a)"}, courses/ ${catalog.map((e) => `${e.id} (${e.learners.join(", ")})`).join(", ")}, audio ${clips ? `${clips[0]} clips in courses/<course>/audio/ (${kb(clips[1])}${clips[2] ? `, ${clips[2]} missing` : ""})` : `loaded from ${audioRoot}courses/<course>/audio/`}, index.html ${kb(statSync(join(dist, "index.html")).size)} (preloader ${preload} B), ${entry.slice(2)} ${kb(statSync(join(dist, entry)).size)} + chunks/ ${chunks.join(", ") || "none"}, assets/ ${kb(size(join(dist, "assets")))} (${glbs} GLBs); total ${kb(size(dist))}`,
   );
 }

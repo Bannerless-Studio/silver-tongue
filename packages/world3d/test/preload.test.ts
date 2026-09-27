@@ -153,7 +153,7 @@ function page(opts: { protocol?: string; settings?: string; languages?: string[]
   root.append(card);
   doc.body.append(root);
   const listeners = new Map<string, ((e: unknown) => void)[]>();
-  const requests: { url: string; signal?: AbortSignal; resolve: (r: unknown) => void; reject: (e: unknown) => void }[] = [];
+  const requests: { url: string; signal?: AbortSignal; cache?: string; resolve: (r: unknown) => void; reject: (e: unknown) => void }[] = [];
   let reloads = 0;
   const win = {
     navigator: { languages: opts.languages ?? ["en-US"], language: "en-US" },
@@ -163,9 +163,9 @@ function page(opts: { protocol?: string; settings?: string; languages?: string[]
     ReadableStream: opts.noFetch ? undefined : ReadableStream,
     __stBooted: false,
     addEventListener: (type: string, f: (e: unknown) => void) => listeners.set(type, [...(listeners.get(type) ?? []), f]),
-    fetch: (url: string, init: { signal?: AbortSignal }) =>
+    fetch: (url: string, init: { signal?: AbortSignal; cache?: string }) =>
       new Promise((resolve, reject) => {
-        requests.push({ url, signal: init.signal, resolve, reject });
+        requests.push({ url, signal: init.signal, cache: init.cache, resolve, reject });
         init.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")));
       }),
   };
@@ -186,7 +186,18 @@ function page(opts: { protocol?: string; settings?: string; languages?: string[]
   };
   const scripts = () => doc.body.children.filter((c: FakeElement) => c.tagName === "SCRIPT") as (FakeElement & { src: string; type: string; onerror: () => void })[];
   const start = () => boot(win as unknown as Window, doc as unknown as Document, cfg);
-  return { doc, root, win, requests, emit, $, start, scripts, reloads: () => reloads, en: UI_LOCALES.en.loading };
+  const size = (url: string) => cfg.files.find((f) => f[0] === url)![1];
+  return { doc, root, win, requests, emit, $, start, scripts, size, reloads: () => reloads, en: UI_LOCALES.en.loading };
+}
+
+/** Every request so far answered in full, at the size the build listed. */
+function whole(p: ReturnType<typeof page>) {
+  for (const r of p.requests) {
+    const s = streamed();
+    r.resolve(s.res);
+    s.push(p.size(r.url));
+    s.end();
+  }
 }
 
 const tick = async () => {
@@ -243,6 +254,53 @@ describe("the preloader on the page", () => {
     expect(p.reloads()).toBe(1);
   });
 
+  it("a stale cache (a file ends at a size other than the build's): out of the bar, fetched again with cache \"reload\"; right this time: on to the module script", async () => {
+    const p = page();
+    p.start();
+    expect(p.requests.map((r) => r.cache)).toEqual([undefined, undefined]);
+    const [a, b] = [streamed(), streamed()];
+    p.requests[0].resolve(a.res);
+    p.requests[1].resolve(b.res);
+    b.push(3000);
+    b.end();
+    a.push(700); // an older build's file at the same URL
+    a.end();
+    await tick();
+    expect(p.requests).toHaveLength(3);
+    expect(p.requests[2]).toMatchObject({ url: "./main.js", cache: "reload" });
+    expect(p.$("bytes").textContent).toBe("0.0 / 0.0 MB");
+    expect(p.$("pct").textContent).toBe("75%"); // the stale 700 B don't count
+    expect(p.scripts()).toHaveLength(0);
+    const c = streamed();
+    p.requests[2].resolve(c.res);
+    c.push(1000);
+    c.end();
+    await tick();
+    expect(p.$("pct").textContent).toBe("100%");
+    expect(p.scripts().map((s) => s.src)).toEqual(["./main.js"]);
+    expect(p.root.className).toBe("");
+  });
+
+  it("the reloaded copy the wrong size too: the failure, naming the file and the stale cache, with Retry", async () => {
+    const p = page();
+    p.start();
+    const a = streamed();
+    p.requests[0].resolve(a.res);
+    a.push(700);
+    a.end();
+    await tick();
+    const c = streamed();
+    p.requests[2].resolve(c.res);
+    c.push(900);
+    c.end();
+    await tick();
+    expect(p.requests).toHaveLength(3); // no third try
+    expect(p.root.className).toBe("error");
+    expect(p.$("err").textContent).toBe("./main.js: stale cache (900 B, not 1000)");
+    expect(p.$("retry").textContent).toBe(p.en.retry);
+    expect(p.scripts()).toHaveLength(0);
+  });
+
   it("no byte for 15 s: the slow line; bytes again: gone; 45 s: aborted, the failure", async () => {
     const p = page();
     p.start();
@@ -277,11 +335,7 @@ describe("the preloader on the page", () => {
   it("the module script's error, or a script error before the game boots: the failure, with Reload (a module graph can't be imported again)", async () => {
     const p = page();
     p.start();
-    for (const r of p.requests) {
-      const s = streamed();
-      r.resolve(s.res);
-      s.end();
-    }
+    whole(p);
     await tick();
     p.scripts()[0].onerror();
     expect(p.root.className).toBe("error");
@@ -297,11 +351,7 @@ describe("the preloader on the page", () => {
   it("once the game says it booted, the preloader stays out of it; no boot in 60 s after the module script: the failure", async () => {
     const p = page();
     p.start();
-    for (const r of p.requests) {
-      const s = streamed();
-      r.resolve(s.res);
-      s.end();
-    }
+    whole(p);
     await tick();
     vi.advanceTimersByTime(59_999);
     expect(p.root.className).toBe("");
@@ -340,11 +390,7 @@ describe("the preloader where it can't count bytes", () => {
     vi.useFakeTimers();
     const p = page();
     p.start();
-    for (const r of p.requests) {
-      const s = streamed();
-      r.resolve(s.res);
-      s.end();
-    }
+    whole(p);
     await tick();
     p.win.__stBooted = true;
     vi.advanceTimersByTime(15_000);

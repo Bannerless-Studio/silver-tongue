@@ -1,12 +1,15 @@
 // The page's first script: build.mjs inlines it into index.html (ES5, an iife, before any module),
-// so a bar moves from the first byte instead of a bare "Loading…" while main.js and its chunks
+// so a bar moves from the first byte instead of a bare "Loading…" while main-<hash>.js and its chunks
 // (~1 MB) come down. It fetches every module file the page starts with (their sizes written in at
 // build time: the bar is exact), counting bytes as they stream in, then adds the
-// <script type="module" src="./main.js"> itself: the module graph then comes from the HTTP cache the
+// <script type="module" src="./main-<hash>.js"> itself: the module graph then comes from the HTTP cache the
 // fetches just filled (no modulepreload links: they would download each file a second time).
 //
 //   stall      no byte for 15 s: "Slow connection, still loading…" under the bar; 45 s: the fetches
 //              are aborted and the failure below shows
+//   size       a file whose stream ends at a size other than the build's (the HTTP cache answering
+//              with an older build's file at the same URL): fetched once more with cache "reload"
+//              (its bytes out of the bar meanwhile), a second wrong size the failure ("stale cache")
 //   failure    a fetch that rejects or isn't 200 (a stale page naming chunks that are gone: a 404,
 //              within a second), the module script's error, any error or unhandled rejection before
 //              main.ts says it booted (window.__stBooted): "Couldn't load the game. Check your
@@ -115,7 +118,7 @@ export function pickLocale(tables, search, settings, languages, fallback) {
 /**
  * The runner, on the loading card build.mjs writes into #loading (.ld-fill, .ld-pct, .ld-bytes,
  * .ld-item, .ld-slow, .ld-retry, .ld-err). `cfg` (index.html's #ld-text JSON when not given):
- * { files: [[url, bytes]], entry: "./main.js", s: { <ui>: strings }, fallback, key (the shared
+ * { files: [[url, bytes]], entry: "./main-<hash>.js", s: { <ui>: strings }, fallback, key (the shared
  * settings key), slowMs, failMs, moduleMs (no boot this long after the module script went in: the
  * failure, with Reload) }.
  */
@@ -190,21 +193,34 @@ export function boot(win, doc, cfg) {
     };
   }
 
-  function get(url, a) {
-    return win.fetch(url, { signal: a.ctrl && a.ctrl.signal }).then(function (r) {
+  /**
+   * File `f` [url, bytes], streamed into the bar. Its stream over, a size other than the build's
+   * is a stale HTTP cache entry (an older build's file at the same URL): its bytes leave the bar
+   * and it comes again with cache "reload", which also replaces the entry the module loader reads;
+   * a second wrong size fails, naming the file.
+   */
+  function get(f, a, again) {
+    var url = f[0];
+    var init = { signal: a.ctrl && a.ctrl.signal };
+    if (again) init.cache = "reload";
+    return win.fetch(url, init).then(function (r) {
       if (!r.ok) throw url + ": " + r.status;
-      var add = function (n) {
+      var n = 0;
+      var add = function (k) {
         if (!a.live) return;
-        a.got[url] = (a.got[url] || 0) + n;
+        a.got[url] = n += k;
         a.dog.poke();
         render(a);
       };
       var rd = r.body.getReader(); // every browser with module scripts streams a body (bar Firefox 60-64)
       var pump = function () {
         return rd.read().then(function (x) {
-          if (x.done) return;
-          add(x.value.length);
-          return pump();
+          if (!x.done) return add(x.value.length), pump();
+          if (n === f[1] || !a.live) return;
+          if (again) throw url + ": stale cache (" + n + " B, not " + f[1] + ")";
+          a.got[url] = 0;
+          render(a);
+          return get(f, a, 1);
         });
       };
       return pump();
@@ -234,7 +250,7 @@ export function boot(win, doc, cfg) {
     a.dog.start();
     render(a);
     var one = function (f) {
-      get(f[0], a).then(
+      get(f, a).then(
         function () {
           a.done[f[0]] = true;
           render(a);
