@@ -70,6 +70,16 @@ describe("assignAudio", () => {
   });
 });
 
+describe("a word's spoken text", () => {
+  it("says a word's `say` text instead of its spelling, so a particle like は is voiced as wa", () => {
+    const c = fixtureCourse();
+    const clips = assignAudio(c, V, ["w_ni", "w_hao"], { w_ni: "妮" });
+    expect(c.words.w_ni.audio).toEqual([clipId("W", "妮")]);
+    expect(c.words.w_hao.audio).toEqual([clipId("W", "好")]);
+    expect(clips.find((x) => x.id === clipId("W", "妮"))?.text).toBe("妮");
+  });
+});
+
 describe("voices with pitch and rate", () => {
   // sha1("zh-CN-XiaoxiaoNeural|谢谢")[0..16]: content/audio/zh is named by ids like this one
   const PINNED = "45a75ad3bb46dc3c";

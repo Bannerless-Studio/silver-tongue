@@ -72,16 +72,17 @@ export function voiceProblems(voices: Voices, world: World, scenes: Scene[]): st
  * Gives every scene line, the given words and every reaction (once per NPC with a scene) its clip
  * ids. Returns each clip needed, once, sorted by id.
  */
-export function assignAudio(course: Course, voices: Voices, words: Iterable<WordId>): Clip[] {
+/** `say`: what text-to-speech reads for a word whose spelling alone it misreads (は, said wa). */
+export function assignAudio(course: Course, voices: Voices, words: Iterable<WordId>, say: Record<WordId, string> = {}): Clip[] {
   const clips = new Map<string, Clip>();
-  const say = (text: string, voice: Voice | undefined): string[] => {
+  const speak = (text: string, voice: Voice | undefined): string[] => {
     if (!voice) return [];
     const cs = lineClips(text, voice);
     for (const c of cs) clips.set(c.id, c);
     return cs.map((c) => c.id);
   };
   const set = (l: RenderedLine | undefined, voice: Voice | undefined) => {
-    if (l) l.audio = say(l.text, voice);
+    if (l) l.audio = speak(l.text, voice);
   };
   for (const s of course.scenes) {
     const npc = voices.npcs[s.npc];
@@ -96,11 +97,11 @@ export function assignAudio(course: Course, voices: Voices, words: Iterable<Word
   }
   for (const id of words) {
     const w = course.words[id];
-    if (w) w.audio = say(w.w, voices.words);
+    if (w) w.audio = speak(say[id] ?? w.w, voices.words);
   }
   const speakers = [...new Set(course.scenes.map((s) => s.npc))].sort();
   course.reactionAudio = Object.fromEntries(
-    Object.entries(course.reactions).map(([id, l]) => [id, Object.fromEntries(speakers.map((npc) => [npc, say(l.text, voices.npcs[npc])]))]),
+    Object.entries(course.reactions).map(([id, l]) => [id, Object.fromEntries(speakers.map((npc) => [npc, speak(l.text, voices.npcs[npc])]))]),
   );
   return [...clips.values()].sort((a, b) => a.id.localeCompare(b.id));
 }

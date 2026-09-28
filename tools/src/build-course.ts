@@ -364,7 +364,8 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
   if (!existsSync(voicesPath) && cfg.checks.audio) errors.push("voices.json: missing (checks.audio is on)");
   if (voices) errors.push(...voiceProblems(voices, world, scenes));
   const used = usedWords(course);
-  const clips = voices ? assignAudio(course, voices, used) : [];
+  const says = Object.fromEntries(packWords.flatMap((w) => (w.say ? [[w.id, w.say]] : [])));
+  const clips = voices ? assignAudio(course, voices, used, says) : [];
   const audioDir = join(root, "audio", cfg.language);
   const audioFiles = new Set(
     existsSync(audioDir) ? readdirSync(audioDir).filter((f) => f.endsWith(".mp3")).map((f) => f.slice(0, -".mp3".length)) : [],

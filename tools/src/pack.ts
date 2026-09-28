@@ -28,6 +28,8 @@ export interface PackWord {
   readings?: string[];
   /** readings of each other spelling (a conjugation, a kana spelling), most native first; each key is also a form the tagger knows */
   forms?: Record<string, string[]>;
+  /** what text-to-speech reads for the word's own clip, when it misreads the spelling alone (は → わ) */
+  say?: string;
   pos?: string;
   bonus?: boolean;
 }
