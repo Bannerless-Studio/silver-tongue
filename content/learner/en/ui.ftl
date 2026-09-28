@@ -41,6 +41,7 @@ help-example = e.g.
 help-play = [p] ♪
 help-in-replies = In the replies:
 reply-title = Your reply
+reply-confused = Look confused
 tiles-answer = You say:
 you = You
 

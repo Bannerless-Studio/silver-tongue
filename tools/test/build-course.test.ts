@@ -80,6 +80,20 @@ describe("build-course (real content)", () => {
     expect(course!.reactions["wrong-count"].meaning).toBe("How many cups?");
   });
 
+  it("says what every reply and written wrong reply does, in every course", () => {
+    const v = course!.scenes.find((s) => s.id === "noodle-shift")!.exchanges[1].variants["count=four|item=water"];
+    expect(v.reply.intent).toBe("Repeat the order");
+    for (const id of ["zh-china", "ja-japan"]) {
+      const c = buildCourse(CONTENT, id).course!;
+      const missing = c.scenes.flatMap((sc) =>
+        sc.exchanges.flatMap((ex) =>
+          Object.values(ex.variants).flatMap((vr) => [vr.reply, ...(vr.alts ?? [])].filter((l) => !l.intent).map((l) => `${sc.id}/${ex.id}: ${l.text}`)),
+        ),
+      );
+      expect(missing).toEqual([]);
+    }
+  });
+
   it("names concepts in the learner's language, lists the stage words, and loads the mentor notes", () => {
     expect(course!.conceptNames.tea).toBe("tea");
     expect(course!.conceptNames.thanks).toBe("Thank you");

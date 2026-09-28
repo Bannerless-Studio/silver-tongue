@@ -19,7 +19,7 @@ import { innerWidth, NARROW, renderFrame, type Panel } from "./panel";
 import { strWidth, wrapLine } from "./width";
 import type { Key, StyledLine, Terminal } from "./terminal";
 import {
-  actionNarration, firstTimeGloss, hudValues, introLines, makeText, notebookEntries, placeMenu, readingRow, sentenceCard, settingsRows, tileEcho, waitingForMoney, wordCard, wordExample,
+  actionNarration, hudValues, introLines, makeText, notebookEntries, placeMenu, readingRow, sentenceCard, settingsRows, tileEcho, waitingForMoney, wordCard, wordExample,
   type HudValues, type SentenceCard, type SettingsScreen, type Text,
 } from "@silver-tongue/view";
 
@@ -67,6 +67,8 @@ export interface App {
 }
 
 const LOG_LIMIT = 200;
+/** What the player says when looking confused. */
+const CONFUSED = "...";
 
 export function startApp(opts: AppOptions): App {
   const { course, core, term } = opts;
@@ -266,10 +268,8 @@ export function startApp(opts: AppOptions): App {
           lastLine = e.line;
           lastSlow = false;
           hear(e.line.audio);
+          // New words stand out in the line; what they mean is a [w] away, not spelled out under it.
           anchor = sayLine(e.npc, e.line, fresh);
-          const gloss = firstTimeGloss(course, e.line, fresh);
-          if (gloss) push([{ text: `   ${gloss}`, dim: true }]);
-          anchor.end = log[log.length - 1];
           break;
         }
         case "replyOptions":
@@ -455,6 +455,10 @@ export function startApp(opts: AppOptions): App {
     return [...placeMenu(course, core.state, t), { label: t("menu-quit"), quit: true }];
   }
 
+  /** "...": looking confused, offered after the replies until the line has been said again. */
+  const confusedOffered = () => mode !== "help" && replyMode === "pick" && !!core.state.run && core.state.run.misses < 2;
+  const pickCount = () => pickOptions.length + (confusedOffered() ? 1 : 0);
+
   /** Whether a reply's meaning is still news: at least one of its words isn't known yet. */
   function replyNeedsGloss(o: RenderedLine): boolean {
     return o.tokens.some((tk) => wordState(core.state.words[tk.word], opts.now()) !== "known");
@@ -519,8 +523,9 @@ export function startApp(opts: AppOptions): App {
           { text: `${i + 1}) ` },
           ...lineSpans(o, new Set()),
           // Once every word in a reply is known, its meaning is no longer news.
-          ...(o.meaning && replyNeedsGloss(o) ? [{ text: `  — ${o.meaning}`, dim: true }] : []),
-        ]),
+          // What it does ("Ask the price"), else what it means; once every word is known, neither is news.
+          ...((o.intent ?? o.meaning) && replyNeedsGloss(o) ? [{ text: `  (${o.intent ?? o.meaning})`, dim: true }] : []),
+        ]).concat(confusedOffered() ? [[{ text: `${pickOptions.length + 1}) ${CONFUSED}` }, { text: `  (${t("reply-confused")})`, dim: true }]] : []),
       };
     return {
       title: t("reply-title"),
@@ -566,7 +571,11 @@ export function startApp(opts: AppOptions): App {
     const s = core.state;
     const { cols, rows } = term.size();
     const h = hudValues(course, s, t, opts.now());
-    const top = { title: t(`place-${s.place}`), right: t("hud-top", { day: h.day }) };
+    const title = t(`place-${s.place}`);
+    // Day, time, then where: a narrow screen drops them from the end, keeping the place whole.
+    let right = [t("hud-top", { day: h.day }), h.clock, h.where].filter((x): x is string => !!x);
+    while (right.length > 1 && strWidth(title) + strWidth(right.join(" · ")) + 8 > cols) right = right.slice(0, -1);
+    const top = { title, right: right.join(" · ") };
     if (mode === "notebook") {
       const book = notebookEntries(course, s, t, opts.now());
       const head = notebookHead(book, t, nbView.tab);
@@ -591,7 +600,7 @@ export function startApp(opts: AppOptions): App {
         : mode === "help"
           ? [lastLine?.meaning ? "keys-help-sentence" : "keys-help", helpWords().length]
           : replyMode === "pick"
-            ? ["keys-pick", pickOptions.length]
+            ? ["keys-pick", pickCount()]
             : ["keys-tiles", tiles.length];
     // [o] is listed last, so a narrow screen drops it first.
     const keys = t(footerId, { keys: keyRange(count) });
@@ -752,7 +761,11 @@ export function startApp(opts: AppOptions): App {
     } else if (key.name === "w") {
       mode = "help";
     } else if (replyMode === "pick") {
-      if (n >= 0 && n < pickOptions.length) {
+      if (n === pickOptions.length && confusedOffered()) {
+        card = null;
+        echo(CONFUSED);
+        send({ type: "confused" });
+      } else if (n >= 0 && n < pickOptions.length) {
         card = null;
         echo(pickOptions[n].text);
         hear(pickOptions[n].audio);

@@ -259,6 +259,12 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
             variant.reply.meaning = m.render(`${ex.id}-reply`, args);
             if (variant.rephrase) variant.rephrase.meaning = m.render(`${ex.id}-rephrase`, args);
             variant.alts?.forEach((l, i) => (l.meaning = m.render(`${ex.id}-alt${i + 1}`, args)));
+            // What a reply does ("Ask the price"), shown with it in place of its meaning.
+            const intent = (id: string, l: RenderedLine) => {
+              if (m.has(`${id}-intent`)) l.intent = m.render(`${id}-intent`, args);
+            };
+            intent(`${ex.id}-reply`, variant.reply);
+            variant.alts?.forEach((l, i) => intent(`${ex.id}-alt${i + 1}`, l));
           });
         });
       }
