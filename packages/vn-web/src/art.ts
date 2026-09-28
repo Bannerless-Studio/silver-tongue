@@ -25,6 +25,12 @@ export function fallbackPlace(name: string): string {
 /** Someone, for a course that has no drawing of them. */
 export const FALLBACK_NPC = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 900"><path fill="currentColor" d="M200 60a70 70 0 1 1 0 140a70 70 0 1 1 0-140zM120 230h160l50 670H70z"/></svg>`;
 
+/** The courses the visual novel can show: those with art (`<base><id>/art/art.json`); a text-only course is left out. */
+export async function withArt<E extends { id: string }>(catalog: E[], base: string, get: GetText): Promise<E[]> {
+  const has = await Promise.all(catalog.map(async (e) => (await get(`${base}${e.id}/art/art.json`)) !== null));
+  return catalog.filter((_, i) => has[i]);
+}
+
 /** Fetches a course's art (under `<base>art/`) up front; anything missing falls back. */
 export async function loadArt(base: string, course: { world: { places: Record<string, unknown>; npcs: Record<string, unknown> } }, get: GetText): Promise<Art> {
   const safe = async (url: string) => {
