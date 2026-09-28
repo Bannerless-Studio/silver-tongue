@@ -8,8 +8,6 @@ export interface WordCard {
   clips: string[];
   /** the dictionary form, when `text` is another form of the word */
   base?: string;
-  /** the line the word was first heard in, with the player's name: an example in context */
-  heard?: string;
 }
 
 export interface SentenceCard {
@@ -110,14 +108,10 @@ export function readingsOf(w: Word | undefined, surface?: string): string[] {
   return (surface !== undefined && w?.forms?.[surface]) || w?.readings || [];
 }
 
-/**
- * What looking up a word shows; `surface` is the word as written in the line, when known. Given
- * `state`, it also gives the line the word was first heard in.
- */
-export function wordCard(course: Course, id: WordId, surface?: string, state?: GameState): WordCard {
+/** What looking up a word shows; `surface` is the word as written in the line, when known. */
+export function wordCard(course: Course, id: WordId, surface?: string): WordCard {
   const w = course.words[id];
   const other = surface !== undefined && surface !== w.w && w.forms?.[surface] !== undefined;
-  const first = state?.words[id]?.first?.line;
   return {
     word: id,
     text: other ? surface : w.w,
@@ -126,8 +120,25 @@ export function wordCard(course: Course, id: WordId, surface?: string, state?: G
     // The word's clip says `w`; a form has none of its own, and the wrong sound is worse than none.
     clips: other ? [] : (w.audio ?? []),
     ...(other ? { base: w.w } : {}),
-    ...(first ? { heard: first.split(PLAYER_MARK).join(state?.player ?? "") } : {}),
   };
+}
+
+/**
+ * A short line from the course that uses the word, to show it in another sentence: the shortest one
+ * with a meaning and another word beside it, other than `except` (the line on screen). Lines that
+ * say the player's name are left out, since the name isn't a word to learn.
+ */
+export function wordExample(course: Course, id: WordId, except?: string): SentenceCard | undefined {
+  let best: RenderedLine | undefined;
+  for (const scene of course.scenes)
+    for (const ex of scene.exchanges)
+      for (const v of Object.values(ex.variants))
+        for (const line of [v.npc, v.reply, v.rephrase]) {
+          if (!line?.meaning || line.text === except || line.text.includes(PLAYER_MARK)) continue;
+          if (line.tokens.length < 2 || !line.tokens.some((tk) => tk.word === id)) continue;
+          if (!best || line.text.length < best.text.length) best = line;
+        }
+  return best && sentenceCard(course, best);
 }
 
 /** Each word's last (plainest) reading, as written in the line, space-separated; "" when none has one. */

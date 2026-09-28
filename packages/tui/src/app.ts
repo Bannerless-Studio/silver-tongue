@@ -14,13 +14,13 @@ import {
 } from "@silver-tongue/core";
 import type { AudioOut, Speech, SpeechSpeed } from "@silver-tongue/view";
 import { notebookBody, notebookGroups, notebookHead, type NotebookView } from "./notebook";
-import { lineSpans, wrapItems } from "./screen";
+import { cardBox, lineSpans, wrapItems } from "./screen";
 import { innerWidth, NARROW, renderFrame, type Panel } from "./panel";
 import { strWidth, wrapLine } from "./width";
 import type { Key, StyledLine, Terminal } from "./terminal";
 import {
-  actionNarration, firstTimeGloss, hudValues, introLines, makeText, notebookEntries, placeMenu, readingRow, sentenceCard, settingsRows, tileEcho, waitingForMoney, wordCard,
-  type HudValues, type SettingsScreen, type Text,
+  actionNarration, firstTimeGloss, hudValues, introLines, makeText, notebookEntries, placeMenu, readingRow, sentenceCard, settingsRows, tileEcho, waitingForMoney, wordCard, wordExample,
+  type HudValues, type SentenceCard, type SettingsScreen, type Text,
 } from "@silver-tongue/view";
 
 /** slow -> normal -> fast -> slow, as the settings screen's Speed row cycles. */
@@ -87,7 +87,12 @@ export function startApp(opts: AppOptions): App {
   let nameInput = ""; // replaying a scene saved half-way: it has already been introduced
   let lastSlow = false; // the last line was a slow repeat, so r says it slowly too
   let lastHelp: string[] = []; // the clips of the word or sentence last looked up, for p
-  let card: StyledLine[] | null = null; // the word or sentence last looked up, shown above the replies
+  // The word or sentence last looked up: opened in the conversation under the line it's from, `col`
+  // columns in (under the word), so the replies stay where they were.
+  // `compact` is its one-line form, in a box of its own above the replies, when the log has no room.
+  let card: { rows: StyledLine[]; compact: StyledLine; col: number } | null = null;
+  // The line being answered: its first row, its last (reading, glosses), and where its words start.
+  let anchor: { row: StyledLine; end: StyledLine; indent: number } | null = null;
   let tileReply: string[] = []; // the right reply's clips, said if the tiles match
   let queue: Speech[] = []; // what this key press has people say, in order
   let speed: SpeechSpeed = opts.speed?.value ?? "slow";
@@ -119,11 +124,33 @@ export function startApp(opts: AppOptions): App {
     { text: `${npcName(npc)}${suffix}: `, color: "cyan", bold: true },
     ...lineSpans(line, fresh),
   ];
-  /** An NPC's line, then its reading while any word in it isn't known yet, lined up under the words. */
+  /**
+   * An NPC's line, then its reading while any word in it isn't known yet, lined up under the words.
+   * Returns where the line sits in the log, for a card opened on one of its words.
+   */
   const sayLine = (npc: string, line: RenderedLine, fresh: Set<WordId>, suffix = "") => {
-    push(say(npc, line, fresh, suffix));
+    const row = say(npc, line, fresh, suffix);
+    const indent = strWidth(`${npcName(npc)}${suffix}: `);
+    push(row);
     const reading = readingRow(course, core.state, line, opts.now());
-    if (reading) push([{ text: " ".repeat(strWidth(`${npcName(npc)}${suffix}: `)) + reading, color: "yellow", dim: true }]);
+    if (reading) push([{ text: " ".repeat(indent) + reading, color: "yellow", dim: true }]);
+    return { row, end: log[log.length - 1], indent };
+  };
+
+  /** The column a word of the line being answered starts at, in the log. */
+  const wordColumn = (text: string): number => {
+    const i = lastLine?.text.indexOf(text) ?? -1;
+    return (anchor?.indent ?? 0) + (i > 0 ? strWidth(lastLine!.text.slice(0, i)) : 0);
+  };
+  /** An example sentence on a word card: "e.g.", the sentence, its reading and its meaning. */
+  const exampleRows = (ex: SentenceCard): StyledLine[] => {
+    const label = `${t("help-example")} `;
+    const pad = " ".repeat(strWidth(label));
+    return [
+      [{ text: label, color: "cyan" }, { text: ex.text }],
+      ...(ex.reading ? [[{ text: pad }, { text: ex.reading, color: "yellow" as const, dim: true }]] : []),
+      [{ text: pad }, { text: ex.meaning, dim: true }],
+    ];
   };
 
   /** The number keys that choose among `n` items: "1", "1-4". */
@@ -239,9 +266,10 @@ export function startApp(opts: AppOptions): App {
           lastLine = e.line;
           lastSlow = false;
           hear(e.line.audio);
-          sayLine(e.npc, e.line, fresh);
+          anchor = sayLine(e.npc, e.line, fresh);
           const gloss = firstTimeGloss(course, e.line, fresh);
           if (gloss) push([{ text: `   ${gloss}`, dim: true }]);
+          anchor.end = log[log.length - 1];
           break;
         }
         case "replyOptions":
@@ -264,7 +292,7 @@ export function startApp(opts: AppOptions): App {
           lastLine = e.line;
           lastSlow = e.slow;
           hear(e.line.audio, e.slow);
-          sayLine(e.npc, e.line, fresh, ` ${t("rephrased")}`);
+          anchor = sayLine(e.npc, e.line, fresh, ` ${t("rephrased")}`);
           // Two misses: nobody should get stuck, so the NPC also mimes it and its meaning is given.
           narrate("gesture-narration", { npc: npcName(e.npc) });
           if (e.line.meaning) push([{ text: e.line.meaning, dim: true }]);
@@ -568,11 +596,27 @@ export function startApp(opts: AppOptions): App {
     // [o] is listed last, so a narrow screen drops it first.
     const keys = t(footerId, { keys: keyRange(count) });
     const footer = opts.settings && ["explore", "scene", "help"].includes(mode) ? `${keys} · ${t("keys-o")}` : keys;
+    const inner = innerWidth(cols);
+    const reply = replyPanel(inner);
+    const shownCard = card && mode !== "explore" ? card : null;
+    // The card opens under the line it's from when the log has room for both; otherwise (the line
+    // scrolled away, a short screen) it's one line in a box of its own above the replies.
+    let lines = log;
+    let inline = false;
+    const from = shownCard && anchor ? log.indexOf(anchor.row) : -1;
+    const at = shownCard && anchor ? log.indexOf(anchor.end) : -1;
+    if (shownCard && from >= 0 && at >= from) {
+      const box = cardBox(shownCard.rows, shownCard.col, inner);
+      const wrapped = (ls: StyledLine[]) => ls.flatMap((l) => wrapLine(l, inner)).length;
+      const room = rows - 5 - wrapped(reply.lines); // borders, the HUD, and the rules above the log and the replies
+      inline = wrapped(log.slice(from, at + 1)) + box.length <= room;
+      if (inline) lines = [...log.slice(0, at + 1), ...box, ...log.slice(at + 1)];
+    }
     const panels: Panel[] = [
       { lines: [hudRow(h)], drop: 2 },
-      { lines: log, grow: true, min: 4 },
-      ...(card && mode !== "explore" ? [{ lines: card, drop: 1 }] : []),
-      replyPanel(innerWidth(cols)),
+      { lines, grow: true, min: 4 },
+      ...(shownCard && !inline ? [{ lines: [shownCard.compact], drop: 1 }] : []),
+      reply,
     ];
     const left = cols < NARROW ? 0 : 2; // where a line's text starts: after "│ " when wide
     term.write(
@@ -647,20 +691,31 @@ export function startApp(opts: AppOptions): App {
     } else if (mode === "help") {
       const word = n >= 0 ? helpWords()[n] : undefined;
       if (word) {
-        const wc = wordCard(course, word.word, word.text, core.state);
+        const wc = wordCard(course, word.word, word.text);
         lastHelp = wc.clips;
         hear(lastHelp);
         send({ type: "helpWord", word: word.word });
-        card = [
-          [
+        const example = wordExample(course, word.word, lastLine?.text);
+        card = {
+          rows: [
+            [
+              { text: wc.text, bold: true },
+              ...(wc.readings.length ? [{ text: `  ${wc.readings.join(" ")}`, color: "yellow" as const }] : []),
+              ...(wc.base ? [{ text: ` (${wc.base})`, dim: true }] : []),
+              ...(wc.clips.length && soundOn() ? [{ text: `  ${t("help-play")}`, dim: true }] : []),
+            ],
+            [{ text: wc.gloss }],
+            ...(example ? exampleRows(example) : []),
+          ],
+          compact: [
             { text: wc.text, bold: true },
             ...(wc.readings.length ? [{ text: ` ${wc.readings.join(" ")}`, color: "yellow" as const }] : []),
             ...(wc.base ? [{ text: ` (${wc.base})`, dim: true }] : []),
             { text: ` — ${wc.gloss}` },
           ],
-          // Where it was first heard is an example in context, unless that's the line on screen.
-          ...(wc.heard && wc.heard !== lastLine?.text ? [[{ text: t("help-heard", { line: wc.heard }), dim: true }]] : []),
-        ];
+          col: word.inReplies ? 0 : wordColumn(word.text),
+        };
+        mode = "scene";
       }
       if (key.name === "p") {
         hear(lastHelp);
@@ -673,17 +728,27 @@ export function startApp(opts: AppOptions): App {
         flush();
         // Reading the whole line is not logged as help on each word: the words still have to be
         // recognised in the reply.
-        card = [
-          [
+        card = {
+          rows: [
+            [{ text: sentence.text, bold: true }],
+            ...(sentence.reading ? [[{ text: sentence.reading, color: "yellow" as const }]] : []),
+            [{ text: sentence.meaning }],
+          ],
+          compact: [
             { text: sentence.text, bold: true },
             ...(sentence.reading ? [{ text: ` ${sentence.reading}`, color: "yellow" as const }] : []),
             { text: ` — ${sentence.meaning}` },
           ],
-        ];
+          col: anchor?.indent ?? 0,
+        };
+        mode = "scene";
       }
       if (key.name === "escape" || key.name === "w") mode = "scene";
     } else if (key.name === "escape") {
       card = null;
+    } else if (key.name === "p" && card) {
+      hear(lastHelp);
+      flush();
     } else if (key.name === "w") {
       mode = "help";
     } else if (replyMode === "pick") {

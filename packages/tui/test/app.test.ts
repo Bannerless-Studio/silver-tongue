@@ -61,40 +61,42 @@ describe("tui app", () => {
     expect(again.term.screen().join("\n")).not.toContain("nǐ hǎo");
   });
 
-  it("opens a looked-up word in a card above the replies, closed by a reply or esc", () => {
+  it("opens a looked-up word in a card under its line, with the replies still there; closed by a reply or esc", () => {
     const { term, core } = setup();
     term.press("1", "1", "w", "1");
     const s = term.screen();
-    const card = s.findIndex((l) => l.includes("你 nǐ — you"));
-    expect(card).toBeGreaterThan(0);
-    expect(card).toBeLessThan(s.findIndex((l) => l.includes("Which word?"))); // still in help: its panel is below
-    term.press("escape"); // back from the word list; the card stays
-    expect(term.screen().join("\n")).toContain("你 nǐ — you");
+    const line = s.findIndex((l) => l.includes("Cook: 你好！"));
+    const card = s.findIndex((l) => l.includes("│ 你  nǐ"));
+    expect(card).toBeGreaterThan(line);
+    expect(s.findIndex((l) => l.includes("│ you "))).toBe(card + 1);
+    expect(s[card - 2].indexOf("┆")).toBe(s[line].indexOf("你")); // the stem stands under the word
+    expect(card).toBeLessThan(s.findIndex((l) => l.includes("Your reply"))); // back to the replies
     term.press("escape"); // closes the card
-    expect(term.screen().join("\n")).not.toContain("你 nǐ — you");
-    term.press("w", "1", "escape", rightKey(core)); // a reply closes it too
-    expect(term.screen().join("\n")).not.toContain("你 nǐ — you");
+    expect(term.screen().join("\n")).not.toContain("│ 你  nǐ");
+    term.press("w", "1", rightKey(core)); // a reply closes it too
+    expect(term.screen().join("\n")).not.toContain("│ 你  nǐ");
   });
 
   it("gives up the word card, then the HUD, before the log's last row on a short screen", () => {
     const { term } = setup();
-    term.press("1", "1", "w", "1", "escape");
+    term.press("1", "1", "w", "1");
     term.resize(40, 8);
     const f = term.frames.at(-1)!;
     expect(f.length).toBe(8);
     for (const l of f) expect(lineWidth(l)).toBe(40);
     const s = term.screen().join("\n");
     expect(s).not.toContain("你 nǐ — you");
+    expect(s).not.toContain("│ 你  nǐ");
     expect(s).toMatch(/1\) /);
   });
 
   it("keeps the line being answered on a phone screen while a looked-up word is open", () => {
     const { term } = setup();
     term.resize(40, 12);
-    term.press("1", "1", "w", "1", "escape");
+    term.press("1", "1", "w", "1");
     const s = term.screen().join("\n");
     expect(s).toContain("Cook: 你好！");
-    expect(s).toContain("你 nǐ — you");
+    expect(s).toContain("你 nǐ — you"); // no room under the line: one row of its own
   });
 
   it("draws every screen inside the terminal at phone, short, laptop and wide sizes", () => {
@@ -348,16 +350,22 @@ describe("tui app", () => {
     expect(s).not.toMatch(/New places?:.*School/);
   });
 
-  it("shows on a word's card the line it was first heard in, unless that's the line on screen", () => {
-    const { term, core } = setup((s) => {
-      s.place = "noodle_shop";
-      s.words.w_ni = { right: 1, wrong: 0, streak: 1, helps: 0, lapsed: false, firstSeen: T0, lastSeen: T0, first: { line: "你好你好！", place: "street" } };
-    });
-    term.press("1", "w", "1"); // look up 你
-    expect(term.screen().join("\n")).toContain("heard: 你好你好！");
-    term.press("2"); // 好: first heard in the line on screen, which says it already
-    expect(core.state.words.w_hao.first?.line).toBe("你好！");
-    expect(term.screen().join("\n")).not.toContain("heard:");
+  it("shows on a word's card an example from another line of the course, never the line on screen", () => {
+    const { term } = setup(
+      (s) => (s.place = "noodle_shop"),
+      (c) => {
+        for (const ex of c.scenes.find((sc) => sc.id === "shift")!.exchanges)
+          for (const v of Object.values(ex.variants)) if (v.reply.text === "好，三杯茶。") v.reply = { ...v.reply, meaning: "Fine, three cups of tea." };
+      },
+    );
+    term.press("1", "w", "2"); // look up 好
+    let s = term.screen().join("\n");
+    expect(s).toContain("e.g. 好，三杯茶。");
+    expect(s).toContain("Fine, three cups of tea.");
+    term.press("w", "1"); // 你: its only line with a meaning is the one on screen
+    s = term.screen().join("\n");
+    expect(s).toContain("│ 你  nǐ");
+    expect(s).not.toContain("e.g.");
   });
 
   it("starts on the street with a menu and a HUD", () => {
@@ -394,9 +402,8 @@ describe("tui app", () => {
     term.press("1", "1", "w");
     expect(term.screen().join("\n")).toContain("1) 你  2) 好");
     term.press("2");
-    expect(term.screen().join("\n")).toContain("好 hǎo — good");
+    expect(term.screen().join("\n")).toContain("│ 好  hǎo");
     expect(core.state.words.w_hao.helps).toBe(1);
-    term.press("escape");
     expect(term.screen().join("\n")).toContain("[1-3] reply");
   });
 
@@ -425,7 +432,8 @@ describe("tui app", () => {
     expect(term.screen().join("\n")).toContain("s) The whole sentence");
     expect(term.screen().join("\n")).toContain("[s] whole sentence");
     term.press("s");
-    expect(term.screen().join("\n")).toContain("你好！ nǐ hǎo — Hello!");
+    const s = term.screen().join("\n");
+    for (const row of ["│ 你好！", "│ nǐ hǎo", "│ Hello!"]) expect(s).toContain(row);
     expect(core.state.words.w_hao.helps).toBe(0);
   });
 
@@ -440,7 +448,9 @@ describe("tui app", () => {
     expect(s).toContain("In the replies:");
     expect(s).toContain(`2) ${other}`);
     term.press("2");
-    expect(term.screen().join("\n")).toContain(`${other} — ${other === "茶" ? "tea" : "water"}`);
+    const card = term.screen().join("\n");
+    expect(card).toContain(`│ ${other} `);
+    expect(card).toContain(`│ ${other === "茶" ? "tea" : "water"} `);
   });
 
   it("word help offers a reply's other form of a word in the line, with that form's reading", () => {
@@ -456,7 +466,7 @@ describe("tui app", () => {
     const key = s.match(/(\d)\) 你了/)?.[1];
     expect(key).toBeDefined();
     term.press(key!);
-    expect(term.screen().join("\n")).toContain("你了 nǐ le (你)");
+    expect(term.screen().join("\n")).toContain("你了  nǐ le (你)");
   });
 
   it("offers no whole-sentence help for a line without a meaning", () => {
@@ -1093,9 +1103,10 @@ describe("languages", () => {
     term.resize(46, 20);
     term.press("1"); // talk to the cook
     term.press("w", "1");
-    expect(term.screen().join("\n")).toContain("mi mí mi — you");
-    term.press("s");
-    expect(term.screen().join("\n")).toContain("mi bon! mi bon — Hello!");
+    expect(term.screen().join("\n")).toMatch(/mi {1,2}mí mi/);
+    term.press("w", "s");
+    const s = term.screen().join("\n");
+    expect(s).toMatch(/mi bon! mi bon — Hello!|│ mi bon! +│[\s\S]*│ mi bon +│[\s\S]*│ Hello! +│/);
   });
 });
 
