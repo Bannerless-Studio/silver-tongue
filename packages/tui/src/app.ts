@@ -408,9 +408,11 @@ export function startApp(opts: AppOptions): App {
     if (!lastLine) return [];
     const pieces = (l: RenderedLine) => l.tokens.map((tk) => ({ text: l.text.slice(tk.start, tk.end), word: tk.word }));
     const said = pieces(lastLine).map((p) => ({ ...p, inReplies: false }));
-    const seen = new Set(said.map((p) => p.word));
+    // A word's other spelling (a conjugation) is its own entry: it has its own reading.
+    const key = (p: { text: string; word: WordId }) => `${p.word}\u0000${p.text}`;
+    const seen = new Set(said.map(key));
     const replies = replyMode === "pick" ? pickOptions.flatMap(pieces) : [];
-    const extra = replies.filter((p) => !seen.has(p.word) && seen.add(p.word)).map((p) => ({ ...p, inReplies: true }));
+    const extra = replies.filter((p) => !seen.has(key(p)) && seen.add(key(p))).map((p) => ({ ...p, inReplies: true }));
     return [...said, ...extra].slice(0, 9);
   }
 
