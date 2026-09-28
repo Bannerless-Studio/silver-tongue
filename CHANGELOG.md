@@ -2,6 +2,17 @@
 
 Every release of Silver Tongue, newest first.
 
+## 0.17.1 (2026-09-28)
+
+- The text game shows less and says more. The top bar names what to do next ("Next: Meet Old Wang") in place of your rank and the time of day.
+- Sleep appears once the day is over: when you've used up your time, or there's nothing left to do.
+- Once you answer right, your wrong tries and the hints they brought disappear, so a conversation reads as questions and answers. Each hint shows once per question, and moving to a new place starts a clean screen.
+- The noodle shop opens after Old Wang teaches you to count. A place is announced once, not again with the scene that takes you there.
+- When someone is the only person at a place, the menu doesn't repeat their name after each choice.
+- The notebook groups words by topic (Courtesies, Food and drink, Numbers…), and by place for the rest. Recent is hidden when it would list every word.
+- A word you look up shows the line you first heard it in.
+- In the browser, arrows in the key bar no longer overlap the text next to them.
+
 ## 0.17.0 (2026-09-28)
 
 - A second course: Japanese, set in Tokyo in the mid-90s. Your bag was stolen with your passport in it, and a new one takes weeks. Nine scenes on a shopping street: Mr Tanaka on his bench, your room and the landlady, a ramen shop that pays for shifts, and a convenience store. 54 beginner (JLPT N5) words, with kana and romaji readings, audio for every line, and four notes from Mr Tanaka. Choose it in settings, or run with `--learn ja`.
