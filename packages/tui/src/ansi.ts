@@ -10,6 +10,7 @@ export function toAnsi(line: StyledLine): string {
         ...(s.bold ? [1] : []),
         ...(s.dim ? [2] : []),
         ...(s.underline ? [4] : []),
+        ...(s.inverse ? [7] : []),
         ...(s.color ? [COLORS[s.color]] : []),
       ];
       return codes.length ? `\x1b[${codes.join(";")}m${s.text}\x1b[0m` : s.text;

@@ -6,6 +6,8 @@ export interface Span {
   bold?: boolean;
   dim?: boolean;
   underline?: boolean;
+  /** swapped colours: a badge ("new") */
+  inverse?: boolean;
 }
 
 export type StyledLine = Span[];

@@ -407,3 +407,43 @@ describe("visual novel controller", () => {
     expect(s.vn.view().phase).toMatchObject({ kind: "beat", beat: { text: "An old man on a bench is watching you with open curiosity." } });
   });
 });
+
+describe("typed replies in the visual novel", () => {
+  const known = { right: 3, wrong: 0, streak: 3, helps: 0, lapsed: false, firstSeen: T0, lastSeen: T0 };
+  const typing = () =>
+    setup(
+      (s) => {
+        s.place = "noodle_shop";
+        s.scenesDone = { intro: 1 };
+        s.trust = { cook: 2 };
+        s.words = Object.fromEntries(["w_cha", "w_shui", "w_san", "w_si", "w_hao", "x_bei"].map((w) => [w, { ...known }]));
+      },
+      (c) => void (c.typing = true),
+    );
+
+  it("asks for a typed reply, gives hints, and takes the reply", () => {
+    const s = typing();
+    skip(s.vn);
+    s.vn.choose(0);
+    skip(s.vn);
+    expect(s.vn.view().phase).toEqual({ kind: "type", hints: [] });
+    s.vn.hint();
+    skip(s.vn);
+    const p = s.vn.view().phase;
+    expect(p.kind === "type" && p.hints.map((h) => h.level)).toEqual([1]);
+    const reply = s.course.scenes[1].exchanges[0].variants[comboKey(s.core.state.run!.combo)].reply.text;
+    s.vn.sendText(reply);
+    expect(s.core.state.run).toBeNull();
+  });
+
+  it("looks confused on dots", () => {
+    const s = typing();
+    skip(s.vn);
+    s.vn.choose(0);
+    skip(s.vn);
+    s.vn.sendText("...");
+    skip(s.vn);
+    expect(s.core.state.run!.mode).toBe("pick");
+    expect(s.vn.view().phase.kind).toBe("pick");
+  });
+});

@@ -2,6 +2,7 @@ const NAMED: Record<string, string> = {
   Enter: "return",
   Escape: "escape",
   Backspace: "backspace",
+  Tab: "tab",
   ArrowUp: "up",
   ArrowDown: "down",
   ArrowLeft: "left",
@@ -22,10 +23,11 @@ export function keyName(key: string, mods: { ctrlKey?: boolean; altKey?: boolean
 
 /**
  * Keys the browser should handle instead of the terminal: shortcuts (reload, find, copy),
- * function keys, and Tab so focus can leave the page's terminal.
+ * function keys, and Tab so focus can leave the page's terminal, except while the game wants typed
+ * text (a reply), where Tab asks for a hint.
  */
-export function forBrowser(e: { key: string; ctrlKey?: boolean; altKey?: boolean; metaKey?: boolean }): boolean {
-  return !!(e.ctrlKey || e.altKey || e.metaKey) || /^F\d+$/.test(e.key) || e.key === "Tab";
+export function forBrowser(e: { key: string; ctrlKey?: boolean; altKey?: boolean; metaKey?: boolean }, typing = false): boolean {
+  return !!(e.ctrlKey || e.altKey || e.metaKey) || /^F\d+$/.test(e.key) || (e.key === "Tab" && !typing);
 }
 
 /**

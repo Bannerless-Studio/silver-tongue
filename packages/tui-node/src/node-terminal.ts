@@ -21,6 +21,11 @@ export function createNodeTerminal(input = process.stdin, output = process.stdou
   const handlers: ((k: Key) => void)[] = [];
   let resized: (() => void) | undefined;
   input.on("keypress", (str: string | undefined, key: NodeKey | undefined) => {
+    // An input method commits a whole word at once: one key per character, as if typed.
+    if (str && [...str].length > 1 && !key?.name && !key?.ctrl && !key?.meta) {
+      for (const ch of str) if (ch >= " ") for (const h of handlers) h({ name: ch, text: ch });
+      return;
+    }
     const name = keyName(str, key);
     // The typed character, case kept, for text entry (a name); not for control keys.
     const text = str && [...str].length === 1 && str >= " " && !key?.ctrl && !key?.meta ? str : undefined;

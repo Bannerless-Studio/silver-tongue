@@ -77,7 +77,11 @@ const fit = new FitAddon();
 xterm.loadAddon(fit);
 xterm.open($("#term"));
 // xterm takes every key by default; returning false hands shortcuts and Tab back to the browser.
-xterm.attachCustomKeyEventHandler((e) => !forBrowser(e));
+let textEntry = false; // the game wants typed text: Tab is the game's
+xterm.attachCustomKeyEventHandler((e) => {
+  if (e.key === "Tab" && textEntry && e.type === "keydown") e.preventDefault(); // keep focus in the game
+  return !forBrowser(e, textEntry);
+});
 // WebGL draws box-drawing characters itself, so the frame is solid; without it the DOM renderer
 // uses the font's glyphs, which leave gaps between lines.
 try {
@@ -200,7 +204,10 @@ function play(opened: Opened) {
     touch,
     // A phone keyboard only opens from a tap, and the page can't tell whether it's showing,
     // so during name entry on a touch screen, say where to tap.
-    onTextEntry: (active) => status(active && touch ? tx("web-tap-to-type") : ""),
+    onTextEntry: (active) => {
+      textEntry = active;
+      status(active && touch ? tx("web-tap-to-type") : "");
+    },
   });
   const core = createCore(course, opened.state, { now: Date.now, rng: mulberry32(Date.now() >>> 0) });
   current = { term, core, id: opened.id, course: course.id, readOnly: opened.readOnly };

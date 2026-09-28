@@ -14,6 +14,7 @@ import { Replies } from "./Replies";
 import { RotateHint } from "./RotateHint";
 import { Stage } from "./Stage";
 import { Tiles } from "./Tiles";
+import { TypeReply } from "./TypeReply";
 import { Toasts } from "./Toasts";
 import { useVn } from "./use-vn";
 
@@ -91,6 +92,7 @@ export function App({ vn, art, page }: { vn: Vn; art: Art; page: Page }) {
       <PlaceMenu vn={vn} view={view} />
       <Replies vn={vn} view={view} onWord={onWord} />
       <Tiles vn={vn} view={view} />
+      <TypeReply vn={vn} view={view} />
       <Box vn={vn} view={view} onWord={onWord} onMeaning={onMeaning} />
       <Toasts vn={vn} view={view} />
       <DayFade vn={vn} view={view} />

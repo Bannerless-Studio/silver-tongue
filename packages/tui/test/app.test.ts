@@ -790,7 +790,7 @@ describe("tui app", () => {
     term.resize(80, 24);
     term.press("1", "1", "n");
     const bottom = term.screen().at(-1)!;
-    for (const k of ["[esc]", "[1-2]", "[enter]", "[p]"]) expect(bottom).toContain(k);
+    for (const k of ["[esc]", "[1-5]", "[enter]", "[p]"]) expect(bottom).toContain(k);
   });
 
   it("opens the notebook with n: words by group, notes, and back where it was", () => {
@@ -809,7 +809,7 @@ describe("tui app", () => {
     expect(first).toBeDefined();
     term.press("down");
     expect(chosen()).not.toBe(first);
-    term.press("2");
+    term.press("5");
     expect(term.screen().join("\n")).toContain("No notes yet.");
     term.press("escape");
     s = term.screen();

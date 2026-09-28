@@ -10,4 +10,5 @@ export * from "./hud";
 export * from "./reply";
 export * from "./notebook";
 export * from "./settings";
+export * from "./assist";
 export * from "./quiet";

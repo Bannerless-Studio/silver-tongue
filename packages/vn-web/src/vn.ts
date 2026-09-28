@@ -1,7 +1,7 @@
-import { describeRun, joinTiles, type Core, type Course, type GameEvent, type GameState, type Input, type RenderedLine, type WordId } from "@silver-tongue/core";
+import { describeRun, joinTiles, normalizeTyped, type Core, type Course, type GameEvent, type GameState, type Input, type RenderedLine, type WordId } from "@silver-tongue/core";
 import {
-  actionNarration, introLines, makeText, placeMenu, sentenceCard, tileEcho, waitingForMoney, wordCard,
-  type AudioOut, type MenuItem, type SentenceCard, type Speech, type Text, type WordCard,
+  actionNarration, hintView, introLines, makeText, placeMenu, sentenceCard, tileEcho, waitingForMoney, wordCard,
+  type AudioOut, type HintView, type MenuItem, type SentenceCard, type Speech, type Text, type WordCard,
 } from "@silver-tongue/view";
 import { dwellMs } from "./dwell";
 
@@ -28,6 +28,8 @@ export type Phase =
   | { kind: "beat"; beat: Beat }
   | { kind: "pick"; options: RenderedLine[] }
   | { kind: "tiles"; tiles: string[]; placed: number[]; answer: string }
+  /** a reply to type; `hints` are the ones asked for so far */
+  | { kind: "type"; hints: HintView[] }
   | { kind: "explore"; menu: MenuItem[]; waiting: string[] };
 export interface Toast { id: number; text: string; tone: "good" | "bad" | "info" }
 export interface VnView {
@@ -75,6 +77,10 @@ export interface Vn {
   placeTile(i: number): void;
   undoTile(): void;
   sendTiles(): void;
+  /** a typed reply; text that types as nothing ("...") looks confused */
+  sendText(text: string): void;
+  /** the next hint for the reply being typed */
+  hint(): void;
   lookUp(word: WordId): WordCard;
   sentence(): SentenceCard | undefined;
   replay(slow?: boolean): void;
@@ -107,7 +113,8 @@ export function createVn(opts: VnOptions): Vn {
   let cue: Cue = "listen";
   let queue: Beat[] = [];
   let current: Beat | undefined;
-  let reply: { mode: "pick"; options: RenderedLine[] } | { mode: "tiles"; tiles: string[] } | undefined;
+  let reply: { mode: "pick"; options: RenderedLine[] } | { mode: "tiles"; tiles: string[] } | { mode: "type" } | undefined;
+  let hints: HintView[] = [];
   let placed: number[] = [];
   let lastLine: RenderedLine | undefined;
   let backlog: Beat[] = [];
@@ -214,6 +221,7 @@ export function createVn(opts: VnOptions): Vn {
           break;
         case "lineSpoken":
           lastLine = e.line;
+          hints = [];
           queue.push({ speaker: e.npc, line: e.line, fresh: freshIn(e.line), speech: speech(e.line.audio), cue: "speak" });
           break;
         case "lineRephrased":
@@ -221,7 +229,7 @@ export function createVn(opts: VnOptions): Vn {
           queue.push({ speaker: e.npc, line: e.line, fresh: freshIn(e.line), speech: speech(e.line.audio, e.slow), cue: "speak" });
           break;
         case "replyOptions":
-          reply = e.mode === "pick" ? { mode: "pick", options: e.options } : { mode: "tiles", tiles: e.tiles };
+          reply = e.mode === "pick" ? { mode: "pick", options: e.options } : e.mode === "tiles" ? { mode: "tiles", tiles: e.tiles } : { mode: "type" };
           placed = [];
           break;
         case "actionPerformed":
@@ -281,6 +289,9 @@ export function createVn(opts: VnOptions): Vn {
           if (!e.notes.length) queue.push({ speaker: e.npc, text: t("mentor-nothing", { npc: npcName(e.npc) }), cue: "listen" });
           for (const id of e.notes) queue.push({ speaker: e.npc, title: t(`note-${id}-title`), text: t(`note-${id}`), cue: "speak" });
           break;
+        case "hintGiven":
+          hints = [...hints, hintView(course, t, e)];
+          break;
         case "wordStateChanged":
         case "playerNamed":
         case "soundSet":
@@ -312,6 +323,7 @@ export function createVn(opts: VnOptions): Vn {
     if (naming) return { kind: "name" };
     if (current) return { kind: "beat", beat: current };
     if (reply?.mode === "pick") return { kind: "pick", options: reply.options };
+    if (reply?.mode === "type") return { kind: "type", hints };
     if (reply?.mode === "tiles") return { kind: "tiles", tiles: reply.tiles, placed, answer: joinTiles(course, placed.map((i) => (reply as { tiles: string[] }).tiles[i])) };
     return { kind: "explore", menu: placeMenu(course, core.state, t), waiting: waitingForMoney(course, core.state, t) };
   }
@@ -381,6 +393,18 @@ export function createVn(opts: VnOptions): Vn {
       if (reply?.mode !== "tiles" || current || !placed.length) return;
       const said = tileEcho(course, core.state, reply.tiles, placed);
       send({ type: "replyTiles", tiles: placed }, { speaker: "player", line: said.line, speech: said.right ? speech(said.clips) : undefined, cue: "listen" });
+    },
+    sendText(text) {
+      if (reply?.mode !== "type" || current || !text.trim()) return;
+      if (!normalizeTyped(text)) {
+        if ((core.state.run?.misses ?? 2) < 2) send({ type: "confused" }, { speaker: "player", text: "...", cue: "listen" });
+        return;
+      }
+      send({ type: "replyText", text }, { speaker: "player", text: text.trim(), cue: "listen" });
+    },
+    hint() {
+      if (reply?.mode !== "type" || current) return;
+      send({ type: "hint" });
     },
     lookUp(word) {
       const card = wordCard(course, word);
