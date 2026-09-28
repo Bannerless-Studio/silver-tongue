@@ -2,6 +2,14 @@
 
 Every release of Silver Tongue, newest first.
 
+## 0.17.2 (2026-09-28)
+
+- A word you look up opens right under the line it's in, with a thin line to the word, and your choices stay on screen. The card gives the word's reading, its full meaning, and an example from another line of the game, with its reading and meaning. [p] says the word again.
+- New words are no longer explained under each line: they stand out in colour, and [w] explains them when you want.
+- Each reply says what it does ("Ask the price", "Greet Old Wang") instead of translating it, so you work out the Chinese or Japanese yourself.
+- A new last choice, "... (Look confused)": the other person says it again, more slowly or in other words, and mimes it. You earn nothing for that exchange, but you lose nothing either.
+- The top bar shows the time of day and where you are: "Day 1 · 08:05 · Suzhou, 1980" (Tokyo, 1995 in Japanese).
+
 ## 0.17.1 (2026-09-28)
 
 - The text game shows less and says more. The top bar names what to do next ("Next: Meet Old Wang") in place of your rank and the time of day.
