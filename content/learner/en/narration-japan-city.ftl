@@ -82,3 +82,8 @@ asked-onigiri = The clerk was telling you what rice balls cost.
 asked-bread = The clerk was telling you what bread costs.
 asked-which = The clerk was asking which one you meant.
 asked-thanks = { $npc } was thanking you.
+
+# Notebook topics: a word in one of these slot groups is filed under the topic, not the place.
+notebook-topic-drinks = Food and drink
+notebook-topic-numbers_2_5 = Numbers
+notebook-topic-goods = Things

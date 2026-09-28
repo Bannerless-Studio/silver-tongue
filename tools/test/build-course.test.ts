@@ -174,9 +174,11 @@ describe("build-course (real content)", () => {
       for (const p of seen) for (const next of places[p].links) seen.add(next);
       expect(seen.has("room"), `${from} reaches room`).toBe(true);
     }
-    // Main Street no longer links to the room, so its description says where the room went.
+    // Main Street no longer links to the room, so the opening story says there is one; the HUD's
+    // "Next:" then names the landlord and where he is. The place text doesn't say it again.
     // ("a room for you", not "your room": before the landlord scene, it isn't the player's yet.)
-    expect(course!.learnerFtl.match(/^place-street-desc = (.*)$/m)![1]).toContain("a room for you");
+    expect(course!.learnerFtl.match(/^intro-2 = (.*)$/m)![1]).toContain("a room for you");
+    expect(course!.learnerFtl.match(/^place-street-desc = (.*)$/m)![1]).not.toContain("room");
   });
 
   it("Miss Gao sends parcels to the three places on Station Road, each with one drop-off", () => {

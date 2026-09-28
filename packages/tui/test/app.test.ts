@@ -43,11 +43,12 @@ describe("tui app", () => {
     expect(term.frames.at(-1)!.length).toBe(12);
   });
 
-  it("puts the day in the top border and money, rent and rank in the HUD row", () => {
+  it("puts the day in the top border and money, rent and what's next in the HUD row", () => {
     const { term } = setup();
     const s = term.screen();
-    expect(s[0]).toMatch(/^┌ The street ─+ Day 1 · slot 0\/4 ┐$/);
-    expect(s[1]).toContain("¥20 · rent in 6 days · Speaks: Pidgin");
+    expect(s[0]).toMatch(/^┌ The street ─+ Day 1 ┐$/);
+    expect(s[1]).toContain("¥20 · rent in 6 days · Next: Say hello · Noodle shop");
+    expect(s.join("\n")).not.toContain("Speaks");
   });
 
   it("shows a line's reading under it while its words are new, and not once they're known", () => {
@@ -276,7 +277,7 @@ describe("tui app", () => {
     const ended = term.screen().join("\n");
     expect(ended).toContain("She hands you an apron.");
     expect(ended).not.toContain("You arrive with");
-    expect(ended).toContain("· Cook");
+    expect(ended).toContain("1) Serve drinks");
   });
 
   it("glosses first-time words under the NPC's line, once per word", () => {
@@ -285,10 +286,10 @@ describe("tui app", () => {
     expect(term.screen().join("\n")).toContain("你 nǐ you · 好 hǎo good");
     term.press(rightKey(core));
     term.press(rightKey(core)); // finishes "intro"; "shift" (repeatable) is now available
-    pressItem(term, "Serve drinks · Cook");
+    pressItem(term, "Serve drinks");
     expect(term.screen().join("\n")).toContain("杯 cup");
     term.press(rightKey(core)); // finishes this run of "shift"
-    pressItem(term, "Serve drinks · Cook"); // met words don't get glossed again
+    pressItem(term, "Serve drinks"); // met words don't get glossed again
     expect(term.screen().join("\n")).not.toContain("杯 cup");
   });
 
@@ -306,14 +307,72 @@ describe("tui app", () => {
     expect(s).toContain("Hello!");
   });
 
+  it("says each hint once per request, and drops the wrong tries once the reply is right", () => {
+    const { term, core } = setup();
+    term.press("1", "1");
+    const wrongOnce = () => {
+      const { combo, options } = core.state.run!;
+      term.press(String(options.findIndex((k) => k !== comboKey(combo)) + 1));
+    };
+    wrongOnce();
+    const hint = term.screen().find((l) => l.includes("not what was asked"));
+    expect(hint).toBeDefined();
+    wrongOnce();
+    let s = term.screen().join("\n");
+    expect(s.split("not what was asked").length - 1).toBe(1);
+    expect(s).toContain("Cook mimes it:");
+    term.press(rightKey(core));
+    s = term.screen().join("\n");
+    expect(s).not.toContain("not what was asked");
+    expect(s).not.toContain("Cook mimes it:");
+    expect(s).toMatch(/Cook: 你好！[\s\S]*You: 你好！/); // the request, then the right reply
+    expect(s.split("You: ").length - 1).toBe(1);
+  });
+
+  it("leaves a place out of the new-places line when a new scene's line already named it", () => {
+    const { term, core } = setup(undefined, (c) => {
+      c.learnerFtl += "\nplace-school = School\nplace-school-desc = A school.\nplace-park = Park\nplace-park-desc = Trees.\nscene-class = Class\nnpc-teacher = Teacher\n";
+      c.world.npcs.teacher = { place: "school" };
+      for (const p of ["school", "park"]) {
+        c.world.places[p] = { links: ["noodle_shop"], after: ["intro"] };
+        c.world.places.noodle_shop.links.push(p);
+      }
+      c.scenes.push({ ...c.scenes[0], id: "class", place: "school", npc: "teacher", after: ["intro"] });
+    });
+    term.press("1", "1");
+    term.press(rightKey(core));
+    term.press(rightKey(core));
+    const s = term.screen().join("\n");
+    expect(s).toContain("New: Class · School");
+    expect(s).toContain("New place: Park");
+    expect(s).not.toMatch(/New places?:.*School/);
+  });
+
+  it("shows on a word's card the line it was first heard in, unless that's the line on screen", () => {
+    const { term, core } = setup((s) => {
+      s.place = "noodle_shop";
+      s.words.w_ni = { right: 1, wrong: 0, streak: 1, helps: 0, lapsed: false, firstSeen: T0, lastSeen: T0, first: { line: "你好你好！", place: "street" } };
+    });
+    term.press("1", "w", "1"); // look up 你
+    expect(term.screen().join("\n")).toContain("heard: 你好你好！");
+    term.press("2"); // 好: first heard in the line on screen, which says it already
+    expect(core.state.words.w_hao.first?.line).toBe("你好！");
+    expect(term.screen().join("\n")).not.toContain("heard:");
+  });
+
   it("starts on the street with a menu and a HUD", () => {
     const { term } = setup();
     const s = term.screen().join("\n");
     expect(s).toContain("The street");
-    expect(s).toContain("Day 1 · slot 0/4");
+    expect(s).toContain("Day 1");
     expect(s).toContain("¥20 · rent in 6 days");
     expect(s).toContain("1) Go to Noodle shop");
-    expect(s).toContain("3) Save and quit");
+    expect(s).toContain("2) Save and quit"); // no sleep: the day has only begun
+  });
+
+  it("offers sleep once the day's time is gone", () => {
+    const { term } = setup((s) => (s.slot = 4));
+    expect(term.screen().join("\n")).toContain("2) Sleep (end the day)");
   });
 
   it("plays a scene: go, talk, reply, and saves after each accepted input", () => {
@@ -357,7 +416,7 @@ describe("tui app", () => {
 
   it("counts the menu items in the footer", () => {
     const { term } = setup();
-    expect(term.screen().join("\n")).toContain("[1-3] choose");
+    expect(term.screen().join("\n")).toContain("[1-2] choose");
   });
 
   it("word help can explain the whole sentence, without counting it as help on each word", () => {
@@ -489,22 +548,22 @@ describe("tui app", () => {
   });
 
   it("sleeping ends the day", () => {
-    const { term } = setup();
+    const { term } = setup((s) => (s.slot = 4));
     term.press("2");
     const s = term.screen().join("\n");
     expect(s).toContain("Day 1 is over. You sleep.");
-    expect(s).toContain("Day 2 · slot 0/4");
+    expect(s).toMatch(/Day 2 ┐/);
   });
 
   it("sleeps rough only at the start before the home scene is done, and says so", () => {
-    const { term } = setup(undefined, (c) => {
+    const { term } = setup((s) => (s.slot = 4), (c) => {
       c.world.home = "noodle_shop";
       c.world.homeScene = "intro";
     });
     term.press("2"); // sleep, at the start: no home yet, so a rough night
     const s = term.screen().join("\n");
     expect(s).toContain("Day 1 is over. You sleep rough by the road.");
-    expect(s).toContain("Day 2 · slot 0/4");
+    expect(s).toMatch(/Day 2 ┐/);
   });
 
   it("offers no sleep at the home-to-be before the home scene is done", () => {
@@ -637,10 +696,10 @@ describe("tui app", () => {
       s.rentLate = true;
     });
     const s = term.screen().join("\n");
-    expect(s).toContain("1) Say hello · Cook");
+    expect(s).toContain("1) Say hello");
     expect(s).toContain("2) Go to The street"); // moving is free
     expect(s).not.toContain("The street · 1 slot");
-    expect(s).not.toContain("Say hello · Cook · 1 slot");
+    expect(s).not.toContain("Say hello · 1 slot");
     expect(s).toContain("¥20 · rent late");
   });
 
@@ -680,8 +739,9 @@ describe("tui app", () => {
     const s = term.screen().join("\n");
     expect(s).toContain(`They wanted ${combo.count} cups of ${combo.item}.`);
     expect(s).not.toContain("You set down");
-    // The reply prompt's key range matches however many tiles there are to pick from.
-    expect(s).toContain(`Build your reply: [1-${core.state.run!.tiles.length}] add a word · [enter] say it`);
+    // The key bar's range matches however many tiles there are to pick from; the reply box doesn't repeat it.
+    expect(s).toContain(`[1-${core.state.run!.tiles.length}] add`);
+    expect(s).not.toContain("Build your reply");
   });
 
   it("keeps the NPC's request on screen when the prompt nearly fills it", () => {
@@ -714,7 +774,7 @@ describe("tui app", () => {
     let s = term.screen();
     expect(s[0]).toMatch(/Notebook ─+ Speaks: Pidgin/);
     expect(s.join("\n")).toContain("Stage 1: 0 of 12 words known");
-    expect(s.join("\n")).toMatch(/▸ Recent \(\d+\)/);
+    expect(s.join("\n")).toMatch(/▸ Noodle shop \(\d+\)/); // no Recent: it would hold every word
     expect(s.at(-1)).toContain("[esc] back");
     // the chosen word: the right-hand column's row that starts with ▸
     const chosen = () => term.screen().map((l) => l.split(" │ ")[1] ?? "").find((r) => r.startsWith("▸ "));
@@ -759,7 +819,7 @@ describe("tui app", () => {
     term.resize(90, 20);
     expect(term.screen().at(-1)).toMatch(/no audio · Silver Tongue v0\.5\.0 ┘$/);
     term.resize(46, 20);
-    expect(term.screen().at(-1)).toMatch(/^─ \[1-3\] choose · \[n\] notebook ─* no audio ─$/);
+    expect(term.screen().at(-1)).toMatch(/^─ \[1-2\] choose · \[n\] notebook ─* no audio ─$/);
   });
 
   const ERRAND_TEXT = `
@@ -772,7 +832,7 @@ asked-deliver = They wanted it taken to the { $place }.
 `;
   /** Presses the number of the menu item whose label contains `label`. */
   const pressItem = (term: FakeTerminal, label: string) => {
-    const row = term.screen().find((l) => l.includes(label));
+    const row = term.screen().find((l) => /\d\) /.test(l) && l.includes(label));
     const n = row?.match(/(\d)\) /)?.[1];
     if (!n) throw new Error(`no menu item "${label}" in:\n${term.screen().join("\n")}`);
     term.press(n);
@@ -1226,28 +1286,29 @@ describe("menu surprisal and place notices", () => {
     expect(s.split("find your bed.").length - 1).toBe(1);
   });
 
-  it("shows a rejection again once something else happened in between", () => {
+  it("shows a rejection again after moving, on the new place's clean screen", () => {
     const { term } = setup((s) => {
       s.place = "noodle_shop";
       s.slot = 4; // slotsPerDay: nothing left today
     });
     term.press("1"); // rejected (no-slots)
-    term.press("2", "1"); // to the street and back: accepted inputs end the run of repeats
-    term.press("1"); // rejected again: a new line, not a replacement
-    const s = term.screen().join("\n");
-    expect(s.split("find your bed.").length - 1).toBe(2);
+    term.press("2", "1"); // to the street and back: moving clears the screen
+    expect(term.screen().join("\n")).not.toContain("find your bed.");
+    term.press("1"); // rejected again: shown afresh
+    expect(term.screen().join("\n").split("find your bed.").length - 1).toBe(1);
   });
 
-  it("prints a place's name and description only the first time it's visited this session", () => {
+  it("prints a place's description only the first time it's visited this session, and clears the screen on each move", () => {
     const { term } = setup();
     // The starting place (street) was already logged once at startup.
     expect(term.screen().join("\n").match(/Bikes and steam\./g)).toHaveLength(1);
     term.press("1"); // street -> noodle shop, first visit
     expect(term.screen().join("\n").match(/Steam everywhere\./g)).toHaveLength(1);
+    expect(term.screen().join("\n")).not.toContain("Bikes and steam."); // the street's text went with the move
     term.press("2"); // noodle shop -> street, seen already: no new entry
     term.press("1"); // street -> noodle shop again: also no new entry
     const s = term.screen().join("\n");
-    expect(s.match(/Bikes and steam\./g)).toHaveLength(1);
-    expect(s.match(/Steam everywhere\./g)).toHaveLength(1);
+    expect(s).not.toContain("Bikes and steam.");
+    expect(s).not.toContain("Steam everywhere.");
   });
 });

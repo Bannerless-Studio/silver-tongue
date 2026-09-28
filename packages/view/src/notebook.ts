@@ -21,7 +21,7 @@ export interface NotebookWord {
   first?: string;
 }
 export interface NotebookGroup {
-  /** null: heard before places were recorded */
+  /** null: a topic, or heard before places were recorded */
   place: string | null;
   title: string;
   words: NotebookWord[];
@@ -38,8 +38,23 @@ export interface Notebook {
 }
 
 /**
- * The notebook: progress on each stage's word list, the words heard so far grouped by the place
- * they were first heard (in world order), and the mentor notes already explained.
+ * Each word's topic title: a slot group the learner text names (`notebook-topic-<group>`) files its
+ * concepts' words under that name. Groups sharing a name make one topic.
+ */
+function topicOf(course: Course, t: Text): Map<WordId, string> {
+  const out = new Map<WordId, string>();
+  for (const [group, concepts] of Object.entries(course.groups)) {
+    const id = `notebook-topic-${group}`;
+    if (!t.has(id)) continue;
+    for (const c of concepts) for (const w of course.concepts[c] ?? []) if (!out.has(w)) out.set(w, t(id));
+  }
+  return out;
+}
+
+/**
+ * The notebook: progress on each stage's word list, the words heard so far grouped by topic where
+ * the learner text names one, else by the place they were first heard (in world order), and the
+ * mentor notes already explained.
  */
 export function notebookEntries(course: Course, state: GameState, t: Text, now: number): Notebook {
   const rankLabel = t("notebook-rank", { rank: t(`rank-${rankFor(state.words, Object.keys(course.words), now)}`) });
@@ -51,7 +66,6 @@ export function notebookEntries(course: Course, state: GameState, t: Text, now: 
       stage,
       known: states.filter((s) => s === "known").length,
       total: list.length,
-      heard: states.filter((s) => s !== "unseen").length,
     });
   });
   const heard = Object.keys(state.words).filter((w) => course.words[w]);
@@ -74,8 +88,12 @@ export function notebookEntries(course: Course, state: GameState, t: Text, now: 
     };
   };
   const groups: NotebookGroup[] = [];
+  const topics = topicOf(course, t);
+  for (const title of new Set(heard.flatMap((w) => topics.get(w) ?? []))) {
+    groups.push({ place: null, title, words: heard.filter((w) => topics.get(w) === title).map(entry) });
+  }
   for (const place of [...Object.keys(course.world.places), ""]) {
-    const ids = heard.filter((w) => (state.words[w].first?.place ?? "") === place);
+    const ids = heard.filter((w) => !topics.has(w) && (state.words[w].first?.place ?? "") === place);
     if (!ids.length) continue;
     groups.push({ place: place || null, title: place ? t(`place-${place}`) : t("notebook-elsewhere"), words: ids.map(entry) });
   }

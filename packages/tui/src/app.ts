@@ -87,7 +87,7 @@ export function startApp(opts: AppOptions): App {
   let nameInput = ""; // replaying a scene saved half-way: it has already been introduced
   let lastSlow = false; // the last line was a slow repeat, so r says it slowly too
   let lastHelp: string[] = []; // the clips of the word or sentence last looked up, for p
-  let card: StyledLine | null = null; // the word or sentence last looked up, shown above the replies
+  let card: StyledLine[] | null = null; // the word or sentence last looked up, shown above the replies
   let tileReply: string[] = []; // the right reply's clips, said if the tiles match
   let queue: Speech[] = []; // what this key press has people say, in order
   let speed: SpeechSpeed = opts.speed?.value ?? "slow";
@@ -128,7 +128,24 @@ export function startApp(opts: AppOptions): App {
 
   /** The number keys that choose among `n` items: "1", "1-4". */
   const keyRange = (n: number) => (n <= 1 ? "1" : `1-${Math.min(n, 9)}`);
-  const echo = (text: string) => push([{ text: `${t("you")}: `, color: "green", bold: true }, { text }]);
+  // The player's replies to the current request: the first, and the latest. Once one is right, the
+  // wrong tries between them (and what they brought: hints, the slow repeat) have done their job.
+  let firstTry: StyledLine | null = null;
+  let lastTry: StyledLine | null = null;
+  const echo = (text: string) => {
+    lastTry = [{ text: `${t("you")}: `, color: "green", bold: true }, { text }];
+    firstTry ??= lastTry;
+    push(lastTry);
+  };
+  /** Drops the wrong tries before the right one, leaving the request and its answer. */
+  const dropWrongTries = () => {
+    const from = firstTry ? log.indexOf(firstTry) : -1;
+    const to = lastTry ? log.indexOf(lastTry) : -1;
+    if (from >= 0 && to > from) log = [...log.slice(0, from), ...log.slice(to)];
+    firstTry = lastTry = null;
+  };
+  // Each hint once per request: a second miss repeating it says nothing new.
+  let hintsShown = new Set<string>();
 
   /** Optional narration: shown when the learner text has it. */
   const narrate = (id: string, args?: Record<string, string | number>) => {
@@ -150,16 +167,21 @@ export function startApp(opts: AppOptions): App {
    * What the reply did and, on a mix-up, what was asked (see actionNarration).
    */
   function narrateAction(action: Record<string, string>, expected: Record<string, string>, matched: boolean, tilesWrong: boolean) {
-    for (const n of actionNarration(course, t, { action, expected, matched, tilesWrong }, currentNpc && npcName(currentNpc)))
+    for (const n of actionNarration(course, t, { action, expected, matched, tilesWrong }, currentNpc && npcName(currentNpc))) {
+      if (n.tone === "warn") {
+        if (hintsShown.has(n.text)) continue;
+        hintsShown.add(n.text);
+      }
       push([n.tone === "warn" ? { text: n.text, color: "yellow" } : { text: n.text, dim: true }]);
+    }
   }
 
   function enterPlace(place: string) {
-    // The border already names the current place; the name + description are worth a log entry
-    // only the first time this place is seen this session.
+    // The frame's title names the current place; its description is worth a log entry only the
+    // first time this place is seen this session.
     if (visitedPlaces.has(place)) return;
     visitedPlaces.add(place);
-    push([], [{ text: t(`place-${place}`), bold: true }], [{ text: t(`place-${place}-desc`), dim: true }]);
+    push([], [{ text: t(`place-${place}-desc`), dim: true }]);
   }
 
   function apply(events: GameEvent[]) {
@@ -182,14 +204,20 @@ export function startApp(opts: AppOptions): App {
       .filter((ev): ev is Extract<GameEvent, { type: "unlocked" }> => ev.type === "unlocked")
       .map((ev) => unlockedLabel(ev.scene));
     let unlockedShown = false;
-    // Places revealed together share one line: news, but one piece of it.
-    const revealed = events.flatMap((ev) => (ev.type === "placeRevealed" ? [t(`place-${ev.place}`)] : []));
+    // Places revealed together share one line: news, but one piece of it. A place a "New:" scene
+    // line already named is left out: that line said it.
+    const namedByScene = new Set(
+      events.flatMap((ev) => (ev.type === "unlocked" ? (course.scenes.find((s) => s.id === ev.scene)?.place ?? []) : [])).filter((p) => p !== core.state.place),
+    );
+    const revealed = events.flatMap((ev) => (ev.type === "placeRevealed" && !namedByScene.has(ev.place) ? [t(`place-${ev.place}`)] : []));
     let revealedShown = false;
     // A rejection is only worth a fresh log line the first time; a repeat of the same one replaces it.
     if (!events.some((ev) => ev.type === "inputRejected")) lastRejectReason = undefined;
     for (const e of events) {
       switch (e.type) {
         case "placeEntered":
+          // What happened at the last place was read there; a new place starts a clean screen.
+          log = [];
           enterPlace(e.place);
           break;
         case "sceneStarted":
@@ -205,6 +233,9 @@ export function startApp(opts: AppOptions): App {
           if (!resuming && !(core.state.scenesDone[e.scene] ?? 0)) narrate(`scene-${e.scene}-start`);
           break;
         case "lineSpoken": {
+          // A new request: the last one was answered.
+          firstTry = lastTry = null;
+          hintsShown = new Set();
           lastLine = e.line;
           lastSlow = false;
           hear(e.line.audio);
@@ -221,6 +252,7 @@ export function startApp(opts: AppOptions): App {
           break;
         case "actionPerformed":
           if (replyMode === "tiles" && !e.tilesWrong) hear(tileReply);
+          if (e.matched && !e.tilesWrong) dropWrongTries();
           narrateAction(e.action, e.expected, e.matched, e.tilesWrong);
           break;
         case "npcReacted":
@@ -275,7 +307,7 @@ export function startApp(opts: AppOptions): App {
           }
           break;
         case "placeRevealed":
-          if (!revealedShown) {
+          if (!revealedShown && revealed.length) {
             revealedShown = true;
             push([{ text: t("place-revealed", { count: revealed.length, places: revealed.join(", ") }), color: "green" }]);
           }
@@ -465,14 +497,13 @@ export function startApp(opts: AppOptions): App {
     return {
       title: t("reply-title"),
       lines: [
-        [{ text: t("tiles-title", { keys: keyRange(tiles.length) }), dim: true }],
         ...wrapItems(tiles.map((x, i) => `[${i + 1}]${x}`), width, " "),
         [{ text: `${t("tiles-answer")} `, dim: true }, { text: joinTiles(course, tileInput.map((i) => tiles[i])), bold: true }],
       ],
     };
   }
 
-  /** Money, rent (yellow the night it's due, red once late), how well you speak, and the parcel. */
+  /** Money, rent (yellow the night it's due, red once late), the parcel, and what to do next. */
   function hudRow(h: HudValues): StyledLine {
     const sep = { text: " · ", dim: true };
     const rent = h.rentLate
@@ -482,9 +513,9 @@ export function startApp(opts: AppOptions): App {
       { text: `${h.currency}${h.wallet}`, bold: true },
       sep,
       rent,
-      sep,
-      { text: t("notebook-rank", { rank: h.rankLabel }) },
       ...(h.parcel ? [sep, { text: t("hud-parcel"), color: "cyan" as const }] : []),
+      // Last, so a narrow screen cuts the goal before the money, the rent or the parcel.
+      ...(h.goal ? [sep, { text: h.goal, color: "yellow" as const }] : []),
     ];
   }
 
@@ -507,7 +538,7 @@ export function startApp(opts: AppOptions): App {
     const s = core.state;
     const { cols, rows } = term.size();
     const h = hudValues(course, s, t, opts.now());
-    const top = { title: t(`place-${s.place}`), right: t("hud-top", { day: h.day, slot: h.slot, slots: h.slots }) };
+    const top = { title: t(`place-${s.place}`), right: t("hud-top", { day: h.day }) };
     if (mode === "notebook") {
       const book = notebookEntries(course, s, t, opts.now());
       const head = notebookHead(book, t, nbView.tab);
@@ -540,7 +571,7 @@ export function startApp(opts: AppOptions): App {
     const panels: Panel[] = [
       { lines: [hudRow(h)], drop: 2 },
       { lines: log, grow: true, min: 4 },
-      ...(card && mode !== "explore" ? [{ lines: [card], drop: 1 }] : []),
+      ...(card && mode !== "explore" ? [{ lines: card, drop: 1 }] : []),
       replyPanel(innerWidth(cols)),
     ];
     const left = cols < NARROW ? 0 : 2; // where a line's text starts: after "│ " when wide
@@ -616,15 +647,19 @@ export function startApp(opts: AppOptions): App {
     } else if (mode === "help") {
       const word = n >= 0 ? helpWords()[n] : undefined;
       if (word) {
-        const wc = wordCard(course, word.word, word.text);
+        const wc = wordCard(course, word.word, word.text, core.state);
         lastHelp = wc.clips;
         hear(lastHelp);
         send({ type: "helpWord", word: word.word });
         card = [
-          { text: wc.text, bold: true },
-          ...(wc.readings.length ? [{ text: ` ${wc.readings.join(" ")}`, color: "yellow" as const }] : []),
-          ...(wc.base ? [{ text: ` (${wc.base})`, dim: true }] : []),
-          { text: ` — ${wc.gloss}` },
+          [
+            { text: wc.text, bold: true },
+            ...(wc.readings.length ? [{ text: ` ${wc.readings.join(" ")}`, color: "yellow" as const }] : []),
+            ...(wc.base ? [{ text: ` (${wc.base})`, dim: true }] : []),
+            { text: ` — ${wc.gloss}` },
+          ],
+          // Where it was first heard is an example in context, unless that's the line on screen.
+          ...(wc.heard && wc.heard !== lastLine?.text ? [[{ text: t("help-heard", { line: wc.heard }), dim: true }]] : []),
         ];
       }
       if (key.name === "p") {
@@ -639,9 +674,11 @@ export function startApp(opts: AppOptions): App {
         // Reading the whole line is not logged as help on each word: the words still have to be
         // recognised in the reply.
         card = [
-          { text: sentence.text, bold: true },
-          ...(sentence.reading ? [{ text: ` ${sentence.reading}`, color: "yellow" as const }] : []),
-          { text: ` — ${sentence.meaning}` },
+          [
+            { text: sentence.text, bold: true },
+            ...(sentence.reading ? [{ text: ` ${sentence.reading}`, color: "yellow" as const }] : []),
+            { text: ` — ${sentence.meaning}` },
+          ],
         ];
       }
       if (key.name === "escape" || key.name === "w") mode = "scene";

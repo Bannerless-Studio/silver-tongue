@@ -9,24 +9,40 @@ const setup = () => {
 };
 
 describe("place menu", () => {
-  it("offers the exits, then sleep", () => {
+  it("offers the exits, then sleep once the day's time is gone", () => {
     const { course, state, t } = setup();
+    state.slot = course.world.slotsPerDay;
     const menu = placeMenu(course, state, t);
     expect(menu.map((m) => m.kind)).toEqual(["go", "sleep"]);
     expect(menu[0]).toMatchObject({ label: "Go to Noodle shop", input: { type: "goTo", place: "noodle_shop" }, place: "noodle_shop" });
     expect(menu[1]).toMatchObject({ label: "Sleep (end the day)", input: { type: "sleep" } });
   });
 
+  it("keeps sleep off the menu while there's time and something to do, and offers it once nothing's left", () => {
+    const { course, state, t } = setup();
+    expect(placeMenu(course, state, t).map((m) => m.kind)).toEqual(["go"]); // "Say hello" is open at the noodle shop
+    state.scenesDone.intro = 1; // the shift still needs trust: nothing is open anywhere
+    expect(placeMenu(course, state, t).map((m) => m.kind)).toEqual(["go", "sleep"]);
+  });
+
   it("offers a scene here with who it is with, and hides the cost when it's just the default slot", () => {
     const { course, state, t } = setup();
+    course.world.npcs.boss = { place: "noodle_shop" };
     state.place = "noodle_shop";
     expect(placeMenu(course, state, t)[0]).toEqual({
       kind: "talk", label: "Say hello · Cook", input: { type: "startScene", scene: "intro" }, npc: "cook", scene: "intro",
     });
   });
 
+  it("drops the npc suffix when they're the only one here", () => {
+    const { course, state, t } = setup();
+    state.place = "noodle_shop";
+    expect(placeMenu(course, state, t)[0]).toMatchObject({ kind: "talk", label: "Say hello" });
+  });
+
   it("drops the npc suffix when the scene name already names them", () => {
     const course = fixtureWithText();
+    course.world.npcs.boss = { place: "noodle_shop" };
     course.learnerFtl = course.learnerFtl.replace("scene-intro = Say hello", "scene-intro = Meet Cook");
     const state = newGame(course);
     const t = makeText(course.learnerFtl, "en");
@@ -37,6 +53,7 @@ describe("place menu", () => {
   it("shows a yuan cost when the scene has one", () => {
     const { course, state, t } = setup();
     for (const v of Object.values(course.scenes[1].exchanges[0].variants)) v.cost = 5;
+    course.world.npcs.boss = { place: "noodle_shop" };
     state.scenesDone.intro = 1;
     state.trust.cook = 1;
     state.place = "noodle_shop";
@@ -59,6 +76,7 @@ describe("place menu", () => {
       course.world.places[`p${i}`] = { links: ["street"] };
       course.world.places.street.links.push(`p${i}`);
     }
+    state.slot = course.world.slotsPerDay;
     const menu = placeMenu(course, state, t);
     expect(menu).toHaveLength(8);
     expect(menu.at(-1)!.kind).toBe("sleep");
@@ -83,6 +101,7 @@ describe("place menu", () => {
   it("offers sleep only where there's a bed", () => {
     const { course, state, t } = setup();
     course.world.home = "street";
+    state.slot = course.world.slotsPerDay;
     state.place = "noodle_shop";
     expect(placeMenu(course, state, t).map((m) => m.kind)).not.toContain("sleep");
     state.place = "street";
@@ -93,6 +112,7 @@ describe("place menu", () => {
     const { course, state, t } = setup();
     course.world.home = "noodle_shop";
     course.world.homeScene = "intro";
+    state.slot = course.world.slotsPerDay;
     state.place = "noodle_shop";
     expect(placeMenu(course, state, t).map((m) => m.kind)).not.toContain("sleep");
     state.place = "street";
@@ -102,6 +122,7 @@ describe("place menu", () => {
   it("leaves a place off the menu until the scenes that reveal it are done", () => {
     const { course, state, t } = setup();
     course.world.places.noodle_shop.after = ["intro"];
+    state.slot = course.world.slotsPerDay;
     expect(placeMenu(course, state, t).map((m) => m.kind)).toEqual(["sleep"]);
     state.scenesDone.intro = 1;
     expect(placeMenu(course, state, t).map((m) => m.kind)).toEqual(["go", "sleep"]);

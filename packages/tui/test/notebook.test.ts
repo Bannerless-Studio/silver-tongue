@@ -43,7 +43,7 @@ describe("notebook", () => {
   it("heads the page with the tabs and progress", () => {
     const head = notebookHead(notebookEntries(course, state, t, LATER), t, "words").map(plain);
     expect(head[0]).toMatch(/1\) Words +2\) Notes/);
-    expect(head[1]).toBe("Stage 1: 1 of 12 words known · 3 heard");
+    expect(head[1]).toBe("Stage 1: 1 of 12 words known");
   });
 
   it("lists places on the left and the chosen place's words, bars and labels on the right", () => {
@@ -55,9 +55,13 @@ describe("notebook", () => {
     expect(s).not.toContain("杯");
   });
 
-  it("puts recent words first, then the places", () => {
-    const groups = notebookGroups(notebookEntries(course, state, t, T0), t);
+  it("puts recent words first, then the places, and leaves Recent out when it would hold every word", () => {
+    const older = { ...state, words: { ...state.words, w_ni: { ...state.words.w_ni, firstSeen: T0 - 2 * 86_400_000 } } };
+    const groups = notebookGroups(notebookEntries(course, older, t, T0), t);
     expect(groups.map((g) => g.title)).toEqual(["Recent", "The street", "Noodle shop"]);
+    expect(groups[0].words.map((w) => w.id)).not.toContain("w_ni");
+    // Everything was heard today: Recent would only repeat the places.
+    expect(notebookGroups(notebookEntries(course, state, t, T0), t).map((g) => g.title)).toEqual(["The street", "Noodle shop"]);
     expect(notebookGroups(notebookEntries(course, state, t, LATER), t).map((g) => g.title)).toEqual(["The street", "Noodle shop"]);
   });
 

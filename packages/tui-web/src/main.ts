@@ -68,6 +68,8 @@ const tx: Text = Object.assign((id: string, args?: Parameters<Text>[1]) => (t ? 
 const xterm = new XTerm({
   fontFamily: 'ui-monospace, "SF Mono", Menlo, Consolas, "Noto Sans Mono CJK SC", "Noto Sans Mono", monospace',
   fontSize: 16,
+  // Arrows and other symbols a fallback font draws wider than a cell are squeezed to fit, not overlapped.
+  rescaleOverlappingGlyphs: true,
   scrollback: 0,
   theme: { background: "#14171c", foreground: "#d8dee9" },
 });
