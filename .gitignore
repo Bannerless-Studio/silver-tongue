@@ -5,3 +5,4 @@ dist/
 site/
 .cache/
 tsconfig.tsbuildinfo
+packages/world3d/scripts/cache-repro/
