@@ -3,5 +3,5 @@
   "private": true,
   "type": "module",
   "exports": { ".": "./src/index.ts" },
-  "dependencies": { "@silver-tongue/core": "npm:@bannerless-studio/silver-tongue-core@^0.16.2", "@silver-tongue/view": "*" }
+  "dependencies": { "@silver-tongue/core": "npm:@bannerless-studio/silver-tongue-core@^0.17.0", "@silver-tongue/view": "*" }
 }

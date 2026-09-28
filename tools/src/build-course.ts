@@ -21,6 +21,7 @@ import { checkCourse, usedWords } from "./check";
 import { bindSlots, messageIds, parseFtl, Renderer, termNames, type FtlSource } from "./fluent";
 import type { PackMeta, PackWord } from "./pack";
 import { buildLexicon, segment, type Lexicon } from "./segment";
+import { taggingLines, taggingPath } from "./tagging";
 import { assignAudio, voiceProblems, type Clip, type Voices } from "./voices";
 
 export interface CourseConfig {
@@ -143,6 +144,7 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
       gloss: glosses?.has(w.id) ? glosses.render(w.id) : "",
       ...(shorts?.has(w.id) ? { short: shorts.render(w.id) } : {}),
       ...(w.readings ? { readings: w.readings } : w.pron ? { readings: [w.pron] } : {}),
+      ...(w.forms ? { forms: w.forms } : {}),
       ...(w.bonus ? { bonus: true } : {}),
     };
   }
@@ -362,7 +364,8 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
   if (!existsSync(voicesPath) && cfg.checks.audio) errors.push("voices.json: missing (checks.audio is on)");
   if (voices) errors.push(...voiceProblems(voices, world, scenes));
   const used = usedWords(course);
-  const clips = voices ? assignAudio(course, voices, used) : [];
+  const says = Object.fromEntries(packWords.flatMap((w) => (w.say ? [[w.id, w.say]] : [])));
+  const clips = voices ? assignAudio(course, voices, used, says) : [];
   const audioDir = join(root, "audio", cfg.language);
   const audioFiles = new Set(
     existsSync(audioDir) ? readdirSync(audioDir).filter((f) => f.endsWith(".mp3")).map((f) => f.slice(0, -".mp3".length)) : [],
@@ -466,7 +469,7 @@ function learnerName(ftl: string, locale: string): string | undefined {
 }
 
 function main(): void {
-  const only = process.argv[2];
+  const only = process.argv.slice(2).find((a) => !a.startsWith("--"));
   const repo = resolve(fileURLToPath(new URL("../..", import.meta.url)));
   const { catalog, builds, errors, warnings } = buildAll(join(repo, "content"), only);
   for (const w of warnings) console.warn(`! ${w}`);
@@ -476,6 +479,14 @@ function main(): void {
     process.exit(1);
   }
   writeCourses(join(repo, "dist", "courses"), builds, catalog, only);
+  // --update-tagging: rewrite each built language's snapshot of how its lines split into words
+  if (process.argv.includes("--update-tagging")) {
+    for (const { result } of builds) {
+      const c = result.course!;
+      writeFileSync(taggingPath(join(repo, "content"), c.language.code), taggingLines(c).join("\n") + "\n");
+      console.log(`tagging: languages/${c.language.code}/tagging.txt`);
+    }
+  }
 }
 
 /**

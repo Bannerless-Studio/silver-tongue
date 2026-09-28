@@ -1,0 +1,527 @@
+[
+ {
+  "id": "ja-konnichiwa",
+  "w": "こんにちは",
+  "lv": "N5",
+  "readings": [
+   "konnichiwa"
+  ]
+ },
+ {
+  "id": "ja-desu",
+  "w": "です",
+  "lv": "N5",
+  "readings": [
+   "desu"
+  ]
+ },
+ {
+  "id": "ja-san",
+  "w": "さん",
+  "lv": "N5",
+  "readings": [
+   "san"
+  ]
+ },
+ {
+  "id": "ja-dozo",
+  "w": "どうぞ",
+  "lv": "N5",
+  "readings": [
+   "dōzo"
+  ]
+ },
+ {
+  "id": "ja-arigatogozaimasu",
+  "w": "ありがとうございます",
+  "lv": "N5",
+  "readings": [
+   "arigatō gozaimasu"
+  ],
+  "forms": {
+   "ありがとうございました": [
+    "arigatō gozaimashita"
+   ]
+  }
+ },
+ {
+  "id": "ja-sayonara",
+  "w": "さようなら",
+  "lv": "N5",
+  "readings": [
+   "sayōnara"
+  ]
+ },
+ {
+  "id": "ja-chigaimasu",
+  "w": "ちがいます",
+  "lv": "N5",
+  "readings": [
+   "chigaimasu"
+  ]
+ },
+ {
+  "id": "ja-ikutsu",
+  "w": "いくつ",
+  "lv": "N5",
+  "readings": [
+   "ikutsu"
+  ]
+ },
+ {
+  "id": "ja-ka",
+  "w": "か",
+  "lv": "N5",
+  "readings": [
+   "ka"
+  ]
+ },
+ {
+  "id": "ja-ocha",
+  "w": "お茶",
+  "lv": "N5",
+  "readings": [
+   "おちゃ",
+   "ocha"
+  ]
+ },
+ {
+  "id": "ja-mizu",
+  "w": "水",
+  "lv": "N5",
+  "readings": [
+   "みず",
+   "mizu"
+  ]
+ },
+ {
+  "id": "ja-onigiri",
+  "w": "おにぎり",
+  "lv": "N5",
+  "readings": [
+   "onigiri"
+  ]
+ },
+ {
+  "id": "ja-pan",
+  "w": "パン",
+  "lv": "N5",
+  "readings": [
+   "pan"
+  ]
+ },
+ {
+  "id": "ja-num1",
+  "w": "一",
+  "lv": "N5",
+  "readings": [
+   "いち",
+   "ichi"
+  ],
+  "forms": {
+   "一つ": [
+    "ひとつ",
+    "hitotsu"
+   ]
+  }
+ },
+ {
+  "id": "ja-num2",
+  "w": "二",
+  "lv": "N5",
+  "readings": [
+   "に",
+   "ni"
+  ],
+  "forms": {
+   "二つ": [
+    "ふたつ",
+    "futatsu"
+   ]
+  }
+ },
+ {
+  "id": "ja-num3",
+  "w": "三",
+  "lv": "N5",
+  "readings": [
+   "さん",
+   "san"
+  ],
+  "forms": {
+   "三つ": [
+    "みっつ",
+    "mittsu"
+   ]
+  }
+ },
+ {
+  "id": "ja-num4",
+  "w": "四",
+  "lv": "N5",
+  "readings": [
+   "よん",
+   "yon"
+  ],
+  "forms": {
+   "四つ": [
+    "よっつ",
+    "yottsu"
+   ]
+  }
+ },
+ {
+  "id": "ja-num5",
+  "w": "五",
+  "lv": "N5",
+  "readings": [
+   "ご",
+   "go"
+  ],
+  "forms": {
+   "五つ": [
+    "いつつ",
+    "itsutsu"
+   ]
+  }
+ },
+ {
+  "id": "ja-namae",
+  "w": "名前",
+  "lv": "N5",
+  "readings": [
+   "なまえ",
+   "namae"
+  ],
+  "forms": {
+   "お名前": [
+    "おなまえ",
+    "onamae"
+   ]
+  }
+ },
+ {
+  "id": "ja-wa",
+  "w": "は",
+  "lv": "N5",
+  "readings": [
+   "wa"
+  ],
+  "say": "わ"
+ },
+ {
+  "id": "ja-watashi",
+  "w": "わたし",
+  "lv": "N5",
+  "readings": [
+   "watashi"
+  ]
+ },
+ {
+  "id": "ja-yoroshiku",
+  "w": "よろしくお願いします",
+  "lv": "N5",
+  "readings": [
+   "よろしくおねがいします",
+   "yoroshiku onegai shimasu"
+  ]
+ },
+ {
+  "id": "ja-nihongo",
+  "w": "日本語",
+  "lv": "N5",
+  "readings": [
+   "にほんご",
+   "nihongo"
+  ]
+ },
+ {
+  "id": "ja-wakarimasu",
+  "w": "わかります",
+  "lv": "N5",
+  "readings": [
+   "wakarimasu"
+  ],
+  "forms": {
+   "わかりません": [
+    "wakarimasen"
+   ]
+  }
+ },
+ {
+  "id": "ja-iie",
+  "w": "いいえ",
+  "lv": "N5",
+  "readings": [
+   "iie"
+  ]
+ },
+ {
+  "id": "ja-ja",
+  "w": "じゃあ",
+  "lv": "N5",
+  "readings": [
+   "jā"
+  ]
+ },
+ {
+  "id": "ja-mata",
+  "w": "また",
+  "lv": "N5",
+  "readings": [
+   "mata"
+  ]
+ },
+ {
+  "id": "ja-hai",
+  "w": "はい",
+  "lv": "N5",
+  "readings": [
+   "hai"
+  ]
+ },
+ {
+  "id": "ja-koko",
+  "w": "ここ",
+  "lv": "N5",
+  "readings": [
+   "koko"
+  ]
+ },
+ {
+  "id": "ja-no",
+  "w": "の",
+  "lv": "N5",
+  "readings": [
+   "no"
+  ]
+ },
+ {
+  "id": "ja-heya",
+  "w": "部屋",
+  "lv": "N5",
+  "readings": [
+   "へや",
+   "heya"
+  ]
+ },
+ {
+  "id": "ja-kore",
+  "w": "これ",
+  "lv": "N5",
+  "readings": [
+   "kore"
+  ]
+ },
+ {
+  "id": "ja-kagi",
+  "w": "かぎ",
+  "lv": "N5",
+  "readings": [
+   "kagi"
+  ]
+ },
+ {
+  "id": "ja-oyasuminasai",
+  "w": "おやすみなさい",
+  "lv": "N5",
+  "readings": [
+   "oyasuminasai"
+  ]
+ },
+ {
+  "id": "ja-maishu",
+  "w": "毎週",
+  "lv": "N5",
+  "readings": [
+   "まいしゅう",
+   "maishū"
+  ]
+ },
+ {
+  "id": "ja-sen",
+  "w": "千",
+  "lv": "N5",
+  "readings": [
+   "せん",
+   "sen"
+  ]
+ },
+ {
+  "id": "ja-en",
+  "w": "円",
+  "lv": "N5",
+  "readings": [
+   "えん",
+   "en"
+  ]
+ },
+ {
+  "id": "ja-okane",
+  "w": "お金",
+  "lv": "N5",
+  "readings": [
+   "おかね",
+   "okane"
+  ]
+ },
+ {
+  "id": "ja-ga",
+  "w": "が",
+  "lv": "N5",
+  "readings": [
+   "ga"
+  ]
+ },
+ {
+  "id": "ja-arimasu",
+  "w": "あります",
+  "lv": "N5",
+  "readings": [
+   "arimasu"
+  ],
+  "forms": {
+   "ありません": [
+    "arimasen"
+   ]
+  }
+ },
+ {
+  "id": "ja-ramenya",
+  "w": "ラーメン屋",
+  "lv": "N5",
+  "readings": [
+   "ラーメンや",
+   "rāmen'ya"
+  ]
+ },
+ {
+  "id": "ja-de",
+  "w": "で",
+  "lv": "N5",
+  "readings": [
+   "de"
+  ]
+ },
+ {
+  "id": "ja-hatarakimasu",
+  "w": "働きます",
+  "lv": "N5",
+  "readings": [
+   "はたらきます",
+   "hatarakimasu"
+  ],
+  "forms": {
+   "働きました": [
+    "はたらきました",
+    "hatarakimashita"
+   ],
+   "働きませんでした": [
+    "はたらきませんでした",
+    "hatarakimasen deshita"
+   ]
+  }
+ },
+ {
+  "id": "ja-irasshaimase",
+  "w": "いらっしゃいませ",
+  "lv": "N5",
+  "readings": [
+   "irasshaimase"
+  ]
+ },
+ {
+  "id": "ja-ramen",
+  "w": "ラーメン",
+  "lv": "N5",
+  "readings": [
+   "rāmen"
+  ]
+ },
+ {
+  "id": "ja-tabemasu",
+  "w": "食べます",
+  "lv": "N5",
+  "readings": [
+   "たべます",
+   "tabemasu"
+  ],
+  "forms": {
+   "食べました": [
+    "たべました",
+    "tabemashita"
+   ],
+   "食べませんでした": [
+    "たべませんでした",
+    "tabemasen deshita"
+   ]
+  }
+ },
+ {
+  "id": "ja-ne",
+  "w": "ね",
+  "lv": "N5",
+  "readings": [
+   "ne"
+  ]
+ },
+ {
+  "id": "ja-ashita",
+  "w": "明日",
+  "lv": "N5",
+  "readings": [
+   "あした",
+   "ashita"
+  ]
+ },
+ {
+  "id": "ja-o",
+  "w": "を",
+  "lv": "N5",
+  "readings": [
+   "o"
+  ]
+ },
+ {
+  "id": "ja-kudasai",
+  "w": "ください",
+  "lv": "N5",
+  "readings": [
+   "kudasai"
+  ]
+ },
+ {
+  "id": "ja-hyaku",
+  "w": "百",
+  "lv": "N5",
+  "readings": [
+   "ひゃく",
+   "hyaku"
+  ]
+ },
+ {
+  "id": "ja-ju",
+  "w": "十",
+  "lv": "N5",
+  "readings": [
+   "じゅう",
+   "jū"
+  ]
+ },
+ {
+  "id": "ja-mo",
+  "w": "も",
+  "lv": "N5",
+  "readings": [
+   "mo"
+  ]
+ },
+ {
+  "id": "ja-sore",
+  "w": "それ",
+  "lv": "N5",
+  "readings": [
+   "sore"
+  ]
+ }
+]

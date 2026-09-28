@@ -1,0 +1,26 @@
+[
+ {
+  "id": "desu-masu",
+  "trigger": {
+   "scene": "tanaka-name"
+  }
+ },
+ {
+  "id": "tsu",
+  "trigger": {
+   "scene": "tanaka-numbers"
+  }
+ },
+ {
+  "id": "wa-ga",
+  "trigger": {
+   "word": "ja-ga"
+  }
+ },
+ {
+  "id": "o",
+  "trigger": {
+   "word": "ja-o"
+  }
+ }
+]

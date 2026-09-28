@@ -1,0 +1,13 @@
+{
+ "id": "ja-japan",
+ "language": "ja",
+ "setting": "japan-city",
+ "learners": [
+  "en"
+ ],
+ "checks": {
+  "coverage": false,
+  "audio": true,
+  "art": false
+ }
+}

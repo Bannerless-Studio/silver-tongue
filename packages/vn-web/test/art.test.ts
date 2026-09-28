@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { FALLBACK_NPC, fallbackPlace, loadArt, type GetText } from "../src/art";
+import { FALLBACK_NPC, fallbackPlace, loadArt, withArt, type GetText } from "../src/art";
 
 const course = { world: { places: { street: {}, shop: {} }, npcs: { wang: {}, cook: {} } } };
 const files = (map: Record<string, string>): GetText => async (url) => map[url] ?? null;
@@ -30,5 +30,13 @@ describe("art", () => {
   it("escapes the place name in the fallback", () => {
     expect(fallbackPlace("<b>&")).toContain("&lt;b&gt;&amp;");
     expect(fallbackPlace("<b>&")).not.toContain("<b>");
+  });
+});
+
+describe("withArt", () => {
+  const entry = (id: string) => ({ id, language: id.slice(0, 2), setting: "s", learners: ["en"], learnerNames: { en: "English" } });
+  it("keeps only the courses that have art, in order", async () => {
+    const kept = await withArt([entry("ja-japan"), entry("zh-china")], "c/", files({ "c/zh-china/art/art.json": "{}" }));
+    expect(kept.map((e) => e.id)).toEqual(["zh-china"]);
   });
 });

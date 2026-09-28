@@ -138,6 +138,7 @@ keys-name = type your name · [enter] done · [⌫] delete
 ## Languages, by code, for the settings screen and the start list
 learner-name = English
 language-zh = Chinese
+language-ja = Japanese
 
 ## Settings ([o])
 settings-title = Settings

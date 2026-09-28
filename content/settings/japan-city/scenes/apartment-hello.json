@@ -1,0 +1,54 @@
+{
+ "id": "apartment-hello",
+ "place": "apartment",
+ "npc": "ooya",
+ "stage": 1,
+ "after": [
+  "tanaka-name"
+ ],
+ "requires": {},
+ "repeatable": false,
+ "trustGain": 1,
+ "exchanges": [
+  {
+   "id": "greet",
+   "slots": {},
+   "expect": {
+    "action": "greet"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "room",
+   "slots": {},
+   "expect": {
+    "action": "room"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "key",
+   "slots": {},
+   "expect": {
+    "action": "key"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "night",
+   "slots": {},
+   "expect": {
+    "action": "night"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  }
+ ]
+}

@@ -1,0 +1,54 @@
+{
+ "id": "tanaka-name",
+ "place": "shotengai",
+ "npc": "tanaka",
+ "stage": 1,
+ "after": [
+  "tanaka-hello"
+ ],
+ "requires": {},
+ "repeatable": false,
+ "trustGain": 1,
+ "exchanges": [
+  {
+   "id": "ask",
+   "slots": {},
+   "expect": {
+    "action": "ask"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "nice",
+   "slots": {},
+   "expect": {
+    "action": "nice"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "understand",
+   "slots": {},
+   "expect": {
+    "action": "understand"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "bye",
+   "slots": {},
+   "expect": {
+    "action": "bye"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  }
+ ]
+}

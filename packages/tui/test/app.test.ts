@@ -384,6 +384,22 @@ describe("tui app", () => {
     expect(term.screen().join("\n")).toContain(`${other} — ${other === "茶" ? "tea" : "water"}`);
   });
 
+  it("word help offers a reply's other form of a word in the line, with that form's reading", () => {
+    const { term } = setup(undefined, (c) => {
+      c.words.w_ni.forms = { 你了: ["nǐ le"] };
+      for (const v of Object.values(c.scenes[0].exchanges[0].variants)) {
+        v.reply = { ...v.reply, text: "你了！", tokens: [{ start: 0, end: 2, word: "w_ni" }] };
+      }
+    });
+    term.press("1", "1", "w");
+    const s = term.screen().join("\n");
+    expect(s).toContain("In the replies:");
+    const key = s.match(/(\d)\) 你了/)?.[1];
+    expect(key).toBeDefined();
+    term.press(key!);
+    expect(term.screen().join("\n")).toContain("你了 nǐ le (你)");
+  });
+
   it("offers no whole-sentence help for a line without a meaning", () => {
     const { term, core } = setup();
     term.press("1", "1");

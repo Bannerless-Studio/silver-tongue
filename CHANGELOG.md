@@ -2,6 +2,13 @@
 
 Every release of Silver Tongue, newest first.
 
+## 0.17.0 (2026-09-28)
+
+- A second course: Japanese, set in Tokyo in the mid-90s. Your bag was stolen with your passport in it, and a new one takes weeks. Nine scenes on a shopping street: Mr Tanaka on his bench, your room and the landlady, a ramen shop that pays for shifts, and a convenience store. 54 beginner (JLPT N5) words, with kana and romaji readings, audio for every line, and four notes from Mr Tanaka. Choose it in settings, or run with `--learn ja`.
+- Word help and sentence help read a verb the way it is written in the line: 働きました shows hatarakimashita, not hatarakimasu. A reply's form of a word can be looked up too.
+- The Japanese has not been checked by a native speaker yet.
+- The Japanese course has no visual novel art yet, so the visual novel offers only Chinese; play Japanese in the text game.
+
 ## 0.16.2 (2026-09-28)
 
 - You discover the town one place at a time. At first Main Street is all you know; Old Wang points you to the noodle shop, and each new place opens as the story reaches it. The game tells you when it does ("New places: …").

@@ -403,7 +403,10 @@ describe("courses and the catalog", () => {
   it("lists every course and its reading languages by name", () => {
     const { catalog, errors } = buildAll(CONTENT);
     expect(errors).toEqual([]);
-    expect(catalog).toEqual([{ id: "zh-china", language: "zh", setting: "china-city", learners: ["en"], learnerNames: { en: "English" } }]);
+    expect(catalog).toEqual([
+      { id: "ja-japan", language: "ja", setting: "japan-city", learners: ["en"], learnerNames: { en: "English" } },
+      { id: "zh-china", language: "zh", setting: "china-city", learners: ["en"], learnerNames: { en: "English" } },
+    ]);
   });
 
   it("builds one file per reading language and names the course and reading language in errors", () => {
@@ -414,7 +417,7 @@ describe("courses and the catalog", () => {
       const ui = join(d, "learner/fr/ui.ftl");
       writeFileSync(ui, readFileSync(ui, "utf8").replace(/^learner-name = .*$/m, ""));
     });
-    const { builds, errors } = buildAll(dir);
+    const { builds, errors } = buildAll(dir, "zh-china");
     expect(builds.map((b) => [b.course, b.learner])).toEqual([["zh-china", "en"], ["zh-china", "fr"]]);
     expect(builds[1].result.course!.learner).toBe("fr");
     expect(errors).toEqual(['zh-china/fr: learner/fr/ui.ftl: missing "learner-name"']);
@@ -438,7 +441,7 @@ describe("courses and the catalog", () => {
     expect(buildCourse(dir, "zh-china").errors).toEqual([message]);
     const { catalog, errors } = buildAll(dir);
     expect(errors).toEqual([`zh-china: ${message}`]);
-    expect(catalog).toEqual([]);
+    expect(catalog.map((e) => e.id)).not.toContain("zh-china");
   });
 
   it("needs each reading language to name the language of every course in the catalog", () => {
@@ -457,7 +460,7 @@ describe("courses and the catalog", () => {
     writeFileSync(join(out, "zh-china", "fr.json"), "{}"); // a reading language since removed
     writeFileSync(join(out, "other", "en.json"), "{}");
     writeFileSync(join(out, "index.json"), JSON.stringify([{ id: "other", language: "xx", setting: "s", learners: ["en"], learnerNames: {} }]));
-    const { catalog, builds } = buildAll(CONTENT);
+    const { catalog, builds } = buildAll(CONTENT, "zh-china");
     writeCourses(out, builds, catalog, "zh-china");
     expect(existsSync(join(out, "zh-china", "fr.json"))).toBe(false);
     expect(existsSync(join(out, "zh-china", "en.json"))).toBe(true);
@@ -495,5 +498,18 @@ describe("courses and the catalog", () => {
       writeFileSync(p, JSON.stringify(words));
     });
     expect(Object.values(course!.words).find((w) => w.w === "你")!.readings).toEqual(["nǐ", "ni"]);
+  });
+});
+
+describe("word forms", () => {
+  it("copies a word's forms onto the built word", () => {
+    const { course, errors } = buildChanged((dir) => {
+      const path = join(dir, "languages", "zh", "words.json");
+      const words = JSON.parse(readFileSync(path, "utf8")) as { w: string; forms?: Record<string, string[]> }[];
+      words.find((w) => w.w === "谢谢")!.forms = { "谢谢你": ["xièxie nǐ"] };
+      writeFileSync(path, JSON.stringify(words));
+    });
+    expect(errors).toEqual([]);
+    expect(Object.values(course!.words).find((w) => w.w === "谢谢")!.forms).toEqual({ "谢谢你": ["xièxie nǐ"] });
   });
 });

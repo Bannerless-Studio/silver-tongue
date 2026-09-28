@@ -26,6 +26,10 @@
     [cap] Water
    *[base] water
 }
+-one = { $form ->
+    [cap] One
+   *[base] one
+}
 -two = { $form ->
     [cap] Two
    *[base] two
@@ -121,4 +125,12 @@
 -alight = { $form ->
     [cap] Out of
    *[base] out of
+}
+-rice_ball = { $form ->
+    [cap] Rice ball
+   *[base] rice ball
+}
+-bread = { $form ->
+    [cap] Bread
+   *[base] bread
 }

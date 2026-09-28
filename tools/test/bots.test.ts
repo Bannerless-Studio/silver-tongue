@@ -56,6 +56,39 @@ describe("course bots (real content)", () => {
   });
 });
 
+describe("course bots (ja-japan)", () => {
+  const { course } = buildCourse(CONTENT, "ja-japan");
+  const oneOff = course!.scenes.filter((s) => !s.repeatable).map((s) => s.id);
+  const reports = Object.fromEntries(Object.entries(BOTS).map(([name, bot]) => [name, runBot(course!, bot, { days: 14, seed: 7 })]));
+
+  it("the always-right player finishes every one-off scene", () => {
+    expect(Object.keys(reports.right.firstDone).sort()).toEqual([...oneOff].sort());
+  });
+
+  it("no player runs out of scenes, and a broke player can still earn", () => {
+    for (const [name, r] of Object.entries(reports)) {
+      expect(r.deadEndDays, name).toBe(0);
+      expect(r.brokeWithoutWork, name).toBe(0);
+      expect(r.rejected, name).toBe(0);
+    }
+  });
+
+  it("every player reads the mentor's notes", () => {
+    for (const [name, r] of Object.entries(reports)) expect(r.notesRead, name).toBe(course!.notes.length);
+  });
+
+  it("money is tight but fair: steady right answers pay rent on time with money to spare", () => {
+    expect(reports.right.rentLateNights).toBe(0);
+    expect(reports.right.minAfterRent).toBeGreaterThanOrEqual(2000);
+    expect(reports.right.shopping).toBeGreaterThanOrEqual(2);
+  });
+
+  it("wrong answers leave you short", () => {
+    expect(reports.wrong.earned).toBeLessThanOrEqual(reports.right.earned / 2);
+    expect(reports.wrong.rentLateNights).toBeGreaterThanOrEqual(1);
+  });
+});
+
 describe("course bots (a world with a home)", () => {
   it("walk home to sleep, so every day ends and nothing is refused", () => {
     const c = fixtureCourse();

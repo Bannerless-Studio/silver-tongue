@@ -5,7 +5,7 @@ import {
   coursesBase, createWebAudio, fetchJson, fromLocalStorage, loadWebSettings, metaContent, migrateWebAliases, updateWebSettings, WebSessions,
   type KeyValue, type Opened,
 } from "@silver-tongue/web-common";
-import { loadArt, type Art } from "./art";
+import { loadArt, withArt, type Art } from "./art";
 import { App, type Page } from "./ui/App";
 import { Title } from "./ui/Title";
 import { createVn } from "./vn";
@@ -148,7 +148,7 @@ async function boot() {
   const settings = loadWebSettings(kv);
   prefs = { speed: settings.speed ?? DEFAULT_SPEED, autoAdvance: settings.autoAdvance ?? true };
   try {
-    catalog = await fetchJson<CatalogEntry[]>(`${base}index.json`);
+    catalog = await withArt(await fetchJson<CatalogEntry[]>(`${base}index.json`), base, getText);
     const picked = chooseStart(catalog, settings);
     if ("error" in picked) throw new Error(picked.error);
     if (!picked.ask) {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { newGame, type WordRecord } from "@silver-tongue/core";
-import { line } from "@silver-tongue/core/testing";
+import { formsCourse, line } from "@silver-tongue/core/testing";
 import { fixtureWithText, spacedWithText } from "../src/testing";
 import { firstTimeGloss, firstTimeWords, readingRow, sentenceCard, shortGloss, wordCard } from "../src/index";
 
@@ -55,6 +55,39 @@ describe("help cards", () => {
     const line = course.scenes[0].exchanges[0].variants[""].npc;
     expect(firstTimeGloss(course, line, new Set(["w_ni", "w_hao"]))).toBe("你 nǐ you · 好 hǎo good");
     expect(firstTimeGloss(course, line, new Set())).toBeUndefined();
+  });
+});
+
+describe("other forms of a word", () => {
+  const c = formsCourse();
+  const [id, word] = Object.entries(c.words).find(([, w]) => w.forms)!;
+  const [form, formReadings] = Object.entries(word.forms!)[0];
+  const lineWith = (text: string) => ({ text, tokens: [{ start: 0, end: text.length, word: id }], meaning: "m" });
+
+  it("sentence help reads the form that is in the line", () => {
+    expect(sentenceCard(c, lineWith(form))!.reading).toBe(formReadings.at(-1));
+    expect(sentenceCard(c, lineWith(word.w))!.reading).toBe(word.readings!.at(-1));
+  });
+
+  it("first-time glosses read the form that is in the line", () => {
+    expect(firstTimeWords(c, lineWith(form), new Set([id]))[0].reading).toBe(formReadings.at(-1));
+  });
+
+  it("the word card shows the form, its readings and the dictionary form", () => {
+    expect(wordCard(c, id, form)).toMatchObject({ text: form, readings: formReadings, base: word.w });
+    expect(wordCard(c, id, word.w)).toMatchObject({ text: word.w, readings: word.readings });
+    expect(wordCard(c, id, word.w).base).toBeUndefined();
+    expect(wordCard(c, id).base).toBeUndefined();
+  });
+
+  it("the word card of a form plays no clip, since the word's clip says the dictionary form", () => {
+    const withAudio = { ...c, words: { ...c.words, [id]: { ...word, audio: ["clip-of-w"] } } };
+    expect(wordCard(withAudio, id, form).clips).toEqual([]);
+    expect(wordCard(withAudio, id, word.w).clips).toEqual(["clip-of-w"]);
+  });
+
+  it("the reading row under a line reads the form that is in the line", () => {
+    expect(readingRow(c, newGame(c), lineWith(form), 0)).toBe(formReadings.at(-1));
   });
 });
 
