@@ -12,13 +12,13 @@ weather-reply-intent = Talk about the cold
 weather-alt1 = I'm glad!
 weather-alt1-intent = Say you're glad
 weather-alt2 = Thank you!
-weather-alt2-intent = Thank them
+weather-alt2-intent = Thank him
 
 rain = It rained yesterday, and it's raining today!
 rain-reply = Raining today!
 rain-reply-intent = Say it's raining
 rain-alt1 = Come and work on Saturday!
-rain-alt1-intent = Ask them to work Saturday
+rain-alt1-intent = Ask him to work Saturday
 rain-alt2 = How are you?
 rain-alt2-intent = Ask how they are
 

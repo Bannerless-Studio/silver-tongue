@@ -1,6 +1,6 @@
 greet = Hello! Please sit!
 greet-reply = Thank you!
-greet-reply-intent = Thank them
+greet-reply-intent = Thank him
 greet-alt1 = I'm hungry.
 greet-alt1-intent = Say you're hungry
 greet-alt2 = Goodbye!

@@ -35,10 +35,16 @@ function Said({ q, b, reveal, onWord, onReveal }: {
   const player = b.speaker === "player";
   const who = player ? core.state.player ?? t("you") : t(`npc-${b.speaker}`);
   const fresh = new Set(b.fresh ?? []);
-  const news = b.line && !player ? firstTimeWords(course, b.line, fresh) : [];
-  // A rephrased line comes with everything; any other NPC line has a ? when it has a meaning to show.
-  const whole = b.line && !player ? sentenceCard(course, b.line) : undefined;
-  const cls = `ln ${player ? "you" : "npc"}${b.tone === "react" ? " react" : ""}`;
+  const r = b.restate;
+  // The request said again after a reaction glosses nothing: its new words were glossed when first said.
+  const again = r ? firstTimeWords(course, r.line, new Set(r.fresh ?? [])) : [];
+  const news = b.line && !player ? [...firstTimeWords(course, b.line, fresh), ...again].filter((w, i, all) => all.findIndex((x) => x.word === w.word) === i) : [];
+  // A rephrased line comes with everything; any other NPC line has a ? when it has a meaning to show
+  // (the request's, when the line says it again).
+  const rephrased = b.rephrase || !!r?.rephrase;
+  const target = r?.line ?? b.line;
+  const whole = target && !player ? sentenceCard(course, target) : undefined;
+  const cls = `ln ${player ? "you" : "npc"}`;
   return (
     <>
       <div class={cls}>
@@ -50,10 +56,15 @@ function Said({ q, b, reveal, onWord, onReveal }: {
         ) : (
           <span class="prose-in">{b.text}</span>
         )}
-        {whole && !b.rephrase && (
+        {r && (
+          <span class="restate">
+            <Line line={r.line} fresh={r.fresh ?? []} words={core.state.words} now={now} onWord={(w, s) => onWord(b, w, s)} />
+          </span>
+        )}
+        {whole && !rephrased && (
           <button type="button" class="q" aria-label={t("quiet-reveal")} aria-expanded={reveal?.kind === "line"} onClick={() => onReveal(b)}>?</button>
         )}
-        {b.rephrase && <span class="tag">{t("quiet-rephrase")}</span>}
+        {rephrased && <span class="tag">{t(r?.rephrase === "slower" ? "rephrased" : "quiet-rephrase")}</span>}
         {b.cost && (
           <span class={`cost ${b.cost.reason}`}>
             {t("wallet-change", { sign: "-", amount: Math.abs(b.cost.amount), currency: course.world.currency, reason: t(`reason-${b.cost.reason}`) })}
@@ -65,7 +76,7 @@ function Said({ q, b, reveal, onWord, onReveal }: {
           <span class="conn">┆</span> <span class="gloss">{`${w.text} `}{[w.reading, w.gloss].filter(Boolean).join(" · ")}</span> <span class="dim">{t("quiet-new")}</span>
         </div>
       ))}
-      {b.rephrase && whole && (
+      {rephrased && whole && (
         <div class="gl"><span class="gloss">{[whole.reading, whole.meaning].filter(Boolean).join("  · ")}</span></div>
       )}
       {reveal && <Card q={q} reveal={reveal} />}

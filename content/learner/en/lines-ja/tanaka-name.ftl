@@ -20,7 +20,7 @@ understand-reply-intent = Say no
 understand-alt1 = Nice to meet you.
 understand-alt1-intent = Say it's nice to meet
 understand-alt2 = Thank you.
-understand-alt2-intent = Thank them
+understand-alt2-intent = Thank him
 
 bye = Well, see you.
 bye-reply = Yes, see you.

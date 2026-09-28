@@ -1,6 +1,6 @@
 greet = Hello!
 greet-reply = Hello! What's your name?
-greet-reply-intent = Greet him and ask his name
+greet-reply-intent = Greet her and ask her name
 greet-alt1 = Goodbye!
 greet-alt1-intent = Say goodbye
 greet-alt2 = How are you?
@@ -37,7 +37,7 @@ like-alt2-intent = Say goodbye
 
 job = Good, come and work!
 job-reply = Thank you!
-job-reply-intent = Thank them
+job-reply-intent = Thank her
 job-alt1 = Goodbye!
 job-alt1-intent = Say goodbye
 job-alt2 = My name is { $player }.

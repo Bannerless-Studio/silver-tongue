@@ -12,7 +12,7 @@ amount-reply-intent = Check the rent
 amount-alt1 = Five?
 amount-alt1-intent = Check the number
 amount-alt2 = Thank you.
-amount-alt2-intent = Thank them
+amount-alt2-intent = Thank her
 
 money = Do you have money?
 money-reply = No, I have no money.

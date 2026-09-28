@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { comboKey, createCore, mulberry32, newGame, type Course, type GameState } from "@silver-tongue/core";
+import { comboKey, createCore, mulberry32, newGame, type Course, type GameState, type RenderedLine } from "@silver-tongue/core";
 import { fixtureWithText } from "@silver-tongue/view/testing";
 import type { AudioOut, Speech } from "@silver-tongue/view";
 import { createQuiet, latestNpcLine, type QuietOptions } from "../src/quiet";
@@ -96,7 +96,7 @@ describe("quiet terminal controller", () => {
     expect(q.view().scene).toBe("shift");
     q.choose(wrongIndex(core));
     q.choose(wrongIndex(core));
-    expect(q.view().backlog.some((b) => b.rephrase && b.speaker === "cook")).toBe(true);
+    expect(q.view().backlog.some((b) => b.restate?.rephrase === "rephrase" && b.speaker === "cook")).toBe(true);
   });
 
   it("finishing a scene: earnings once as prose, trust silent, the scene is over", () => {
@@ -152,6 +152,34 @@ describe("quiet terminal controller", () => {
     expect(played.length).toBe(n);
   });
 
+  it("a word glosses once per transcript: a second reaction glosses nothing already glossed", () => {
+    const { q, core } = setup();
+    q.choose(0);
+    q.choose(0);
+    q.choose(wrongIndex(core));
+    q.choose(wrongIndex(core));
+    const reactions = q.view().backlog.filter((b) => b.tone === "react" && b.line);
+    expect(reactions).toHaveLength(2);
+    expect(reactions[0].fresh).toContain("w_bu");
+    expect(reactions[1].fresh ?? []).toEqual([]); // 不 was glossed on the first reaction: no second gloss row
+  });
+
+  it("stage direction is narration; outcomes keep their tones", () => {
+    const fresh = setup();
+    expect(fresh.q.view().backlog.map((b) => b.tone)).toEqual(["narr", "narr"]); // the opening story
+    fresh.q.choose(0);
+    fresh.q.choose(0);
+    const start = fresh.q.view().backlog.find((b) => b.text?.startsWith("The cook looks up"))!;
+    expect(start.tone).toBe("narr");
+    const { q, core } = fresh;
+    while (q.view().phase.kind === "pick") q.choose(rightIndex(core));
+    const end = q.view().backlog.find((b) => b.text === "She hands you an apron.")!;
+    expect(end.tone).toBe("narr");
+    expect(q.view().backlog.at(-1)!.tone).toMatch(/good|plain/); // the scene's outcome line
+    const resumed = setup((s) => (s.day = 3));
+    expect(resumed.q.view().backlog.map((b) => b.tone)).toEqual(["narr"]); // where the player is
+  });
+
   it("a reaction's never-heard words gloss themselves too", () => {
     const { q, core } = setup();
     q.choose(0);
@@ -205,5 +233,133 @@ describe("quiet terminal controller", () => {
     const b = latestNpcLine(q.view().backlog)!;
     expect(b.speaker).toBe("cook");
     expect(b.line).toEqual(core.state.run && q.view().lastLine);
+  });
+
+  describe("a miss is one beat: echo, one narration line, the reaction saying the request again", () => {
+    const shift = (s: GameState) => {
+      s.scenesDone = { intro: 1 };
+      s.trust = { cook: 1 };
+      s.wallet = 50;
+    };
+    /** the transcript since `from`, as it reads: speaker, words, the request said again, any tag */
+    const reads = (q: ReturnType<typeof setup>["q"], from: number) =>
+      q.view().backlog.slice(from).map((b) =>
+        [b.speaker && `${b.speaker}:`, b.text ?? b.line?.text, b.restate?.line.text, b.restate?.rephrase && `[${b.restate.rephrase}]`, b.cost && `${b.cost.amount}`]
+          .filter(Boolean).join(" "));
+
+    it("first miss: what was done and what was asked on one line; the reaction restates the request", () => {
+      const { q, core } = setup(shift);
+      q.choose(0);
+      q.choose(0);
+      const asked = q.view().lastLine!;
+      const from = q.view().backlog.length;
+      q.choose(wrongIndex(core));
+      expect(reads(q, from)).toEqual([
+        "player: 好，四杯水。 -2",
+        "You set down four cups of water. They wanted four cups of tea.",
+        "cook: 不是这个。 四杯茶。",
+      ]);
+      const [, told, react] = q.view().backlog.slice(from);
+      expect(told.tone).toBe("react");
+      expect(react).toMatchObject({ tone: "react", restate: { line: asked } });
+      expect(react.restate!.fresh ?? []).toEqual([]); // the request's words were glossed when first said
+      expect(q.view().lastLine).toBe(asked);
+    });
+
+    it("second miss: the rephrase rides on the reaction, never a separate line", () => {
+      const { q, core } = setup(shift);
+      q.choose(0);
+      q.choose(0);
+      q.choose(wrongIndex(core));
+      const from = q.view().backlog.length;
+      q.choose(wrongIndex(core));
+      expect(reads(q, from)).toEqual([
+        "player: 好，四杯水。 -2",
+        "You set down four cups of water. They wanted four cups of tea.",
+        "cook: 不是这个。 茶。四杯。 [rephrase]",
+      ]);
+      expect(q.view().backlog.some((b) => b.rephrase)).toBe(false);
+      expect(q.view().lastLine?.text).toBe("茶。四杯。");
+    });
+
+    it("second miss with no authored rephrase: the same request, said slower, on the reaction", () => {
+      const { q, core } = setup();
+      q.choose(0);
+      q.choose(0);
+      q.choose(rightIndex(core));
+      q.choose(wrongIndex(core));
+      const from = q.view().backlog.length;
+      q.choose(wrongIndex(core));
+      const rows = reads(q, from);
+      expect(rows).toHaveLength(3);
+      expect(rows[2]).toBe("cook: 不是这个。 水。 [slower]");
+    });
+
+    it("a scene with no action narration: the italic line is just what was asked", () => {
+      const { q, core } = setup(undefined, (c) => {
+        c.learnerFtl = c.learnerFtl.replace(/^action-repeat = .*$/m, "") + "\nasked-repeat = The cook was asking for { $item }.\n";
+      });
+      q.choose(0);
+      q.choose(0);
+      q.choose(rightIndex(core));
+      const from = q.view().backlog.length;
+      q.choose(wrongIndex(core));
+      expect(reads(q, from)).toEqual(["player: 茶？ -1", "The cook was asking for water.", "cook: 不是这个。 水。"]);
+    });
+
+    it("a miss plays the reaction's clip only, plus the rephrase's; never the request again", () => {
+      const played: Speech[][] = [];
+      const audio: AudioOut = { available: true, play: (l) => void played.push(l), stop: () => {} };
+      const { q, core } = setup(shift, (c) => {
+        for (const sc of c.scenes) for (const ex of sc.exchanges) for (const v of Object.values(ex.variants)) {
+          v.npc.audio = ["ask.mp3"];
+          if (v.rephrase) v.rephrase.audio = ["rephrase.mp3"];
+        }
+        c.reactionAudio = new Proxy({}, { get: () => ({ cook: ["react.mp3"] }) });
+      }, { audio });
+      q.choose(0);
+      q.choose(0);
+      q.choose(wrongIndex(core));
+      expect(played.at(-1)!.flatMap((s) => s.clips)).toEqual(["react.mp3"]);
+      q.choose(wrongIndex(core));
+      expect(played.at(-1)!.flatMap((s) => s.clips)).toEqual(["react.mp3", "rephrase.mp3"]);
+    });
+
+    it("a right reply is unchanged: the echo, what was done, then what comes next", () => {
+      const job = setup(shift);
+      job.q.choose(0);
+      job.q.choose(0);
+      const from = job.q.view().backlog.length;
+      job.q.choose(rightIndex(job.core));
+      expect(reads(job.q, from).slice(0, 2)).toEqual(["player: 好，四杯茶。", "You set down four cups of tea."]);
+      expect(job.q.view().backlog[from + 1].tone).toBe("narr");
+      const social = setup();
+      social.q.choose(0);
+      social.q.choose(0);
+      social.q.choose(rightIndex(social.core));
+      const at = social.q.view().backlog.length;
+      social.q.choose(rightIndex(social.core));
+      const rows = social.q.view().backlog.slice(at);
+      expect(rows[0]).toMatchObject({ speaker: "player" });
+      expect(rows.some((b) => b.tone === "react" || b.restate)).toBe(false);
+    });
+  });
+
+  it("an option's intent shows only when the options' intents differ and a word in it is not known yet", () => {
+    const known = { right: 3, wrong: 0, streak: 3, helps: 0, lapsed: false, firstSeen: T0, lastSeen: T0 };
+    const { q } = setup((s) => (s.words.w_hao = { ...known }));
+    const tk = (word: string) => ({ word, start: 0, end: 1 });
+    const line = (text: string, words: string[], intent?: string) => ({ text, tokens: words.map(tk), ...(intent ? { intent } : {}) }) as unknown as RenderedLine;
+    const social = [line("你好", ["w_ni", "w_hao"], "Greet"), line("好", ["w_hao"], "Agree")];
+    expect(social.map((o) => q.intentShown(social, o))).toEqual([true, false]); // 好 alone is known
+    const job = [line("四杯茶", ["w_si"], "Repeat the job"), line("三杯茶", ["w_san"], "Repeat the job")];
+    expect(job.map((o) => q.intentShown(job, o))).toEqual([false, false]);
+    const some = [line("你", ["w_ni"], "Point"), line("不", ["w_bu"])];
+    expect(some.map((o) => q.intentShown(some, o))).toEqual([true, false]);
+    // A lone option has no other intent to differ from: it shows while a word in it is not known.
+    const lone = [line("你好", ["w_ni", "w_hao"], "Greet")];
+    expect(q.intentShown(lone, lone[0])).toBe(true);
+    const loneKnown = [line("好", ["w_hao"], "Agree")];
+    expect(q.intentShown(loneKnown, loneKnown[0])).toBe(false);
   });
 });

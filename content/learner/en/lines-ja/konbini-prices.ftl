@@ -30,6 +30,6 @@ which-alt2-intent = Compare the prices
 
 thanks = Thank you (for coming in).
 thanks-reply = Thank you.
-thanks-reply-intent = Thank them
+thanks-reply-intent = Thank her
 thanks-alt1 = Hello.
 thanks-alt1-intent = Say hello

@@ -36,6 +36,28 @@ new scene, a mentor note, an errand) is a toast, held until the scene ends so it
 line and its replies. A word glosses itself if it was heard for the first time in that line or has
 never been heard (reaction lines don't count as hearing). A game picked up mid-scene replays the
 current line and replies (core `describeRun`); between scenes it says where the player is.
+
+A miss is one beat of at most three rows, and every try stays in the transcript:
+
+```
+You: 好，六个桌子。  −¥1
+You carry six tables. Big Liu wanted three tables.     (one dim italic line: action-* then asked-*)
+Big Liu: 不是。 三个桌子。                            ?  (reaction, then the request said again in normal tone)
+```
+
+The italic line joins the action narration and the asked-* line; a scene with no action narration
+(social scenes) shows the asked-* line alone. The reaction restates the request (the last line said or
+rephrased in the exchange), so the next reply visibly answers the request, not `不是`. The restated
+request glosses no new words (they were glossed when it was first said) and plays no clip: only the
+reaction's clip plays. Its `?` opens the request's reading and meaning. After the second miss the
+restated part is the rephrase (or the same line said slower), shown with its reading and meaning and a
+dim `rephrase` / `(slower)` tag, and its clip plays after the reaction's: one NPC line, never the
+request twice. A reaction with no replies after it (the scene ended) restates nothing. A right reply
+is unchanged: the echo, the action narration if any, the next line.
+
+An option's intent (dim, in brackets) shows only when the options' intents differ and that option
+holds a word not yet known (met, shaky or unseen). One intent shared by all options tells nothing, and
+once the player knows an option's words its intent would only translate it, so it goes.
 Fonts are local (`ui-monospace` stack): the site makes no third-party requests.
 
 ## Escape hatches

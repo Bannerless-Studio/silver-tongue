@@ -32,7 +32,7 @@ films-alt2-intent = Greet David
 
 clothes = Nice clothes!
 clothes-reply = Thank you!
-clothes-reply-intent = Thank them
+clothes-reply-intent = Thank him
 clothes-alt1 = I love films!
 clothes-alt1-intent = Say you love films
 clothes-alt2 = I don't have a cat.
@@ -40,7 +40,7 @@ clothes-alt2-intent = Say you have no cat
 
 fruit = Want some fruit?
 fruit-reply = Thanks!
-fruit-reply-intent = Thank them
+fruit-reply-intent = Thank him
 fruit-alt1 = I don't have a cat.
 fruit-alt1-intent = Say you have no cat
 fruit-alt2 = I love films!
@@ -52,4 +52,4 @@ bye-reply-intent = Get writing
 bye-alt1 = I love films!
 bye-alt1-intent = Say you love films
 bye-alt2 = Thanks!
-bye-alt2-intent = Thank them
+bye-alt2-intent = Thank him

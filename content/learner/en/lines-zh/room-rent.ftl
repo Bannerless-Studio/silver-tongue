@@ -28,7 +28,7 @@ price-reply-intent = Agree to fifty kuai
 price-alt1 = Five tables.
 price-alt1-intent = Say five tables
 price-alt2 = Thank you! Goodbye!
-price-alt2-intent = Thank them and leave
+price-alt2-intent = Thank him and leave
 
 bye = Thank you! Goodbye!
 bye-reply = Goodbye, Mr Li!

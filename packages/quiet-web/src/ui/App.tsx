@@ -49,7 +49,8 @@ export function App({ q, page }: { q: Quiet; page: Page }) {
   };
   const onReveal = (b: Beat) => {
     if (reveal?.kind === "line" && reveal.beat === b.id) return setReveal(null);
-    const card = b.line && q.sentence(b.line);
+    const line = b.restate?.line ?? b.line; // a reaction's ? opens the request it says again
+    const card = line && q.sentence(line);
     if (card) setReveal({ beat: b.id, kind: "line", card });
   };
 

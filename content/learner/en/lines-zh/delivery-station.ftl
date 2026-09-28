@@ -16,13 +16,13 @@ beijing-alt2-intent = Greet Big Liu
 
 time = It's { -hour } o'clock already!
 time-reply = { -hour(form: "cap") } o'clock already! Goodbye!
-time-reply-intent = Repeat the time and say goodbye
+time-reply-intent = { -hour(form: "cap") } o'clock, then goodbye
 time-rephrase = { -hour(form: "cap") } o'clock! It's { -hour } o'clock already!
 
 bye = Goodbye!
 bye-reply = Goodbye!
 bye-reply-intent = Say goodbye
 bye-alt1 = Who are you?
-bye-alt1-intent = Ask who they are
+bye-alt1-intent = Ask who he is
 bye-alt2 = I'm hungry.
 bye-alt2-intent = Say you're hungry

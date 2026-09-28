@@ -1,7 +1,7 @@
 buy = { -item(form: "cap") }? That's 150 yen.
 buy-reply = Yes, the { -item }, please.
-buy-reply-intent = Ask for it
+buy-reply-intent = Ask for the { -item }
 
 thanks = Thank you (for coming in).
 thanks-reply = Thank you.
-thanks-reply-intent = Thank them
+thanks-reply-intent = Thank her

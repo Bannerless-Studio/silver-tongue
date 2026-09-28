@@ -18,17 +18,29 @@ export interface Beat {
   text?: string;
   /** a mentor note's title */
   title?: string;
-  /** react: an NPC's reaction to a miss, and narration of what was asked instead */
-  tone?: "plain" | "warn" | "good" | "react";
+  /** react: an NPC's reaction to a miss, and narration of what was asked instead. narr: stage direction
+   * (the opening story, a scene's framing, what the player did, where a resumed game is, a new day).
+   * good / warn / plain: outcomes (wages, money). */
+  tone?: "plain" | "warn" | "good" | "react" | "narr";
   /** words new to the player when this line was said: heard for the first time, or never heard at all
-   * (a reaction line is not counted as hearing). The only words that gloss themselves. */
+   * (a reaction line is not counted as hearing), and not glossed yet in this transcript. The only words
+   * that gloss themselves; each word glosses once per game session. */
   fresh?: WordId[];
   /** what the player's reply cost (a negative wallet change), shown on the reply; mixup when a miss cost it */
   cost?: { amount: number; reason: "mixup" | "shopping" };
   /** said again after two misses: shown with its reading and meaning */
   rephrase?: boolean;
+  /** a reaction to a miss: the request, said again on the same line (no second clip). After a second
+   * miss it is the rephrase (or the line said slower), shown with its reading and meaning. */
+  restate?: Restate;
   /** a new day starts here */
   day?: number;
+}
+export interface Restate {
+  line: RenderedLine;
+  /** words new in a rephrase; none for the request said again (they were glossed when first said) */
+  fresh?: WordId[];
+  rephrase?: "rephrase" | "slower";
 }
 export type Phase =
   | { kind: "name" }
@@ -73,6 +85,8 @@ export interface Quiet {
   replay(slow?: boolean): void;
   play(clips: string[]): void;
   setName(name: string): boolean;
+  /** whether an option's intent is shown under it */
+  intentShown(options: RenderedLine[], o: RenderedLine): boolean;
   toggleSound(): void;
   dismissToast(id: number): void;
 }
@@ -118,6 +132,8 @@ export function createQuiet(opts: QuietOptions): Quiet {
   let nextId = 1;
   /** news that arrived mid-scene, held until the scene is over so it never lands between a line and its replies */
   let held: Omit<Toast, "id">[] = [];
+  /** words already glossed in this transcript: a word is boxed and glossed once, then rendered as usual */
+  const glossed = new Set<WordId>();
   let save = opts.save;
   const listeners = new Set<() => void>();
 
@@ -135,9 +151,11 @@ export function createQuiet(opts: QuietOptions): Quiet {
     if (scene) held.push({ text, tone });
     else toast(text, tone);
   };
-  const push = (b: Omit<Beat, "id">, s?: Speech) => {
-    queue.push({ id: nextId++, ...b });
+  const push = (b: Omit<Beat, "id">, s?: Speech): Beat => {
+    const beat = { id: nextId++, ...b };
+    queue.push(beat);
     if (s) speeches.push(s);
+    return beat;
   };
 
   /** Moves everything said into the transcript and says it aloud, in order. */
@@ -159,37 +177,58 @@ export function createQuiet(opts: QuietOptions): Quiet {
   function apply(events: GameEvent[]) {
     const fresh = new Set(events.flatMap((e) => (e.type === "wordStateChanged" && e.from === "unseen" ? [e.word] : [])));
     const now = opts.now();
-    const freshIn = (l: RenderedLine) => [...new Set(l.tokens.map((tk) => tk.word).filter((w) => fresh.has(w) || wordState(core.state.words[w], now) === "unseen"))];
+    const freshIn = (l: RenderedLine) => {
+      const out = [...new Set(l.tokens.map((tk) => tk.word).filter((w) => !glossed.has(w) && (fresh.has(w) || wordState(core.state.words[w], now) === "unseen")))];
+      for (const w of out) glossed.add(w);
+      return out;
+    };
     let hinted = false;
+    /** reactions that restate the request; only kept when the replies come back after them */
+    const reacted: Beat[] = [];
     for (const e of events) {
       switch (e.type) {
         case "sceneStarted":
           scene = e.scene;
           reply = undefined;
-          if (!resuming && t.has(`scene-${e.scene}-start`)) push({ text: t(`scene-${e.scene}-start`) });
+          if (!resuming && t.has(`scene-${e.scene}-start`)) push({ text: t(`scene-${e.scene}-start`), tone: "narr" });
           break;
         case "lineSpoken":
           lastLine = e.line;
           lastSpeech = speech(e.line.audio);
           push({ speaker: e.npc, line: e.line, fresh: freshIn(e.line) }, lastSpeech);
           break;
-        case "lineRephrased":
+        case "lineRephrased": {
           lastLine = e.line;
           lastSpeech = speech(e.line.audio, e.slow);
-          push({ speaker: e.npc, line: e.line, fresh: freshIn(e.line), rephrase: true }, lastSpeech);
+          // Merged into the reaction just said: one NPC line, never the request twice.
+          const r = reacted.at(-1);
+          if (r && r.speaker === e.npc && queue.includes(r)) {
+            r.restate = { line: e.line, fresh: e.slow ? [] : freshIn(e.line), rephrase: e.slow ? "slower" : "rephrase" };
+            if (lastSpeech) speeches.push(lastSpeech);
+          } else push({ speaker: e.npc, line: e.line, fresh: freshIn(e.line), rephrase: true }, lastSpeech);
           break;
+        }
         case "replyOptions":
           reply = e.mode === "pick" ? { mode: "pick", options: e.options } : { mode: "tiles", tiles: e.tiles };
           placed = [];
           break;
-        case "actionPerformed":
-          for (const n of actionNarration(course, t, e, scene && npcName(course.scenes.find((s) => s.id === scene)?.npc ?? "")))
-            push({ text: n.text, tone: n.tone === "warn" ? "react" : "plain" });
+        case "actionPerformed": {
+          const said = actionNarration(course, t, e, scene && npcName(course.scenes.find((s) => s.id === scene)?.npc ?? ""));
+          // A miss is one narration line: what the player did and what was asked, together.
+          if (!e.matched && said.length) push({ text: said.map((n) => n.text).join(" "), tone: "react" });
+          else for (const n of said) push({ text: n.text, tone: n.tone === "warn" ? "react" : "narr" });
           break;
-        case "npcReacted":
-          // Word help keeps offering the request the player got wrong, not the reaction.
-          push({ speaker: e.npc, line: e.line, fresh: freshIn(e.line), tone: "react" }, speech(course.reactionAudio?.[e.reaction]?.[e.npc]));
+        }
+        case "npcReacted": {
+          // The reaction carries the request said again, so the next reply answers it, not the reaction.
+          // Only its own clip plays; word help keeps offering the request the player got wrong.
+          const r = push({ speaker: e.npc, line: e.line, fresh: freshIn(e.line), tone: "react" }, speech(course.reactionAudio?.[e.reaction]?.[e.npc]));
+          if (lastLine) {
+            r.restate = { line: lastLine };
+            reacted.push(r);
+          }
           break;
+        }
         case "walletChanged": {
           // Food is expected every night and wages are the scene's closing line: neither is news.
           if (e.reason === "food" || e.reason === "wages") break;
@@ -204,7 +243,7 @@ export function createQuiet(opts: QuietOptions): Quiet {
           reply = undefined;
           lastLine = undefined;
           lastSpeech = undefined;
-          if (t.has(`scene-${e.scene}-end`)) push({ text: t(`scene-${e.scene}-end`) });
+          if (t.has(`scene-${e.scene}-end`)) push({ text: t(`scene-${e.scene}-end`), tone: "narr" });
           push({ text: t("scene-done", { currency: course.world.currency, earned: e.earned }), tone: e.earned > 0 ? "good" : "plain" });
           break;
         case "unlocked":
@@ -224,7 +263,7 @@ export function createQuiet(opts: QuietOptions): Quiet {
           break;
         case "dayEnded":
           // core.state already holds the new day when events are applied
-          push({ text: t(e.rough ? "day-ended-rough" : "day-ended", { day: e.day }), day: core.state.day });
+          push({ text: t(e.rough ? "day-ended-rough" : "day-ended", { day: e.day }), tone: "narr", day: core.state.day });
           break;
         case "inputRejected":
           toast(t(`reject-${e.reason}`), "bad");
@@ -246,6 +285,17 @@ export function createQuiet(opts: QuietOptions): Quiet {
           break;
       }
     }
+    // No replies after the reaction (the scene ended): nothing to answer, so the request isn't said again.
+    if (!events.some((e) => e.type === "replyOptions")) for (const r of reacted) if (!r.restate?.rephrase) delete r.restate;
+  }
+
+  /** Whether an option's intent is shown under it: only while the options' intents differ (one shared by
+   * several tells nothing) or it is the only option, and the option holds a word not known yet. Once its
+   * words are known the intent would only translate it, so it goes. */
+  function intentShown(options: RenderedLine[], o: RenderedLine): boolean {
+    if (!o.intent || (options.length > 1 && options.every((x) => x.intent === options[0].intent))) return false;
+    const at = opts.now();
+    return o.tokens.some((tk) => wordState(core.state.words[tk.word], at) !== "known");
   }
 
   function persist() {
@@ -276,12 +326,12 @@ export function createQuiet(opts: QuietOptions): Quiet {
 
   if (opts.notice) toast(t(opts.notice), "bad");
   const intro = introLines(course, core.state, t);
-  for (const text of intro) push({ text });
+  for (const text of intro) push({ text, tone: "narr" });
   resuming = true;
   apply(describeRun(course, core.state)); // a save made mid-scene resumes in the scene: its line, then its replies
   resuming = false;
   // A game picked up between scenes: say where the player is, so the screen is never blank.
-  if (!intro.length && !scene) push({ text: t("quiet-resume", { place: t(`place-${core.state.place}`) }), tone: "warn" });
+  if (!intro.length && !scene) push({ text: t("quiet-resume", { place: t(`place-${core.state.place}`) }), tone: "narr" });
   flush(true);
 
   return {
@@ -342,6 +392,7 @@ export function createQuiet(opts: QuietOptions): Quiet {
       const s = speech(clips);
       if (s) say([s]);
     },
+    intentShown,
     setName(name) {
       if (!naming) return true;
       const events = core.send({ type: "setName", name });

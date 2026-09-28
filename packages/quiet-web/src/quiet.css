@@ -45,14 +45,16 @@ p { margin: 0; }
 .log { display: flex; flex-direction: column; gap: 0.15rem; }
 .prose { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0.35rem 0; }
 .prose.warn { color: var(--muted); }
-.prose.react { color: var(--muted); font-style: italic; }
+/* Stage direction and a miss's narration: dim italic. Outcomes keep their own tones. */
+.prose.react, .prose.narr { color: var(--muted); font-style: italic; }
 .prose.good { color: var(--green); }
 .prose.day { margin-top: 1.25rem; color: var(--muted); }
 .ln { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 0.1rem; margin-top: 0.5rem; overflow-wrap: anywhere; }
 .ln .who { color: var(--cyan); }
 .ln .sep { white-space: pre; }
 .ln.you .who { color: var(--muted); }
-.ln.react { color: var(--muted); font-style: italic; }
+/* An NPC's reaction reads like any NPC line; only the narration above it is dim. */
+.ln .restate { margin-left: 1ch; }
 .ln .q { color: var(--line); margin-left: auto; padding: 0 0.4rem; }
 .ln .q:hover, .ln .q[aria-expanded="true"] { color: var(--cyan); }
 .ln .tag { color: var(--muted); font-size: 0.8em; margin-left: auto; }

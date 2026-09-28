@@ -1,11 +1,11 @@
 bags = { -amount(form: "cap") } things, { -way } the taxi!
 bags-reply = OK, { -amount } things { -way } the taxi.
-bags-reply-intent = Repeat where the bags go
+bags-reply-intent = { -amount(form: "cap") } things { -way } the taxi
 bags-rephrase = { -way(form: "cap") } the taxi! { -amount(form: "cap") } of them!
 
 train = { -hour(form: "cap") } o'clock, to Beijing!
 train-reply = OK, to Beijing at { -hour }.
-train-reply-intent = Repeat the time
+train-reply-intent = { -hour(form: "cap") } o'clock, to Beijing
 train-rephrase = What time? { -hour(form: "cap") } o'clock! To Beijing!
 
 phone = Hello? ... Hang on, I'm on the phone.

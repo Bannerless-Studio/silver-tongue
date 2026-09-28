@@ -40,7 +40,7 @@ these-alt2-intent = Marvel at the crowd
 
 price = That young woman, ten kuai!
 price-reply = OK, ten kuai for her!
-price-reply-intent = Repeat the price
+price-reply-intent = Ten kuai for her
 price-alt1 = OK, these dishes.
 price-alt1-intent = Take the dishes
 price-alt2 = I'm hungry.
@@ -50,7 +50,7 @@ eat = Right, we eat! Which dish do you want?
 eat-reply = I want this one.
 eat-reply-intent = Choose this one
 eat-alt1 = OK, ten kuai for her!
-eat-alt1-intent = Repeat the price
+eat-alt1-intent = Ten kuai for her
 eat-alt2 = So many!
 eat-alt2-intent = Marvel at the crowd
 

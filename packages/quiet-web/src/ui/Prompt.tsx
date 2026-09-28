@@ -1,5 +1,4 @@
 import { useState } from "preact/hooks";
-import { wordState } from "@silver-tongue/core";
 import { CONFUSED, type Quiet, type QuietView } from "../quiet";
 
 /** What the player can do now: a name, a numbered reply, tiles, or the place's commands. */
@@ -20,14 +19,11 @@ export function Prompt({ q, view }: { q: Quiet; view: QuietView }) {
     );
   }
   if (p.kind === "pick") {
-    // Never a translation beside an option (it would answer it): only what the reply does, while a word in it is not known yet.
-    const now = Date.now();
-    const unknown = (o: (typeof p.options)[number]) => o.tokens.some((tk) => wordState(q.core.state.words[tk.word], now) !== "known");
     return (
       <div class="prompt">
         {p.options.map((o, i) => (
           <button key={i} type="button" class="opt" onClick={() => q.choose(i)}>
-            <span class="n">{i + 1}</span>{o.text}{o.intent && unknown(o) && <span class="dim"> ({o.intent})</span>}
+            <span class="n">{i + 1}</span>{o.text}{q.intentShown(p.options, o) && <span class="dim"> ({o.intent})</span>}
           </button>
         ))}
         {p.confused && (

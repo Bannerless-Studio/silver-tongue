@@ -28,7 +28,7 @@ station-reply-intent = Say it's behind the hospital
 station-alt1 = In front of the hospital.
 station-alt1-intent = Say it's in front of the hospital
 station-alt2 = Thank you! Goodbye!
-station-alt2-intent = Thank them and leave
+station-alt2-intent = Thank Miss Gao and leave
 
 where = Where is the school?
 where-reply = In front of the hospital!

@@ -48,7 +48,7 @@ shop-alt2-intent = Ask how they are
 
 bye = Goodbye, { $player }!
 bye-reply = Thank you! Goodbye!
-bye-reply-intent = Thank them and leave
+bye-reply-intent = Thank him and leave
 bye-alt1 = Hello, Old Wang!
 bye-alt1-intent = Greet Old Wang
 bye-alt2 = My name is { $player }.

@@ -3,7 +3,8 @@ import { glossPolicy } from "@silver-tongue/view";
 
 /**
  * A line in the language being learned. Each word is a button to look it up. A word heard for the
- * first time is boxed (its gloss follows on the next line), a shaky one is underlined, the rest are bare.
+ * first time is boxed (its gloss follows on the next line), once per transcript; a shaky one is underlined,
+ * the rest are bare.
  */
 export function Line({ line, fresh = [], words, now, onWord }: {
   line: RenderedLine; fresh?: WordId[]; words?: Record<WordId, WordRecord>; now: number; onWord?: (w: WordId, surface: string) => void;
@@ -13,7 +14,8 @@ export function Line({ line, fresh = [], words, now, onWord }: {
   line.tokens.forEach((tk, i) => {
     if (tk.start > at) parts.push(<span key={`g${i}`}>{line.text.slice(at, tk.start)}</span>);
     const text = line.text.slice(tk.start, tk.end);
-    const policy = fresh.includes(tk.word) ? "gloss" : words ? glossPolicy(wordState(words[tk.word], now)) : "bare";
+    // Only a fresh word is boxed: one never heard but already glossed in this transcript renders bare.
+    const policy = fresh.includes(tk.word) ? "gloss" : words && glossPolicy(wordState(words[tk.word], now)) === "mark" ? "mark" : "bare";
     const cls = `w${policy === "gloss" ? " new" : policy === "mark" ? " shaky" : ""}`;
     parts.push(
       onWord ? (

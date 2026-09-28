@@ -23,7 +23,7 @@ npc-clerk = the clerk
 
 # Scene names for the menu; scene-<id>-start and scene-<id>-end are optional narration.
 scene-tanaka-hello = Say hello to the old man
-scene-tanaka-hello-start = The old man pats the bench beside him.
+scene-tanaka-hello-start = The old man pats the bench beside him. Stuck? Press [w] to look a word up.
 scene-tanaka-hello-end = Mr Tanaka nods, satisfied, and goes back to his pigeons.
 scene-tanaka-name = Tell Mr Tanaka your name
 scene-tanaka-name-start = Mr Tanaka taps his chest, then points at you.
@@ -42,11 +42,15 @@ scene-ramen-intro = Ask about work
 scene-ramen-intro-start = A man in a white headband waves you in from behind the counter.
 scene-ramen-intro-end = The owner ties a towel round your head: you have a job.
 scene-ramen-shift = Work a shift
+scene-ramen-shift-start = The owner shouts over the noise: fetch drinks, then serve them as the orders come in.
+scene-ramen-shift-end = The last bowl goes out. The owner wipes down the counter and pays you.
 
 scene-konbini-prices = Ask what things cost
 scene-konbini-prices-start = The door chimes. A young clerk in a striped uniform bows.
 scene-konbini-prices-end = The clerk bows again as you leave. The rice balls are 150 yen.
 scene-konbini-buy = Buy something to eat
+scene-konbini-buy-start = The clerk waits behind the counter: say what you want, then thank her when she rings it up.
+scene-konbini-buy-end = She bags your item and bows. Another sale done.
 
 # What a reply does (action-<name>), and on a mix-up what was asked (asked-<name>).
 # Concept values arrive as learner names: $item = "tea", $count = "three".
@@ -55,36 +59,36 @@ asked-fetch = The owner wanted { $item }.
 action-serve = You set down { $count } { $item }s.
 asked-serve = The owner wanted { $count } { $item }s.
 action-buy = You buy the { $item }.
-asked-buy = The clerk was asking about the { $item }.
+asked-buy = The clerk asked about { $item }.
 
 # Conversations: what was asked, shown after a wrong reply. These are shared by every scene that
 # uses the action, so they say "they" unless only one person ever uses it.
-asked-hello = { $npc } was saying hello.
-asked-tanaka = Mr Tanaka was telling you his name.
-asked-sit = Mr Tanaka was offering you a seat.
-asked-bye = { $npc } was saying goodbye.
-asked-ask = Mr Tanaka was asking your name.
-asked-nice = Mr Tanaka was saying he's pleased to meet you.
-asked-understand = Mr Tanaka was asking if you understand Japanese.
+asked-hello = { $npc } said hello.
+asked-tanaka = Mr Tanaka told you his name.
+asked-sit = Mr Tanaka offered you a seat.
+asked-bye = { $npc } said goodbye.
+asked-ask = Mr Tanaka asked your name.
+asked-nice = Mr Tanaka said he's pleased to meet you.
+asked-understand = Mr Tanaka asked if you understand Japanese.
 asked-numbers = { $npc } asked you to count along.
 asked-next = Mr Tanaka wanted the next number: { $number }.
-asked-greet = { $npc } was saying hello.
-asked-room = The landlady was showing you your room.
-asked-key = The landlady was giving you the key.
-asked-night = The landlady was saying good night.
-asked-rent = The landlady was asking if you understand about the rent.
-asked-amount = The landlady was telling you the rent.
-asked-money = The landlady was asking if you have money.
-asked-worked = The landlady was asking if you've worked at the ramen shop.
-asked-welcome = { $npc } was welcoming you in.
-asked-ate = The owner was asking if you've eaten ramen.
-asked-work = The owner was asking if you'll work.
-asked-water = The owner was showing you the water.
-asked-tea = The owner was showing you the tea.
-asked-onigiri = The clerk was telling you what rice balls cost.
-asked-bread = The clerk was telling you what bread costs.
-asked-which = The clerk was asking which one you meant.
-asked-thanks = { $npc } was thanking you.
+asked-greet = { $npc } said hello.
+asked-room = The landlady showed you your room.
+asked-key = The landlady gave you the key.
+asked-night = The landlady said good night.
+asked-rent = The landlady asked if you understand the rent.
+asked-amount = The landlady told you the rent.
+asked-money = The landlady asked if you have money.
+asked-worked = The landlady asked about the ramen job.
+asked-welcome = { $npc } welcomed you in.
+asked-ate = The owner asked if you've eaten ramen.
+asked-work = The owner asked if you'll work.
+asked-water = The owner showed you the water.
+asked-tea = The owner showed you the tea.
+asked-onigiri = The clerk told you what rice balls cost.
+asked-bread = The clerk told you what bread costs.
+asked-which = The clerk asked which one you meant.
+asked-thanks = { $npc } thanked you.
 
 # Notebook topics: a word in one of these slot groups is filed under the topic, not the place.
 notebook-topic-drinks = Food and drink

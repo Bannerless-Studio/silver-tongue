@@ -82,7 +82,7 @@ describe("build-course (real content)", () => {
 
   it("says what every reply and written wrong reply does, in every course", () => {
     const v = course!.scenes.find((s) => s.id === "noodle-shift")!.exchanges[1].variants["count=four|item=water"];
-    expect(v.reply.intent).toBe("Repeat the order");
+    expect(v.reply.intent).toBe("Four cups of water");
     for (const id of ["zh-china", "ja-japan"]) {
       const c = buildCourse(CONTENT, id).course!;
       const missing = c.scenes.flatMap((sc) =>
