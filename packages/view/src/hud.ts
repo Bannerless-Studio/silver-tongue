@@ -15,6 +15,27 @@ export interface HudValues {
   rentInDays: number;
   /** What to do next ("Next: Talk about food"), or undefined when there's no news to point at. */
   goal?: string;
+  /** The time of day, "08:00" to "20:00" (see `clock`). */
+  clock: string;
+  /** Where and when the story is set ("Suzhou, 1980"), when the setting says. */
+  where?: string;
+}
+
+/** The waking day, in minutes: the slots share it evenly. */
+const DAY_START = 8 * 60;
+const DAY_LENGTH = 12 * 60;
+
+/**
+ * The time of day: each of the day's slots starts on the hour it gets of a 08:00-20:00 day, and a
+ * scene moves the clock on a few minutes with each exchange. Before the first scene it's 08:00;
+ * once every slot is used it's 20:00.
+ */
+export function clock(course: Course, state: GameState): string {
+  const per = DAY_LENGTH / course.world.slotsPerDay;
+  const run = state.run;
+  const minutes = run ? DAY_START + (state.slot - 1) * per + 5 + run.exchange * 4 + run.misses : DAY_START + Math.min(state.slot, course.world.slotsPerDay) * per;
+  const m = Math.floor(minutes);
+  return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
 }
 
 /**
@@ -47,5 +68,7 @@ export function hudValues(course: Course, state: GameState, t: Text, now: number
     rentLate: state.rentLate,
     rentInDays: state.rentLate ? 0 : (7 - (state.day % 7)) % 7,
     ...(goal ? { goal } : {}),
+    clock: clock(course, state),
+    ...(t.has("setting-where") ? { where: t("setting-where") } : {}),
   };
 }

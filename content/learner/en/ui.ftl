@@ -37,9 +37,11 @@ keys-help-sentence = [{ $keys }] look up · [s] whole sentence · [p] play · [e
 
 help-title = Which word?
 help-sentence = The whole sentence
-help-heard = heard: { $line }
+help-example = e.g.
+help-play = [p] ♪
 help-in-replies = In the replies:
 reply-title = Your reply
+reply-confused = Look confused
 tiles-answer = You say:
 you = You
 

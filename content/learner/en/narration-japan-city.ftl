@@ -4,6 +4,9 @@ intro-2 = You have { $currency }{ $wallet }. A landlady down the street has a ro
 intro-3 = The ramen shop is short of hands. It needs words, and words get you paid in full only when you get them right the first time.
 intro-4 = On a bench under the arcade roof an old man is feeding pigeons and watching you. Maybe start there.
 
+# Where and when, on the top bar.
+setting-where = Tokyo, 1995
+
 place-shotengai = Shopping Street
 place-shotengai-desc = A covered arcade of small shops, bicycles, and an old man on a bench.
 place-apartment = Your Room

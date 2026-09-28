@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { newGame, PLAYER_MARK, type WordRecord } from "@silver-tongue/core";
 import { formsCourse, line } from "@silver-tongue/core/testing";
 import { fixtureWithText, spacedWithText } from "../src/testing";
-import { firstTimeGloss, firstTimeWords, readingRow, sentenceCard, shortGloss, wordCard } from "../src/index";
+import { firstTimeGloss, firstTimeWords, readingRow, sentenceCard, shortGloss, wordCard, wordExample } from "../src/index";
 
 describe("help cards", () => {
   const course = fixtureWithText();
@@ -13,12 +13,18 @@ describe("help cards", () => {
     expect(wordCard(course, "w_cha").readings).toEqual([]);
   });
 
-  it("gives the line a word was first heard in, with the player's name", () => {
-    const state = newGame(course);
-    state.player = "Mei";
-    state.words.w_ni = { right: 0, wrong: 0, streak: 0, helps: 0, lapsed: false, firstSeen: 0, lastSeen: 0, first: { line: `你好${PLAYER_MARK}！`, place: "street" } };
-    expect(wordCard(course, "w_ni", undefined, state).heard).toBe("你好Mei！");
-    expect(wordCard(course, "w_cha", undefined, state).heard).toBeUndefined();
+  it("gives the shortest other line with a meaning that uses the word, as an example", () => {
+    expect(wordExample(course, "w_ni")).toMatchObject({ text: "你好！", reading: "nǐ hǎo", meaning: "Hello!" });
+    expect(wordExample(course, "w_ni", "你好！")).toBeUndefined(); // the line on screen is no example
+    expect(wordExample(course, "w_cha")).toBeUndefined(); // its lines have no meaning written
+    const c = structuredClone(course);
+    const shift = c.scenes.find((s) => s.id === "shift")!.exchanges[0].variants;
+    const [a, b] = Object.values(shift);
+    a.reply = { ...a.reply, meaning: "Fine, three cups." };
+    b.npc = { ...b.npc, meaning: "Three cups of water." };
+    expect(wordExample(c, "w_san")?.meaning).toBe("Three cups of water.");
+    b.npc = { ...b.npc, text: `${PLAYER_MARK}${b.npc.text}` };
+    expect(wordExample(c, "w_san")?.meaning).toBe("Fine, three cups."); // lines with the player's name are left out
   });
 
   it("gives a sentence's meaning and the last reading of each word, only when it has a meaning", () => {

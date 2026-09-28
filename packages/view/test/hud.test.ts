@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { newGame } from "@silver-tongue/core";
 import { fixtureWithText } from "../src/testing";
-import { hudValues, makeText, nextGoal } from "../src/index";
+import { clock, hudValues, makeText, nextGoal } from "../src/index";
 
 describe("hud values", () => {
   it("gives the day, slots, wallet, rank and flags", () => {
@@ -11,8 +11,22 @@ describe("hud values", () => {
     state.rentLate = true;
     expect(hudValues(course, state, makeText(course.learnerFtl, "en"), 0)).toEqual({
       day: 1, slot: 0, slots: 4, currency: "¥", wallet: 20, rank: 0, rankLabel: "Pidgin", parcel: true, rentLate: true, rentInDays: 0,
-      goal: "Next: Say hello · Noodle shop",
+      goal: "Next: Say hello · Noodle shop", clock: "08:00",
     });
+  });
+
+  it("tells the time: each slot on its hour of an 08:00-20:00 day, a few minutes on per exchange", () => {
+    const course = fixtureWithText();
+    const state = newGame(course);
+    expect(clock(course, state)).toBe("08:00");
+    state.slot = 2;
+    expect(clock(course, state)).toBe("14:00");
+    state.slot = 3; // the third scene of the day, on its second exchange
+    state.run = { scene: "intro", exchange: 1, combo: {}, mode: "pick", options: [], tiles: [], misses: 0, earned: 0, mixups: 0 };
+    expect(clock(course, state)).toBe("14:09");
+    state.run = null;
+    state.slot = 4;
+    expect(clock(course, state)).toBe("20:00");
   });
 
   it("points at the next new scene, at bed once time is up, and at nothing when only repeats are left", () => {

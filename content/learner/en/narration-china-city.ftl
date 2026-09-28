@@ -4,6 +4,9 @@ intro-2 = You have { $currency }{ $wallet }. There is a room for you down the st
 intro-3 = There is work in the noodle shop, at the warehouse, out on the road. It needs words, and words get you paid in full only when you get them right the first time.
 intro-4 = On a bench by the road an old man is watching you with open curiosity. Maybe start there.
 
+# Where and when, on the top bar.
+setting-where = Suzhou, 1980
+
 place-street = Main Street
 place-street-desc = Bikes, steam, and an old man on a bench.
 place-noodle_shop = Noodle Shop
