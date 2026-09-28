@@ -51,7 +51,7 @@ describe("visual novel controller", () => {
     vn.advance();
     const p = vn.view().phase;
     expect(p.kind).toBe("explore");
-    if (p.kind === "explore") expect(p.menu.map((m) => m.kind)).toEqual(["go", "sleep"]);
+    if (p.kind === "explore") expect(p.menu.map((m) => m.kind)).toEqual(["go"]); // no sleep: the day has only begun
     expect(vn.view().place).toBe("street");
   });
 
@@ -193,7 +193,7 @@ describe("visual novel controller", () => {
   });
 
   it("sleeping shows the new day", () => {
-    const s = setup();
+    const s = setup((st) => (st.slot = 4));
     skip(s.vn);
     const p = s.vn.view().phase;
     if (p.kind === "explore") s.vn.choose(p.menu.findIndex((m) => m.kind === "sleep"));
@@ -227,7 +227,7 @@ describe("visual novel controller", () => {
 
   it("the tap that closes the new day does not also start a scene", () => {
     let t = T0;
-    const s = setup((st) => (st.place = "noodle_shop"), undefined, { now: () => t });
+    const s = setup((st) => Object.assign(st, { place: "noodle_shop", slot: 4 }), undefined, { now: () => t });
     skip(s.vn);
     t += 1000;
     const p = s.vn.view().phase;
@@ -322,7 +322,7 @@ describe("visual novel controller", () => {
 
   it("waits for a press on the day card", () => {
     const c = clock();
-    const s = setup(undefined, undefined, { wait: c.wait });
+    const s = setup((st) => (st.slot = 4), undefined, { wait: c.wait });
     skip(s.vn);
     const p = s.vn.view().phase;
     if (p.kind === "explore") s.vn.choose(p.menu.findIndex((m) => m.kind === "sleep"));

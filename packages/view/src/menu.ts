@@ -25,19 +25,21 @@ function costSuffix(t: Text, cost: number, currency: string): string {
   return cost > 0 ? t("menu-cost-money", { currency, cost }) : "";
 }
 
-/** What the player can do here: talk, visit the mentor, go somewhere, sleep (last, where there's a bed). */
+/** What the player can do here: talk, visit the mentor, go somewhere, and sleep (last, once it's time and there's a bed). */
 export function placeMenu(course: Course, state: GameState, t: Text): MenuItem[] {
   const npcName = (npc: string) => t(`npc-${npc}`);
   const items: MenuItem[] = [];
   // Every talk/mentor action costs a slot; with none left, offering them just invites the rejection.
   const noSlots = state.slot >= course.world.slotsPerDay;
   const disabled = noSlots ? t("menu-no-time") : undefined;
+  const alone = Object.values(course.world.npcs).filter((n) => n.place === state.place).length <= 1;
   for (const id of availableSceneIds(course, state)) {
     const scene = course.scenes.find((x) => x.id === id)!;
     if (scene.place !== state.place) continue;
     const npc = npcName(scene.npc);
     const sceneName = t(`scene-${id}`);
-    const label = namesNpc(sceneName, npc) ? sceneName : t("menu-talk", { npc, scene: sceneName });
+    // With one person here, naming them on every item says nothing the place doesn't.
+    const label = alone || namesNpc(sceneName, npc) ? sceneName : t("menu-talk", { npc, scene: sceneName });
     items.push({
       kind: "talk",
       label: label + costSuffix(t, sceneCost(scene), course.world.currency),
@@ -57,8 +59,11 @@ export function placeMenu(course: Course, state: GameState, t: Text): MenuItem[]
     if (!placeKnown(course, state, p)) continue;
     items.push({ kind: "go", label: t("menu-go", { place: t(`place-${p}`) }), input: { type: "goTo", place: p }, place: p });
   }
-  // Sleep is offered only where the core allows it: home, or the start before there is a home.
-  const sleep: MenuItem[] = canSleep(course, state) ? [{ kind: "sleep", label: t("menu-sleep"), input: { type: "sleep" } }] : [];
+  // Sleep is offered only where the core allows it (home, or the start before there is a home), and
+  // only once it's what's left to do: the day's time is gone, or no scene or visit is open anywhere.
+  const nothingLeft = !availableSceneIds(course, state).length && !(mentorAvailable(course, state) && state.notes.ready.length);
+  const sleep: MenuItem[] =
+    canSleep(course, state) && (noSlots || nothingLeft) ? [{ kind: "sleep", label: t("menu-sleep"), input: { type: "sleep" } }] : [];
   return [...items.slice(0, MAX_PLACE_ITEMS), ...sleep];
 }
 

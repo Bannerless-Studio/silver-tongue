@@ -15,15 +15,20 @@ export interface NotebookView {
   top: number;
 }
 
-/** Width of the group list on the left, when there's room for two columns. */
-const LEFT = 18;
+/** Widest the group list on the left gets, when there's room for two columns. */
+const LEFT_MAX = 24;
 const BAR = 5;
 const LABELS: NotebookLabel[] = ["new", "met", "shaky", "known"];
 const LABEL_STYLE: Record<NotebookLabel, Omit<Span, "text">> = { new: { color: "cyan" }, met: {}, shaky: { color: "yellow" }, known: { color: "green" } };
 
-/** The Words tab's groups: Recent first when it has anything, then each place in world order. */
+/**
+ * The Words tab's groups: Recent first, then each topic and place. Recent is left out when it's
+ * empty, or when it holds every word heard: then it only repeats the other groups.
+ */
 export function notebookGroups(nb: Notebook, t: Text): { title: string; words: NotebookWord[] }[] {
-  return [...(nb.recent.length ? [{ title: t("notebook-recent"), words: nb.recent }] : []), ...nb.groups];
+  const all = nb.groups.reduce((n, g) => n + g.words.length, 0);
+  const recent = nb.recent.length && nb.recent.length < all;
+  return [...(recent ? [{ title: t("notebook-recent"), words: nb.recent }] : []), ...nb.groups];
 }
 
 /** The tab line, then progress on each stage's word list. */
@@ -79,7 +84,9 @@ export function notebookBody(nb: Notebook, t: Text, v: NotebookView, cols: numbe
   const groups = notebookGroups(nb, t);
   const g = Math.max(0, Math.min(v.group, groups.length - 1));
   const narrow = cols < NARROW;
-  const rightWidth = narrow ? inner : inner - LEFT - 3;
+  const label = (gr: (typeof groups)[number]) => `${gr.title} (${gr.words.length})`;
+  const leftWidth = Math.min(LEFT_MAX, 2 + Math.max(...groups.map((gr) => strWidth(label(gr)))));
+  const rightWidth = narrow ? inner : inner - leftWidth - 3;
   const words = groups[g].words;
   const chosen = Math.max(0, Math.min(v.word, words.length - 1));
   const blocks = words.map((w, i) => wordRows(w, i === chosen, v.open && i === chosen, rightWidth, t));
@@ -88,7 +95,7 @@ export function notebookBody(nb: Notebook, t: Text, v: NotebookView, cols: numbe
   const end = start + blocks[chosen].length;
   const top = Math.max(0, Math.min(start, end - listHeight));
   const right = blocks.flat().slice(top, top + listHeight);
-  const name = `${groups[g].title} (${groups[g].words.length})`;
+  const name = label(groups[g]);
   if (narrow) {
     const nav: StyledLine = [
       { text: g > 0 ? "◂ " : "  ", dim: true },
@@ -99,10 +106,10 @@ export function notebookBody(nb: Notebook, t: Text, v: NotebookView, cols: numbe
   }
   const leftTop = Math.max(0, g - height + 1);
   const left = groups.map((gr, i) =>
-    fitLine([{ text: i === g ? "▸ " : "  ", bold: true }, { text: `${gr.title} (${gr.words.length})`, ...(i === g ? { bold: true, color: "cyan" as const } : {}) }], LEFT),
+    fitLine([{ text: i === g ? "▸ " : "  ", bold: true }, { text: label(gr), ...(i === g ? { bold: true, color: "cyan" as const } : {}) }], leftWidth),
   );
   const lines = Array.from({ length: height }, (_, r): StyledLine => [
-    ...(left[leftTop + r] ?? fitLine([], LEFT)),
+    ...(left[leftTop + r] ?? fitLine([], leftWidth)),
     { text: " │ ", dim: true },
     ...(right[r] ?? []),
   ]);

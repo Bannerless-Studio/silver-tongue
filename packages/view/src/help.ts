@@ -1,4 +1,4 @@
-import { wordState, type Course, type GameState, type RenderedLine, type Word, type WordId } from "@silver-tongue/core";
+import { PLAYER_MARK, wordState, type Course, type GameState, type RenderedLine, type Word, type WordId } from "@silver-tongue/core";
 
 export interface WordCard {
   word: WordId;
@@ -8,6 +8,8 @@ export interface WordCard {
   clips: string[];
   /** the dictionary form, when `text` is another form of the word */
   base?: string;
+  /** the line the word was first heard in, with the player's name: an example in context */
+  heard?: string;
 }
 
 export interface SentenceCard {
@@ -108,10 +110,14 @@ export function readingsOf(w: Word | undefined, surface?: string): string[] {
   return (surface !== undefined && w?.forms?.[surface]) || w?.readings || [];
 }
 
-/** What looking up a word shows; `surface` is the word as written in the line, when known. */
-export function wordCard(course: Course, id: WordId, surface?: string): WordCard {
+/**
+ * What looking up a word shows; `surface` is the word as written in the line, when known. Given
+ * `state`, it also gives the line the word was first heard in.
+ */
+export function wordCard(course: Course, id: WordId, surface?: string, state?: GameState): WordCard {
   const w = course.words[id];
   const other = surface !== undefined && surface !== w.w && w.forms?.[surface] !== undefined;
+  const first = state?.words[id]?.first?.line;
   return {
     word: id,
     text: other ? surface : w.w,
@@ -120,6 +126,7 @@ export function wordCard(course: Course, id: WordId, surface?: string): WordCard
     // The word's clip says `w`; a form has none of its own, and the wrong sound is worse than none.
     clips: other ? [] : (w.audio ?? []),
     ...(other ? { base: w.w } : {}),
+    ...(first ? { heard: first.split(PLAYER_MARK).join(state?.player ?? "") } : {}),
   };
 }
 

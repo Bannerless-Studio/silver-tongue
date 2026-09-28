@@ -5,7 +5,7 @@ intro-3 = There is work in the noodle shop, at the warehouse, out on the road. I
 intro-4 = On a bench by the road an old man is watching you with open curiosity. Maybe start there.
 
 place-street = Main Street
-place-street-desc = Bikes, steam and an old man on a bench; there's a room for you down past the noodle shop.
+place-street-desc = Bikes, steam, and an old man on a bench.
 place-noodle_shop = Noodle Shop
 place-noodle_shop-desc = Steam everywhere, and the cook shouting orders at nobody.
 place-room = Your Room
@@ -42,7 +42,7 @@ scene-street-hello-end = Old Wang looks delighted, and repeats your name, gettin
 
 scene-street-hungry = Talk about food
 scene-street-hungry-start = Your stomach growls, and Old Wang raises an eyebrow.
-scene-street-hungry-end = Old Wang points at the noodle shop, then at you.
+scene-street-hungry-end = Old Wang points down the street at a noodle shop, then holds up his fingers: first, numbers.
 
 scene-street-practice = Practise greetings
 
@@ -305,3 +305,16 @@ asked-taste = Xiao Zhang wanted to know how the food is.
 scene-noodle-lunch = Help with the lunch rush
 scene-noodle-lunch-start = It's noon, and the cook waves you behind the counter.
 scene-noodle-lunch-end = The last customer leaves, and the cook finally sits down with you.
+
+# Notebook topics: a word in one of these slot groups is filed under the topic, not the place.
+notebook-topic-foods = Food and drink
+notebook-topic-drinks = Food and drink
+notebook-topic-numbers_2_5 = Numbers
+notebook-topic-numbers_3_5 = Numbers
+notebook-topic-numbers_3_10 = Numbers
+notebook-topic-courtesies = Courtesies
+notebook-topic-furniture = Things
+notebook-topic-goods = Things
+notebook-topic-sizes = Sizes
+notebook-topic-destinations = Places
+notebook-topic-ways = Getting around

@@ -32,6 +32,15 @@ describe("notebook entries", () => {
     expect(nb.notes).toEqual([{ title: "好 means good", text: "On its own, 好 agrees." }]);
   });
 
+  it("files a word under its topic when the learner text names one, before the places", () => {
+    const c = { ...course, learnerFtl: course.learnerFtl + "\nnotebook-topic-drinks = Drinks\n" };
+    const tt = makeText(c.learnerFtl, "en");
+    const state = newGame(c);
+    state.words = { w_ni: rec({ first: { line: "你", place: "noodle_shop" } }), w_cha: rec({ first: { line: "茶", place: "noodle_shop" } }) };
+    const nb = notebookEntries(c, state, tt, T0);
+    expect(nb.groups.map((g) => [g.title, g.words.map((w) => w.id)])).toEqual([["Drinks", ["w_cha"]], ["Noodle shop", ["w_ni"]]]);
+  });
+
   it("gives each word a memory bar and label, and lists the words first heard in the last day as recent", () => {
     const state = newGame(course);
     const day = 86_400_000;

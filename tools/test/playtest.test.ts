@@ -105,7 +105,9 @@ describe("menuIndexFor", () => {
   it("finds a go/talk/sleep item by place or scene id against a sample rendered menu", () => {
     const atStreet = placeMenu(course, newGame(course), t);
     expect(menuIndexFor(atStreet, { kind: "go", place: "noodle_shop" })).toBe(0);
-    expect(menuIndexFor(atStreet, { kind: "sleep" })).toBe(atStreet.length - 1);
+    expect(menuIndexFor(atStreet, { kind: "sleep" })).toBe(-1); // the day has only begun
+    const tired = placeMenu(course, { ...newGame(course), slot: course.world.slotsPerDay }, t);
+    expect(menuIndexFor(tired, { kind: "sleep" })).toBe(tired.length - 1);
 
     const atShop = placeMenu(course, { ...newGame(course), place: "noodle_shop" }, t);
     expect(menuIndexFor(atShop, { kind: "talk", scene: "intro" })).toBe(0);

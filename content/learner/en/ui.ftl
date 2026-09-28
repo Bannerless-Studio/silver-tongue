@@ -1,7 +1,9 @@
 # Text-game UI. Every id here is required by packages/tui (UI_KEYS).
 
 # The top border (right) and the HUD row under it.
-hud-top = Day { $day } · slot { $slot }/{ $slots }
+hud-top = Day { $day }
+hud-goal = Next: { $goal }
+hud-goal-sleep = Next: find your bed
 hud-rent = { $days ->
     [0] rent due tonight
     [one] rent due tomorrow
@@ -35,9 +37,9 @@ keys-help-sentence = [{ $keys }] look up · [s] whole sentence · [p] play · [e
 
 help-title = Which word?
 help-sentence = The whole sentence
+help-heard = heard: { $line }
 help-in-replies = In the replies:
 reply-title = Your reply
-tiles-title = Build your reply: [{ $keys }] add a word · [enter] say it
 tiles-answer = You say:
 you = You
 
@@ -107,7 +109,7 @@ notebook-label-met = met
 notebook-label-shaky = shaky
 notebook-label-known = known
 notebook-rank = Speaks: { $rank }
-notebook-progress = Stage { $stage }: { $known } of { $total } words known · { $heard } heard
+notebook-progress = Stage { $stage }: { $known } of { $total } words known
 notebook-empty = Nothing yet. Words you hear are written down here.
 notebook-elsewhere = Heard elsewhere
 notebook-notes = Notes

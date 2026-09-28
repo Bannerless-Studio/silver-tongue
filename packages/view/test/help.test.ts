@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { newGame, type WordRecord } from "@silver-tongue/core";
+import { newGame, PLAYER_MARK, type WordRecord } from "@silver-tongue/core";
 import { formsCourse, line } from "@silver-tongue/core/testing";
 import { fixtureWithText, spacedWithText } from "../src/testing";
 import { firstTimeGloss, firstTimeWords, readingRow, sentenceCard, shortGloss, wordCard } from "../src/index";
@@ -11,6 +11,14 @@ describe("help cards", () => {
   it("gives a word's text, readings, gloss and clips", () => {
     expect(wordCard(course, "w_ni")).toEqual({ word: "w_ni", text: "你", readings: ["nǐ"], gloss: "you", clips: ["c-ni"] });
     expect(wordCard(course, "w_cha").readings).toEqual([]);
+  });
+
+  it("gives the line a word was first heard in, with the player's name", () => {
+    const state = newGame(course);
+    state.player = "Mei";
+    state.words.w_ni = { right: 0, wrong: 0, streak: 0, helps: 0, lapsed: false, firstSeen: 0, lastSeen: 0, first: { line: `你好${PLAYER_MARK}！`, place: "street" } };
+    expect(wordCard(course, "w_ni", undefined, state).heard).toBe("你好Mei！");
+    expect(wordCard(course, "w_cha", undefined, state).heard).toBeUndefined();
   });
 
   it("gives a sentence's meaning and the last reading of each word, only when it has a meaning", () => {
