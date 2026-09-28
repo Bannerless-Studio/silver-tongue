@@ -33,6 +33,7 @@ export interface Page {
     importLine(line: string): Promise<string | null>;
   };
   textUrl: string;
+  quietUrl: string;
 }
 
 type Overlay = "notebook" | "backlog" | "menu" | "games" | null;

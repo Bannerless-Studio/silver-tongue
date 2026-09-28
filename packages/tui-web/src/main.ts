@@ -168,6 +168,10 @@ function use(loaded: Loaded, remember: boolean) {
   link.hidden = !vn;
   link.href = vn;
   link.textContent = tx("vn-play-visual");
+  const quiet = $<HTMLAnchorElement>("#quiet-link");
+  quiet.hidden = !metaContent(document, "st-quiet");
+  quiet.href = metaContent(document, "st-quiet");
+  quiet.textContent = tx("vn-play-quiet");
 }
 
 /** Another course or reading language, chosen on the settings screen. */

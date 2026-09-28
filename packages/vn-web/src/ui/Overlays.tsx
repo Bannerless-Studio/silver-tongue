@@ -96,6 +96,7 @@ export function Menu({ vn, page, onClose, onGames }: { vn: Vn; page: Page; onClo
       }}>{vn.t("vn-advance", { mode: vn.t(prefs.autoAdvance ? "vn-advance-auto" : "vn-advance-tap") })}</button>}
       {screen === "main" && <button type="button" class="row" onClick={onGames}>{vn.t("vn-games")}</button>}
       {screen === "main" && page.textUrl && <a class="row" href={page.textUrl}>{vn.t("vn-play-text")}</a>}
+      {screen === "main" && page.quietUrl && <a class="row" href={page.quietUrl}>{vn.t("vn-play-quiet")}</a>}
     </Overlay>
   );
 }

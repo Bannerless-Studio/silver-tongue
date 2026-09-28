@@ -1,0 +1,111 @@
+import { useEffect, useState } from "preact/hooks";
+import type { CatalogEntry, WordId } from "@silver-tongue/core";
+import { wordExample, type SpeechSpeed } from "@silver-tongue/view";
+import { keyAction, type Overlay } from "../keys";
+import { latestNpcLine, type Beat, type Quiet } from "../quiet";
+import { Anchor } from "./Anchor";
+import { Games, Menu, Notebook, Status } from "./Overlays";
+import { Prompt } from "./Prompt";
+import { Toasts } from "./Toasts";
+import { Transcript, type Reveal } from "./Transcript";
+import { useQuiet } from "./use-quiet";
+
+export interface Page {
+  catalog: CatalogEntry[];
+  /** the course has sound this browser can play */
+  audioAvailable: boolean;
+  /** how fast clips are said, kept in the player's settings */
+  speed: SpeechSpeed;
+  setSpeed(speed: SpeechSpeed): void;
+  switchTo(course: string, learner: string): void;
+  games: {
+    list(): { id: string; label: string }[];
+    open(id: string): void;
+    startNew(): void;
+    exportLine(): Promise<string>;
+    importLine(line: string): Promise<string | null>;
+  };
+  textUrl: string;
+  vnUrl: string;
+}
+
+type Open = Overlay | "games" | null;
+/** Keys a touch screen has no keyboard for (like the text page's key bar). */
+const KEYBAR: { label: string; key: string }[] = [
+  { label: "?", key: "?" }, { label: "N", key: "n" }, { label: "S", key: "s" }, { label: "⌫", key: "Backspace" }, { label: "↵", key: "Enter" },
+];
+
+export function App({ q, page }: { q: Quiet; page: Page }) {
+  const view = useQuiet(q);
+  const [open, setOpen] = useState<Open>(null);
+  const [reveal, setReveal] = useState<Reveal | null>(null);
+  const t = q.t;
+
+  const onWord = (b: Beat, w: WordId, surface: string) => {
+    if (reveal?.kind === "word" && reveal.beat === b.id && reveal.card.word === w) return setReveal(null);
+    // Logged as help, as the game intends; the card also shows the word in another line of the game.
+    const example = wordExample(q.course, w, b.line?.text);
+    setReveal({ beat: b.id, kind: "word", card: q.lookUp(w, surface), ...(example ? { example } : {}) });
+  };
+  const onReveal = (b: Beat) => {
+    if (reveal?.kind === "line" && reveal.beat === b.id) return setReveal(null);
+    const card = b.line && q.sentence(b.line);
+    if (card) setReveal({ beat: b.id, kind: "line", card });
+  };
+
+  const press = (key: string) => {
+    const a = keyAction(key, { overlay: !!open, phase: q.view().phase.kind, typing: false, modifier: false });
+    if (!a) return false;
+    const p = q.view().phase;
+    if (a.kind === "close") setOpen(null);
+    else if (a.kind === "choose") (p.kind === "tiles" ? q.placeTile(a.n) : q.choose(a.n));
+    else if (a.kind === "undo") q.undoTile();
+    else if (a.kind === "send") q.sendTiles();
+    else if (a.kind === "reveal") {
+      const last = latestNpcLine(q.view().backlog);
+      if (last) onReveal(last);
+    } else if (a.kind === "open") setOpen(a.overlay);
+    else if (a.kind === "sound") q.toggleSound();
+    else if (a.kind === "replay") q.replay();
+    return true;
+  };
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const typing = !!target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA");
+      if (e.ctrlKey || e.altKey || e.metaKey) return;
+      // In a text field (a name, a save line) keys are for typing; Escape still closes the overlay.
+      if (typing) {
+        if (e.key === "Escape" && open) (e.preventDefault(), setOpen(null));
+        return;
+      }
+      if (press(e.key)) e.preventDefault();
+    };
+    addEventListener("keydown", onKey);
+    return () => removeEventListener("keydown", onKey);
+  });
+
+  const close = () => setOpen(null);
+  return (
+    <div class="term app">
+      <Anchor q={q} view={view} audioAvailable={page.audioAvailable} />
+      <Transcript q={q} view={view} reveal={reveal} onWord={onWord} onReveal={onReveal}>
+        <Toasts q={q} view={view} />
+        <Prompt q={q} view={view} />
+      </Transcript>
+      <footer class="bar">
+        <button type="button" class="dim" onClick={() => setOpen("notebook")}>{t("quiet-notebook").toLowerCase()}</button>
+        <button type="button" class="dim" onClick={() => setOpen("status")}>{t("quiet-status").toLowerCase()}</button>
+        <button type="button" class="dim" onClick={() => setOpen("settings")}>{t("vn-settings").toLowerCase()}</button>
+      </footer>
+      <div class="keybar">
+        {KEYBAR.map((k) => <button key={k.key} type="button" onClick={() => press(k.key)}>{k.label}</button>)}
+      </div>
+      {open === "notebook" && <Notebook q={q} onClose={close} />}
+      {open === "status" && <Status q={q} audioAvailable={page.audioAvailable} onClose={close} />}
+      {open === "settings" && <Menu q={q} page={page} onClose={close} onGames={() => setOpen("games")} />}
+      {open === "games" && <Games q={q} page={page} onClose={close} />}
+    </div>
+  );
+}

@@ -6,7 +6,7 @@
   "workspaces": ["packages/*", "tools"],
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsc && tsc -p packages/tui-web && tsc -p packages/web-common && tsc -p packages/vn-web",
+    "typecheck": "tsc && tsc -p packages/tui-web && tsc -p packages/web-common && tsc -p packages/vn-web && tsc -p packages/quiet-web",
     "import:zh": "tsx tools/src/import-vocab-pack.ts vendor/vocab-engine/packs/zh content/languages/zh content/learner/en/glosses-zh.ftl",
     "build:course": "tsx tools/src/build-course.ts",
     "bots": "tsx tools/src/bots.ts",
@@ -14,7 +14,8 @@
     "audio": "tsx tools/src/audio.ts",
     "build:vn": "npm run build -w @silver-tongue/vn-web",
     "build:web": "npm run build -w @silver-tongue/tui-web",
-    "build:site": "npm run build:web && npm run build:vn && tsx tools/src/site.ts",
+    "build:quiet": "npm run build -w @silver-tongue/quiet-web",
+    "build:site": "npm run build:web && npm run build:vn && npm run build:quiet && tsx tools/src/site.ts",
     "play": "tsx packages/tui-node/src/main.ts"
   },
   "devDependencies": {

@@ -1,21 +1,22 @@
+// Forked from packages/vn-web/src/main.tsx: the same loading and saves, drawn as a quiet terminal.
 import { render } from "preact";
 import { createCore, mulberry32, type CatalogEntry, type Course, type GameState } from "@silver-tongue/core";
-import { chooseStart, courseLabels, decodeSave, DEFAULT_SPEED, encodeSave, learnerFor, makeText, playbackRate, sessionLines, type Text } from "@silver-tongue/view";
+import { chooseStart, courseLabels, decodeSave, DEFAULT_SPEED, encodeSave, learnerFor, makeText, playbackRate, sessionLines, type SpeechSpeed, type Text } from "@silver-tongue/view";
 import {
   coursesBase, createWebAudio, fetchJson, fromLocalStorage, loadWebSettings, metaContent, migrateWebAliases, updateWebSettings, WebSessions,
   type KeyValue, type Opened,
 } from "@silver-tongue/web-common";
-import { loadArt, withArt, type Art } from "./art";
 import { App, type Page } from "./ui/App";
 import { Title } from "./ui/Title";
-import { createVn } from "./vn";
+import { createQuiet } from "./quiet";
 
 /** The game's version (packages/tui-node/package.json), put in by the build. */
 declare const __VERSION__: string;
 const root = document.getElementById("app")!;
 const base = coursesBase(document);
+// The other pages' addresses, set when the pages are served together (tools/src/site.ts).
 const textUrl = metaContent(document, "st-text");
-const quietUrl = metaContent(document, "st-quiet");
+const vnUrl = metaContent(document, "st-vn");
 
 // Private windows and blocked site data make localStorage throw: play on without saving.
 const noStorage: KeyValue = {
@@ -31,19 +32,14 @@ try {
   // stays noStorage
 }
 
-interface Loaded { course: Course; t: Text; sessions: WebSessions; audio: ReturnType<typeof createWebAudio>; art: Art }
+interface Loaded { course: Course; t: Text; sessions: WebSessions; audio: ReturnType<typeof createWebAudio> }
 let catalog: CatalogEntry[] = [];
 let loaded: Loaded | undefined;
 let current: { id: string; readOnly: boolean; state: () => GameState } | undefined;
-/** The player's reading preferences, kept in their own settings, not in a game. */
-let prefs = { speed: DEFAULT_SPEED, autoAdvance: true };
+/** How fast clips are said: the player's own setting, shared with the other pages. */
+let speed: SpeechSpeed = DEFAULT_SPEED;
 
-async function getText(url: string): Promise<string | null> {
-  const res = await fetch(url);
-  return res.ok ? res.text() : null;
-}
-
-/** Fetches a course file, its art and its sound, and moves its old games. */
+/** Fetches a course file and its sound, and moves its old games. */
 async function load(entry: CatalogEntry, learner: string): Promise<Loaded> {
   const course = await fetchJson<Course>(`${base}${entry.id}/${learner}.json`);
   migrateWebAliases(kv, course);
@@ -59,9 +55,8 @@ async function load(entry: CatalogEntry, learner: string): Promise<Loaded> {
         return { cancel: () => clearTimeout(h) };
       },
       // Asked per clip, so a speed pressed in settings takes at once.
-      rate: () => playbackRate(prefs.speed),
+      rate: () => playbackRate(speed),
     }),
-    art: await loadArt(`${base}${entry.id}/`, course, getText),
   };
 }
 
@@ -77,25 +72,22 @@ function play(opened: Opened) {
   l.audio.stop();
   const core = createCore(l.course, opened.state, { now: Date.now, rng: mulberry32(Date.now() >>> 0) });
   const store = l.sessions; // this game's own store: a course loaded later must not take its saves
-  const vn = createVn({
+  const quiet = createQuiet({
     course: l.course, core, now: Date.now, audio: l.audio, notice: opened.notice,
-    autoAdvance: prefs.autoAdvance,
     save: opened.readOnly ? undefined : (s) => store.save(opened.id, s),
   });
   current = { id: opened.id, readOnly: opened.readOnly, state: () => core.state };
   const page: Page = {
     catalog,
     audioAvailable: l.audio.available,
-    // A getter, because this page is built once per game and the preferences outlive it: a plain
-    // property here would freeze the row's seed at the values the game started with.
-    get prefs() { return prefs; },
-    setPref: (patch) => {
-      prefs = { ...prefs, ...patch };
-      updateWebSettings(kv, patch);
+    get speed() { return speed; },
+    setSpeed: (s) => {
+      speed = s;
+      updateWebSettings(kv, { speed: s });
     },
     switchTo: (id, learner) => void switchTo(id, learner),
     textUrl,
-    quietUrl,
+    vnUrl,
     games: {
       list: () => {
         const list = store.list();
@@ -115,7 +107,7 @@ function play(opened: Opened) {
       },
     },
   };
-  render(<App key={`${l.course.id}/${l.course.learner}/${opened.id}`} vn={vn} art={l.art} page={page} />, root);
+  render(<App key={`${l.course.id}/${l.course.learner}/${opened.id}`} q={quiet} page={page} />, root);
 }
 
 /** Another course or reading language, chosen in settings. */
@@ -148,9 +140,9 @@ function title(courses?: { label: string; pick: () => void }[], error?: string) 
 
 async function boot() {
   const settings = loadWebSettings(kv);
-  prefs = { speed: settings.speed ?? DEFAULT_SPEED, autoAdvance: settings.autoAdvance ?? true };
+  speed = settings.speed ?? DEFAULT_SPEED;
   try {
-    catalog = await withArt(await fetchJson<CatalogEntry[]>(`${base}index.json`), base, getText);
+    catalog = await fetchJson<CatalogEntry[]>(`${base}index.json`);
     const picked = chooseStart(catalog, settings);
     if ("error" in picked) throw new Error(picked.error);
     if (!picked.ask) {

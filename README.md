@@ -12,7 +12,9 @@ https://bannerless-studio.github.io/silver-tongue/ — the same game as a visual
 
 https://bannerless-studio.github.io/silver-tongue/text/ — the text version, with an on-screen key bar on phones.
 
-Games save in the browser and are the same in both pages; Export and Import move a game between the browser and the terminal.
+https://bannerless-studio.github.io/silver-tongue/quiet/ — the quiet terminal: a calm text screen that shows only what changed. No pinyin or translations unless you ask with `?`; new words explain themselves once.
+
+Games save in the browser and are the same in all three pages; Export and Import move a game between the browser and the terminal.
 
 ## Play in the terminal
 
@@ -47,7 +49,7 @@ Needs Node 22 or newer.
 npm install
 npm run build:course
 npm run play        # the terminal game
-npm run build:site  # both browser pages in site/: the visual novel at /, the text game at /text/ (serve it: npx serve site)
+npm run build:site  # the browser pages in site/: the visual novel at /, the text game at /text/, the quiet terminal at /quiet/ (serve it: npx serve site)
 npm run bots        # scripted players through the course
 ```
 

@@ -147,6 +147,7 @@ export const VN_UI_KEYS: Record<string, string[]> = {
   "vn-menu": [],
   "vn-play-text": [],
   "vn-play-visual": [],
+  "vn-play-quiet": [],
   "vn-replay": [],
   "vn-slow": [],
   "vn-meaning": [],
@@ -169,12 +170,45 @@ export const VN_UI_KEYS: Record<string, string[]> = {
   "vn-play-word": [],
 };
 
+/** Message ids the quiet terminal page uses, with their variables; checked like UI_KEYS. */
+export const QUIET_UI_KEYS: Record<string, string[]> = {
+  "quiet-anchor": ["place", "day", "slot", "slots"],
+  "quiet-rent": ["currency", "rent", "days", "wallet"],
+  "quiet-rent-late": [],
+  "quiet-no-audio": [],
+  "quiet-repeat": [],
+  "quiet-repeat-pays": ["currency", "pays"],
+  "quiet-resume": ["place"],
+  "quiet-new": [],
+  "quiet-rephrase": [],
+  "quiet-reveal": [],
+  "quiet-notebook": [],
+  "quiet-status": [],
+  "quiet-counts": ["shaky", "met", "known", "unseen"],
+  "quiet-why-missed": ["count"],
+  "quiet-why-helped": [],
+  "quiet-why-decayed": [],
+  "quiet-nb-shaky": [],
+  "quiet-nb-known": [],
+  "quiet-nb-met": [],
+  "quiet-nb-all": [],
+  "quiet-nb-none": [],
+  "quiet-esc": [],
+  "quiet-st-wallet": ["currency", "wallet"],
+  "quiet-st-rent": ["currency", "rent", "days"],
+  "quiet-st-day": ["day", "slot", "slots"],
+  "quiet-st-trust": ["npc", "trust"],
+  "quiet-st-parcel": [],
+  "quiet-st-no-parcel": [],
+  "quiet-no-save": [],
+};
+
 /** Every UI message that is missing or can't be formatted with the variables the TUI passes. */
 export function uiTextProblems(ftl: string, locale: string): string[] {
   const bundle = new FluentBundle(locale, { useIsolating: false });
   bundle.addResource(new FluentResource(ftl));
   const problems: string[] = [];
-  for (const [id, vars] of Object.entries({ ...UI_KEYS, ...VN_UI_KEYS })) {
+  for (const [id, vars] of Object.entries({ ...UI_KEYS, ...VN_UI_KEYS, ...QUIET_UI_KEYS })) {
     const msg = bundle.getMessage(id);
     if (!msg?.value) {
       problems.push(`learner text: missing "${id}"`);

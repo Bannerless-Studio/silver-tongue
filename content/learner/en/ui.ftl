@@ -180,6 +180,7 @@ vn-games = Games
 vn-menu = Menu
 vn-play-text = Play as text
 vn-play-visual = Visual novel
+vn-play-quiet = Play in the quiet terminal
 vn-replay = Say it again
 vn-slow = Say it slowly
 vn-meaning = What does it mean?
@@ -203,3 +204,45 @@ vn-play-word = Hear it
 
 # NPC gesturing after two wrong replies, alongside the slow repeat.
 gesture-narration = { $npc } mimes it:
+
+# The quiet terminal page (packages/quiet-web).
+quiet-anchor = { $place } · Day { $day }, { $slot }/{ $slots }
+quiet-rent = rent { $currency }{ $rent } due { $days ->
+    [0] tonight
+    [1] tomorrow
+   *[other] in { $days } days
+} · you have { $currency }{ $wallet }
+quiet-rent-late = rent late
+quiet-no-audio = 🔇 no audio
+quiet-repeat = repeat shift
+quiet-repeat-pays = repeat shift · pays { $currency }{ $pays }
+quiet-resume = { $place }.
+quiet-new = (new)
+quiet-rephrase = rephrase
+quiet-reveal = Show this line
+quiet-notebook = Notebook
+quiet-status = Status
+quiet-counts = shaky { $shaky } · met { $met } · known { $known } · unseen { $unseen }
+quiet-why-missed = { $count ->
+    [1] missed
+   *[other] missed ×{ $count }
+}
+quiet-why-helped = helped
+quiet-why-decayed = decayed
+quiet-nb-shaky = shaky ▸
+quiet-nb-known = known ▸
+quiet-nb-met = met ▸
+quiet-nb-all = all ▸
+quiet-nb-none = Nothing shaky. Every word you've heard is holding.
+quiet-esc = esc close
+quiet-st-wallet = Wallet: { $currency }{ $wallet }
+quiet-st-rent = Rent: { $currency }{ $rent }, due { $days ->
+    [0] tonight
+    [1] tomorrow
+   *[other] in { $days } days
+}
+quiet-st-day = Day { $day }, slot { $slot }/{ $slots }
+quiet-st-trust = { $npc }: trust { $trust }
+quiet-st-parcel = Carrying a parcel
+quiet-st-no-parcel = No parcel
+quiet-no-save = no save found

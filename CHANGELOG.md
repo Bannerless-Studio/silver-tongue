@@ -2,6 +2,10 @@
 
 Every release of Silver Tongue, newest first.
 
+## 0.18.0 (unreleased)
+
+- A third way to play in the browser, the quiet terminal, at /quiet/. It shows only what changed: rent appears when you are about to fall short, a new word explains itself once, and a word you keep missing is underlined. Tap `?` on any line to see its reading and meaning, N for your notebook (it opens on the words that need work and why), S for your money, rent and standing.
+
 ## 0.17.2 (2026-09-28)
 
 - A word you look up opens right under the line it's in, with a thin line to the word, and your choices stay on screen. The card gives the word's reading, its full meaning, and an example from another line of the game, with its reading and meaning. [p] says the word again.
