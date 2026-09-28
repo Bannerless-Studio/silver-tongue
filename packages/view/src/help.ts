@@ -117,7 +117,8 @@ export function wordCard(course: Course, id: WordId, surface?: string): WordCard
     text: other ? surface : w.w,
     readings: readingsOf(w, other ? surface : undefined),
     gloss: w.gloss,
-    clips: w.audio ?? [],
+    // The word's clip says `w`; a form has none of its own, and the wrong sound is worse than none.
+    clips: other ? [] : (w.audio ?? []),
     ...(other ? { base: w.w } : {}),
   };
 }
