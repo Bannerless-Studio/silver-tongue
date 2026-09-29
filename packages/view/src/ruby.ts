@@ -1,6 +1,6 @@
 import { wordState, type Course, type GameState, type RenderedLine } from "@silver-tongue/core";
-import { bookOn } from "./course-extra";
-import { displayGloss, readingsOf } from "./help";
+import { bookOn, extra } from "./course-extra";
+import { readingsOf } from "./help";
 
 /** When a word's reading is written over it: while it isn't known yet ("auto"), always, or never. */
 export type RubySetting = "auto" | "on" | "off";
@@ -18,26 +18,39 @@ export interface RubySpan {
 }
 
 /**
- * The readings written over a line's words: each word's plainest reading, as that word is written in
- * the line. "auto" gives them for the words not known yet, "on" for every word, "off" for none; a
- * course without the Book (see bookOn) has none whatever the setting. A word
- * with no reading, or whose reading is just its own spelling, gets none.
- * `onboard` (see onboarding): a word not known yet also carries its short gloss, "minjun · Min-jun".
+ * The readings written over a line's words, one per word group: a word and the words after it that
+ * attach to it (their `attach`, written right after it with no space: a noun and its particle) share one
+ * reading covering the whole group, their readings run together ("ireumi"). Each word is read by its
+ * plainest reading as it is written in the line; a word with no reading, or whose reading is just its
+ * own spelling, adds none, and a group none of whose words adds one gets none. "auto" gives a group its reading while any
+ * word in it isn't known yet, "on" always, "off" never; a course without the Book (see bookOn) has
+ * none whatever the setting.
  */
-export function rubyRow(course: Course, line: RenderedLine, words: GameState["words"], now: number, ruby: RubySetting = DEFAULT_RUBY, onboard = false): RubySpan[] {
+export function rubyRow(course: Course, line: RenderedLine, words: GameState["words"], now: number, ruby: RubySetting = DEFAULT_RUBY): RubySpan[] {
   if (ruby === "off" || !bookOn(course)) return [];
-  return line.tokens.flatMap((tk) => {
-    const known = wordState(words[tk.word], now) === "known";
-    if (ruby === "auto" && known) return [];
-    const surface = line.text.slice(tk.start, tk.end);
-    const reading = readingsOf(course.words[tk.word], surface).at(-1);
-    if (!reading || reading === surface) return [];
-    const gloss = onboard && !known ? displayGloss(course.words[tk.word]) : "";
-    return [{ start: tk.start, end: tk.end, text: gloss ? `${reading} · ${gloss}` : reading }];
+  const groups: RenderedLine["tokens"][] = [];
+  for (const tk of line.tokens) {
+    const last = groups.at(-1)?.at(-1);
+    if (last && last.end === tk.start && extra(course).words[tk.word]?.attach === true) groups.at(-1)!.push(tk);
+    else groups.push([tk]);
+  }
+  return groups.flatMap((g) => {
+    if (ruby === "auto" && g.every((tk) => wordState(words[tk.word], now) === "known")) return [];
+    const start = g[0].start;
+    const end = g.at(-1)!.end;
+    const text = g
+      .map((tk) => {
+        const surface = line.text.slice(tk.start, tk.end);
+        const reading = readingsOf(course.words[tk.word], surface).at(-1);
+        return reading && reading !== surface ? reading : "";
+      })
+      .join("");
+    if (!text) return [];
+    return [{ start, end, text }];
   });
 }
 
-/** While fewer words than this have been heard, readings on a course with the Book carry short glosses too. */
+/** While fewer words than this have been heard, an NPC's line on a course with the Book comes with its reading and meaning. */
 export const ONBOARDING_WORDS = 10;
 
 /** How many words the player has heard at all: met, shaky or known. */
@@ -47,9 +60,44 @@ export function heardCount(words: GameState["words"], now: number): number {
 
 /**
  * Whether a line said when `heard` words had been heard (count them before the line's own new words)
- * is in the onboarding window: a course with the Book glosses its readings until ONBOARDING_WORDS
- * words are heard, then readings only. A course without the Book: never.
+ * is in the onboarding window: a course with the Book shows an NPC line's reading and meaning under it
+ * (the row `?` opens) until ONBOARDING_WORDS words are heard; after that the row is on demand only.
+ * A course without the Book: never.
  */
 export function onboarding(course: Course, heard: number): boolean {
   return bookOn(course) && heard < ONBOARDING_WORDS;
+}
+
+/**
+ * A line cut into what a page draws: the text between words, and words (by token index) under the
+ * reading they share, if any. A reading covers its whole word group as one ruby, and takes in the
+ * punctuation written right after the group (`tail`: "?" in "…ssi?"), so a reading wider than its
+ * words doesn't push the punctuation away. With no readings, every word is a piece of its own.
+ */
+export type LinePiece = { gap: string } | { tokens: number[]; tail: string; reading?: string };
+
+export function lineParts(line: RenderedLine, spans: RubySpan[]): LinePiece[] {
+  const out: LinePiece[] = [];
+  let at = 0;
+  const { tokens, text } = line;
+  for (let i = 0; i < tokens.length; i++) {
+    const tk = tokens[i];
+    if (tk.start < at) continue;
+    if (tk.start > at) out.push({ gap: text.slice(at, tk.start) });
+    const span = spans.find((s) => s.start === tk.start);
+    if (!span) {
+      out.push({ tokens: [i], tail: "" });
+      at = tk.end;
+      continue;
+    }
+    const group = [i];
+    while (i + 1 < tokens.length && tokens[i + 1].end <= span.end) group.push(++i);
+    const end = tokens[i].end;
+    const next = tokens[i + 1]?.start ?? text.length;
+    const tail = /^[^\s]*/.exec(text.slice(end, next))![0];
+    out.push({ tokens: group, tail, reading: span.text });
+    at = end + tail.length;
+  }
+  if (at < text.length) out.push({ gap: text.slice(at) });
+  return out;
 }

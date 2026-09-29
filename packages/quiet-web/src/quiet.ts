@@ -39,7 +39,7 @@ export interface Beat {
   day?: number;
   /** an NPC's line: the scene run it was said in (the run's first beat id), for speakerNamed */
   run?: number;
-  /** an NPC's line said in the onboarding window (see onboarding): its readings carry short glosses */
+  /** an NPC's line said in the onboarding window (see onboarding): its reading and meaning show under it */
   onboard?: boolean;
 }
 export interface Restate {
@@ -223,7 +223,7 @@ export function createQuiet(opts: QuietOptions): Quiet {
   function apply(events: GameEvent[]) {
     const fresh = new Set(events.flatMap((e) => (e.type === "wordStateChanged" && e.from === "unseen" ? [e.word] : [])));
     const now = opts.now();
-    // Counted before this batch's own new words: a line that brings the tenth word still glosses it.
+    // Counted before this batch's own new words: a line that brings the tenth word still comes with its meaning.
     onboard = onboarding(course, heardCount(core.state.words, now) - events.filter((e) => e.type === "wordStateChanged" && e.from === "unseen").length);
     const freshIn = (l: RenderedLine) => {
       if (!freshMarks(course)) return [];

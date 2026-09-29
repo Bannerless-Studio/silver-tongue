@@ -123,12 +123,11 @@ export function reviewTell(course: Course, sceneId: string, state?: GameState): 
 }
 
 /**
- * The readings written under a line on the quiet page: rubyRow as the ruby setting has it, with short
- * glosses while `onboard` (see onboarding). Only a course with the Book has readings, and it has no
+ * The readings written under a line on the quiet page: rubyRow as the ruby setting has it. Only a course with the Book has readings, and it has no
  * first-time gloss rows (see freshMarks), so nothing is said twice.
  */
-export function quietRuby(course: Course, line: RenderedLine, words: GameState["words"], now: number, ruby: RubySetting, onboard = false): RubySpan[] {
-  return rubyRow(course, line, words, now, ruby, onboard);
+export function quietRuby(course: Course, line: RenderedLine, words: GameState["words"], now: number, ruby: RubySetting): RubySpan[] {
+  return rubyRow(course, line, words, now, ruby);
 }
 
 /** A transcript line as speakerNamed sees it: who said it, and which scene run it was said in. */

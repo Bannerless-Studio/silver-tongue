@@ -59,6 +59,8 @@ p { margin: 0; }
 /* An NPC's reaction reads like any NPC line; only the narration above it is dim. */
 .ln .restate { margin-left: 1ch; }
 .ln.tap { cursor: pointer; }
+/* With the Book, an NPC's label and ? stay on the line's first row; the words (and a restated request) wrap inside. */
+.ln.npc.book { flex-wrap: nowrap; } .ln.npc.book > * { flex-shrink: 0; } .ln.npc.book > .line, .ln.npc.book > .restate { flex-shrink: 1; min-width: 0; }
 .ln .q { color: var(--line); margin-left: auto; padding: 0 0.4rem; }
 .ln .q:hover, .ln .q[aria-expanded="true"] { color: var(--cyan); }
 .ln .tag { color: var(--muted); font-size: 0.8em; margin-left: auto; }
@@ -132,7 +134,7 @@ p { margin: 0; }
 .nb-paper:hover span:first-child { color: var(--cyan); }
 .paper-body { padding: 0.2rem 0 0.6rem 1.5rem; } .paper-body p { margin: 0.1rem 0; }
 .blank { border-bottom: 1px dashed var(--muted); margin: 0 0.15em; }
-ruby { ruby-position: under; -webkit-ruby-position: after; margin-right: 0.35em; } rt { font-size: 0.72em; color: var(--muted); padding: 0 0.25em; white-space: nowrap; }
+ruby { ruby-position: under; -webkit-ruby-position: after; ruby-align: center; } rt { font-size: 0.72em; color: var(--muted); padding: 0 0.3em; white-space: nowrap; }
 .links { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; margin-top: 1.2rem; }
 .link { color: var(--cyan); }
 .tabs { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; }

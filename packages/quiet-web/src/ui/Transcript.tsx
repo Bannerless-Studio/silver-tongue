@@ -51,7 +51,12 @@ function Said({ q, b, ruby, named, latest, reveal, onWord, onReveal }: {
   const book = bookOn(course);
   const ask = whole && !rephrased && (!book || latest);
   const tap = whole && !rephrased && !ask ? () => onReveal(b) : undefined;
-  const cls = `ln ${player ? "you" : "npc"}${tap ? " tap" : ""}`;
+  // Said while onboarding (see onboarding): the row ? opens (the line's reading and meaning; the
+  // meaning only with readings off) starts open, and ? (or a tap) closes it.
+  const auto = !!whole && !rephrased && !!b.onboard;
+  const shown = auto && reveal?.kind !== "line";
+  // With the Book, the line wraps inside itself: its speaker label and ? stay on its first row.
+  const cls = `ln ${player ? "you" : "npc"}${tap ? " tap" : ""}${book ? " book" : ""}`;
   return (
     <>
       <div class={cls} onClick={tap}>
@@ -61,7 +66,7 @@ function Said({ q, b, ruby, named, latest, reveal, onWord, onReveal }: {
         {b.line ? (
           <Line
             line={b.line} fresh={b.fresh} words={player ? undefined : core.state.words} now={now} book={book}
-            ruby={player ? undefined : quietRuby(course, b.line, core.state.words, now, ruby, b.onboard)}
+            ruby={player ? undefined : quietRuby(course, b.line, core.state.words, now, ruby)}
             onWord={player ? undefined : (w, s) => onWord(b, w, s)}
           />
         ) : (
@@ -69,11 +74,11 @@ function Said({ q, b, ruby, named, latest, reveal, onWord, onReveal }: {
         )}
         {r && (
           <span class="restate">
-            <Line line={r.line} fresh={r.fresh ?? []} words={core.state.words} now={now} book={book} ruby={quietRuby(course, r.line, core.state.words, now, ruby, b.onboard)} onWord={(w, s) => onWord(b, w, s)} />
+            <Line line={r.line} fresh={r.fresh ?? []} words={core.state.words} now={now} book={book} ruby={quietRuby(course, r.line, core.state.words, now, ruby)} onWord={(w, s) => onWord(b, w, s)} />
           </span>
         )}
         {ask && (
-          <button type="button" class="q" aria-label={t("quiet-reveal")} aria-expanded={reveal?.kind === "line"} onClick={() => onReveal(b)}>?</button>
+          <button type="button" class="q" aria-label={t("quiet-reveal")} aria-expanded={auto ? shown : reveal?.kind === "line"} onClick={() => onReveal(b)}>?</button>
         )}
         {rephrased && <span class="tag">{t(r?.rephrase === "slower" ? "rephrased" : "quiet-rephrase")}</span>}
         {b.cost && (
@@ -90,7 +95,10 @@ function Said({ q, b, ruby, named, latest, reveal, onWord, onReveal }: {
       {rephrased && whole && (
         <div class="gl"><span class="gloss">{[whole.reading, whole.meaning].filter(Boolean).join("  · ")}</span></div>
       )}
-      {reveal && <Card q={q} reveal={reveal} />}
+      {shown && whole && (
+        <div class="gl dim"><span class="conn">┆</span> <span class="gloss">{[ruby === "off" ? "" : whole.reading, whole.meaning].filter(Boolean).join(" · ")}</span></div>
+      )}
+      {reveal && !(auto && reveal.kind === "line") && <Card q={q} reveal={reveal} />}
     </>
   );
 }

@@ -18,6 +18,7 @@ import {
   tileEcho,
   parseSettings,
   rubyRow,
+  lineParts,
   freshMarks,
   glossPolicy,
   heardCount,
@@ -96,23 +97,37 @@ describe("rubyRow", () => {
     ],
   };
 
-  it("auto: readings over the words not known yet", () => {
-    expect(rubyRow(c, line, { k_jeo: known, k_neun: known }, T0, "auto")).toEqual([
-      { start: 3, end: 5, text: "haksaeng" },
-      { start: 5, end: 8, text: "ieyo" },
+  it("one reading per word group: a word and the words attached after it, their readings run together", () => {
+    expect(rubyRow(c, line, {}, T0, "on")).toEqual([
+      { start: 0, end: 2, text: "jeoneun" },
+      { start: 3, end: 8, text: "haksaengieyo" },
     ]);
-    expect(rubyRow(c, line, {}, T0)).toHaveLength(4); // "auto" is the default
   });
 
-  it("on: over every word; off: over none", () => {
+  it("auto: a group's reading while any word in it isn't known yet", () => {
+    expect(rubyRow(c, line, { k_jeo: known, k_neun: known }, T0, "auto")).toEqual([{ start: 3, end: 8, text: "haksaengieyo" }]);
+    expect(rubyRow(c, line, { k_jeo: known, k_haksaeng: known }, T0, "auto").map((r) => r.text)).toEqual(["jeoneun", "haksaengieyo"]);
+    expect(rubyRow(c, line, {}, T0)).toHaveLength(2); // "auto" is the default
+  });
+
+  it("on: over every group; off: over none", () => {
     const all = { k_jeo: known, k_neun: known, k_haksaeng: known, k_ieyo: known };
-    expect(rubyRow(c, line, all, T0, "on").map((r) => r.text)).toEqual(["jeo", "neun", "haksaeng", "ieyo"]);
+    expect(rubyRow(c, line, all, T0, "on").map((r) => r.text)).toEqual(["jeoneun", "haksaengieyo"]);
     expect(rubyRow(c, line, {}, T0, "off")).toEqual([]);
   });
 
-  it("reads a form as it is written, and skips words with no reading", () => {
+  it("groups only words written together: an attaching word after a space stands alone, a word that doesn't attach starts a group", () => {
+    const l = { text: "저 는 학생", tokens: [{ start: 0, end: 1, word: "k_jeo" }, { start: 2, end: 3, word: "k_neun" }, { start: 4, end: 6, word: "k_haksaeng" }] };
+    expect(rubyRow(c, l, {}, T0, "on").map((r) => r.text)).toEqual(["jeo", "neun", "haksaeng"]);
+    const joined = { text: "저학생", tokens: [{ start: 0, end: 1, word: "k_jeo" }, { start: 1, end: 3, word: "k_haksaeng" }] };
+    expect(rubyRow(c, joined, {}, T0, "on").map((r) => r.text)).toEqual(["jeo", "haksaeng"]);
+  });
+
+  it("reads a form as it is written, and a word with no reading adds none to its group", () => {
     const l = { text: "이예요", tokens: [{ start: 0, end: 1, word: "k_i_this" }, { start: 1, end: 3, word: "k_ieyo" }] };
-    expect(rubyRow(c, l, {}, T0, "on")).toEqual([{ start: 1, end: 3, text: "yeyo" }]);
+    expect(rubyRow(c, l, {}, T0, "on")).toEqual([{ start: 0, end: 3, text: "yeyo" }]);
+    const bare = { text: "이", tokens: [{ start: 0, end: 1, word: "k_i_this" }] };
+    expect(rubyRow(c, bare, {}, T0, "on")).toEqual([]);
     const f = formsCourse();
     extra(f).language.book = true;
     const fl = { text: "你了", tokens: [{ start: 0, end: 2, word: "w_ni" }] };
@@ -121,7 +136,7 @@ describe("rubyRow", () => {
 
   it("gives an other spelling (alt) no reading: the word's own would be wrong", () => {
     const l = { text: "학생은", tokens: [{ start: 0, end: 2, word: "k_haksaeng" }, { start: 2, end: 3, word: "k_neun" }] };
-    expect(rubyRow(c, l, {}, T0, "on")).toEqual([{ start: 0, end: 2, text: "haksaeng" }]);
+    expect(rubyRow(c, l, {}, T0, "on")).toEqual([{ start: 0, end: 3, text: "haksaeng" }]);
     expect(readingsOf(c.words.k_neun, "은")).toEqual([]);
     expect(readingsOf(c.words.k_neun, "는")).toEqual(["neun"]);
     expect(readingsOf(c.words.k_neun)).toEqual(["neun"]);
@@ -130,11 +145,53 @@ describe("rubyRow", () => {
   it("skips a reading that only repeats the word", () => {
     const k = structuredClone(c) as unknown as CourseExtra;
     k.words.k_jeo.readings = ["저"];
-    expect(rubyRow(k as unknown as Course, line, {}, T0, "on").map((r) => r.text)).toEqual(["neun", "haksaeng", "ieyo"]);
+    expect(rubyRow(k as unknown as Course, line, {}, T0, "on").map((r) => r.text)).toEqual(["neun", "haksaengieyo"]);
+    const lone = { text: "저", tokens: [{ start: 0, end: 1, word: "k_jeo" }] };
+    expect(rubyRow(k as unknown as Course, lone, {}, T0, "on")).toEqual([]);
   });
 
   it("cycles auto, on, off", () => {
     expect([nextRuby("auto"), nextRuby("on"), nextRuby("off")]).toEqual(["on", "off", "auto"]);
+  });
+});
+
+describe("lineParts", () => {
+  const line = {
+    text: "저는 학생이에요?",
+    tokens: [
+      { start: 0, end: 1, word: "k_jeo" },
+      { start: 1, end: 2, word: "k_neun" },
+      { start: 3, end: 5, word: "k_haksaeng" },
+      { start: 5, end: 8, word: "k_ieyo" },
+    ],
+  };
+
+  it("puts a word group under its one reading, with the punctuation written right after it", () => {
+    expect(lineParts(line, rubyRow(koLike(" "), line, {}, T0, "on"))).toEqual([
+      { tokens: [0, 1], tail: "", reading: "jeoneun" },
+      { gap: " " },
+      { tokens: [2, 3], tail: "?", reading: "haksaengieyo" },
+    ]);
+  });
+
+  it("with no readings, every word is a piece of its own and the text between stays as it was", () => {
+    expect(lineParts(line, [])).toEqual([
+      { tokens: [0], tail: "" },
+      { tokens: [1], tail: "" },
+      { gap: " " },
+      { tokens: [2], tail: "" },
+      { tokens: [3], tail: "" },
+      { gap: "?" },
+    ]);
+  });
+
+  it("a reading's tail stops at a space", () => {
+    const l = { text: "저? 는", tokens: [{ start: 0, end: 1, word: "k_jeo" }, { start: 3, end: 4, word: "k_neun" }] };
+    expect(lineParts(l, [{ start: 0, end: 1, text: "jeo" }])).toEqual([
+      { tokens: [0], tail: "?", reading: "jeo" },
+      { gap: " " },
+      { tokens: [1], tail: "" },
+    ]);
   });
 });
 
@@ -283,15 +340,8 @@ describe("quietRuby", () => {
   it("reads every word not known yet: a course with the Book has no gloss rows to share the job with", () => {
     expect(freshMarks(c)).toBe(false);
     expect(freshMarks(fixtureWithText())).toBe(true);
-    expect(quietRuby(c, line, {}, T0, "auto").map((r) => r.text)).toEqual(["jeo", "neun", "haksaeng"]);
+    expect(quietRuby(c, line, {}, T0, "auto").map((r) => r.text)).toEqual(["jeoneun", "haksaeng"]);
     expect(quietRuby(c, line, {}, T0, "off")).toEqual([]);
-  });
-
-  it("while onboarding, a word not known yet carries its short gloss after its reading; a known one doesn't", () => {
-    expect(quietRuby(c, line, {}, T0, "auto", true).map((r) => r.text)).toEqual(["jeo · I", "neun · topic", "haksaeng · student"]);
-    expect(quietRuby(c, line, { k_jeo: known }, T0, "on", true).map((r) => r.text)).toEqual(["jeo", "neun · topic", "haksaeng · student"]);
-    expect(quietRuby(c, line, {}, T0, "off", true)).toEqual([]);
-    expect(quietRuby(fixtureWithText(), line, {}, T0, "on", true)).toEqual([]);
   });
 
   it("draws every word bare on a course with the Book: its reading is the one mark", () => {
@@ -309,7 +359,7 @@ describe("onboarding", () => {
     expect(heardCount({}, T0)).toBe(0);
   });
 
-  it("glosses readings until the tenth word is heard, on a course with the Book only", () => {
+  it("lasts until the tenth word is heard, on a course with the Book only", () => {
     const c = koLike(" ");
     expect(ONBOARDING_WORDS).toBe(10);
     expect(onboarding(c, heardCount(heard(9), T0))).toBe(true);

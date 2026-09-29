@@ -1,15 +1,13 @@
 import type { RenderedLine, WordId } from "@silver-tongue/core";
-import type { RubySpan } from "@silver-tongue/view";
+import { lineParts, type RubySpan } from "@silver-tongue/view";
 
 /**
  * A line in the language being learned: each word a button to look it up, new words underlined.
- * `ruby`: readings written small under their words (see the view's rubyRow).
+ * `ruby`: readings written small under their word groups (see the view's rubyRow and lineParts).
  */
 export function Line({ line, fresh = [], ruby = [], onWord }: { line: RenderedLine; fresh?: WordId[]; ruby?: RubySpan[]; onWord?: (w: WordId) => void }) {
-  const parts = [];
-  let at = 0;
-  line.tokens.forEach((tk, i) => {
-    if (tk.start > at) parts.push(<span key={`g${i}`}>{line.text.slice(at, tk.start)}</span>);
+  const drawWord = (i: number) => {
+    const tk = line.tokens[i];
     const text = line.text.slice(tk.start, tk.end);
     const cls = `word${fresh.includes(tk.word) ? " fresh" : ""}`;
     const word = onWord ? (
@@ -19,10 +17,12 @@ export function Line({ line, fresh = [], ruby = [], onWord }: { line: RenderedLi
     ) : (
       <span key={i} class={cls}>{text}</span>
     );
-    const reading = ruby.find((r) => r.start === tk.start);
-    parts.push(reading ? <ruby key={i}>{word}<rt>{reading.text}</rt></ruby> : word);
-    at = tk.end;
+    return word;
+  };
+  const parts = lineParts(line, ruby).map((p, n) => {
+    if ("gap" in p) return <span key={`g${n}`}>{p.gap}</span>;
+    if (p.reading === undefined) return drawWord(p.tokens[0]);
+    return <ruby key={p.tokens[0]}>{p.tokens.map(drawWord)}{p.tail}<rt>{p.reading}</rt></ruby>;
   });
-  if (at < line.text.length) parts.push(<span key="end">{line.text.slice(at)}</span>);
   return <span class="line">{parts}</span>;
 }

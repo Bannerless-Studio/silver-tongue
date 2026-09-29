@@ -1387,19 +1387,28 @@ describe("readings under words", () => {
     expect(col(s[i + 1], "hǎo")).toBe(col(s[i], "好"));
   });
 
-  it("while under ten words are heard, a reading under an NPC's word carries its short gloss; replies keep readings only", () => {
+  it("while under ten words are heard, an NPC's line comes with its reading and meaning on one row; readings carry no glosses", () => {
     const { term } = play();
     term.press("1", "1");
     const s = term.screen();
     const i = s.findIndex((l) => l.includes("Cook: 你好！"));
-    expect(s[i + 1]).toMatch(/hǎo · \S/);
+    expect(s[i + 1]).not.toContain(" · ");
+    expect(s[i + 2]).toMatch(/nǐ hǎo · Hello!/);
+    expect(col(s[i + 2], "nǐ")).toBe(col(s[i], "你"));
     const reply = s.findIndex((l) => /│ 1\) /.test(l));
     expect(s[reply + 1]).not.toContain(" · ");
     const many = Object.fromEntries(Array.from({ length: 10 }, (_, n) => [`x${n}`, { ...known }]));
     const later = play(undefined, (st) => (st.words = many));
     later.term.press("1", "1");
     const t = later.term.screen();
-    expect(t[t.findIndex((l) => l.includes("Cook: 你好！")) + 1]).not.toContain(" · ");
+    expect(t.join("\n")).not.toMatch(/nǐ hǎo · Hello!/);
+  });
+
+  it("with readings off, the onboarding row keeps the meaning only", () => {
+    const { term } = play({ value: "off", onChange: () => {} });
+    term.press("1", "1");
+    const s = term.screen();
+    expect(s[s.findIndex((l) => l.includes("Cook: 你好！")) + 1]).toMatch(/│\s+Hello!/);
   });
 
   it("no onboarding glosses on a course without the Book", () => {

@@ -147,8 +147,8 @@ export function startApp(opts: AppOptions): App {
     ...lineSpans(line, fresh),
   ];
   /** The readings written under a line's words, as the ruby setting has them; `indent`: where the line's text starts. */
-  const rubyUnder = (line: RenderedLine, indent: number, onboard = false) => rubyLine(line, rubyRow(course, line, core.state.words, opts.now(), ruby, onboard), indent);
-  /** whether the NPC lines being applied were said in the onboarding window: their readings carry short glosses (see onboarding) */
+  const rubyUnder = (line: RenderedLine, indent: number) => rubyLine(line, rubyRow(course, line, core.state.words, opts.now(), ruby), indent);
+  /** whether the NPC lines being applied were said in the onboarding window: each comes with its reading and meaning (see onboarding) */
   let onboardNow = false;
   /** Whether this course uses the Book: readings under each word, the Letters and Papers tabs. */
   const hasBook = bookOn(course);
@@ -156,15 +156,18 @@ export function startApp(opts: AppOptions): App {
    * An NPC's line, then its readings. With the Book: each word's reading under it, by the ruby
    * setting (by default, the words not known yet); the row keeps the readings it had when said: the
    * log doesn't fade them afterwards. Without: the line's whole reading while any word in it isn't
-   * known yet. Returns where the line sits in the log, for a card opened on one of its words.
+   * known yet. With the Book, a line said while onboarding also gets the line's reading and meaning
+   * on a dim row of their own (what s opens; the meaning only with readings off). Returns where the line sits in the log, for a card opened on one of its words.
    */
   const sayLine = (npc: string, line: RenderedLine, fresh: Set<WordId>, suffix = "") => {
     const row = say(npc, line, fresh, suffix);
     const indent = strWidth(`${npcName(npc)}${suffix}: `);
     push(row);
     if (hasBook) {
-      const reading = rubyUnder(line, indent, onboardNow);
+      const reading = rubyUnder(line, indent);
       if (reading) push(reading);
+      const whole = onboardNow ? sentenceCard(course, line) : undefined;
+      if (whole) push([{ text: " ".repeat(indent) + [ruby === "off" ? "" : whole.reading, whole.meaning].filter(Boolean).join(" · "), dim: true }]);
     } else {
       const reading = readingRow(course, core.state, line, opts.now());
       if (reading) push([{ text: " ".repeat(indent) + reading, color: "yellow", dim: true }]);
@@ -247,7 +250,7 @@ export function startApp(opts: AppOptions): App {
   }
 
   function apply(events: GameEvent[]) {
-    // Counted before this batch's own new words: a line that brings the tenth word still glosses it.
+    // Counted before this batch's own new words: a line that brings the tenth word still comes with its meaning.
     onboardNow = onboarding(course, heardCount(core.state.words, opts.now()) - events.filter((e) => e.type === "wordStateChanged" && e.from === "unseen").length);
     // Words heard for the first time are underlined; a course with the Book leaves them to the readings (see freshMarks).
     const fresh = new Set(
