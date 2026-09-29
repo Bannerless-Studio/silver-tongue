@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 // tools/src/playtest.ts -> tools/src -> tools -> repo root: fixed regardless of the caller's cwd.
 const REPO_ROOT = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
-import { comboKey, createCore, mulberry32, tilePieces, type Core, type Course, type GameState, type Input } from "@silver-tongue/core";
+import { comboKey, createCore, mulberry32, personalize, tilePieces, type Core, type Course, type GameState, type Input } from "@silver-tongue/core";
 import { makeText, placeMenu, type MenuItem, type Text } from "@silver-tongue/view";
 import { startApp, type AudioOut, type Speech } from "@silver-tongue/tui";
 import { FakeTerminal } from "../../packages/tui/test/fake-terminal";
@@ -178,6 +178,7 @@ function autoInput(course: Course, state: GameState): Input | undefined {
       return { type: "reply", choice: good >= 0 ? good : 0 };
     }
     const ex = course.scenes.find((s) => s.id === run.scene)!.exchanges[run.exchange];
+    if (run.mode === "type") return { type: "replyText", text: personalize(ex.variants[comboKey(run.combo)].reply, state.player ?? "?").text };
     const used = new Set<number>();
     const order = tilePieces(ex.variants[comboKey(run.combo)].reply).map((p) => {
       const i = run.tiles.findIndex((t, j) => t === p && !used.has(j));
@@ -409,8 +410,7 @@ async function main(): Promise<void> {
       }
       // Drive the app the same way a key press would: send() is private to app.ts, so a matching
       // key is pressed instead, keeping this a script of real key presses like any other.
-      const key = autoKeyFor(input, core.state);
-      term.press(...key);
+      sendAuto(term, input, core.state);
       await settle(args.realAudio, clipsSince(audioLog, before));
       record(`auto:${i + 1} (${input.type})`);
     }
@@ -537,7 +537,7 @@ async function playScene(ctx: NavCtx, sceneId: string, capSteps = 40): Promise<v
     const input = autoInput(ctx.course, ctx.core.state);
     if (!input) break;
     const before = ctx.audioLog.length;
-    ctx.term.press(...autoKeyFor(input, ctx.core.state));
+    sendAuto(ctx.term, input, ctx.core.state);
     await settle(ctx.realAudio, clipsSince(ctx.audioLog, before));
     ctx.record(`play:${sceneId}:${i + 1}`);
   }
@@ -552,6 +552,14 @@ async function sleepAction(ctx: NavCtx): Promise<void> {
   const idx = menuIndexFor(items, { kind: "sleep" });
   if (idx < 0) throw new Error(`playtest: no Sleep item at "${ctx.core.state.place}" (current menu: ${describeMenu(items)})`);
   await pressMenuItem(ctx, idx, "sleep");
+}
+
+/** Types a typed reply and presses enter; presses the keys for any other reply. */
+function sendAuto(term: FakeTerminal, input: Input, state: GameState): void {
+  if (input.type === "replyText") {
+    term.type(input.text);
+    term.press("return");
+  } else term.press(...autoKeyFor(input, state));
 }
 
 /** The key presses that send the given input from the current screen (reply/tiles only). */

@@ -12,6 +12,6 @@
    "N5"
   ]
  },
- "typing": null,
+ "typing": { "input": "romaji" },
  "spaced": false
 }

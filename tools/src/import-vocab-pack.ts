@@ -55,7 +55,7 @@ export function convertPack(pack: VocabPackJson, words: VocabWordJson[], existin
     ...(pack.ttsRate !== undefined && { ttsRate: pack.ttsRate }),
     levels,
     stages: existing?.stages ?? Object.fromEntries(levels.map((lv, i) => [String(i + 1), [lv]])),
-    typing: pack.typing ?? null,
+    typing: pack.typing ?? existing?.typing ?? null,
     spaced: pack.spaced !== false,
   };
   const out: PackWord[] = words.map((v) => {

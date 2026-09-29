@@ -26,12 +26,19 @@ menu-needs-money = { $npc }: { $scene } · needs { $currency }{ $cost }
 menu-mentor = Ask { $npc } about the language
 menu-no-time = no time left
 menu-cost-money = { " · " }{ $currency }{ $cost }
+menu-review = Quick review · { $count ->
+    [one] one fading word
+   *[other] { $count } fading words
+}
 menu-sleep = Sleep (end the day)
 menu-quit = Save and quit
 
 keys-explore = [{ $keys }] choose · [n] notebook · [q] quit
 keys-pick = [{ $keys }] reply · [w] help · [r] again · [n] notebook
 keys-tiles = [{ $keys }] add · [⌫] undo · [enter] say · [w] help · [r] again · [n] notebook
+keys-type = [enter] say · [tab] hint · [esc] look up a word
+keys-review = [{ $keys }] choose · [esc] stop
+keys-review-next = [enter] next · [p] play · [esc] stop
 keys-help = [{ $keys }] look up · [p] play · [esc] back
 keys-help-sentence = [{ $keys }] look up · [s] whole sentence · [p] play · [esc] back
 
@@ -43,6 +50,34 @@ help-in-replies = In the replies:
 reply-title = Your reply
 reply-confused = Look confused
 tiles-answer = You say:
+type-prompt = Type your reply:
+type-send = (... to look confused)
+hint-title = Hint { $level }/3
+hint-level-1 = (subtle)
+hint-level-2 = (stronger)
+hint-level-3 = (the reply)
+hint-question = a question
+hint-statement = not a question
+hint-words = { $count ->
+    [one] one word
+   *[other] { $count } words
+}
+hint-use = Use:
+hint-more = [tab] another hint
+hint-last = (no more hints)
+review-title = Quick review
+review-fill = Fill in the blank:
+review-right = Correct!
+review-wrong = Not quite: it's { $word }.
+review-memory = Memory:
+review-done = Review done: { $right } of { $of } right.
+review-due = Some words are fading from memory: there's a quick review on the menu.
+job-delivery = Delivery
+job-step-pickup = Get the parcel
+job-step-walk = Take it where she said
+job-step-handover = Hand it over
+job-time-left = { $time } left today
+job-words = Useful words:
 you = You
 
 mismatch = That's not what was asked.
@@ -87,6 +122,11 @@ reject-bad-tile = There's no tile with that number.
 reject-not-linked = You can't get there from here.
 reject-not-home = You want your own bed. Head home first.
 reject-unknown-word = That word isn't in the dictionary.
+reject-no-type = Choose your reply instead of typing it.
+reject-empty-reply = Type something to say first.
+reject-no-hints = No more hints for this one.
+reject-no-review = There's nothing to review right now.
+reject-in-review = Finish the review first.
 notice-read-only = Your progress can't be saved on this computer, so this session won't be kept.
 notice-bad-save = Your save couldn't be read. It was kept as a backup and a new game started.
 
@@ -101,20 +141,29 @@ reject-no-mentor = There's nobody here to explain things.
 note-hint = { $npc } seems to have something to tell you.
 mentor-nothing = { $npc } has nothing new to explain today.
 
-keys-notebook = [esc] back · [1-2] tab · [↑↓←→] move · [enter] more · [p] play
+keys-notebook = [esc] back · [1-5] tab · [↑↓←→] move · [enter] more · [p] play
+keys-notebook-scroll = [esc] back · [1-5] tab · [↑↓] scroll
 notebook-title = Notebook
 notebook-words = Words
-notebook-recent = Recent
+notebook-recent = ★ Recent
 notebook-notes-empty = No notes yet. Ask around; someone will explain things.
 notebook-label-new = new
-notebook-label-met = met
-notebook-label-shaky = shaky
-notebook-label-known = known
+notebook-label-met = familiar
+notebook-label-shaky = fading
+notebook-label-known = safe
 notebook-rank = Speaks: { $rank }
 notebook-progress = Stage { $stage }: { $known } of { $total } words known
 notebook-empty = Nothing yet. Words you hear are written down here.
 notebook-elsewhere = Heard elsewhere
 notebook-notes = Notes
+notebook-phrases = Phrases
+notebook-people = People
+notebook-places = Places
+notebook-phrases-empty = Nothing yet. What people say to you again and again is kept here.
+notebook-people-empty = Nobody yet. The people you talk to are kept here.
+notebook-trust = trust
+notebook-talked = Talked about: { $scenes }
+notebook-here = you are here
 export-none = There's no saved game to export yet.
 import-bad = That line isn't a saved game for this course ({ $reason }).
 import-done = Added: { $game }. Run the game to continue it.
@@ -186,6 +235,7 @@ vn-slow = Say it slowly
 vn-meaning = What does it mean?
 vn-undo = Take back a tile
 vn-send = Say it
+vn-hint = Hint
 vn-name-go = That's me
 vn-sound = Sound
 vn-speed = Speed: { $speed }

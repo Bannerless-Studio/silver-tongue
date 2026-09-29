@@ -6,6 +6,7 @@ intro-4 = On a bench by the road an old man is watching you with open curiosity.
 
 # Where and when, on the top bar.
 setting-where = Suzhou, 1980
+setting-type-prompt = Type it in Chinese or pinyin:
 
 place-street = Main Street
 place-street-desc = Bikes, steam, and an old man on a bench.

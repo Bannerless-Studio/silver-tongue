@@ -1,7 +1,9 @@
 import {
+  comboKey,
   describeRun,
   joinTiles,
   MAX_NAME_LENGTH,
+  normalizeTyped,
   wordState,
   type CatalogEntry,
   type Core,
@@ -13,14 +15,15 @@ import {
   type WordId,
 } from "@silver-tongue/core";
 import type { AudioOut, Speech, SpeechSpeed } from "@silver-tongue/view";
-import { notebookBody, notebookGroups, notebookHead, type NotebookView } from "./notebook";
+import { NOTEBOOK_TABS, notebookBody, notebookGroups, notebookHead, phraseGroups, type NotebookView } from "./notebook";
 import { cardBox, lineSpans, wrapItems } from "./screen";
 import { innerWidth, NARROW, renderFrame, type Panel } from "./panel";
 import { strWidth, wrapLine } from "./width";
 import type { Key, StyledLine, Terminal } from "./terminal";
 import {
-  actionNarration, hudValues, introLines, makeText, notebookEntries, placeMenu, readingRow, sentenceCard, settingsRows, tileEcho, waitingForMoney, wordCard, wordExample,
-  type HudValues, type SentenceCard, type SettingsScreen, type Text,
+  actionNarration, hintView, hudValues, introLines, jobView, makeText, notebookEntries, placeMenu, readingRow, reviewCard, reviewOffer, sentenceCard, settingsRows, typePrompt,
+  tileEcho, waitingForMoney, wordCard, wordExample,
+  type HintView, type HudValues, type JobView, type ReviewCard, type SentenceCard, type SettingsScreen, type Text,
 } from "@silver-tongue/view";
 
 /** slow -> normal -> fast -> slow, as the settings screen's Speed row cycles. */
@@ -58,7 +61,7 @@ export interface AppOptions {
 }
 
 type MenuItem = { label: string; input?: Input; quit?: true; disabled?: string };
-type Mode = "explore" | "scene" | "help" | "notebook" | "name" | "settings" | "settings-course" | "settings-reading";
+type Mode = "explore" | "scene" | "help" | "notebook" | "name" | "review" | "settings" | "settings-course" | "settings-reading";
 const SETTINGS_MODES: Mode[] = ["settings", "settings-course", "settings-reading"];
 
 export interface App {
@@ -69,6 +72,10 @@ export interface App {
 const LOG_LIMIT = 200;
 /** What the player says when looking confused. */
 const CONFUSED = "...";
+/** Longest typed reply. */
+const MAX_TYPED = 60;
+/** Memory cells on a review answer: the word's right-answer streak. */
+const MEMORY = 6;
 
 export function startApp(opts: AppOptions): App {
   const { course, core, term } = opts;
@@ -78,7 +85,13 @@ export function startApp(opts: AppOptions): App {
   let log: StyledLine[] = [];
   let pickOptions: RenderedLine[] = [];
   let tiles: string[] = [];
-  let replyMode: "pick" | "tiles" = "pick";
+  let replyMode: "pick" | "tiles" | "type" = "pick";
+  let typed = ""; // type mode: the reply being typed
+  let hints: HintView[] = []; // the hints given for the line being answered, in order
+  // A review question on screen: its card, the word, and once answered, how it went. The next
+  // question (or the end) waits for enter, so the answer can be read.
+  let review: { card: ReviewCard; word: WordId; answered?: { right: boolean; answer: number; choice: number } } | null = null;
+  let reviewNext: GameEvent[] = [];
   let tileInput: number[] = [];
   let lastLine: RenderedLine | null = null;
   let notebookFrom: Mode = "explore"; // where closing the notebook returns to
@@ -265,6 +278,8 @@ export function startApp(opts: AppOptions): App {
           // A new request: the last one was answered.
           firstTry = lastTry = null;
           hintsShown = new Set();
+          hints = [];
+          typed = "";
           lastLine = e.line;
           lastSlow = false;
           hear(e.line.audio);
@@ -275,11 +290,27 @@ export function startApp(opts: AppOptions): App {
         case "replyOptions":
           replyMode = e.mode;
           tileInput = [];
+          typed = "";
           if (e.mode === "pick") pickOptions = e.options;
-          else tiles = e.tiles;
+          else if (e.mode === "tiles") tiles = e.tiles;
+          break;
+        case "hintGiven":
+          hints = [...hints, hintView(course, t, e)];
+          break;
+        case "reviewAsked":
+          mode = "review";
+          review = { card: reviewCard(course, e), word: "" };
+          break;
+        case "reviewEnded":
+          mode = "explore";
+          review = null;
+          push([{ text: t("review-done", { right: e.right, of: e.of }), color: "cyan" }]);
+          break;
+        case "reviewAnswered":
           break;
         case "actionPerformed":
           if (replyMode === "tiles" && !e.tilesWrong) hear(tileReply);
+          if (replyMode === "type" && e.matched) hear(tileReply);
           if (e.matched && !e.tilesWrong) dropWrongTries();
           narrateAction(e.action, e.expected, e.matched, e.tilesWrong);
           break;
@@ -352,6 +383,8 @@ export function startApp(opts: AppOptions): App {
           break;
         case "dayEnded":
           push([], [{ text: t(e.rough ? "day-ended-rough" : "day-ended", { day: e.day }), dim: true }]);
+          // A new day is a natural moment to look back: say so once, when words are fading.
+          if (reviewOffer(course, core.state, opts.now())) push([{ text: t("review-due"), color: "magenta" }]);
           break;
         case "inputRejected":
           // The same rejection repeated (e.g. talking twice with no time left) replaces
@@ -452,7 +485,52 @@ export function startApp(opts: AppOptions): App {
 
   function menu(): MenuItem[] {
     // Sleep and quit always keep their keys; the content checker keeps places within 7 other items.
-    return [...placeMenu(course, core.state, t), { label: t("menu-quit"), quit: true }];
+    // A review takes no time, so it's offered whenever words are fading, just above quit.
+    const count = reviewOffer(course, core.state, opts.now());
+    const reviewItem: MenuItem[] = count ? [{ label: t("menu-review", { count }), input: { type: "startReview" } }] : [];
+    return [...placeMenu(course, core.state, t), ...reviewItem, { label: t("menu-quit"), quit: true }];
+  }
+
+  /** Answers the review question on screen; the next question waits for enter. */
+  function answerReview(choice: number) {
+    const events = core.send({ type: "reviewAnswer", choice });
+    const i = events.findIndex((e) => e.type === "reviewAnswered");
+    const a = events[i];
+    if (!review || a?.type !== "reviewAnswered") return apply(events);
+    review = { ...review, word: a.word, answered: { right: a.right, answer: a.answer, choice } };
+    apply(events.slice(0, i));
+    reviewNext = events.slice(i + 1);
+    hear(course.words[a.word]?.audio);
+    flush();
+    persist();
+  }
+
+  /** Enter after an answer: the next question, or the end of the review. */
+  function nextReview() {
+    const next = reviewNext;
+    reviewNext = [];
+    apply(next);
+  }
+
+  /** Sends what was typed: "..." (anything that types as nothing) looks confused while that's on offer. */
+  function sendTyped() {
+    const text = typed.trim();
+    if (!text) return;
+    card = null;
+    if (!normalizeTyped(text)) {
+      if (core.state.run && core.state.run.misses < 2) {
+        echo(CONFUSED);
+        send({ type: "confused" });
+      }
+      typed = "";
+      return;
+    }
+    const run = core.state.run;
+    const ex = run && course.scenes.find((s) => s.id === run.scene)?.exchanges[run.exchange];
+    // The right reply's own clips, said only if the text was right (see actionPerformed).
+    tileReply = (run && ex?.variants[comboKey(run.combo)]?.reply.audio) || [];
+    echo(text);
+    send({ type: "replyText", text });
   }
 
   /** "...": looking confused, offered after the replies until the line has been said again. */
@@ -527,6 +605,16 @@ export function startApp(opts: AppOptions): App {
           ...((o.intent ?? o.meaning) && replyNeedsGloss(o) ? [{ text: `  (${o.intent ?? o.meaning})`, dim: true }] : []),
         ]).concat(confusedOffered() ? [[{ text: `${pickOptions.length + 1}) ${CONFUSED}` }, { text: `  (${t("reply-confused")})`, dim: true }]] : []),
       };
+    if (replyMode === "type") {
+      return {
+        title: t("reply-title"),
+        lines: [
+          ...hints.flatMap(hintLines),
+          [{ text: `${typePrompt(t)} `, dim: true }, ...(core.state.run && core.state.run.misses < 2 ? [{ text: t("type-send"), dim: true }] : [])],
+          typedLine(),
+        ],
+      };
+    }
     return {
       title: t("reply-title"),
       lines: [
@@ -534,6 +622,126 @@ export function startApp(opts: AppOptions): App {
         [{ text: `${t("tiles-answer")} `, dim: true }, { text: joinTiles(course, tileInput.map((i) => tiles[i])), bold: true }],
       ],
     };
+  }
+
+  /** The line being typed; the cursor goes after it. */
+  const typedLine = (): StyledLine => [{ text: "> " }, { text: typed, bold: true }];
+
+  /** A hint: "Hint 2/3 (stronger)", then the nudge, the key words, or the reply. */
+  function hintLines(h: HintView): StyledLine[] {
+    const head: StyledLine = [
+      { text: `▸ ${t("hint-title", { level: h.level })} `, bold: true, color: h.level === 3 ? "green" : "yellow" },
+      { text: t(`hint-level-${h.level}`), dim: true },
+    ];
+    if (h.level === 1) return [head, [{ text: "  " }, { text: h.text }]];
+    if (h.level === 2) {
+      return [
+        head,
+        ...h.words.map((w): StyledLine => [
+          { text: `  ${t("hint-use")} `, dim: true },
+          { text: w.text, bold: true },
+          ...(w.reading ? [{ text: ` ${w.reading}`, color: "yellow" as const }] : []),
+          { text: `  ${w.gloss}`, dim: true },
+        ]),
+      ];
+    }
+    return [
+      head,
+      [{ text: "  " }, { text: h.reply.text, bold: true }],
+      ...(h.reply.reading ? [[{ text: "  " }, { text: h.reply.reading, color: "yellow" as const }]] : []),
+      ...(h.reply.meaning ? [[{ text: "  " }, { text: h.reply.meaning, dim: true }]] : []),
+    ];
+  }
+
+  /**
+   * The job on: its name, its steps (done, now, to come), the time left in the day, and words of
+   * it half learned. A delivery names its steps; a scene's steps are its exchanges.
+   */
+  function jobLines(job: JobView): StyledLine[] {
+    // Block elements, not circles or squares: the web terminal draws blocks itself, and squeezes a
+    // fallback font's ● or ■ into a sliver.
+    const named = job.steps.some((s) => !/^\d+$/.test(s.label));
+    const icon = { done: { text: "✓", color: "green" as const }, now: { text: "█", color: "yellow" as const, bold: true }, todo: { text: "░", dim: true } };
+    const steps: StyledLine = job.steps.flatMap((s, i): StyledLine => [
+      ...(i ? [{ text: named ? " ── " : "──", dim: true }] : []),
+      icon[s.status],
+      ...(named ? [{ text: ` ${s.label}`, ...(s.status === "now" ? { bold: true } : s.status === "todo" ? { dim: true } : {}) }] : []),
+    ]);
+    const first: StyledLine = [
+      { text: job.title, bold: true },
+      { text: "  " },
+      ...steps,
+      ...(job.timeLeft ? [{ text: `  · ${t("job-time-left", { time: job.timeLeft })}`, dim: true }] : []),
+    ];
+    const words: StyledLine[] = job.words.length
+      ? [[
+          { text: `${t("job-words")} `, dim: true },
+          ...job.words.flatMap((w, i): StyledLine => [
+            ...(i ? [{ text: " · ", dim: true }] : []),
+            { text: w.text, bold: true },
+            ...(w.reading ? [{ text: ` ${w.reading}`, color: "yellow" as const }] : []),
+            { text: ` ${w.gloss}`, dim: true },
+          ]),
+        ]]
+      : [];
+    return [first, ...words];
+  }
+
+  /** A review question, its choices, and once answered, how it went. */
+  function reviewPanels(): Panel[] {
+    const r = review!;
+    const c = r.card;
+    const a = r.answered;
+    const right = c.options[a?.answer ?? -1];
+    const gap = "_".repeat(Math.max(4, strWidth(c.blank) + 2));
+    const question: StyledLine[] = [
+      [{ text: t("review-fill"), dim: true }],
+      [],
+      [
+        { text: "   " },
+        { text: c.before, bold: true },
+        a ? { text: right.text, bold: true, color: a.right ? "green" : "red", underline: true } : { text: gap, color: "cyan" },
+        { text: c.after, bold: true },
+      ],
+      // Once answered, the reading fills its gap too.
+      ...(c.reading ? [[{ text: `   ${a && right.reading ? c.reading.replace("____", right.reading) : c.reading}`, color: "yellow" as const, dim: true }]] : []),
+      [{ text: `   ${c.meaning}`, dim: true }],
+    ];
+    const options: StyledLine[] = c.options.map((o, i) => {
+      const mark = !a ? "" : i === a.answer ? " ✓" : i === a.choice ? " ✗" : "";
+      const tone = !a ? {} : i === a.answer ? { color: "green" as const } : i === a.choice ? { color: "red" as const } : { dim: true };
+      return [
+        { text: `[${i + 1}] `, ...tone },
+        { text: o.text, bold: true, ...tone },
+        ...(o.reading ? [{ text: `  ${o.reading}`, color: "yellow" as const, ...(a && i !== a.answer ? { dim: true } : {}) }] : []),
+        // A grammar word's gloss is already in brackets: "(measure word)".
+        { text: o.gloss.startsWith("(") ? `  ${o.gloss}` : `  (${o.gloss})`, dim: true },
+        { text: mark, ...tone },
+      ];
+    });
+    const panels: Panel[] = [{ lines: question, grow: true, min: question.length }, { lines: options }];
+    if (a) {
+      const rec = core.state.words[r.word];
+      const cells = Math.min(MEMORY, rec?.streak ?? 0);
+      panels.push({
+        lines: [
+          [
+            a.right ? { text: `✓ ${t("review-right")}`, bold: true, color: "green" } : { text: `✗ ${t("review-wrong", { word: right.text })}`, bold: true, color: "red" },
+            { text: "  " },
+            { text: right.text, bold: true },
+            ...(right.reading ? [{ text: ` ${right.reading}`, color: "yellow" as const }] : []),
+            { text: ` = ${right.gloss}` },
+            ...(soundOn() && course.words[r.word]?.audio?.length ? [{ text: `  ${t("help-play")}`, dim: true }] : []),
+          ],
+          [
+            { text: `${t("review-memory")} `, dim: true },
+            { text: "█".repeat(cells), color: a.right ? "green" : "yellow" },
+            { text: "░".repeat(MEMORY - cells), dim: true },
+          ],
+        ],
+      });
+    }
+    return panels;
   }
 
   /** Money, rent (yellow the night it's due, red once late), the parcel, and what to do next. */
@@ -583,13 +791,22 @@ export function startApp(opts: AppOptions): App {
       const height = Math.max(1, rows - 3 - headRows); // top border, the rule under the head, bottom border
       const body = notebookBody(book, t, nbView, cols, height);
       nbView = { ...nbView, top: body.top };
-      const footer = t("keys-notebook");
+      const footer = t(nbView.tab === "words" || nbView.tab === "phrases" ? "keys-notebook" : "keys-notebook-scroll");
       const frame = { title: t("notebook-title"), right: book.rankLabel, panels: [{ lines: head }, { lines: body.lines }], footer };
       term.write(renderFrame({ ...frame, footerRight: footerRight(footer, cols) }, cols, rows));
       return;
     }
+    if (mode === "review" && review) {
+      const footer = review.answered ? t("keys-review-next") : t("keys-review", { keys: keyRange(review.card.options.length) });
+      const frame = { title: t("review-title"), right: `${review.card.n}/${review.card.of}`, panels: reviewPanels(), footer };
+      term.write(renderFrame({ ...frame, footerRight: footerRight(footer, cols) }, cols, rows));
+      return;
+    }
+    const typing = mode === "scene" && replyMode === "type";
     const [footerId, count] =
-      mode === "settings"
+      typing
+        ? ["keys-type", 0]
+        : mode === "settings"
         ? ["keys-settings", settingsChoices().length]
         : SETTINGS_MODES.includes(mode)
         ? ["keys-settings-pick", settingsChoices().length]
@@ -621,8 +838,10 @@ export function startApp(opts: AppOptions): App {
       inline = wrapped(log.slice(from, at + 1)) + box.length <= room;
       if (inline) lines = [...log.slice(0, at + 1), ...box, ...log.slice(at + 1)];
     }
+    const job = mode === "scene" || mode === "help" || mode === "explore" ? jobView(course, s, t, opts.now()) : undefined;
     const panels: Panel[] = [
       { lines: [hudRow(h)], drop: 2 },
+      ...(job ? [{ lines: jobLines(job), drop: 3 }] : []),
       { lines, grow: true, min: 4 },
       ...(shownCard && !inline ? [{ lines: [shownCard.compact], drop: 1 }] : []),
       reply,
@@ -630,8 +849,13 @@ export function startApp(opts: AppOptions): App {
     const left = cols < NARROW ? 0 : 2; // where a line's text starts: after "│ " when wide
     term.write(
       renderFrame({ ...top, panels, footer, footerRight: footerRight(footer, cols) }, cols, rows),
-      // Typing a name: the cursor sits after the text, where a phone keyboard shows what's being composed.
-      mode === "name" ? { row: rows - 2, col: Math.min(cols - 1 - left, left + 2 + strWidth(nameInput)) } : undefined,
+      // Typing a name or a reply: the cursor sits after the text, where a phone keyboard shows what's
+      // being composed. Both are the last line above the bottom border; a long reply wraps.
+      mode === "name"
+        ? { row: rows - 2, col: Math.min(cols - 1 - left, left + 2 + strWidth(nameInput)) }
+        : typing
+          ? { row: rows - 2, col: Math.min(cols - 1 - left, left + strWidth((wrapLine(typedLine(), inner).at(-1) ?? []).map((sp) => sp.text).join(""))) }
+          : undefined,
     );
   }
 
@@ -649,14 +873,47 @@ export function startApp(opts: AppOptions): App {
       else if (ch && ch >= " " && [...nameInput].length < MAX_NAME_LENGTH) nameInput += ch;
       return render();
     }
+    if (mode === "review") {
+      const n = /^[1-9]$/.test(key.name) ? Number(key.name) - 1 : -1;
+      if (!review) mode = "explore";
+      else if (key.name === "escape") {
+        if (review.answered && !reviewNext.some((e) => e.type === "reviewAsked")) nextReview();
+        else {
+          reviewNext = [];
+          send({ type: "endReview" });
+        }
+      } else if (review.answered) {
+        if (key.name === "return" || key.name === " ") nextReview();
+        else if (key.name === "p") {
+          hear(course.words[review.word]?.audio);
+          flush();
+        }
+      } else if (n >= 0 && n < review.card.options.length) answerReview(n);
+      return render();
+    }
+    // Typing a reply: every character is text. Enter says it, tab asks for a hint, escape looks a
+    // word up (or closes the card open).
+    if (mode === "scene" && replyMode === "type") {
+      const ch = key.text ?? ([...key.name].length === 1 ? key.name : undefined);
+      if (key.name === "return") sendTyped();
+      else if (key.name === "tab") send({ type: "hint" });
+      else if (key.name === "backspace") typed = [...typed].slice(0, -1).join("");
+      else if (key.name === "escape") {
+        if (card) card = null;
+        else mode = "help";
+      } else if (ch && ch >= " " && [...typed].length < MAX_TYPED) typed += ch;
+      return render();
+    }
     if (mode === "notebook") {
-      const groups = notebookGroups(notebookEntries(course, core.state, t, opts.now()), t);
-      const g = Math.max(0, Math.min(nbView.group, groups.length - 1));
-      const words = groups[g]?.words ?? [];
+      const book = notebookEntries(course, core.state, t, opts.now());
       const v = nbView;
+      const groups: { items: { clips: string[] }[] }[] = v.tab === "phrases" ? phraseGroups(book) : notebookGroups(book, t);
+      const g = Math.max(0, Math.min(v.group, groups.length - 1));
+      const words = groups[g]?.items ?? [];
+      const tab = /^[1-9]$/.test(key.name) ? NOTEBOOK_TABS[Number(key.name) - 1] : undefined;
       if (key.name === "escape" || key.name === "n") mode = notebookFrom;
-      else if (key.name === "1" || key.name === "2") nbView = { ...v, tab: key.name === "1" ? "words" : "notes", top: 0 };
-      else if (v.tab === "notes") {
+      else if (tab) nbView = { tab, group: 0, word: 0, open: false, top: 0 };
+      else if (v.tab !== "words" && v.tab !== "phrases") {
         if (key.name === "down") nbView = { ...v, top: v.top + 1 };
         else if (key.name === "up") nbView = { ...v, top: Math.max(0, v.top - 1) };
       } else if (key.name === "left" || key.name === "right") {

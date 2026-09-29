@@ -1,5 +1,5 @@
-import { DAY_MS, PLAYER_MARK, rankFor, wordState, type Course, type GameState, type WordId, type WordRecord, type WordState } from "@silver-tongue/core";
-import { displayGloss } from "./help";
+import { DAY_MS, personalize, placeKnown, PLAYER_MARK, rankFor, wordState, type Course, type GameState, type WordId, type WordRecord, type WordState } from "@silver-tongue/core";
+import { displayGloss, sentenceCard } from "./help";
 import type { Text } from "./text";
 
 /** What the notebook calls a word: "new" until it is first answered right, then its state. */
@@ -35,6 +35,87 @@ export interface Notebook {
   /** words first heard within the last day of play, newest first */
   recent: NotebookWord[];
   notes: { title: string; text: string }[];
+  /** set phrases from the conversations had, by conversation */
+  phrases: { title: string; phrases: NotebookPhrase[] }[];
+  /** the people met, in the order the course introduces them */
+  people: NotebookPerson[];
+  /** the places known, in world order */
+  places: NotebookPlace[];
+}
+
+export interface NotebookPhrase {
+  text: string;
+  reading: string;
+  meaning: string;
+  clips: string[];
+}
+export interface NotebookPerson {
+  name: string;
+  place: string;
+  /** 0-5: how well they know you */
+  trust: number;
+  /** the conversations had with them */
+  scenes: string[];
+}
+export interface NotebookPlace {
+  name: string;
+  desc: string;
+  people: string[];
+  here: boolean;
+}
+
+/**
+ * Set phrases: the lines of each conversation done whose exchange has no slots to vary (a greeting,
+ * an introduction), both sides, each once.
+ */
+function phrasesOf(course: Course, state: GameState, t: Text): Notebook["phrases"] {
+  const name = state.player ?? "";
+  const seen = new Set<string>();
+  const out: Notebook["phrases"] = [];
+  for (const scene of course.scenes) {
+    if (!(state.scenesDone[scene.id] ?? 0)) continue;
+    const phrases: NotebookPhrase[] = [];
+    for (const ex of scene.exchanges) {
+      const v = ex.variants[""];
+      if (!v) continue;
+      for (const l of [v.npc, v.reply]) {
+        const card = sentenceCard(course, personalize(l, name));
+        if (!card || seen.has(card.text)) continue;
+        seen.add(card.text);
+        phrases.push({ text: card.text, reading: card.reading, meaning: card.meaning, clips: card.clips });
+      }
+    }
+    if (phrases.length) out.push({ title: t(`scene-${scene.id}`), phrases });
+  }
+  return out;
+}
+
+function peopleOf(course: Course, state: GameState, t: Text): NotebookPerson[] {
+  const out = new Map<string, NotebookPerson>();
+  for (const scene of course.scenes) {
+    if (!(state.scenesDone[scene.id] ?? 0)) continue;
+    const p = out.get(scene.npc) ?? {
+      name: t(`npc-${scene.npc}`),
+      place: t(`place-${course.world.npcs[scene.npc]?.place ?? scene.place}`),
+      trust: Math.min(5, state.trust[scene.npc] ?? 0),
+      scenes: [],
+    };
+    p.scenes.push(t(`scene-${scene.id}`));
+    out.set(scene.npc, p);
+  }
+  return [...out.values()];
+}
+
+function placesOf(course: Course, state: GameState, t: Text): NotebookPlace[] {
+  const met = new Set(course.scenes.filter((s) => state.scenesDone[s.id]).map((s) => s.npc));
+  return Object.keys(course.world.places)
+    .filter((p) => placeKnown(course, state, p))
+    .map((p) => ({
+      name: t(`place-${p}`),
+      desc: t.has(`place-${p}-desc`) ? t(`place-${p}-desc`) : "",
+      people: Object.entries(course.world.npcs).filter(([id, n]) => n.place === p && met.has(id)).map(([id]) => t(`npc-${id}`)),
+      here: p === state.place,
+    }));
 }
 
 /**
@@ -101,5 +182,15 @@ export function notebookEntries(course: Course, state: GameState, t: Text, now: 
     .filter((id) => state.words[id].firstSeen >= now - DAY_MS)
     .sort((a, b) => state.words[b].firstSeen - state.words[a].firstSeen)
     .map(entry);
-  return { rankLabel, progress, empty: !heard.length, groups, recent, notes: state.notes.read.map((id) => ({ title: t(`note-${id}-title`), text: t(`note-${id}`) })) };
+  return {
+    rankLabel,
+    progress,
+    empty: !heard.length,
+    groups,
+    recent,
+    notes: state.notes.read.map((id) => ({ title: t(`note-${id}-title`), text: t(`note-${id}`) })),
+    phrases: phrasesOf(course, state, t),
+    people: peopleOf(course, state, t),
+    places: placesOf(course, state, t),
+  };
 }

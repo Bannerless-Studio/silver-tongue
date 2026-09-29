@@ -6,6 +6,7 @@ intro-4 = On a bench under the arcade roof an old man is feeding pigeons and wat
 
 # Where and when, on the top bar.
 setting-where = Tokyo, 1995
+setting-type-prompt = Type it in Japanese or rōmaji:
 
 place-shotengai = Shopping Street
 place-shotengai-desc = A covered arcade of small shops, bicycles, and an old man on a bench.

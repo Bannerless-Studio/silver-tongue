@@ -2,9 +2,15 @@
 
 Every release of Silver Tongue, newest first.
 
-## 0.18.0 (unreleased)
+## 0.18.0 (2026-09-29)
 
 - A third way to play in the browser, the quiet terminal, at /quiet/. It shows only what changed: rent appears when you are about to fall short, a new word explains itself once, and a word you keep missing is underlined. Tap `?` on any line to see its reading and meaning, N for your notebook (it opens on the words that need work and why), S for your money, rent and standing.
+- Once you know every word of a reply, you type it: in Chinese or pinyin (Japanese or rōmaji). Tones, spaces and punctuation don't matter, and you can mix characters and letters. Two wrong tries and the choices come back.
+- [tab] gives a hint, three per reply: first what the reply does and how long it is, then its key words, then the reply itself. The second and third cost some of the pay.
+- A job shows its progress while you work: the steps done and to come, the time left in the day, and a few of its words you're still learning. A delivery shows its steps too: get the parcel, take it there, hand it over.
+- A quick review appears in the menu when words start fading: fill in the blank in a line you've heard, from four words. It shows the word's reading and meaning, and how well you remember it.
+- The notebook has tabs: Words, Phrases (the lines of each conversation, with readings and meanings), People (where they are, how much they trust you, what you talked about), Places and Notes. Words are labelled new, familiar, fading or safe, and ★ Recent comes first.
+- In the browser, the key bar has a [tab] key.
 
 ## 0.17.2 (2026-09-28)
 

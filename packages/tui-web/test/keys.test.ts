@@ -30,6 +30,7 @@ describe("web keys", () => {
     expect(forBrowser({ key: "c", metaKey: true })).toBe(true);
     expect(forBrowser({ key: "F5" })).toBe(true);
     expect(forBrowser({ key: "Tab" })).toBe(true);
+    expect(forBrowser({ key: "Tab" }, true)).toBe(false); // typing a reply: Tab asks for a hint
     expect(forBrowser({ key: "1" })).toBe(false);
     expect(forBrowser({ key: "Enter" })).toBe(false);
   });

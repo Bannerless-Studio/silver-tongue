@@ -8,6 +8,7 @@ import {
   hasHome,
   mulberry32,
   newGame,
+  personalize,
   placeKnown,
   sceneCost,
   tilePieces,
@@ -76,6 +77,11 @@ function replyInput(course: Course, state: GameState, right: boolean, rng: () =>
     return { type: "reply", choice };
   }
   const ex = course.scenes.find((s) => s.id === run.scene)!.exchanges[run.exchange];
+  // Typed: the reply as written (with the name), or a word of it alone.
+  if (run.mode === "type") {
+    const reply = personalize(ex.variants[comboKey(run.combo)].reply, state.player ?? "?");
+    return { type: "replyText", text: right ? reply.text : reply.text.slice(reply.tokens[0].start, reply.tokens[0].end) };
+  }
   const used = new Set<number>();
   const order = tilePieces(ex.variants[comboKey(run.combo)].reply).map((p) => {
     const i = run.tiles.findIndex((t, j) => t === p && !used.has(j));

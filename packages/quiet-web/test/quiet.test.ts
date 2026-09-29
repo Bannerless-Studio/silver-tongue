@@ -362,4 +362,33 @@ describe("quiet terminal controller", () => {
     const loneKnown = [line("好", ["w_hao"], "Agree")];
     expect(q.intentShown(loneKnown, loneKnown[0])).toBe(false);
   });
+
+  it("a reply known word for word is typed, without hints; dots look confused", () => {
+    const shift = ["w_cha", "w_shui", "w_san", "w_si", "w_hao", "x_bei"];
+    const known = { right: 3, wrong: 0, streak: 3, helps: 0, lapsed: false, firstSeen: T0, lastSeen: T0 };
+    const inShift = () =>
+      setup(
+        (s) => {
+          s.place = "noodle_shop";
+          s.scenesDone = { intro: 1 };
+          s.trust = { cook: 2 };
+          s.words = Object.fromEntries(shift.map((w) => [w, { ...known }]));
+        },
+        (c) => (c.typing = true),
+      );
+    const { q } = inShift();
+    q.choose(0);
+    const p = q.view().phase;
+    expect(p).toMatchObject({ kind: "type", confused: true });
+    q.sendText("...");
+    expect(texts(q).at(-2)).toBe("...");
+    expect(q.view().phase.kind).toBe("pick");
+
+    const again = inShift();
+    again.q.choose(0);
+    const reply = again.course.scenes[1].exchanges[0].variants[comboKey(again.core.state.run!.combo)].reply.text;
+    again.q.sendText(reply);
+    expect(again.q.view().backlog.some((b) => b.speaker === "player" && b.text === reply)).toBe(true);
+    expect(again.core.state.run).toBeNull();
+  });
 });

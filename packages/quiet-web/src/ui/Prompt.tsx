@@ -6,6 +6,7 @@ export function Prompt({ q, view }: { q: Quiet; view: QuietView }) {
   const p = view.phase;
   const t = q.t;
   const [name, setName] = useState("");
+  const [text, setText] = useState("");
   if (p.kind === "name") {
     return (
       <form class="prompt" onSubmit={(e) => (e.preventDefault(), q.setName(name))}>
@@ -35,6 +36,19 @@ export function Prompt({ q, view }: { q: Quiet; view: QuietView }) {
       </div>
     );
   }
+  if (p.kind === "type") {
+    return (
+      <form class="prompt" onSubmit={(e) => (e.preventDefault(), q.sendText(text), setText(""))}>
+        {p.confused && <p class="prose dim">{t("type-send")}</p>}
+        <label class="cursor-line">
+          <span class="cur">›</span>
+          <input autoFocus value={text} maxLength={60} placeholder={p.prompt} aria-label={p.prompt} autoComplete="off" autoCapitalize="off" spellcheck={false}
+            onInput={(e) => setText((e.target as HTMLInputElement).value)} />
+          <button type="submit" class="dim" aria-label={t("vn-send")}>↵</button>
+        </label>
+      </form>
+    );
+  }
   if (p.kind === "tiles") {
     return (
       <div class="prompt">
@@ -42,6 +56,7 @@ export function Prompt({ q, view }: { q: Quiet; view: QuietView }) {
           {p.tiles.map((tile, i) => (
             <button key={i} type="button" class="tile" disabled={p.placed.includes(i)} onClick={() => q.placeTile(i)}>{tile}</button>
           ))}
+          <button type="button" class="tile send" aria-label={t("vn-send")} title={t("vn-send")} disabled={!p.placed.length} onClick={() => q.sendTiles()}>✓</button>
         </div>
         <p class="cursor-line">
           <span class="cur">›</span> <span>{p.answer}</span><span class="blink">▌</span>

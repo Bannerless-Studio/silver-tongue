@@ -24,6 +24,6 @@
       "4"
     ]
   },
-  "typing": null,
+  "typing": { "input": "pinyin" },
   "spaced": false
 }
