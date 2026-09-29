@@ -18,9 +18,9 @@ place-konbini = Convenience Store
 place-konbini-desc = Bright light, a chime at the door, and rice balls in neat rows.
 
 npc-tanaka = Mr Tanaka
-npc-ooya = the landlady
-npc-ramen_owner = the ramen owner
-npc-clerk = the clerk
+npc-ooya = The landlady
+npc-ramen_owner = The ramen owner
+npc-clerk = The clerk
 
 # Scene names for the menu; scene-<id>-start and scene-<id>-end are optional narration.
 scene-tanaka-hello = Say hello to the old man

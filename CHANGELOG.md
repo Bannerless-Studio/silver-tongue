@@ -2,6 +2,14 @@
 
 Every release of Silver Tongue, newest first.
 
+## 0.18.2 (2026-09-29)
+
+- The story holds together better: Mrs Lin no longer says she lives with just her son (her family is six), washing up ends with you going out for the cups you said you'd buy, and the lunch rush ends after you've eaten, not before. The Chinese class opens with "a teacher at the school gate", which reads right on the quiet page too.
+- A reply's hint no longer gives its answer away in a job: "(Repeat the order)" instead of "(Tea)" or "(Four cups of water)", in the choices and in the first hint.
+- On the quiet page and in the visual novel, "Old Wang seems to have something to tell you" appears once, and again only after you've heard what he had to say, not after every conversation.
+- On the quiet page, the top row says "carrying a parcel" while you have one.
+- In Japanese, the landlady, the ramen owner and the clerk are capitalised where a sentence or a speaker's label starts with them.
+
 ## 0.18.1 (2026-09-29)
 
 - The noodle shop opens as soon as Old Wang points you to it. Your first visit is a free bowl of noodles from his friend Xiao Zhang; asking her for work still waits until Old Wang has taught you to count.

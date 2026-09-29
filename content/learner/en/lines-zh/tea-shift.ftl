@@ -1,11 +1,11 @@
 pour = { -amount(form: "cap") } cups of { -drink }!
 pour-reply = OK, { -amount } cups of { -drink }.
-pour-reply-intent = { -amount(form: "cap") } cups of { -drink }
+pour-reply-intent = Repeat the order
 pour-rephrase = { -drink(form: "cap") }! { -amount(form: "cap") } cups!
 
 table = The table at the back: { -people } people.
 table-reply = OK, { -people } cups and { -people } chairs.
-table-reply-intent = Say { -people } cups and chairs
+table-reply-intent = Say how many cups and chairs
 table-rephrase = { -people(form: "cap") } people! That table!
 
 busy = That young woman wants tea!

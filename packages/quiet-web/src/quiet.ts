@@ -188,7 +188,8 @@ export function createQuiet(opts: QuietOptions): Quiet {
       for (const w of out) glossed.add(w);
       return out;
     };
-    let hinted = false;
+    // One hint however many notes became ready at once, and none while older ones still wait unheard.
+    let hinted = core.state.notes.ready.length > events.filter((e) => e.type === "noteReady").length;
     /** places revealed by these events: one piece of news for all of them */
     const revealed: string[] = [];
     /** reactions that restate the request; only kept when the replies come back after them */
@@ -277,7 +278,6 @@ export function createQuiet(opts: QuietOptions): Quiet {
           toast(t(`reject-${e.reason}`), "bad");
           break;
         case "noteReady":
-          // One hint however many notes became ready at once.
           if (course.world.mentor && !hinted) news(t("note-hint", { npc: npcName(course.world.mentor.npc) }), "info");
           hinted = true;
           break;

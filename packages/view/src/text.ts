@@ -214,6 +214,7 @@ export const QUIET_UI_KEYS: Record<string, string[]> = {
   "quiet-anchor": ["place", "day", "slot", "slots"],
   "quiet-rent": ["currency", "rent", "days", "wallet"],
   "quiet-rent-late": [],
+  "quiet-parcel": [],
   "quiet-no-audio": [],
   "quiet-repeat": [],
   "quiet-repeat-pays": ["currency", "pays"],

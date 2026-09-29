@@ -240,6 +240,37 @@ describe("quiet terminal controller", () => {
     expect(news[0].text).toMatch(/^New places: .+, .+, .+$/);
   });
 
+  it("says the mentor has something to tell only when nothing was waiting already", () => {
+    const course = fixtureWithText();
+    course.world.mentor = { npc: "cook", after: "intro" };
+    const real = createCore(course, newGame(course), { now: () => T0, rng: mulberry32(1) });
+    // Every input readies a note, and none is ever heard.
+    const ready: string[] = [];
+    const core = {
+      get state() {
+        return { ...real.state, notes: { ready: [...ready], read: [] } };
+      },
+      send: (input: Parameters<typeof real.send>[0]) => {
+        ready.push(`n${ready.length}`);
+        return [...real.send(input), { type: "noteReady" as const, note: ready.at(-1)! }];
+      },
+    };
+    let clock = T0;
+    const q = createQuiet({ course, core, now: () => (clock += 1000) });
+    const hints = () => q.view().toasts.filter((x) => x.text.endsWith("something to tell you."));
+    const talk = () => {
+      q.choose(0);
+      for (let i = 0; real.state.run && i < 12; i++) q.choose(real.state.run.options.indexOf(comboKey(real.state.run.combo)));
+      expect(real.state.run).toBeFalsy();
+    };
+    talk();
+    expect(hints()).toHaveLength(1);
+    // Read and gone; the notes readied since still wait, so there's nothing new to say.
+    for (const x of q.view().toasts) q.dismissToast(x.id);
+    talk();
+    expect(hints()).toHaveLength(0);
+  });
+
   it("? targets the newest NPC line, not the player's or narration", () => {
     const { q, core } = setup();
     q.choose(0);

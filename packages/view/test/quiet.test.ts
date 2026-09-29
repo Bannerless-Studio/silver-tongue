@@ -15,6 +15,11 @@ describe("anchor row", () => {
     expect(row).toEqual({ place: "The street", day: 3, slot: 2, slots: 4 });
   });
 
+  it("says a parcel is in hand, but not where it goes", () => {
+    expect(anchorRow(course, game({ day: 3, wallet: 500, errand: { to: "noodle_shop" } }), t)).toMatchObject({ parcel: true });
+    expect(anchorRow(course, game({ day: 3, wallet: 500 }), t).parcel).toBeUndefined();
+  });
+
   it("rent is due on the sleep ending a day divisible by 7", () => {
     expect([1, 6, 7, 8, 13, 14].map(rentDueInDays)).toEqual([6, 1, 0, 6, 1, 0]);
   });

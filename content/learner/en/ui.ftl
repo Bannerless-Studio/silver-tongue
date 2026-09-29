@@ -263,6 +263,7 @@ quiet-rent = rent { $currency }{ $rent } due { $days ->
    *[other] in { $days } days
 } · you have { $currency }{ $wallet }
 quiet-rent-late = rent late
+quiet-parcel = carrying a parcel
 quiet-no-audio = 🔇 no audio
 quiet-repeat = repeat shift
 quiet-repeat-pays = repeat shift · pays { $currency }{ $pays }

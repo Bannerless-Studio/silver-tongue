@@ -30,7 +30,7 @@ years-alt1-intent = Say ten kuai
 years-alt2 = My flat is two-oh-eight.
 years-alt2-intent = Give your flat number
 
-son = My son and I live here.
+son = My son and I are just getting home.
 son-reply = Your son's lovely!
 son-reply-intent = Praise her son
 son-alt1 = I live here.
