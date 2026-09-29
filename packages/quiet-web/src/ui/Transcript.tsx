@@ -51,8 +51,8 @@ function Said({ q, b, ruby, named, latest, reveal, onWord, onReveal }: {
   const book = bookOn(course);
   const ask = whole && !rephrased && (!book || latest);
   const tap = whole && !rephrased && !ask ? () => onReveal(b) : undefined;
-  // Said while onboarding (see onboarding): the row ? opens (the line's reading and meaning; the
-  // meaning only with readings off) starts open, and ? (or a tap) closes it.
+  // Said while onboarding (see onboarding): the row ? opens (the line's meaning; its reading too only when
+  // readings are off, since readings already sit under the words) starts open, and ? (or a tap) closes it.
   const auto = !!whole && !rephrased && !!b.onboard;
   const shown = auto && reveal?.kind !== "line";
   // With the Book, the line wraps inside itself: its speaker label and ? stay on its first row.
@@ -96,7 +96,7 @@ function Said({ q, b, ruby, named, latest, reveal, onWord, onReveal }: {
         <div class="gl"><span class="gloss">{[whole.reading, whole.meaning].filter(Boolean).join("  · ")}</span></div>
       )}
       {shown && whole && (
-        <div class="gl dim"><span class="conn">┆</span> <span class="gloss">{[ruby === "off" ? "" : whole.reading, whole.meaning].filter(Boolean).join(" · ")}</span></div>
+        <div class="gl dim"><span class="conn">┆</span> <span class="gloss">{[ruby === "off" ? whole.reading : "", whole.meaning].filter(Boolean).join(" · ")}</span></div>
       )}
       {reveal && !(auto && reveal.kind === "line") && <Card q={q} reveal={reveal} />}
     </>
