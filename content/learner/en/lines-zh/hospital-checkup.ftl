@@ -54,7 +54,7 @@ food-alt1-intent = Promise to drink water
 food-alt2 = I'm hungry.
 food-alt2-intent = Say you're hungry
 
-screen = Television? Computer? No! Sleep a lot!
+screen = No television! Sleep a lot!
 screen-reply = OK, I'll sleep.
 screen-reply-intent = Promise to rest
 screen-alt1 = OK, I'll eat rice.

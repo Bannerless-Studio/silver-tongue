@@ -105,6 +105,8 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
     errors.push(`language "${meta.key}" is written right to left; no front end can show that yet`);
     return stop();
   }
+  const leaveOutPath = join(settingDir, "leave-out.json");
+  const leaveOut = new Set(existsSync(leaveOutPath) ? readJson<string[]>(leaveOutPath) : []);
   const packWords = attempt("words", () => {
     const extraPath = join(langDir, "extra-words.json");
     const extra = existsSync(extraPath) ? readJson<PackWord[]>(extraPath).map((w) => ({ ...w, bonus: true })) : [];
@@ -113,7 +115,10 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
     const bonusIds = new Set(existsSync(bonusPath) ? readJson<string[]>(bonusPath) : []);
     const pack = readJson<PackWord[]>(join(langDir, "words.json")).map((w) => (bonusIds.has(w.id) ? { ...w, bonus: true } : w));
     for (const id of bonusIds) if (!pack.some((w) => w.id === id)) throw new Error(`bonus.json: unknown word id "${id}"`);
-    return [...pack, ...extra];
+    // leave-out.json: pack words the setting has no place for, e.g. 电脑 in 1980. They stay in the
+    // course so old saves still find them, but count toward no stage, and no line may use them.
+    for (const id of leaveOut) if (!pack.some((w) => w.id === id)) throw new Error(`settings/${cfg.setting}/leave-out.json: unknown word id "${id}"`);
+    return [...pack.map((w) => (leaveOut.has(w.id) ? { ...w, bonus: true } : w)), ...extra];
   });
   const lex: Lexicon | undefined = packWords && attempt("words", () => buildLexicon(packWords));
   if (!packWords || !lex) return stop();
@@ -121,6 +126,7 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
   const toLine = (text: string, where: string): RenderedLine => {
     const { tokens, unknown } = segment(text, lex);
     if (unknown.length) errors.push(`${where}: "${text}" has characters outside the word list: ${unknown.map((u) => u.char).join(" ")}`);
+    for (const tk of tokens) if (leaveOut.has(tk.word)) errors.push(`${where}: "${text}" uses ${text.slice(tk.start, tk.end)}, which settings/${cfg.setting}/leave-out.json leaves out`);
     return { text, tokens };
   };
 

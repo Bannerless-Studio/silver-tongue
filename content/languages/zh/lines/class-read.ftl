@@ -1,8 +1,8 @@
 # Reading aloud, and someone talking at the back.
 
-read = 不看电脑！读这本书，十分钟。
+read = 都看书！读这本书，十分钟。
 read-reply = 好，我读。
-read-alt1 = 我没有电脑。
+read-alt1 = 我没有书。
 read-alt2 = 九月二十六日。
 
 char = 这些字怎么读？

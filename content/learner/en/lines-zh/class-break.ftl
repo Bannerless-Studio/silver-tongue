@@ -1,16 +1,16 @@
-computer = I have a computer. You?
-computer-reply = I don't have a computer.
-computer-reply-intent = Say you have no computer
-computer-alt1 = Hello, David!
-computer-alt1-intent = Greet David
-computer-alt2 = This book is good!
-computer-alt2-intent = Praise the book
+bike = I have a bike. You?
+bike-reply = I don't have a bike.
+bike-reply-intent = Say you have no bike
+bike-alt1 = Hello, David!
+bike-alt1-intent = Greet David
+bike-alt2 = This book is good!
+bike-alt2-intent = Praise the book
 
 parents = My mum and dad are teachers.
 parents-reply = Teachers! Very good!
 parents-reply-intent = Say that's great
-parents-alt1 = I don't have a computer.
-parents-alt1-intent = Say you have no computer
+parents-alt1 = I don't have a bike.
+parents-alt1-intent = Say you have no bike
 parents-alt2 = The twenty-sixth of September.
 parents-alt2-intent = Give a date
 

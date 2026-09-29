@@ -225,6 +225,21 @@ describe("quiet terminal controller", () => {
     expect(q.view().toasts.filter((x) => x.text.startsWith("You're now"))).toHaveLength(1);
   });
 
+  it("places a scene reveals are one toast, so they don't push other news out", () => {
+    const { q, core } = setup(undefined, (c) => {
+      for (const id of ["park", "school", "market"]) {
+        c.world.places.street.links.push(id);
+        c.world.places[id] = { links: ["street"], after: ["intro"] };
+      }
+    });
+    q.choose(0);
+    q.choose(0);
+    for (let i = 0; core.state.run && i < 10; i++) q.choose(rightIndex(core));
+    const news = q.view().toasts.filter((x) => x.text.startsWith("New place"));
+    expect(news).toHaveLength(1);
+    expect(news[0].text).toMatch(/^New places: .+, .+, .+$/);
+  });
+
   it("? targets the newest NPC line, not the player's or narration", () => {
     const { q, core } = setup();
     q.choose(0);
