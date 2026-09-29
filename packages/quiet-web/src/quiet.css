@@ -177,3 +177,42 @@ textarea { width: 100%; background: var(--bg); border: 1px solid var(--line); bo
   .blink { animation: none; }
   * { scroll-behavior: auto !important; }
 }
+
+/* The opening of a book course: the story's crawl, then the name screen. One thing on screen; only what
+ * can be acted on pulses. */
+.opening {
+  position: fixed; inset: 0; z-index: 20; background: var(--bg);
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
+  padding: calc(env(safe-area-inset-top) + 1rem) 16px calc(env(safe-area-inset-bottom) + 1rem);
+}
+.crawl-screen { perspective: 60vh; cursor: default; }
+.crawl {
+  position: relative; max-width: 44ch;
+  font-size: clamp(15px, min(4.2vw, 2.5vh), 22px); line-height: 1.55;
+  transform-origin: 50% 100%;
+}
+.crawl p { margin: 0 0 1em; }
+.crawl b { color: var(--cyan); font-weight: 700; }
+/* Rises from below the screen and stops centred, the tilt easing out as it lands. */
+.crawl.moving { animation: crawl-rise linear forwards; animation-timing-function: cubic-bezier(0.25, 0.5, 0.35, 1); }
+@keyframes crawl-rise {
+  from { transform: translateY(calc(50vh + 50%)) rotateX(22deg); }
+  to { transform: translateY(0) rotateX(0); }
+}
+.crawl .go { position: absolute; top: 100%; left: 0; right: 0; margin: 0.5em 0 0; text-align: center; color: var(--cyan); }
+.pulse { animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+.name-screen { flex-direction: column; gap: 1.25rem; }
+.name-title { font-size: clamp(18px, 5vw, 26px); text-align: center; }
+.name-row { display: flex; align-items: baseline; gap: 1rem; width: min(100%, 26ch); font-size: clamp(22px, 7vw, 34px); }
+.name-row input {
+  flex: 1; min-width: 0; font-size: inherit; background: none; border: 0; border-bottom: 2px solid var(--line);
+  padding: 0.1em 0; color: var(--text); caret-color: var(--cyan); outline: none;
+}
+.name-row input:focus { border-bottom-color: var(--cyan); }
+.name-row .go { font-size: 0.55em; color: var(--cyan); white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) {
+  .crawl.moving { animation: none; }
+  .pulse { animation: none; }
+}

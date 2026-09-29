@@ -5,6 +5,7 @@ import { keyAction, type Overlay } from "../keys";
 import { latestNpcLine, type Beat, type Quiet } from "../quiet";
 import { Anchor } from "./Anchor";
 import { Games, Menu, Notebook, Status } from "./Overlays";
+import { Opening } from "./Opening";
 import { Prompt } from "./Prompt";
 import { Toasts } from "./Toasts";
 import { Transcript, type Reveal } from "./Transcript";
@@ -91,6 +92,8 @@ export function App({ q, page }: { q: Quiet; page: Page }) {
   });
 
   const close = () => setOpen(null);
+  // A new game on a course with the Book: the crawl and the name screen, nothing else on screen.
+  if (view.opening) return <Opening q={q} story={view.opening} />;
   return (
     <div class="term app">
       <Anchor q={q} view={view} audioAvailable={page.audioAvailable} />

@@ -65,6 +65,9 @@ export interface QuietView {
   lastLine?: RenderedLine;
   backlog: Beat[];
   toasts: Toast[];
+  /** a new game on a course with the Book, before the player is named: the opening story, shown as the
+   * crawl before the name screen instead of in the transcript */
+  opening?: string[];
 }
 export interface QuietOptions {
   course: Course;
@@ -388,7 +391,9 @@ export function createQuiet(opts: QuietOptions): Quiet {
 
   if (opts.notice) toast(t(opts.notice), "bad");
   const intro = introLines(course, core.state, t);
-  for (const text of intro) push({ text, tone: "narr" });
+  // A course with the Book opens on the crawl and the name screen: the story is read there, not repeated here.
+  const opening = book && naming && intro.length ? intro : undefined;
+  if (!opening) for (const text of intro) push({ text, tone: "narr" });
   resuming = true;
   apply(describeRun(course, core.state)); // a save made mid-scene resumes in the scene: its line, then its replies
   resuming = false;
@@ -401,7 +406,7 @@ export function createQuiet(opts: QuietOptions): Quiet {
     t,
     course,
     core,
-    view: () => ({ scene, phase: phase(), lastLine, backlog, toasts }),
+    view: () => ({ scene, phase: phase(), lastLine, backlog, toasts, ...(opening && naming ? { opening } : {}) }),
     subscribe(fn) {
       listeners.add(fn);
       return () => listeners.delete(fn);
@@ -474,6 +479,12 @@ export function createQuiet(opts: QuietOptions): Quiet {
       }
       persist();
       naming = false;
+      // After the crawl the transcript opens on where the player is, not on the story just read.
+      if (opening && !scene) {
+        push({ text: t("quiet-resume", { place: t(`place-${core.state.place}`) }), tone: "narr" });
+        preludeTo = nextId;
+        flush(true);
+      }
       changed();
       return true;
     },

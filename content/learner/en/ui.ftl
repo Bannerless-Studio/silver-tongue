@@ -309,6 +309,10 @@ quiet-no-audio = 🔇 no audio
 quiet-repeat = repeat shift
 quiet-repeat-pays = repeat shift · pays { $currency }{ $pays }
 quiet-resume = { $place }.
+# The opening of a book course: the story's crawl, then the name screen.
+quiet-press-enter = Press Enter
+quiet-enter = Enter
+quiet-name-title = What should they call you?
 quiet-new = (new)
 quiet-rephrase = rephrase
 quiet-reveal = Show this line
