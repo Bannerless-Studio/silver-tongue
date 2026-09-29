@@ -83,3 +83,16 @@ No story screen.
 - Disco Elysium: failure is content.
 - Persona: slots and trust; never show the number.
 - Prince of Persia: the clock punishes waste, not slowness.
+
+## 8. Quiet page rules for book courses (2026-09-29, after the first playtest)
+
+The quiet page's rules (2026-09-28 spec) break in the first-run regime: with every word unseen, every word is boxed and glossed, and the reading under words made a third mark for one fact. For a course with `book: true` these rules replace the gloss policy; unflagged courses keep the old rules unchanged.
+
+- **One mark for one fact.** A word not yet *known* shows its reading under it (the Readings setting: auto / always / never). No boxes, no dotted underlines, no automatic gloss rows, no "(new)". Known words are bare.
+- **Onboarding fades.** While fewer than 10 words are *met*, the reading under a word also carries its short gloss (`minjun · Min-jun`). From the tenth word on, readings only. Meaning stays one tap away (word card) or one `?` away (whole line), never pushed.
+- **Speaker named once.** The label shows on a scene's first NPC line and whenever the speaker changes. Consecutive lines by the same speaker carry no label. The scene's opening narration introduces a person before their label can appear.
+- **`?` on the latest NPC line only.** Older lines answer to a tap on the line.
+- **Reply intents** keep the existing rule (shown only when intents differ and the option holds a word not yet known).
+- **Anchor row** unchanged: the one orientation element. Money and rent surface by pace only.
+- **Misses** unchanged: cost on the echo, one italic line of what was asked, the request restated.
+- Not translated automatically: the game's idea is that a line is understood later, not now. The onboarding window is the only concession.
