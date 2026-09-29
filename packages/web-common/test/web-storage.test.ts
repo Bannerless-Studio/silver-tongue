@@ -113,6 +113,15 @@ describe("settings and old course ids", () => {
     expect(loadWebSettings(kv)).toEqual(kept);
   });
 
+  it("keeps the readings-over-words choice, and drops one it doesn't know", () => {
+    const kv = new FakeStorage();
+    expect(updateWebSettings(kv, { ruby: "off" })).toEqual({ ruby: "off" });
+    expect(updateWebSettings(kv, { autoAdvance: false })).toEqual({ ruby: "off", autoAdvance: false });
+    expect(loadWebSettings(kv)).toEqual({ ruby: "off", autoAdvance: false });
+    kv.setItem(SETTINGS_KEY, '{"ruby":"maybe"}');
+    expect(loadWebSettings(kv)).toEqual({});
+  });
+
   it("moves alias keys and keeps the last game", () => {
     const kv = new FakeStorage();
     const aliased = { ...fixtureCourse(), aliases: ["old"] };

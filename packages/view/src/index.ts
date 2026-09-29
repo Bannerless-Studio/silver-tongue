@@ -13,3 +13,8 @@ export * from "./settings";
 export * from "./assist";
 export * from "./quiet";
 export * from "./person";
+export * from "./course-extra";
+export * from "./tiles";
+export * from "./ruby";
+export * from "./letters";
+export * from "./papers";

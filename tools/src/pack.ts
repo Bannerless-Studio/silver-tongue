@@ -16,6 +16,8 @@ export interface PackMeta {
   spaced: boolean;
   /** "rtl" for a right-to-left script; absent means left to right */
   direction?: "ltr" | "rtl";
+  /** what goes between two reply tiles when shown, for an unspaced language that writes spaces between words; "" when absent */
+  tileGap?: string;
 }
 
 export interface PackWord {
@@ -32,6 +34,8 @@ export interface PackWord {
   say?: string;
   pos?: string;
   bonus?: boolean;
+  /** a particle or ending written glued to the word before it (display only) */
+  attach?: boolean;
 }
 
 /** The subset of a vocab-engine pack we read. */

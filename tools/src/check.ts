@@ -1,4 +1,5 @@
 import { PLAYER_MARK, tilePieces, type Course, type RenderedLine, type Scene, type Variant, type WordId } from "@silver-tongue/core";
+import { extra, type ExchangeExtra } from "@silver-tongue/view";
 import { speakable } from "./voices";
 
 export interface CheckInput {
@@ -140,6 +141,7 @@ function audioProblems(course: Course, files: Set<string>): string[] {
     for (const npc of speakers) need(course.reactionAudio?.[id]?.[npc], `reaction ${id}: no audio for ${npc}`);
   }
   for (const w of [...usedWords(course)].sort()) need(course.words[w]?.audio, `word ${w} "${course.words[w]?.w ?? ""}": no audio`);
+  for (const g of extra(course).letters?.groups ?? []) for (const l of g.letters) need(l.audio, `letters ${g.id} "${l.ch}": no audio`);
   for (const id of [...clips].sort()) if (!files.has(id)) errors.push(`audio: no file for clip ${id}`);
   return errors;
 }
@@ -254,6 +256,10 @@ export function checkCourse(input: CheckInput): string[] {
       if (Object.values(ex.variants).some((v) => v.cost !== undefined && !isCount(v.cost))) {
         errors.push(`${s.id}/${ex.id}: cost must be a whole number of 0 or more`);
       }
+      // A pinned line is kept in the Book as it is: one line, so no slots to fill.
+      const { pin } = ex as ExchangeExtra;
+      if (pin !== undefined && typeof pin !== "boolean") errors.push(`${s.id}/${ex.id}: pin must be true or false`);
+      if (pin && Object.keys(ex.slots).length) errors.push(`${s.id}/${ex.id}: a pinned exchange must have no slots`);
       for (const slot of Object.keys(ex.slots)) {
         if (!NAME.test(slot)) errors.push(`${s.id}/${ex.id}: slot "${slot}" may only use letters, digits, _ and -`);
       }

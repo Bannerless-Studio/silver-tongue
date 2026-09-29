@@ -100,6 +100,10 @@ export const UI_KEYS: Record<string, string[]> = {
   "notebook-trust": [],
   "notebook-talked": ["scenes"],
   "notebook-here": [],
+  "notebook-letters": [],
+  "notebook-papers": [],
+  "notebook-papers-empty": [],
+  "notebook-paper-progress": ["known", "total"],
   "menu-quit": [],
   "keys-explore": ["keys"],
   "keys-pick": ["keys"],
@@ -167,6 +171,10 @@ export const UI_KEYS: Record<string, string[]> = {
   "settings-speed-slow": [],
   "settings-speed-normal": [],
   "settings-speed-fast": [],
+  "settings-ruby": ["ruby"],
+  "settings-ruby-auto": [],
+  "settings-ruby-on": [],
+  "settings-ruby-off": [],
   "settings-pick-course": [],
   "settings-pick-reading": [],
   "settings-current": [],
@@ -224,6 +232,14 @@ export const VN_UI_KEYS: Record<string, string[]> = {
   "vn-turn-phone": [],
   "vn-dismiss": [],
   "vn-play-word": [],
+  "settings-ruby": ["ruby"],
+  "settings-ruby-auto": [],
+  "settings-ruby-on": [],
+  "settings-ruby-off": [],
+  "notebook-letters": [],
+  "notebook-papers": [],
+  "notebook-papers-empty": [],
+  "notebook-paper-progress": ["known", "total"],
 };
 
 /** Message ids the quiet terminal page uses, with their variables; checked like UI_KEYS. */
@@ -271,6 +287,14 @@ export const QUIET_UI_KEYS: Record<string, string[]> = {
   "quiet-st-parcel": [],
   "quiet-st-no-parcel": [],
   "quiet-no-save": [],
+  "settings-ruby": ["ruby"],
+  "settings-ruby-auto": [],
+  "settings-ruby-on": [],
+  "settings-ruby-off": [],
+  "notebook-letters": [],
+  "notebook-papers": [],
+  "notebook-papers-empty": [],
+  "notebook-paper-progress": ["known", "total"],
 };
 
 /** Every UI message that is missing or can't be formatted with the variables the TUI passes. */

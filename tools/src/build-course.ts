@@ -13,13 +13,14 @@ import {
   type RenderedLine,
   type Scene,
   type Variant,
-  type Word,
   type World,
 } from "@silver-tongue/core";
 import { heuristicGloss, narrationProblems, uiTextProblems } from "@silver-tongue/tui";
+import type { CourseExtra, LetterChart, WordExtra } from "@silver-tongue/view";
 import { checkCourse, usedWords } from "./check";
 import { bindSlots, messageIds, parseFtl, Renderer, termNames, type FtlSource } from "./fluent";
 import type { PackMeta, PackWord } from "./pack";
+import { assignLetterAudio, letterMessageIds, letterProblems } from "./letters";
 import { buildLexicon, segment, type Lexicon } from "./segment";
 import { taggingLines, taggingPath } from "./tagging";
 import { assignAudio, voiceProblems, type Clip, type Voices } from "./voices";
@@ -140,7 +141,7 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
   // with no entry here just falls back to that heuristic, which the checker warns about below.
   const shortSrc: FtlSource = [`glosses-${cfg.language}-short.ftl`, readOptional(join(learnerDir, `glosses-${cfg.language}-short.ftl`))];
   const shorts = attempt("glosses-short", () => new Renderer(learner, [shortSrc]));
-  const words: Record<string, Word> = {};
+  const words: Record<string, WordExtra> = {};
   for (const w of packWords) {
     if (glosses && !glosses.has(w.id)) errors.push(`glosses: no ${learner} gloss for ${w.id} "${w.w}"`);
     words[w.id] = {
@@ -152,6 +153,9 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
       ...(w.readings ? { readings: w.readings } : w.pron ? { readings: [w.pron] } : {}),
       ...(w.forms ? { forms: w.forms } : {}),
       ...(w.bonus ? { bonus: true } : {}),
+      // attach: a particle or ending the front ends show glued to the tile before it; its other
+      // spellings come along so a tile spelled that way is found too
+      ...(w.attach ? { attach: true, ...(w.alt?.length ? { alt: w.alt } : {}) } : {}),
     };
   }
 
@@ -348,11 +352,12 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
       ].join("\n"),
     ) ?? "";
 
-  const course: Course = {
+  if (meta.tileGap !== undefined && typeof meta.tileGap !== "string") errors.push(`pack.json: "tileGap" must be text, got ${JSON.stringify(meta.tileGap)}`);
+  const course: CourseExtra = {
     id: cfg.id,
     learner,
     ...(cfg.aliases?.length ? { aliases: cfg.aliases } : {}),
-    language: { code: meta.key, locale: meta.locale, tts: meta.tts, spaced: meta.spaced },
+    language: { code: meta.key, locale: meta.locale, tts: meta.tts, spaced: meta.spaced, ...(typeof meta.tileGap === "string" && meta.tileGap ? { tileGap: meta.tileGap } : {}) },
     typing: meta.typing !== null,
     words,
     concepts,
@@ -370,7 +375,15 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
       ),
     ),
   };
-  // Clips: every line in its speaker's voice, and each word the course uses.
+  // letters.json: the script's letter chart for the Book, each letter with its clip.
+  const lettersPath = join(langDir, "letters.json");
+  const letters = existsSync(lettersPath) ? attempt("letters.json", () => readJson<unknown>(lettersPath)) : undefined;
+  if (letters !== undefined) {
+    const problems = letterProblems(letters);
+    errors.push(...problems);
+    if (!problems.length) course.letters = letters as LetterChart;
+  }
+  // Clips: every line in its speaker's voice, each word the course uses, and each letter.
   const voicesPath = join(langDir, "voices.json");
   const voices = existsSync(voicesPath) ? attempt("voices.json", () => readJson<Voices>(voicesPath)) : undefined;
   if (!existsSync(voicesPath) && cfg.checks.audio) errors.push("voices.json: missing (checks.audio is on)");
@@ -378,12 +391,17 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
   const used = usedWords(course);
   const says = Object.fromEntries(packWords.flatMap((w) => (w.say ? [[w.id, w.say]] : [])));
   const clips = voices ? assignAudio(course, voices, used, says) : [];
+  if (voices && course.letters) {
+    const have = new Set(clips.map((c) => c.id));
+    clips.push(...assignLetterAudio(course.letters, voices).filter((c) => !have.has(c.id) && have.add(c.id)));
+    clips.sort((a, b) => a.id.localeCompare(b.id));
+  }
   const audioDir = join(root, "audio", cfg.language);
   const audioFiles = new Set(
     existsSync(audioDir) ? readdirSync(audioDir).filter((f) => f.endsWith(".mp3")).map((f) => f.slice(0, -".mp3".length)) : [],
   );
   const learnerIds = attempt("learner text", () => new Set(messageIds(learnerFtl, "learner files"))) ?? new Set<string>();
-  for (const id of ["learner-name", `language-${cfg.language}`]) {
+  for (const id of ["learner-name", `language-${cfg.language}`, ...(course.letters ? letterMessageIds(course.letters) : [])]) {
     if (!learnerIds.has(id)) errors.push(`learner/${learner}/ui.ftl: missing "${id}"`);
   }
   errors.push(...checkCourse({ course, stages: meta.stages, checks: cfg.checks, learnerIds, requiredUi: [], audioFiles, newWordsOverride }));

@@ -1,5 +1,6 @@
 import type { CatalogEntry, Course, GameState } from "@silver-tongue/core";
 import type { SpeechSpeed } from "./audio";
+import type { RubySetting } from "./ruby";
 import type { Text } from "./text";
 
 export type SettingsScreen = "main" | "course" | "reading";
@@ -8,7 +9,8 @@ export type SettingsAction =
   | { kind: "back" }
   | { kind: "switch"; course: string; learner: string }
   | { kind: "sound" }
-  | { kind: "speed" };
+  | { kind: "speed" }
+  | { kind: "ruby" };
 export interface SettingsRow {
   label: string;
   action: SettingsAction;
@@ -24,6 +26,8 @@ export interface SettingsContext {
    * share this function but pick speed some other way, so this stays unset for them.
    */
   terminal?: { speed: SpeechSpeed };
+  /** the readings-over-words choice; a front end that writes readings over words sets it to get the row */
+  ruby?: RubySetting;
 }
 
 /** The rows a settings screen shows and what choosing each one does. */
@@ -54,5 +58,6 @@ export function settingsRows(screen: SettingsScreen, c: SettingsContext): Settin
     { label: soundLabel, action: { kind: "sound" } },
   ];
   if (c.terminal) rows.push({ label: t("settings-speed", { speed: t(`settings-speed-${c.terminal.speed}`) }), action: { kind: "speed" } });
+  if (c.ruby) rows.push({ label: t("settings-ruby", { ruby: t(`settings-ruby-${c.ruby}`) }), action: { kind: "ruby" } });
   return rows;
 }

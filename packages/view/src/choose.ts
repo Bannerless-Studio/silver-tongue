@@ -1,5 +1,6 @@
 import type { CatalogEntry } from "@silver-tongue/core";
 import { SPEEDS, type SpeechSpeed } from "./audio";
+import { RUBY_SETTINGS, type RubySetting } from "./ruby";
 import type { Text } from "./text";
 
 /** What the player chose, kept apart from any course's saves. */
@@ -12,6 +13,8 @@ export interface PlayerSettings {
   speed?: SpeechSpeed;
   /** the visual novel moves on by itself */
   autoAdvance?: boolean;
+  /** when readings are written over words; unset means "auto" (words not known yet) */
+  ruby?: RubySetting;
 }
 
 /** Settings from their stored text; anything unreadable is left unset, never an error. */
@@ -29,6 +32,7 @@ export function parseSettings(raw: string | null | undefined): PlayerSettings {
   if (typeof d.learner === "string") out.learner = d.learner;
   if (typeof d.speed === "string" && (SPEEDS as readonly string[]).includes(d.speed)) out.speed = d.speed as SpeechSpeed;
   if (typeof d.autoAdvance === "boolean") out.autoAdvance = d.autoAdvance;
+  if (typeof d.ruby === "string" && (RUBY_SETTINGS as readonly string[]).includes(d.ruby)) out.ruby = d.ruby as RubySetting;
   return out;
 }
 

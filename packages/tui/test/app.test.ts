@@ -799,7 +799,7 @@ describe("tui app", () => {
     term.press(rightKey(core));
     term.press("n");
     let s = term.screen();
-    expect(s[0]).toMatch(/Notebook ─+ Speaks: Pidgin/);
+    expect(s[0]).toMatch(/Book ─+ Speaks: Pidgin/);
     expect(s.join("\n")).toContain("Stage 1: 0 of 12 words known");
     expect(s.join("\n")).toMatch(/▸ Noodle shop \(\d+\)/); // no Recent: it would hold every word
     expect(s.at(-1)).toContain("[esc] back");
@@ -846,7 +846,7 @@ describe("tui app", () => {
     term.resize(90, 20);
     expect(term.screen().at(-1)).toMatch(/no audio · Silver Tongue v0\.5\.0 ┘$/);
     term.resize(46, 20);
-    expect(term.screen().at(-1)).toMatch(/^─ \[1-2\] choose · \[n\] notebook ─* no audio ─$/);
+    expect(term.screen().at(-1)).toMatch(/^─ \[1-2\] choose · \[n\] book ─* no audio ─$/);
   });
 
   const ERRAND_TEXT = `
@@ -1071,7 +1071,7 @@ asked-deliver = They wanted it taken to the { $place }.
       term.resize(46, 20);
       term.press("1", "1");
       expect(term.screen().at(-1)).toMatch(/^─ \[1-4\] reply · \[w\] help · \[r\] again ─*─$/);
-      expect(fixtureWithText().learnerFtl).toMatch(/keys-tiles = .*\[n\] notebook/);
+      expect(fixtureWithText().learnerFtl).toMatch(/keys-tiles = .*\[n\] book/);
       void core;
     });
 
