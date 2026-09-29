@@ -110,6 +110,23 @@ describe("quiet terminal controller", () => {
     expect(q.view().scene).toBeUndefined();
   });
 
+  it("a finished conversation stays until the player moves on, then folds into one line", () => {
+    const { q, core, course } = setup();
+    q.choose(0);
+    q.choose(0);
+    const before = q.view().backlog.filter((b) => !b.speaker).map((b) => b.id);
+    while (core.state.run) q.choose(rightIndex(core));
+    // Just finished: how it ended is still there to read.
+    expect(q.view().backlog.some((b) => b.speaker === "player")).toBe(true);
+    const menu = (q.view().phase as { menu: { kind: string; disabled?: string }[] }).menu;
+    q.choose(menu.findIndex((m) => !m.disabled));
+    const log = q.view().backlog;
+    expect(log.filter((b) => b.tone === "done").map((b) => b.text)).toEqual([`✓ ${course.learnerFtl.match(/^scene-intro = (.+)$/m)![1]} · Cook`]);
+    expect(log.some((b) => b.speaker === "player")).toBe(false);
+    // What came before the conversation stays.
+    expect(log.map((b) => b.id)).toEqual(expect.arrayContaining(before.filter((id) => id < log.find((b) => b.tone === "done")!.id)));
+  });
+
   it("sleeping: food is silent, the new day is a line", () => {
     const { q } = setup((s) => ((s.day = 2), (s.slot = 4))); // sleep appears once the day is used up
     const sleep = (q.view().phase as { menu: { kind: string }[] }).menu.findIndex((m) => m.kind === "sleep");

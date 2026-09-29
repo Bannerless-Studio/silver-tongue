@@ -48,6 +48,7 @@ p { margin: 0; }
 /* Stage direction and a miss's narration: dim italic. Outcomes keep their own tones. */
 .prose.react, .prose.narr { color: var(--muted); font-style: italic; }
 .prose.good { color: var(--green); }
+.prose.done { color: var(--muted); margin: 0.15rem 0; }
 .prose.day { margin-top: 1.25rem; color: var(--muted); }
 .ln { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 0.1rem; margin-top: 0.5rem; overflow-wrap: anywhere; }
 .ln .who { color: var(--cyan); }

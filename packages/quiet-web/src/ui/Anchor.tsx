@@ -1,7 +1,7 @@
 import { anchorRow, reviewTell } from "@silver-tongue/view";
 import type { Quiet, QuietView } from "../quiet";
 
-/** The one line always shown: place, day and slot; a parcel, rent, a repeat shift or missing sound only when they deviate. */
+/** The one line always shown: place, day and slot; rent, a repeat shift or missing sound only when they deviate. */
 export function Anchor({ q, view, audioAvailable }: { q: Quiet; view: QuietView; audioAvailable: boolean }) {
   const { t, course, core } = q;
   const row = anchorRow(course, core.state, t);
@@ -11,7 +11,6 @@ export function Anchor({ q, view, audioAvailable }: { q: Quiet; view: QuietView;
     <header class="anchor">
       <span class="where">{t("quiet-anchor", { place: row.place, day: row.day, slot: row.slot, slots: row.slots })}</span>
       <span class="flags">
-        {row.parcel && <span class="amber">{t("quiet-parcel")}</span>}
         {tell?.repeat && <span class="dim">{tell.pays ? t("quiet-repeat-pays", { currency, pays: tell.pays }) : t("quiet-repeat")}</span>}
         {row.rent && (
           <span class="amber">
