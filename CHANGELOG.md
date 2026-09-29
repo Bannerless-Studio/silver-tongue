@@ -4,7 +4,8 @@ Every release of Silver Tongue, newest first.
 
 ## 0.18.5 (2026-09-29)
 
-- Once it's time to sleep and your bed is somewhere else, the quiet page and the visual novel say where to go: "Go to Your Room, off Market Street, to sleep."
+- In China City your room is back on Main Street, open from the first day, and it's the only place to sleep: no more sleeping rough by the road before you've met Mr Li.
+- Once it's time to sleep and you're not in your room, the quiet page and the visual novel say where to go: "Go to Your Room, off Main Street, to sleep."
 
 ## 0.18.4 (2026-09-29)
 

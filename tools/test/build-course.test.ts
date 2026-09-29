@@ -180,24 +180,16 @@ describe("build-course (real content)", () => {
     expect(taxi.exchanges[0].variants["amount=three|way=alight"].reply.text).toContain("下出租车");
   });
 
-  it("puts your room and the warehouse on Market Street, and keeps Main Street's menu at 7", () => {
-    const { places, npcs, mentor } = course!.world;
-    expect([...places.market.links].sort()).toEqual(["room", "shop", "station_road", "street", "warehouse"]);
-    expect(places.market.links.length + course!.scenes.filter((s) => s.place === "market").length).toBe(7);
-    expect(places.room.links).toEqual(["market", "stairs"]);
-    expect(places.street.links).toContain("market");
-    const mentorHere = mentor && npcs[mentor.npc].place === "street" ? 1 : 0;
-    expect(places.street.links.length + course!.scenes.filter((s) => s.place === "street").length + mentorHere).toBe(7);
-    for (const from of Object.keys(places)) {
-      const seen = new Set([from]);
-      for (const p of seen) for (const next of places[p].links) seen.add(next);
-      expect(seen.has("room"), `${from} reaches room`).toBe(true);
-    }
-    // Main Street no longer links to the room, so the opening story says there is one; the HUD's
-    // "Next:" then names the landlord and where he is. The place text doesn't say it again.
-    // ("a room for you", not "your room": before the landlord scene, it isn't the player's yet.)
-    expect(course!.learnerFtl.match(/^intro-2 = (.*)$/m)![1]).toContain("a room for you");
-    expect(course!.learnerFtl.match(/^place-street-desc = (.*)$/m)![1]).not.toContain("room");
+  it("puts your room on Main Street, known from the start, and the only place to sleep", () => {
+    const { places, home, homeScene } = course!.world;
+    expect(home).toBe("room");
+    // No home scene: the room is yours from the first night, so there's no sleeping rough.
+    expect(homeScene).toBeUndefined();
+    expect(places.street.links).toEqual(["noodle_shop", "room", "market"]);
+    expect(places.room.links).toEqual(["street", "stairs"]);
+    expect(places.room.after ?? []).toEqual([]);
+    expect([...places.market.links].sort()).toEqual(["shop", "station_road", "street", "warehouse"]);
+    expect(course!.learnerFtl.match(/^intro-2 = (.*)$/m)![1]).toContain("a room for you down the street");
   });
 
   it("Miss Gao sends parcels to the three places on Station Road, each with one drop-off", () => {
