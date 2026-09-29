@@ -5,7 +5,7 @@ Every release of Silver Tongue, newest first.
 ## 0.18.3 (2026-09-29)
 
 - On the quiet page, the notebook's views are tabs at the top, each with its count, and the open one is highlighted; the links at the bottom are gone.
-- On the quiet page, the opening story leaves the screen once your first conversation is done.
+- On the quiet page, a conversation folds into its one line as soon as it ends, not when the next one starts; only its closing narration stays under it until you move on. The opening story leaves with the first one.
 - Asking your name, the quiet page and the visual novel tell the browser it's a name, so it suggests your name instead of a payment card.
 
 ## 0.18.2 (2026-09-29)

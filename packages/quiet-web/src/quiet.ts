@@ -1,7 +1,8 @@
 // Forked from packages/vn-web/src/vn.ts so the two pages can evolve apart. Differences: beats are not
 // tapped through (everything said lands in the transcript at once), money is not narrated line by
-// line (a reply's cost rides on the reply; food is silent; wages are the scene's closing prose), trust
-// is silent, the scene being played is exposed for the review tell, and any line can be revealed.
+// line (a reply's cost rides on the reply; food is silent; wages ride on the one line a finished scene
+// folds into), trust is silent, the scene being played is exposed for the review tell, and any line can
+// be revealed.
 import { describeRun, joinTiles, normalizeTyped, wordState, type Core, type Course, type GameEvent, type GameState, type Input, type RenderedLine, type WordId } from "@silver-tongue/core";
 import {
   actionNarration, introLines, makeText, placeMenu, sentenceCard, tileEcho, typePrompt, waitingForMoney, wordCard,
@@ -138,8 +139,10 @@ export function createQuiet(opts: QuietOptions): Quiet {
   let held: Omit<Toast, "id">[] = [];
   /** the first beat of the scene being played */
   let sceneFrom = 0;
-  /** the conversation just finished: its beats, and the one line they fold into once the player moves on */
+  /** the conversation just finished: its beats, and the one line they fold into as it ends */
   let finished: { from: number; to: number; text: string } | undefined;
+  /** the closing narration under a folded conversation: read once, gone when the player moves on */
+  let closing: { from: number; to: number } | undefined;
   /** beats before this are the opening story (or where a picked-up game is): gone with the first fold */
   let preludeTo = 0;
   /** words already glossed in this transcript: a word is boxed and glossed once, then rendered as usual */
@@ -170,7 +173,7 @@ export function createQuiet(opts: QuietOptions): Quiet {
     return beat;
   };
 
-  /** Folds the conversation just finished into one line: it was read when it ended, and is only history now. */
+  /** Folds the conversation just finished into one line: what was said is history once it ends. */
   function fold() {
     if (!finished) return;
     const { from, to, text } = finished;
@@ -183,6 +186,14 @@ export function createQuiet(opts: QuietOptions): Quiet {
     preludeTo = 0;
   }
 
+  /** Drops the closing narration under the last folded conversation: the player has moved on. */
+  function moveOn() {
+    if (!closing) return;
+    const { from, to } = closing;
+    closing = undefined;
+    backlog = backlog.filter((b) => b.id < from || b.id >= to);
+  }
+
   /** Moves everything said into the transcript and says it aloud, in order. */
   let shownAt = -Infinity;
   const settled = () => opts.now() - shownAt >= SETTLE_MS;
@@ -190,6 +201,7 @@ export function createQuiet(opts: QuietOptions): Quiet {
   function flush(settle: boolean) {
     if (queue.length) backlog = [...backlog, ...queue].slice(-BACKLOG_LIMIT);
     queue = [];
+    fold();
     say(speeches);
     speeches = [];
     if (!scene && held.length) {
@@ -259,7 +271,7 @@ export function createQuiet(opts: QuietOptions): Quiet {
           break;
         }
         case "walletChanged": {
-          // Food is expected every night and wages are the scene's closing line: neither is news.
+          // Food is expected every night and wages ride on the finished scene's line: neither is news.
           if (e.reason === "food" || e.reason === "wages") break;
           const reason = e.reason === "mixup" || e.reason === "shopping" ? e.reason : undefined;
           const echo = e.delta < 0 && reason ? [...queue].reverse().find((b) => b.speaker === "player") : undefined;
@@ -272,15 +284,15 @@ export function createQuiet(opts: QuietOptions): Quiet {
           reply = undefined;
           lastLine = undefined;
           lastSpeech = undefined;
-          if (t.has(`scene-${e.scene}-end`)) push({ text: t(`scene-${e.scene}-end`), tone: "narr" });
-          push({ text: t("scene-done", { currency: course.world.currency, earned: e.earned }), tone: e.earned > 0 ? "good" : "plain" });
           {
             const title = t(`scene-${e.scene}`);
             const who = npcName(course.scenes.find((s) => s.id === e.scene)?.npc ?? "");
-            // "Meet Old Wang" already says who.
+            // "Meet Old Wang" already says who. The line carries the wages too.
             const what = title.includes(who) ? title : t("quiet-scene-with", { scene: title, npc: who });
             finished = { from: sceneFrom, to: nextId, text: t("quiet-scene-done", { scene: what, currency: course.world.currency, earned: e.earned }) };
           }
+          if (t.has(`scene-${e.scene}-end`)) push({ text: t(`scene-${e.scene}-end`), tone: "narr" });
+          closing = { from: finished.to, to: nextId };
           break;
         case "unlocked":
           news(t("unlocked", { scene: t(`scene-${e.scene}`) }), "good");
@@ -345,8 +357,7 @@ export function createQuiet(opts: QuietOptions): Quiet {
   function send(input: Input, echo?: Omit<Beat, "id">, echoSpeech?: Speech, settle = true): boolean {
     const events = core.send(input);
     const taken = !events.some((e) => e.type === "inputRejected");
-    // Moving on from a finished conversation folds it.
-    if (taken) fold();
+    if (taken) moveOn();
     if (echo && taken) push(echo, echoSpeech);
     apply(events);
     if (taken) persist();
