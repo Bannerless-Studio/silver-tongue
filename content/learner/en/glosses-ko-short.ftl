@@ -13,3 +13,4 @@ ko-kkaji = until
 ko-gae = (counter)
 ko-geureut = bowl
 ko-jul = roll
+ko-ssi = Mr/Ms
