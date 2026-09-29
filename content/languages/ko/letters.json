@@ -1,0 +1,261 @@
+{
+ "groups": [
+  {
+   "id": "consonants",
+   "letters": [
+    {
+     "ch": "ㄱ",
+     "name": "기역",
+     "reading": "g/k"
+    },
+    {
+     "ch": "ㄴ",
+     "name": "니은",
+     "reading": "n"
+    },
+    {
+     "ch": "ㄷ",
+     "name": "디귿",
+     "reading": "d/t"
+    },
+    {
+     "ch": "ㄹ",
+     "name": "리을",
+     "reading": "r/l"
+    },
+    {
+     "ch": "ㅁ",
+     "name": "미음",
+     "reading": "m"
+    },
+    {
+     "ch": "ㅂ",
+     "name": "비읍",
+     "reading": "b/p"
+    },
+    {
+     "ch": "ㅅ",
+     "name": "시옷",
+     "reading": "s"
+    },
+    {
+     "ch": "ㅇ",
+     "name": "이응",
+     "reading": "silent / ng"
+    },
+    {
+     "ch": "ㅈ",
+     "name": "지읒",
+     "reading": "j"
+    },
+    {
+     "ch": "ㅊ",
+     "name": "치읓",
+     "reading": "ch"
+    },
+    {
+     "ch": "ㅋ",
+     "name": "키읔",
+     "reading": "k"
+    },
+    {
+     "ch": "ㅌ",
+     "name": "티읕",
+     "reading": "t"
+    },
+    {
+     "ch": "ㅍ",
+     "name": "피읖",
+     "reading": "p"
+    },
+    {
+     "ch": "ㅎ",
+     "name": "히읗",
+     "reading": "h"
+    },
+    {
+     "ch": "ㄲ",
+     "name": "쌍기역",
+     "reading": "kk"
+    },
+    {
+     "ch": "ㄸ",
+     "name": "쌍디귿",
+     "reading": "tt"
+    },
+    {
+     "ch": "ㅃ",
+     "name": "쌍비읍",
+     "reading": "pp"
+    },
+    {
+     "ch": "ㅆ",
+     "name": "쌍시옷",
+     "reading": "ss"
+    },
+    {
+     "ch": "ㅉ",
+     "name": "쌍지읒",
+     "reading": "jj"
+    }
+   ]
+  },
+  {
+   "id": "vowels",
+   "letters": [
+    {
+     "ch": "ㅏ",
+     "name": "아",
+     "reading": "a"
+    },
+    {
+     "ch": "ㅑ",
+     "name": "야",
+     "reading": "ya"
+    },
+    {
+     "ch": "ㅓ",
+     "name": "어",
+     "reading": "eo"
+    },
+    {
+     "ch": "ㅕ",
+     "name": "여",
+     "reading": "yeo"
+    },
+    {
+     "ch": "ㅗ",
+     "name": "오",
+     "reading": "o"
+    },
+    {
+     "ch": "ㅛ",
+     "name": "요",
+     "reading": "yo"
+    },
+    {
+     "ch": "ㅜ",
+     "name": "우",
+     "reading": "u"
+    },
+    {
+     "ch": "ㅠ",
+     "name": "유",
+     "reading": "yu"
+    },
+    {
+     "ch": "ㅡ",
+     "name": "으",
+     "reading": "eu"
+    },
+    {
+     "ch": "ㅣ",
+     "name": "이",
+     "reading": "i"
+    },
+    {
+     "ch": "ㅐ",
+     "name": "애",
+     "reading": "ae"
+    },
+    {
+     "ch": "ㅒ",
+     "name": "얘",
+     "reading": "yae"
+    },
+    {
+     "ch": "ㅔ",
+     "name": "에",
+     "reading": "e"
+    },
+    {
+     "ch": "ㅖ",
+     "name": "예",
+     "reading": "ye"
+    },
+    {
+     "ch": "ㅘ",
+     "name": "와",
+     "reading": "wa"
+    },
+    {
+     "ch": "ㅙ",
+     "name": "왜",
+     "reading": "wae"
+    },
+    {
+     "ch": "ㅚ",
+     "name": "외",
+     "reading": "oe"
+    },
+    {
+     "ch": "ㅝ",
+     "name": "워",
+     "reading": "wo"
+    },
+    {
+     "ch": "ㅞ",
+     "name": "웨",
+     "reading": "we"
+    },
+    {
+     "ch": "ㅟ",
+     "name": "위",
+     "reading": "wi"
+    },
+    {
+     "ch": "ㅢ",
+     "name": "의",
+     "reading": "ui"
+    }
+   ]
+  },
+  {
+   "id": "finals",
+   "letters": [
+    {
+     "ch": "ㄱ",
+     "name": "기역",
+     "reading": "k",
+     "say": "악"
+    },
+    {
+     "ch": "ㄴ",
+     "name": "니은",
+     "reading": "n",
+     "say": "안"
+    },
+    {
+     "ch": "ㄷ",
+     "name": "디귿",
+     "reading": "t",
+     "say": "앋"
+    },
+    {
+     "ch": "ㄹ",
+     "name": "리을",
+     "reading": "l",
+     "say": "알"
+    },
+    {
+     "ch": "ㅁ",
+     "name": "미음",
+     "reading": "m",
+     "say": "암"
+    },
+    {
+     "ch": "ㅂ",
+     "name": "비읍",
+     "reading": "p",
+     "say": "압"
+    },
+    {
+     "ch": "ㅇ",
+     "name": "이응",
+     "reading": "ng",
+     "say": "앙"
+    }
+   ]
+  }
+ ]
+}

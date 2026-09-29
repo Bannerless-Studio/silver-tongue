@@ -1,0 +1,58 @@
+{
+ "start": "room",
+ "home": "room",
+ "currency": "₩",
+ "slotsPerDay": 4,
+ "homeScene": "room-wake",
+ "startWallet": 20000,
+ "foodPerDay": 3000,
+ "rentPerWeek": 50000,
+ "places": {
+  "room": {
+   "links": [
+    "street"
+   ]
+  },
+  "street": {
+   "links": [
+    "room",
+    "stall",
+    "shop"
+   ]
+  },
+  "stall": {
+   "links": [
+    "street"
+   ],
+   "after": [
+    "street-hungry"
+   ]
+  },
+  "shop": {
+   "links": [
+    "street"
+   ],
+   "after": [
+    "street-numbers"
+   ]
+  }
+ },
+ "npcs": {
+  "landlady": {
+   "place": "room"
+  },
+  "oldman": {
+   "place": "street"
+  },
+  "jiwoo": {
+   "place": "stall"
+  },
+  "clerk": {
+   "place": "shop"
+  }
+ },
+ "mentor": {
+  "npc": "oldman",
+  "after": "street-hello"
+ }
+}

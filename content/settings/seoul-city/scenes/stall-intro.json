@@ -1,0 +1,84 @@
+{
+ "id": "stall-intro",
+ "place": "stall",
+ "npc": "jiwoo",
+ "stage": 1,
+ "after": [
+  "street-hungry"
+ ],
+ "requires": {},
+ "repeatable": false,
+ "trustGain": 1,
+ "exchanges": [
+  {
+   "id": "welcome",
+   "slots": {},
+   "expect": {
+    "action": "welcome"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "jiwoo",
+   "slots": {},
+   "expect": {
+    "action": "jiwoo"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "hungry",
+   "slots": {},
+   "expect": {
+    "action": "hungry"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "eat",
+   "slots": {},
+   "expect": {
+    "action": "eat"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "gimbap",
+   "slots": {},
+   "expect": {
+    "action": "gimbap"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "work",
+   "slots": {},
+   "expect": {
+    "action": "work"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "bye",
+   "slots": {},
+   "expect": {
+    "action": "bye"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  }
+ ]
+}

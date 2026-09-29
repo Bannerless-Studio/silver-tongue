@@ -1,0 +1,22 @@
+# Grandpa Park hears your stomach and sends you to the snack stall.
+# Each <id>-alt<n> is a written wrong reply, using only words met by then.
+
+hungry = 배고파요?
+hungry-reply = 네, 배고파요.
+hungry-alt1 = 아니요, 몰라요.
+hungry-alt2 = 하나, 둘.
+
+money = 돈 있어요?
+money-reply = 아니요, 없어요.
+money-alt1 = 네, 감사합니다.
+money-alt2 = 저는 박이에요.
+
+stall = 저기 분식집 있어요.
+stall-reply = 분식집이에요?
+stall-alt1 = 아니요, 없어요.
+stall-alt2 = 안녕히 가세요.
+
+go = 어서 가요!
+go-reply = 감사합니다, 할아버지. 안녕히 계세요.
+go-alt1 = 안녕히 가세요.
+go-alt2 = 네, 배고파요.

@@ -1,0 +1,75 @@
+{
+ "id": "room-rent",
+ "place": "room",
+ "npc": "landlady",
+ "stage": 1,
+ "after": [
+  "street-numbers"
+ ],
+ "requires": {},
+ "repeatable": false,
+ "trustGain": 1,
+ "exchanges": [
+  {
+   "id": "hello",
+   "slots": {},
+   "expect": {
+    "action": "hello"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "paid",
+   "slots": {},
+   "expect": {
+    "action": "paid"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "amount",
+   "slots": {},
+   "expect": {
+    "action": "amount"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "week",
+   "slots": {},
+   "expect": {
+    "action": "week"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "march",
+   "slots": {},
+   "expect": {
+    "action": "march"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0,
+   "pin": true
+  },
+  {
+   "id": "bye",
+   "slots": {},
+   "expect": {
+    "action": "bye"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  }
+ ]
+}

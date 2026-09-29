@@ -1,0 +1,26 @@
+[
+ {
+  "id": "yo",
+  "trigger": {
+   "scene": "street-hello"
+  }
+ },
+ {
+  "id": "ieyo",
+  "trigger": {
+   "scene": "street-hungry"
+  }
+ },
+ {
+  "id": "numbers",
+  "trigger": {
+   "scene": "street-numbers"
+  }
+ },
+ {
+  "id": "neun-i",
+  "trigger": {
+   "word": "ko-i"
+  }
+ }
+]

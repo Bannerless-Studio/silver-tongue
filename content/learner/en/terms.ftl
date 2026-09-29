@@ -134,3 +134,19 @@
     [cap] Bread
    *[base] bread
 }
+-tteokbokki = { $form ->
+    [cap] Tteokbokki
+   *[base] tteokbokki
+}
+-gimbap = { $form ->
+    [cap] Gimbap
+   *[base] gimbap
+}
+-eomuk = { $form ->
+    [cap] Fish cake
+   *[base] fish cake
+}
+-milk = { $form ->
+    [cap] Milk
+   *[base] milk
+}

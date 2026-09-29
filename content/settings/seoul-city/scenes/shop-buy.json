@@ -1,0 +1,44 @@
+{
+ "id": "shop-buy",
+ "place": "shop",
+ "npc": "clerk",
+ "stage": 1,
+ "after": [
+  "shop-prices"
+ ],
+ "requires": {
+  "trust": {
+   "clerk": 1
+  }
+ },
+ "repeatable": true,
+ "trustGain": 1,
+ "exchanges": [
+  {
+   "id": "buy",
+   "slots": {
+    "item": "goods"
+   },
+   "expect": {
+    "action": "buy",
+    "item": "$item"
+   },
+   "hinges": [
+    "$item"
+   ],
+   "pay": 0,
+   "missCost": 0,
+   "cost": 1000
+  },
+  {
+   "id": "bye",
+   "slots": {},
+   "expect": {
+    "action": "bye"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  }
+ ]
+}

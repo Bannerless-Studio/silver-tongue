@@ -1,0 +1,13 @@
+{
+ "id": "ko-seoul",
+ "language": "ko",
+ "setting": "seoul-city",
+ "learners": [
+  "en"
+ ],
+ "checks": {
+  "coverage": false,
+  "audio": true,
+  "art": false
+ }
+}

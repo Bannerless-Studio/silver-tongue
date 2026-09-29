@@ -83,7 +83,7 @@ describe("build-course (real content)", () => {
   it("says what every reply and written wrong reply does, in every course", () => {
     const v = course!.scenes.find((s) => s.id === "noodle-shift")!.exchanges[1].variants["count=four|item=water"];
     expect(v.reply.intent).toBe("Repeat the order");
-    for (const id of ["zh-china", "ja-japan"]) {
+    for (const id of ["zh-china", "ja-japan", "ko-seoul"]) {
       const c = buildCourse(CONTENT, id).course!;
       const missing = c.scenes.flatMap((sc) =>
         sc.exchanges.flatMap((ex) =>
@@ -433,6 +433,7 @@ describe("courses and the catalog", () => {
     expect(errors).toEqual([]);
     expect(catalog).toEqual([
       { id: "ja-japan", language: "ja", setting: "japan-city", learners: ["en"], learnerNames: { en: "English" } },
+      { id: "ko-seoul", language: "ko", setting: "seoul-city", learners: ["en"], learnerNames: { en: "English" } },
       { id: "zh-china", language: "zh", setting: "china-city", learners: ["en"], learnerNames: { en: "English" } },
     ]);
   });
