@@ -1,13 +1,13 @@
-# Break time: David talks about his family, his pets and films.
+# Break time: David talks about his family, his bike, his pets and films.
 
-computer = 我有电脑。你呢？
-computer-reply = 我没有电脑。
-computer-alt1 = 你好，大卫！
-computer-alt2 = 这本书很好！
+bike = 我有自行车。你呢？
+bike-reply = 我没有自行车。
+bike-alt1 = 你好，大卫！
+bike-alt2 = 这本书很好！
 
 parents = 我爸爸妈妈是老师。
 parents-reply = 老师！很好！
-parents-alt1 = 我没有电脑。
+parents-alt1 = 我没有自行车。
 parents-alt2 = 九月二十六日。
 
 pets = 我有猫，我有狗。你呢？

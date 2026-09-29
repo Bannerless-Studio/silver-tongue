@@ -35,7 +35,7 @@ food-reply = 好，我吃米饭。
 food-alt1 = 好，我喝水。
 food-alt2 = 我饿了。
 
-screen = 电视？电脑？不！多睡觉！
+screen = 不看电视！多睡觉！
 screen-reply = 好，我睡觉。
 screen-alt1 = 好，我吃米饭。
 screen-alt2 = 能，我能睡觉。

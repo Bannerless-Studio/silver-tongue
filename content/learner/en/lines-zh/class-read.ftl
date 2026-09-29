@@ -1,8 +1,8 @@
-read = No computers! Read this book, for ten minutes.
+read = Books open, everyone! Read this book, for ten minutes.
 read-reply = OK, I'll read.
 read-reply-intent = Agree to read
-read-alt1 = I don't have a computer.
-read-alt1-intent = Say you have no computer
+read-alt1 = I don't have a book.
+read-alt1-intent = Say you have no book
 read-alt2 = The twenty-sixth of September.
 read-alt2-intent = Give a date
 

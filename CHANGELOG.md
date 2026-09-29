@@ -6,6 +6,7 @@ Every release of Silver Tongue, newest first.
 
 - The noodle shop opens as soon as Old Wang points you to it. Your first visit is a free bowl of noodles from his friend Xiao Zhang; asking her for work still waits until Old Wang has taught you to count.
 - On the quiet page, places you discover at once share one notice ("New places: Noodle Shop, Market Street, Your Room"), and a notice already on screen isn't repeated, so no news gets pushed out, such as the one saying you're carrying a parcel.
+- China City is 1980 all the way through: David has a bike, not a computer; the class writes 一九八零年; Old Ma and Mr Li call on the station's and the hall's shared phones. 电脑 is left out of the course, so HSK 1 counts 149 words.
 
 ## 0.18.0 (2026-09-29)
 

@@ -97,7 +97,7 @@ describe("build-course (real content)", () => {
   it("names concepts in the learner's language, lists the stage words, and loads the mentor notes", () => {
     expect(course!.conceptNames.tea).toBe("tea");
     expect(course!.conceptNames.thanks).toBe("Thank you");
-    expect(course!.stageWords["1"]).toHaveLength(150);
+    expect(course!.stageWords["1"]).toHaveLength(149); // HSK 1 but 电脑
     expect(course!.notes.map((n) => n.id)).toEqual(["hao-ma", "lao-xiao", "le", "bukeqi", "bei", "ge", "kuai", "nali", "de", "dian", "mei", "tai", "hui-neng", "zai"]);
     expect(course!.world.mentor).toEqual({ npc: "wang", after: "street-hello" });
     expect(course!.learnerFtl).toContain("note-bei-title");
@@ -239,6 +239,11 @@ describe("build-course (real content)", () => {
     }
   });
 
+  it("is set in 1980: no computers, and 电脑 counts toward no stage", () => {
+    expect(course!.stageWords["1"]).not.toContain("w0123");
+    expect(course!.words.w0123).toBeUndefined();
+  });
+
   it("ships only the words the course uses", () => {
     const ids = Object.keys(course!.words);
     // The pack has over a thousand words; stage 1 content uses a small part of HSK 1.
@@ -326,6 +331,11 @@ describe("build-course (broken content)", () => {
   it("reports characters that are not in the word list", () => {
     const bad = buildChanged((d) => writeFileSync(join(d, INTRO), "greet = 你好！\ngreet-reply = 喵。\njob = 工作，好吗？\njob-reply = 好。\n"));
     expect(bad.errors).toContain('noodle-intro/greet: "喵。" has characters outside the word list: 喵');
+  });
+
+  it("reports a line using a word the setting leaves out", () => {
+    const bad = buildChanged((d) => writeFileSync(join(d, "settings/china-city/leave-out.json"), '["w0123", "w0124"]'));
+    expect(bad.errors).toContain('tea-tv/on: "开电视！" uses 电视, which settings/china-city/leave-out.json leaves out');
   });
 
   it("reports a missing reply, a missing lines file and an unknown group", () => {

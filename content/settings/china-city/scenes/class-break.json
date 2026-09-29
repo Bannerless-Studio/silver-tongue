@@ -8,7 +8,7 @@
   "repeatable": false,
   "trustGain": 1,
   "exchanges": [
-    { "id": "computer", "slots": {}, "expect": { "action": "computer" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "bike", "slots": {}, "expect": { "action": "bike" }, "hinges": [], "pay": 0, "missCost": 0 },
     { "id": "parents", "slots": {}, "expect": { "action": "parentsjob" }, "hinges": [], "pay": 0, "missCost": 0 },
     { "id": "pets", "slots": {}, "expect": { "action": "pets" }, "hinges": [], "pay": 0, "missCost": 0 },
     { "id": "films", "slots": {}, "expect": { "action": "films" }, "hinges": [], "pay": 0, "missCost": 0 },
