@@ -98,7 +98,7 @@ scene-delivery-station-end = He thanks you and hurries off. Delivery done.
 
 scene-noodle-kitchen = Wash dishes
 scene-noodle-kitchen-start = Xiao Zhang waves you to the sink: wash cups, grab a bite, then get back out front.
-scene-noodle-kitchen-end = You dry your hands and head back out front.
+scene-noodle-kitchen-end = You dry your hands and head out to buy more cups.
 scene-shop-intro = Meet the shopkeeper
 scene-shop-intro-start = The shopkeeper looks up from her abacus as you come in.
 scene-shop-intro-end = You leave with one apple, and the feeling you paid too much anyway.
@@ -249,7 +249,7 @@ asked-mate = The teacher introduced a classmate.
 asked-comeclass = The teacher asked if you can come to school.
 asked-classday = The teacher said when the class is.
 scene-class-first = Join the Chinese class
-scene-class-first-start = The teacher from the gate beckons you into a class for grown-ups.
+scene-class-first-start = A teacher at the school gate beckons you into a class for grown-ups.
 scene-class-first-end = The teacher writes your name on the class list.
 asked-writeyear = David wanted you to write the year.
 asked-day = David told you the date.
@@ -333,7 +333,7 @@ asked-lunch = Xiao Zhang invited you to eat.
 asked-taste = Xiao Zhang wanted to know how the food is.
 scene-noodle-lunch = Help with the lunch rush
 scene-noodle-lunch-start = It's noon, and the cook waves you behind the counter.
-scene-noodle-lunch-end = The last customer leaves, and the cook finally sits down with you.
+scene-noodle-lunch-end = The bowls are empty, and Xiao Zhang leans back on her stool: the rush is over.
 
 # Notebook topics: a word in one of these slot groups is filed under the topic, not the place.
 notebook-topic-foods = Food and drink

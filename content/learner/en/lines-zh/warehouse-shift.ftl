@@ -1,9 +1,9 @@
 carry = { -amount(form: "cap") } { -item }s.
 carry-reply = OK, { -amount } { -item }s.
-carry-reply-intent = { -amount(form: "cap") } { -item }s
+carry-reply-intent = Repeat how many of what
 carry-rephrase = { -item(form: "cap") }s. { -amount(form: "cap") } of them.
 
 pick = That { -size } { -item }.
 pick-reply = OK, that { -size } { -item }.
-pick-reply-intent = The { -size } { -item }
+pick-reply-intent = Say which one
 pick-rephrase = The { -size } { -item }. That one!

@@ -110,6 +110,23 @@ describe("quiet terminal controller", () => {
     expect(q.view().scene).toBeUndefined();
   });
 
+  it("a finished conversation stays until the player moves on, then folds into one line", () => {
+    const { q, core, course } = setup();
+    q.choose(0);
+    q.choose(0);
+    const before = q.view().backlog.filter((b) => !b.speaker).map((b) => b.id);
+    while (core.state.run) q.choose(rightIndex(core));
+    // Just finished: how it ended is still there to read.
+    expect(q.view().backlog.some((b) => b.speaker === "player")).toBe(true);
+    const menu = (q.view().phase as { menu: { kind: string; disabled?: string }[] }).menu;
+    q.choose(menu.findIndex((m) => !m.disabled));
+    const log = q.view().backlog;
+    expect(log.filter((b) => b.tone === "done").map((b) => b.text)).toEqual([`✓ ${course.learnerFtl.match(/^scene-intro = (.+)$/m)![1]} · Cook`]);
+    expect(log.some((b) => b.speaker === "player")).toBe(false);
+    // What came before the conversation stays.
+    expect(log.map((b) => b.id)).toEqual(expect.arrayContaining(before.filter((id) => id < log.find((b) => b.tone === "done")!.id)));
+  });
+
   it("sleeping: food is silent, the new day is a line", () => {
     const { q } = setup((s) => ((s.day = 2), (s.slot = 4))); // sleep appears once the day is used up
     const sleep = (q.view().phase as { menu: { kind: string }[] }).menu.findIndex((m) => m.kind === "sleep");
@@ -238,6 +255,37 @@ describe("quiet terminal controller", () => {
     const news = q.view().toasts.filter((x) => x.text.startsWith("New place"));
     expect(news).toHaveLength(1);
     expect(news[0].text).toMatch(/^New places: .+, .+, .+$/);
+  });
+
+  it("says the mentor has something to tell only when nothing was waiting already", () => {
+    const course = fixtureWithText();
+    course.world.mentor = { npc: "cook", after: "intro" };
+    const real = createCore(course, newGame(course), { now: () => T0, rng: mulberry32(1) });
+    // Every input readies a note, and none is ever heard.
+    const ready: string[] = [];
+    const core = {
+      get state() {
+        return { ...real.state, notes: { ready: [...ready], read: [] } };
+      },
+      send: (input: Parameters<typeof real.send>[0]) => {
+        ready.push(`n${ready.length}`);
+        return [...real.send(input), { type: "noteReady" as const, note: ready.at(-1)! }];
+      },
+    };
+    let clock = T0;
+    const q = createQuiet({ course, core, now: () => (clock += 1000) });
+    const hints = () => q.view().toasts.filter((x) => x.text.endsWith("something to tell you."));
+    const talk = () => {
+      q.choose(0);
+      for (let i = 0; real.state.run && i < 12; i++) q.choose(real.state.run.options.indexOf(comboKey(real.state.run.combo)));
+      expect(real.state.run).toBeFalsy();
+    };
+    talk();
+    expect(hints()).toHaveLength(1);
+    // Read and gone; the notes readied since still wait, so there's nothing new to say.
+    for (const x of q.view().toasts) q.dismissToast(x.id);
+    talk();
+    expect(hints()).toHaveLength(0);
   });
 
   it("? targets the newest NPC line, not the player's or narration", () => {

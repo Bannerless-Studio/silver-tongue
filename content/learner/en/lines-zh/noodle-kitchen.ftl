@@ -1,11 +1,11 @@
 cups = Cups! { -amount(form: "cap") } of them!
 cups-reply = OK, { -amount } cups!
-cups-reply-intent = { -amount(form: "cap") } cups
+cups-reply-intent = Say how many cups
 cups-rephrase = { -amount(form: "cap") }! Cups!
 
 lunch = It's noon! Will you eat { -food }?
 lunch-reply = OK, I'll eat { -food }!
-lunch-reply-intent = Say you'll eat { -food }
+lunch-reply-intent = Say you'll eat it
 lunch-rephrase = { -food(form: "cap") }, will you eat some?
 
 out = We're out of cups!

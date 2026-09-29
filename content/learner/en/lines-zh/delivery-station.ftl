@@ -16,7 +16,7 @@ beijing-alt2-intent = Greet Big Liu
 
 time = It's { -hour } o'clock already!
 time-reply = { -hour(form: "cap") } o'clock already! Goodbye!
-time-reply-intent = { -hour(form: "cap") } o'clock, then goodbye
+time-reply-intent = Say the time, then goodbye
 time-rephrase = { -hour(form: "cap") } o'clock! It's { -hour } o'clock already!
 
 bye = Goodbye!

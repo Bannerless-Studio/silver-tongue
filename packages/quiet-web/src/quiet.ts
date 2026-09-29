@@ -20,8 +20,8 @@ export interface Beat {
   title?: string;
   /** react: an NPC's reaction to a miss, and narration of what was asked instead. narr: stage direction
    * (the opening story, a scene's framing, what the player did, where a resumed game is, a new day).
-   * good / warn / plain: outcomes (wages, money). */
-  tone?: "plain" | "warn" | "good" | "react" | "narr";
+   * good / warn / plain: outcomes (wages, money). done: a finished conversation, folded to one line. */
+  tone?: "plain" | "warn" | "good" | "react" | "narr" | "done";
   /** words new to the player when this line was said: heard for the first time, or never heard at all
    * (a reaction line is not counted as hearing), and not glossed yet in this transcript. The only words
    * that gloss themselves; each word glosses once per game session. */
@@ -136,6 +136,10 @@ export function createQuiet(opts: QuietOptions): Quiet {
   let nextId = 1;
   /** news that arrived mid-scene, held until the scene is over so it never lands between a line and its replies */
   let held: Omit<Toast, "id">[] = [];
+  /** the first beat of the scene being played */
+  let sceneFrom = 0;
+  /** the conversation just finished: its beats, and the one line they fold into once the player moves on */
+  let finished: { from: number; to: number; text: string } | undefined;
   /** words already glossed in this transcript: a word is boxed and glossed once, then rendered as usual */
   const glossed = new Set<WordId>();
   let save = opts.save;
@@ -164,6 +168,16 @@ export function createQuiet(opts: QuietOptions): Quiet {
     return beat;
   };
 
+  /** Folds the conversation just finished into one line: it was read when it ended, and is only history now. */
+  function fold() {
+    if (!finished) return;
+    const { from, to, text } = finished;
+    finished = undefined;
+    const i = backlog.findIndex((b) => b.id >= from);
+    if (i < 0) return;
+    backlog = [...backlog.slice(0, i), { id: from, text, tone: "done" }, ...backlog.slice(i).filter((b) => b.id >= to)];
+  }
+
   /** Moves everything said into the transcript and says it aloud, in order. */
   let shownAt = -Infinity;
   const settled = () => opts.now() - shownAt >= SETTLE_MS;
@@ -188,7 +202,8 @@ export function createQuiet(opts: QuietOptions): Quiet {
       for (const w of out) glossed.add(w);
       return out;
     };
-    let hinted = false;
+    // One hint however many notes became ready at once, and none while older ones still wait unheard.
+    let hinted = core.state.notes.ready.length > events.filter((e) => e.type === "noteReady").length;
     /** places revealed by these events: one piece of news for all of them */
     const revealed: string[] = [];
     /** reactions that restate the request; only kept when the replies come back after them */
@@ -198,6 +213,7 @@ export function createQuiet(opts: QuietOptions): Quiet {
         case "sceneStarted":
           scene = e.scene;
           reply = undefined;
+          sceneFrom = nextId;
           if (!resuming && t.has(`scene-${e.scene}-start`)) push({ text: t(`scene-${e.scene}-start`), tone: "narr" });
           break;
         case "lineSpoken":
@@ -253,6 +269,13 @@ export function createQuiet(opts: QuietOptions): Quiet {
           lastSpeech = undefined;
           if (t.has(`scene-${e.scene}-end`)) push({ text: t(`scene-${e.scene}-end`), tone: "narr" });
           push({ text: t("scene-done", { currency: course.world.currency, earned: e.earned }), tone: e.earned > 0 ? "good" : "plain" });
+          {
+            const title = t(`scene-${e.scene}`);
+            const who = npcName(course.scenes.find((s) => s.id === e.scene)?.npc ?? "");
+            // "Meet Old Wang" already says who.
+            const what = title.includes(who) ? title : t("quiet-scene-with", { scene: title, npc: who });
+            finished = { from: sceneFrom, to: nextId, text: t("quiet-scene-done", { scene: what, currency: course.world.currency, earned: e.earned }) };
+          }
           break;
         case "unlocked":
           news(t("unlocked", { scene: t(`scene-${e.scene}`) }), "good");
@@ -277,7 +300,6 @@ export function createQuiet(opts: QuietOptions): Quiet {
           toast(t(`reject-${e.reason}`), "bad");
           break;
         case "noteReady":
-          // One hint however many notes became ready at once.
           if (course.world.mentor && !hinted) news(t("note-hint", { npc: npcName(course.world.mentor.npc) }), "info");
           hinted = true;
           break;
@@ -318,6 +340,8 @@ export function createQuiet(opts: QuietOptions): Quiet {
   function send(input: Input, echo?: Omit<Beat, "id">, echoSpeech?: Speech, settle = true): boolean {
     const events = core.send(input);
     const taken = !events.some((e) => e.type === "inputRejected");
+    // Moving on from a finished conversation folds it.
+    if (taken) fold();
     if (echo && taken) push(echo, echoSpeech);
     apply(events);
     if (taken) persist();

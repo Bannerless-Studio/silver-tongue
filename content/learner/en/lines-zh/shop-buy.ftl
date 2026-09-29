@@ -1,6 +1,6 @@
 buy = { -item(form: "cap") }? { -price(form: "cap") } kuai.
 buy-reply = OK, I'll buy the { -item }, { -price } kuai.
-buy-reply-intent = Agree to { -price } kuai for the { -item }
+buy-reply-intent = Agree to the price
 buy-rephrase = { -price(form: "cap") } kuai for the { -item }.
 
 bye = Thank you!

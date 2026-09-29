@@ -82,7 +82,7 @@ describe("build-course (real content)", () => {
 
   it("says what every reply and written wrong reply does, in every course", () => {
     const v = course!.scenes.find((s) => s.id === "noodle-shift")!.exchanges[1].variants["count=four|item=water"];
-    expect(v.reply.intent).toBe("Four cups of water");
+    expect(v.reply.intent).toBe("Repeat the order");
     for (const id of ["zh-china", "ja-japan"]) {
       const c = buildCourse(CONTENT, id).course!;
       const missing = c.scenes.flatMap((sc) =>
@@ -91,6 +91,11 @@ describe("build-course (real content)", () => {
         ),
       );
       expect(missing).toEqual([]);
+      // What a reply does, not what it says: an intent naming the slot's value ("Tea") gives the answer away.
+      const telling = c.scenes.flatMap((sc) =>
+        sc.exchanges.filter((ex) => new Set(Object.values(ex.variants).map((vr) => vr.reply.intent)).size > 1).map((ex) => `${sc.id}/${ex.id}`),
+      );
+      expect(telling).toEqual([]);
     }
   });
 

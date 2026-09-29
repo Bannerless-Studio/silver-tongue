@@ -206,7 +206,8 @@ export function createVn(opts: VnOptions): Vn {
   function apply(events: GameEvent[]) {
     const fresh = new Set(events.flatMap((e) => (e.type === "wordStateChanged" && e.from === "unseen" ? [e.word] : [])));
     const freshIn = (l: RenderedLine) => l.tokens.map((tk) => tk.word).filter((w) => fresh.has(w));
-    let hinted = false;
+    // One hint however many notes became ready at once, and none while older ones still wait unheard.
+    let hinted = core.state.notes.ready.length > events.filter((e) => e.type === "noteReady").length;
     for (const e of events) {
       switch (e.type) {
         case "placeEntered":
@@ -279,7 +280,6 @@ export function createVn(opts: VnOptions): Vn {
           toast(t(`reject-${e.reason}`), "bad");
           break;
         case "noteReady":
-          // One hint however many notes became ready at once.
           if (course.world.mentor && !hinted) toast(t("note-hint", { npc: npcName(course.world.mentor.npc) }), "info");
           hinted = true;
           break;

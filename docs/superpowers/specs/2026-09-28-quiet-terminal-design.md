@@ -37,6 +37,11 @@ line and its replies. A word glosses itself if it was heard for the first time i
 never been heard (reaction lines don't count as hearing). A game picked up mid-scene replays the
 current line and replies (core `describeRun`); between scenes it says where the player is.
 
+A finished conversation stays whole until the player's next accepted input, so its ending can be read;
+then it folds into one dim line, `✓ Scene · NPC · +¥X` (the NPC left out when the scene's name says it,
+the pay only when there was some). What came before and after it stays. The notebook's Phrases tab keeps
+what was said.
+
 A miss is one beat of at most three rows, and every try stays in the transcript:
 
 ```
