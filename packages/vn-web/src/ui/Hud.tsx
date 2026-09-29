@@ -7,9 +7,7 @@ export function Hud({ vn, view, onOpen }: { vn: Vn; view: VnView; onOpen: (o: "n
   return (
     <div class="hud">
       <span class="hud-day">{vn.t("vn-day", { day: h.day })}</span>
-      <span class="pips" aria-label={`${h.slot}/${h.slots}`}>
-        {Array.from({ length: h.slots }, (_, i) => <i key={i} class={i < h.slot ? "used" : ""} />)}
-      </span>
+      <span class="hud-part">{h.part}</span>
       <span class="hud-wallet">
         {h.currency}{h.wallet}
         {view.floats.map((f) => (

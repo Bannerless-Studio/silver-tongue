@@ -1,6 +1,6 @@
 import { useState } from "preact/hooks";
 import type { CatalogEntry, WordState } from "@silver-tongue/core";
-import { hudValues, nextSpeed, notebookDefault, notebookEntries, rentDueInDays, settingsRows, type SettingsScreen } from "@silver-tongue/view";
+import { dayPart, hudValues, nextSpeed, notebookDefault, notebookEntries, rentDueInDays, settingsRows, type SettingsScreen } from "@silver-tongue/view";
 import type { Quiet } from "../quiet";
 import type { Page } from "./App";
 
@@ -90,7 +90,7 @@ export function Status({ q, audioAvailable, onClose }: { q: Quiet; audioAvailabl
   const hud = hudValues(course, s, t, Date.now());
   const currency = course.world.currency;
   const rows = [
-    t("quiet-st-day", { day: s.day, slot: s.slot, slots: course.world.slotsPerDay }),
+    t("quiet-st-day", { day: s.day, part: dayPart(course, s, t) }),
     t("quiet-st-wallet", { currency, wallet: s.wallet }),
     t("quiet-st-rent", { currency, rent: course.world.rentPerWeek, days: s.rentLate ? 0 : rentDueInDays(s.day) }) + (s.rentLate ? ` · ${t("quiet-rent-late")}` : ""),
     t("notebook-rank", { rank: hud.rankLabel }),

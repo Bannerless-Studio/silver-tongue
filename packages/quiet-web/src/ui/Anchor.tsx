@@ -9,7 +9,7 @@ export function Anchor({ q, view, audioAvailable }: { q: Quiet; view: QuietView;
   const tell = view.scene ? reviewTell(course, view.scene, core.state) : undefined;
   return (
     <header class="anchor">
-      <span class="where">{t("quiet-anchor", { place: row.place, day: row.day, slot: row.slot, slots: row.slots })}</span>
+      <span class="where">{t("quiet-anchor", { place: row.place, day: row.day, part: row.part })}</span>
       <span class="flags">
         {tell?.repeat && <span class="dim">{tell.pays ? t("quiet-repeat-pays", { currency, pays: tell.pays }) : t("quiet-repeat")}</span>}
         {row.rent && (
