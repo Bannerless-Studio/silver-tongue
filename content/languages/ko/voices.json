@@ -1,0 +1,24 @@
+{
+ "engine": "edge-tts",
+ "player": "ko-KR-InJoonNeural",
+ "words": "ko-KR-SunHiNeural",
+ "npcs": {
+  "landlady": {
+   "voice": "ko-KR-SunHiNeural",
+   "pitch": "-8Hz"
+  },
+  "oldman": {
+   "voice": "ko-KR-HyunsuMultilingualNeural",
+   "pitch": "-12Hz",
+   "rate": "-10%"
+  },
+  "jiwoo": {
+   "voice": "ko-KR-SunHiNeural",
+   "pitch": "+8Hz"
+  },
+  "clerk": {
+   "voice": "ko-KR-HyunsuMultilingualNeural",
+   "pitch": "+8Hz"
+  }
+ }
+}

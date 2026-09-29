@@ -223,6 +223,7 @@ keys-name = type your name · [enter] done · [⌫] delete
 learner-name = English
 language-zh = Chinese
 language-ja = Japanese
+language-ko = Korean
 
 ## Settings ([o])
 settings-title = Settings

@@ -1,0 +1,623 @@
+[
+ {
+  "id": "ko-ssi",
+  "w": "씨",
+  "lv": "T1",
+  "readings": [
+   "ssi"
+  ]
+ },
+ {
+  "id": "ko-ne",
+  "w": "네",
+  "lv": "T1",
+  "readings": [
+   "ne"
+  ]
+ },
+ {
+  "id": "ko-chingu",
+  "w": "친구",
+  "lv": "T1",
+  "readings": [
+   "chingu"
+  ]
+ },
+ {
+  "id": "ko-ieyo",
+  "w": "이에요",
+  "lv": "T1",
+  "readings": [
+   "ieyo"
+  ],
+  "forms": {
+   "예요": [
+    "yeyo"
+   ],
+   "입니다": [
+    "imnida"
+   ]
+  },
+  "attach": true
+ },
+ {
+  "id": "ko-aniyo",
+  "w": "아니요",
+  "lv": "T1",
+  "readings": [
+   "aniyo"
+  ]
+ },
+ {
+  "id": "ko-yeogi",
+  "w": "여기",
+  "lv": "T1",
+  "readings": [
+   "yeogi"
+  ]
+ },
+ {
+  "id": "ko-bang",
+  "w": "방",
+  "lv": "T1",
+  "readings": [
+   "bang"
+  ]
+ },
+ {
+  "id": "ko-nugu",
+  "w": "누구",
+  "lv": "T1",
+  "readings": [
+   "nugu"
+  ]
+ },
+ {
+  "id": "ko-jeo",
+  "w": "저",
+  "lv": "T1",
+  "readings": [
+   "jeo"
+  ]
+ },
+ {
+  "id": "ko-neun",
+  "w": "는",
+  "lv": "T1",
+  "readings": [
+   "neun"
+  ],
+  "attach": true
+ },
+ {
+  "id": "ko-eun",
+  "w": "은",
+  "lv": "T1",
+  "readings": [
+   "eun"
+  ],
+  "attach": true
+ },
+ {
+  "id": "ko-annyeonghi",
+  "w": "안녕히",
+  "lv": "T1",
+  "readings": [
+   "annyeonghi"
+  ]
+ },
+ {
+  "id": "ko-gyeseyo",
+  "w": "계세요",
+  "lv": "T1",
+  "readings": [
+   "gyeseyo"
+  ]
+ },
+ {
+  "id": "ko-gayo",
+  "w": "가요",
+  "lv": "T1",
+  "readings": [
+   "gayo"
+  ],
+  "forms": {
+   "가세요": [
+    "gaseyo"
+   ]
+  }
+ },
+ {
+  "id": "ko-annyeonghaseyo",
+  "w": "안녕하세요",
+  "lv": "T1",
+  "readings": [
+   "annyeonghaseyo"
+  ]
+ },
+ {
+  "id": "ko-harabeoji",
+  "w": "할아버지",
+  "lv": "T1",
+  "readings": [
+   "harabeoji"
+  ]
+ },
+ {
+  "id": "ko-ireum",
+  "w": "이름",
+  "lv": "T1",
+  "readings": [
+   "ireum"
+  ]
+ },
+ {
+  "id": "ko-i",
+  "w": "이",
+  "lv": "T1",
+  "readings": [
+   "i"
+  ],
+  "attach": true
+ },
+ {
+  "id": "ko-ga",
+  "w": "가",
+  "lv": "T1",
+  "readings": [
+   "ga"
+  ],
+  "attach": true
+ },
+ {
+  "id": "ko-mwo",
+  "w": "뭐",
+  "lv": "T1",
+  "readings": [
+   "mwo"
+  ]
+ },
+ {
+  "id": "ko-anjayo",
+  "w": "앉아요",
+  "lv": "T1",
+  "readings": [
+   "anjayo"
+  ],
+  "forms": {
+   "앉으세요": [
+    "anjeuseyo"
+   ]
+  }
+ },
+ {
+  "id": "ko-gamsahamnida",
+  "w": "감사합니다",
+  "lv": "T1",
+  "readings": [
+   "gamsahamnida"
+  ]
+ },
+ {
+  "id": "ko-hangugeo",
+  "w": "한국어",
+  "lv": "T1",
+  "readings": [
+   "hangugeo"
+  ]
+ },
+ {
+  "id": "ko-arayo",
+  "w": "알아요",
+  "lv": "T1",
+  "readings": [
+   "arayo"
+  ]
+ },
+ {
+  "id": "ko-mollayo",
+  "w": "몰라요",
+  "lv": "T1",
+  "readings": [
+   "mollayo"
+  ]
+ },
+ {
+  "id": "ko-hana",
+  "w": "하나",
+  "lv": "T1",
+  "readings": [
+   "hana"
+  ],
+  "forms": {
+   "한": [
+    "han"
+   ]
+  }
+ },
+ {
+  "id": "ko-dul",
+  "w": "둘",
+  "lv": "T1",
+  "readings": [
+   "dul"
+  ],
+  "forms": {
+   "두": [
+    "du"
+   ]
+  }
+ },
+ {
+  "id": "ko-set",
+  "w": "셋",
+  "lv": "T1",
+  "readings": [
+   "set"
+  ],
+  "forms": {
+   "세": [
+    "se"
+   ]
+  }
+ },
+ {
+  "id": "ko-net",
+  "w": "넷",
+  "lv": "T1",
+  "readings": [
+   "net"
+  ]
+ },
+ {
+  "id": "ko-daseot",
+  "w": "다섯",
+  "lv": "T1",
+  "readings": [
+   "daseot"
+  ]
+ },
+ {
+  "id": "ko-baegopayo",
+  "w": "배고파요",
+  "lv": "T1",
+  "readings": [
+   "baegopayo"
+  ]
+ },
+ {
+  "id": "ko-don",
+  "w": "돈",
+  "lv": "T1",
+  "readings": [
+   "don"
+  ]
+ },
+ {
+  "id": "ko-isseoyo",
+  "w": "있어요",
+  "lv": "T1",
+  "readings": [
+   "isseoyo"
+  ]
+ },
+ {
+  "id": "ko-eopseoyo",
+  "w": "없어요",
+  "lv": "T1",
+  "readings": [
+   "eopseoyo"
+  ]
+ },
+ {
+  "id": "ko-jeogi",
+  "w": "저기",
+  "lv": "T1",
+  "readings": [
+   "jeogi"
+  ]
+ },
+ {
+  "id": "ko-bunsikjip",
+  "w": "분식집",
+  "lv": "T1",
+  "readings": [
+   "bunsikjip"
+  ]
+ },
+ {
+  "id": "ko-eoseo",
+  "w": "어서",
+  "lv": "T1",
+  "readings": [
+   "eoseo"
+  ]
+ },
+ {
+  "id": "ko-wayo",
+  "w": "와요",
+  "lv": "T1",
+  "readings": [
+   "wayo"
+  ],
+  "forms": {
+   "오세요": [
+    "oseyo"
+   ]
+  }
+ },
+ {
+  "id": "ko-gwaenchanayo",
+  "w": "괜찮아요",
+  "lv": "T1",
+  "readings": [
+   "gwaenchanayo"
+  ]
+ },
+ {
+  "id": "ko-meogeoyo",
+  "w": "먹어요",
+  "lv": "T1",
+  "readings": [
+   "meogeoyo"
+  ]
+ },
+ {
+  "id": "ko-tteokbokki",
+  "w": "떡볶이",
+  "lv": "T1",
+  "readings": [
+   "tteokbokki"
+  ]
+ },
+ {
+  "id": "ko-gimbap",
+  "w": "김밥",
+  "lv": "T1",
+  "readings": [
+   "gimbap"
+  ]
+ },
+ {
+  "id": "ko-do",
+  "w": "도",
+  "lv": "T1",
+  "readings": [
+   "do"
+  ],
+  "attach": true
+ },
+ {
+  "id": "ko-eomuk",
+  "w": "어묵",
+  "lv": "T1",
+  "readings": [
+   "eomuk"
+  ]
+ },
+ {
+  "id": "ko-ilhaeyo",
+  "w": "일해요",
+  "lv": "T1",
+  "readings": [
+   "ilhaeyo"
+  ]
+ },
+ {
+  "id": "ko-naeil",
+  "w": "내일",
+  "lv": "T1",
+  "readings": [
+   "naeil"
+  ]
+ },
+ {
+  "id": "ko-juseyo",
+  "w": "주세요",
+  "lv": "T1",
+  "readings": [
+   "juseyo"
+  ]
+ },
+ {
+  "id": "ko-gae",
+  "w": "개",
+  "lv": "T1",
+  "readings": [
+   "gae"
+  ]
+ },
+ {
+  "id": "ko-geureut",
+  "w": "그릇",
+  "lv": "T1",
+  "readings": [
+   "geureut"
+  ]
+ },
+ {
+  "id": "ko-jul",
+  "w": "줄",
+  "lv": "T1",
+  "readings": [
+   "jul"
+  ]
+ },
+ {
+  "id": "ko-myeot",
+  "w": "몇",
+  "lv": "T1",
+  "readings": [
+   "myeot"
+  ]
+ },
+ {
+  "id": "ko-igeo",
+  "w": "이거",
+  "lv": "T1",
+  "readings": [
+   "igeo"
+  ]
+ },
+ {
+  "id": "ko-bwayo",
+  "w": "봐요",
+  "lv": "T1",
+  "readings": [
+   "bwayo"
+  ]
+ },
+ {
+  "id": "ko-sajin",
+  "w": "사진",
+  "lv": "T1",
+  "readings": [
+   "sajin"
+  ]
+ },
+ {
+  "id": "ko-dongsaeng",
+  "w": "동생",
+  "lv": "T1",
+  "readings": [
+   "dongsaeng"
+  ]
+ },
+ {
+  "id": "ko-jigeum",
+  "w": "지금",
+  "lv": "T1",
+  "readings": [
+   "jigeum"
+  ]
+ },
+ {
+  "id": "ko-bangse",
+  "w": "방세",
+  "lv": "T1",
+  "readings": [
+   "bangse"
+  ]
+ },
+ {
+  "id": "ko-naeyo",
+  "w": "내요",
+  "lv": "T1",
+  "readings": [
+   "naeyo"
+  ],
+  "forms": {
+   "냈어요": [
+    "naesseoyo"
+   ]
+  }
+ },
+ {
+  "id": "ko-o",
+  "w": "오",
+  "lv": "T1",
+  "readings": [
+   "o"
+  ]
+ },
+ {
+  "id": "ko-man",
+  "w": "만",
+  "lv": "T1",
+  "readings": [
+   "man"
+  ]
+ },
+ {
+  "id": "ko-won",
+  "w": "원",
+  "lv": "T1",
+  "readings": [
+   "won"
+  ]
+ },
+ {
+  "id": "ko-iljuil",
+  "w": "일주일",
+  "lv": "T1",
+  "readings": [
+   "iljuil"
+  ]
+ },
+ {
+  "id": "ko-e",
+  "w": "에",
+  "lv": "T1",
+  "readings": [
+   "e"
+  ],
+  "attach": true
+ },
+ {
+  "id": "ko-sam",
+  "w": "삼",
+  "lv": "T1",
+  "readings": [
+   "sam"
+  ]
+ },
+ {
+  "id": "ko-wol",
+  "w": "월",
+  "lv": "T1",
+  "readings": [
+   "wol"
+  ]
+ },
+ {
+  "id": "ko-kkaji",
+  "w": "까지",
+  "lv": "T1",
+  "readings": [
+   "kkaji"
+  ],
+  "attach": true
+ },
+ {
+  "id": "ko-uyu",
+  "w": "우유",
+  "lv": "T1",
+  "readings": [
+   "uyu"
+  ]
+ },
+ {
+  "id": "ko-cheon",
+  "w": "천",
+  "lv": "T1",
+  "readings": [
+   "cheon"
+  ]
+ },
+ {
+  "id": "ko-ppang",
+  "w": "빵",
+  "lv": "T1",
+  "readings": [
+   "ppang"
+  ]
+ },
+ {
+  "id": "ko-reul",
+  "w": "를",
+  "lv": "T1",
+  "readings": [
+   "reul"
+  ],
+  "attach": true
+ },
+ {
+  "id": "ko-eul",
+  "w": "을",
+  "lv": "T1",
+  "readings": [
+   "eul"
+  ],
+  "attach": true
+ }
+]

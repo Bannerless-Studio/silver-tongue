@@ -1,0 +1,51 @@
+{
+ "id": "stall-shift",
+ "place": "stall",
+ "npc": "jiwoo",
+ "stage": 1,
+ "after": [
+  "stall-intro"
+ ],
+ "requires": {
+  "trust": {
+   "jiwoo": 1
+  }
+ },
+ "repeatable": true,
+ "trustGain": 1,
+ "exchanges": [
+  {
+   "id": "fetch",
+   "slots": {
+    "item": "food"
+   },
+   "expect": {
+    "action": "fetch",
+    "item": "$item"
+   },
+   "hinges": [
+    "$item"
+   ],
+   "pay": 2000,
+   "missCost": 1000
+  },
+  {
+   "id": "order",
+   "slots": {
+    "item": "food",
+    "count": "counts"
+   },
+   "expect": {
+    "action": "serve",
+    "item": "$item",
+    "count": "$count"
+   },
+   "hinges": [
+    "$item",
+    "$count"
+   ],
+   "pay": 8000,
+   "missCost": 2000
+  }
+ ]
+}

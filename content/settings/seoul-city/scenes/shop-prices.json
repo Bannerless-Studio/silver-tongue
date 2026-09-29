@@ -1,0 +1,64 @@
+{
+ "id": "shop-prices",
+ "place": "shop",
+ "npc": "clerk",
+ "stage": 1,
+ "after": [
+  "street-numbers"
+ ],
+ "requires": {},
+ "repeatable": false,
+ "trustGain": 1,
+ "exchanges": [
+  {
+   "id": "welcome",
+   "slots": {},
+   "expect": {
+    "action": "welcome"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "milk",
+   "slots": {},
+   "expect": {
+    "action": "milk"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "bread",
+   "slots": {},
+   "expect": {
+    "action": "bread"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "change",
+   "slots": {},
+   "expect": {
+    "action": "change"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "bye",
+   "slots": {},
+   "expect": {
+    "action": "bye"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  }
+ ]
+}

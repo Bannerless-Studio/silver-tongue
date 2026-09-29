@@ -1,0 +1,63 @@
+{
+ "id": "room-wake",
+ "place": "room",
+ "npc": "landlady",
+ "stage": 1,
+ "after": [],
+ "requires": {},
+ "repeatable": false,
+ "trustGain": 1,
+ "exchanges": [
+  {
+   "id": "call",
+   "slots": {},
+   "expect": {
+    "action": "call"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "friend",
+   "slots": {},
+   "expect": {
+    "action": "friend"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0,
+   "pin": true
+  },
+  {
+   "id": "room",
+   "slots": {},
+   "expect": {
+    "action": "room"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "who",
+   "slots": {},
+   "expect": {
+    "action": "who"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "bye",
+   "slots": {},
+   "expect": {
+    "action": "bye"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  }
+ ]
+}

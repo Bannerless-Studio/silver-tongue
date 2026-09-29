@@ -1,0 +1,17 @@
+{
+ "key": "ko",
+ "name": "Korean (TOPIK 1)",
+ "locale": "ko",
+ "tts": "ko-KR",
+ "levels": [
+  "T1"
+ ],
+ "stages": {
+  "1": [
+   "T1"
+  ]
+ },
+ "typing": null,
+ "spaced": false,
+ "tileGap": " "
+}

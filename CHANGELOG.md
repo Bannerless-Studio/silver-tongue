@@ -2,6 +2,10 @@
 
 Every release of Silver Tongue, newest first.
 
+## Unreleased
+
+- A new course: Korean in Seoul, 2000. You fall asleep over a Korean textbook and wake in a stranger's rented room with his ID card on the desk. Ten conversations to start: the landlady at the door, Grandpa Park on his bench, Ji-woo's snack stall and the corner shop, about 65 words.
+
 ## 0.18.6 (2026-09-29)
 
 - On the quiet page, the status page lists everyone: the people you've met with their trust, then "9 people you haven't met yet" and who they are, with where they work. Tap anyone to open their page.

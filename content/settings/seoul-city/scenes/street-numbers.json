@@ -1,0 +1,74 @@
+{
+ "id": "street-numbers",
+ "place": "street",
+ "npc": "oldman",
+ "stage": 1,
+ "after": [
+  "street-hello"
+ ],
+ "requires": {},
+ "repeatable": false,
+ "trustGain": 1,
+ "exchanges": [
+  {
+   "id": "one-two",
+   "slots": {},
+   "expect": {
+    "action": "numbers"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "three-four",
+   "slots": {},
+   "expect": {
+    "action": "numbers"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "five",
+   "slots": {},
+   "expect": {
+    "action": "numbers"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "next-a",
+   "slots": {
+    "number": "numbers_2_5"
+   },
+   "expect": {
+    "action": "next",
+    "number": "$number"
+   },
+   "hinges": [
+    "$number"
+   ],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "next-b",
+   "slots": {
+    "number": "numbers_2_5"
+   },
+   "expect": {
+    "action": "next",
+    "number": "$number"
+   },
+   "hinges": [
+    "$number"
+   ],
+   "pay": 0,
+   "missCost": 0
+  }
+ ]
+}

@@ -1,0 +1,45 @@
+{
+ "id": "stall-family",
+ "place": "stall",
+ "npc": "jiwoo",
+ "stage": 1,
+ "after": [
+  "stall-shift"
+ ],
+ "requires": {},
+ "repeatable": false,
+ "trustGain": 1,
+ "exchanges": [
+  {
+   "id": "photo",
+   "slots": {},
+   "expect": {
+    "action": "photo"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "brother",
+   "slots": {},
+   "expect": {
+    "action": "brother"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0,
+   "pin": true
+  },
+  {
+   "id": "eat",
+   "slots": {},
+   "expect": {
+    "action": "eat"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  }
+ ]
+}
