@@ -58,7 +58,7 @@ The first course is Mandarin (HSK) in a Chinese city, with English as the learne
 
 - **Rent pressure is soft.** If you're short, the landlord waits and you take extra shifts. There is no debt, no interest and no eviction. Late rent never stacks: paying once clears it, however many weeks have passed.
 - **Excluded by rule:** loans, interest, credit, investment returns, gambling or chance-based money, alcohol, romance, magic.
-- **The next district opens** when every word of the current stage is at least *met* **and** trust with the stage's key NPCs (listed in the setting) reaches a threshold. There is no savings target, so nobody has to grind for money.
+- **The next district opens** through scene prerequisites (`after`) and trust requirements on scenes; there is no savings target and no separate stage-word gate (decided 2026-09-29, see 2026-09-29-story-and-book-design.md). Nobody has to grind for money.
 
 ### Word memory (learner model)
 
