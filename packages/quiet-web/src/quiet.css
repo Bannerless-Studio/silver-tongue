@@ -30,6 +30,8 @@ p { margin: 0; }
 }
 .dim { color: var(--muted); }
 .amber { color: var(--amber); }
+.cyan { color: var(--cyan); }
+.green { color: var(--green); }
 .bad { color: var(--red); }
 .cur { color: var(--cyan); }
 
@@ -127,7 +129,25 @@ p { margin: 0; }
 .tabs { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; }
 .tab { color: var(--muted); padding: 0.1rem 0; border-bottom: 2px solid transparent; }
 .tab.on { color: var(--cyan); border-bottom-color: var(--cyan); }
-.trust { margin-top: 0.8rem; }
+.st-people { margin-top: 0.8rem; }
+/* The people on the status page, and one person's page. */
+.person { display: flex; align-items: center; gap: 0.75rem; min-height: 44px; }
+.person > :first-child { flex: 1; }
+.p-small { font-size: 0.85em; }
+.p-head { display: flex; flex-direction: column; gap: 0.3rem; padding-bottom: 0.6rem; }
+.p-name { font-size: 1.25em; }
+.p-tabs { gap: 0.25rem 1.25rem; border-bottom: 1px solid #1e2a30; margin-bottom: 0.8rem; }
+.p-tabs .tab { min-height: 40px; }
+.p-tips, .p-talks { display: flex; flex-direction: column; gap: 1rem; }
+.p-sub { padding-left: 1.4rem; }
+.p-talks { gap: 0.4rem; }
+.p-talk-head { display: flex; gap: 0.6rem; align-items: center; width: 100%; min-height: 40px; }
+.p-talk-title { flex: 1; }
+.p-lines { display: flex; flex-direction: column; gap: 0.4rem; padding: 0.4rem 0 0.8rem 1.4rem; }
+.p-words { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.p-words > div { display: flex; flex-direction: column; gap: 0.5rem; }
+.p-word p { overflow-wrap: anywhere; }
+.p-later .p-word { opacity: 0.55; }
 .row { display: block; width: 100%; padding: 0.45rem 0; color: var(--text); text-decoration: none; border-bottom: 1px solid #16242a; }
 .row:hover { color: var(--cyan); }
 textarea { width: 100%; background: var(--bg); border: 1px solid var(--line); border-radius: 2px; padding: 0.5rem; }

@@ -11,7 +11,7 @@ export interface WordLine {
   gloss: string;
 }
 
-function wordLine(course: Course, word: WordId, surface?: string): WordLine {
+export function wordLine(course: Course, word: WordId, surface?: string): WordLine {
   const w = course.words[word];
   const text = surface ?? w.w;
   return { word, text, reading: readingsOf(w, text).at(-1) ?? "", gloss: displayGloss(w) };

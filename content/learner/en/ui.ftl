@@ -37,6 +37,16 @@ menu-review = Quick review · { $count ->
 }
 menu-sleep = Sleep (end the day)
 sleep-go = Go to { $place } to sleep.
+person-at = where: { $place }
+person-at-via = where: { $place }, off { $via }
+person-after = after { $scene }
+person-after-with = after { $scene } with { $npc }
+person-trust = trust { $trust }
+person-trust-with = trust { $trust } with { $npc }
+person-costs = costs { $currency }{ $cost }
+person-bring-parcel = a parcel for them
+person-parcel-first = deliver the parcel you're carrying first
+person-gains-trust = +{ $trust } trust
 sleep-go-via = Go to { $place }, off { $via }, to sleep.
 menu-quit = Save and quit
 
@@ -303,7 +313,23 @@ quiet-st-rent = Rent: { $currency }{ $rent }, due { $days ->
    *[other] in { $days } days
 }
 quiet-st-day = Day { $day }, { $part }
-quiet-st-trust = { $npc }: trust { $trust }
+quiet-people = people
+quiet-unmet = { $count ->
+    [one] One person you haven't met yet.
+   *[other] { $count } people you haven't met yet.
+}
+quiet-you = You
+quiet-p-back = ‹ status
+quiet-p-tab-tips = tips
+quiet-p-tab-history = history { $count }
+quiet-p-tab-words = words { $heard }/{ $total }
+quiet-p-trust = trust { $trust } of 5
+quiet-p-not-met = not met yet
+quiet-p-no-tips = Nothing more to do with them for now.
+quiet-p-no-talks = Conversations from now on are kept here.
+quiet-p-when = Day { $day } · { $part }
+quiet-p-heard = heard · { $count }
+quiet-p-not-yet = not yet · { $count }
 quiet-st-parcel = Carrying a parcel
 quiet-st-no-parcel = No parcel
 quiet-no-save = no save found

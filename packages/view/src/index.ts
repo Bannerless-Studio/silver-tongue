@@ -12,3 +12,4 @@ export * from "./notebook";
 export * from "./settings";
 export * from "./assist";
 export * from "./quiet";
+export * from "./person";

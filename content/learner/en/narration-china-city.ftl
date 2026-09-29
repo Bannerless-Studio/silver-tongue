@@ -30,14 +30,23 @@ place-warehouse = Warehouse
 place-warehouse-desc = Stacks of tables and chairs, and a big man with a clipboard.
 
 npc-wang = Old Wang
+npc-wang-desc = Sits on a bench on Main Street all day, and talks to anyone who stops, whether they understand him or not.
 npc-cook = Xiao Zhang
+npc-cook-desc = Runs the noodle shop, shouts orders at nobody, and pays in cash when the last bowl goes out.
 npc-landlord = Mr Li
+npc-landlord-desc = Thin, in slippers, and hears every step on the stairs. Rent is on his mind.
 npc-foreman = Big Liu
+npc-foreman-desc = A big man with a clipboard at the warehouse, who hires anyone who can count.
 npc-dispatcher = Miss Gao
+npc-dispatcher-desc = Runs a stall of parcels on Market Street and always needs someone to carry one.
 npc-doctor = Doctor
+npc-doctor-desc = Always on the way to somewhere else, until you're the one in the chair.
 npc-teacher = Teacher
+npc-teacher-desc = Teaches Chinese to grown-ups at the school, and writes every name on the class list.
 npc-traveller = Traveller
+npc-traveller-desc = Waiting at the station with one eye on the Beijing train.
 npc-shopkeeper = Shopkeeper
+npc-shopkeeper-desc = Keeps the corner shop and its abacus, and misses nothing.
 
 # Scene names for the menu; scene-<id>-start and scene-<id>-end are optional narration.
 scene-street-hello = Meet Old Wang
@@ -176,9 +185,13 @@ place-tea_house-desc = Low tables, a television in the corner, and an owner who 
 place-stairs = Stairwell
 place-stairs-desc = Bikes, shoes, a small dog, and a neighbour's door always open.
 npc-teaboss = Old Chen
+npc-teaboss-desc = Pours tea from a great height and keeps the tea house television on.
 npc-neighbour = Mrs Lin
+npc-neighbour-desc = Lives up the stairs with her son and a small dog, and stops to talk to everyone.
 npc-classmate = David
+npc-classmate-desc = Sits next to you in class, and would rather copy your notebook than write his own.
 npc-driver = Old Ma
+npc-driver-desc = Leans on his taxi outside the station, calling out to everyone who walks past.
 asked-meet = Old Chen said it's nice to meet you.
 asked-tea = Old Chen offered you tea.
 asked-china = Old Chen wanted to know if you like China.
