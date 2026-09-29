@@ -18,7 +18,7 @@
 - A finished scene collapses to "✓ <scene> · <npc>" so its rt disappear; test readings on a live scene.
 - Overlays: `[role=dialog]` named "Book" (ko) / "Notebook" (zh, ja) / "Settings" / "Status". Book tabs via `getByRole('tab', {name: 'Letters'|'Papers'})`; papers `.nb-paper` (expands `.paper-body`).
 - Letter buttons named like `ㄱ 기역 g/k`; tapping fetches `/courses/ko-seoul/audio/<hash>.mp3`.
-- Settings row `Readings over words: new words only|always|never` (ko only).
+- Settings row `Readings under words: new words only|always|never` (ko only; button, click cycles).
 - Top bar `[role=banner]`: "<place> · Day N, <part>". `setting-where` ("Seoul, 2000") is not shown on the quiet page.
 
 ## Visual novel (/)
@@ -29,3 +29,9 @@
 - Playwright MCP screenshots may only be written under the repo (`.playwright-mcp/...`); copy out and delete that dir after.
 - Wrong replies loop: the NPC repeats slower; don't press the same wrong number in a loop.
 - korean room-wake right replies: 네? / 아니요. / 민준 씨 방? / 저는 <name>입니다. / 안녕히 가세요.
+- Playwright MCP `page.screenshot({path})` via browser_run_code_unsafe writes anywhere (e.g. scratchpad); only browser_take_screenshot is repo-bound.
+- Clearing: after navigating from a game page, clear+reload once can leave `silver-tongue:settings` re-written with the old course (picker skipped). Clear+reload twice, then check for the picker.
+- /ko/ (book course): no gloss rows; NPC line words are `ruby > button.w` + `rt` "reading · gloss" while onboarding (<10 words heard), reading only after. Only the latest NPC line has `button.q`. Later NPC lines in a scene have no `.who`.
+- VN fresh underline (`.word.fresh`) exists only during the line's beat (box shows line, buttons `Say it again|Say it slowly`); once options appear the same line re-renders without `.fresh`. Check before tapping past.
+- art.json 404s (ko-seoul, ja-japan) come from the VN page only; /ko/ and /quiet/ log none.
+- ko street-hello right replies: 안녕하세요. / 박 할아버지, 안녕하세요. / 저는 <name>입니다. / 감사합니다. / 아니요, 몰라요. Match options by text with `rt` stripped (order shuffles).

@@ -132,7 +132,7 @@ p { margin: 0; }
 .nb-paper:hover span:first-child { color: var(--cyan); }
 .paper-body { padding: 0.2rem 0 0.6rem 1.5rem; } .paper-body p { margin: 0.1rem 0; }
 .blank { border-bottom: 1px dashed var(--muted); margin: 0 0.15em; }
-ruby { ruby-position: under; -webkit-ruby-position: after; } rt { font-size: 0.6em; color: var(--muted); }
+ruby { ruby-position: under; -webkit-ruby-position: after; margin-right: 0.35em; } rt { font-size: 0.72em; color: var(--muted); padding: 0 0.25em; white-space: nowrap; }
 .links { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; margin-top: 1.2rem; }
 .link { color: var(--cyan); }
 .tabs { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; }
