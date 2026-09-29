@@ -2,6 +2,10 @@
 
 Every release of Silver Tongue, newest first.
 
+## 0.18.4 (2026-09-29)
+
+- Typing a reply, on the quiet page and in the visual novel, the browser no longer offers a saved payment card: the reply box isn't a form field any more, so autofill leaves it alone. Enter still says it, and N, S and the other shortcut letters still type.
+
 ## 0.18.3 (2026-09-29)
 
 - On the quiet page, the notebook's views are tabs at the top, each with its count, and the open one is highlighted; the links at the bottom are gone.

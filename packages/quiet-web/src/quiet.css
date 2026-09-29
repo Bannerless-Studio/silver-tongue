@@ -77,7 +77,9 @@ p { margin: 0; }
 .opt .n, .cmd .n { color: var(--muted); }
 .opt:hover .n, .cmd:hover .n { color: var(--cyan); }
 .cursor-line { display: flex; align-items: baseline; gap: 0.5rem; margin-top: 0.4rem; }
-.cursor-line input { flex: 1; min-width: 0; background: none; border: 0; border-bottom: 1px solid var(--line); outline: none; padding: 0; }
+.cursor-line input, .cursor-line .reply-line { flex: 1; min-width: 0; background: none; border: 0; border-bottom: 1px solid var(--line); outline: none; padding: 0; }
+.reply-line { white-space: pre; overflow: hidden; cursor: text; }
+.reply-line:empty::before { content: attr(data-placeholder); color: var(--muted); pointer-events: none; }
 .cursor-line .spacer { flex: 1; }
 .cursor-line button { padding: 0 0.4rem; }
 .blink { color: var(--cyan); animation: blink 1.1s steps(1) infinite; }

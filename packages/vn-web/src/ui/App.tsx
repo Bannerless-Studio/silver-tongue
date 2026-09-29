@@ -52,7 +52,7 @@ export function App({ vn, art, page }: { vn: Vn; art: Art; page: Page }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
-      const typing = !!target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA");
+      const typing = !!target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
       const a = keyAction(e.key, { overlay: !!overlay || !!card, phase: vn.view().phase.kind, typing, modifier: e.ctrlKey || e.altKey || e.metaKey });
       if (!a) return;
       e.preventDefault();

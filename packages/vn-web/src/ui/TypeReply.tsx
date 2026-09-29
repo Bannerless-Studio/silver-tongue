@@ -1,6 +1,7 @@
 import { useState } from "preact/hooks";
 import { typePrompt, type HintView } from "@silver-tongue/view";
 import type { Vn, VnView } from "../vn";
+import { ReplyLine } from "./ReplyLine";
 
 /** A hint as a card: the nudge, the key words, or the reply. */
 function Hint({ vn, h }: { vn: Vn; h: HintView }) {
@@ -41,15 +42,7 @@ export function TypeReply({ vn, view }: { vn: Vn; view: VnView }) {
         <Hint key={h.level} vn={vn} h={h} />
       ))}
       <div class="type-row">
-        <input
-          class="type-input"
-          autoFocus
-          maxLength={60}
-          placeholder={typePrompt(vn.t)}
-          aria-label={typePrompt(vn.t)}
-          value={text}
-          onInput={(e) => setText((e.target as HTMLInputElement).value)}
-        />
+        <ReplyLine class="type-input" value={text} onInput={setText} onEnter={send} placeholder={typePrompt(vn.t)} maxLength={60} />
         <button type="button" class="tile tool" title={vn.t("vn-hint")} aria-label={vn.t("vn-hint")} disabled={p.hints.length >= 3} onClick={() => vn.hint()}>?</button>
         <button type="submit" class="tile tool primary" title={vn.t("vn-send")} aria-label={vn.t("vn-send")}>✓</button>
       </div>

@@ -74,7 +74,7 @@ export function App({ q, page }: { q: Quiet; page: Page }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
-      const typing = !!target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA");
+      const typing = !!target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
       if (e.ctrlKey || e.altKey || e.metaKey) return;
       // In a text field (a name, a save line) keys are for typing; Escape still closes the overlay.
       if (typing) {
