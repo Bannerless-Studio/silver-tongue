@@ -2,6 +2,13 @@
 
 Every release of Silver Tongue, newest first.
 
+## 0.18.6 (2026-09-29)
+
+- On the quiet page, the status page lists everyone: the people you've met with their trust, then "9 people you haven't met yet" and who they are, with where they work. Tap anyone to open their page.
+- A person's page says who they are in a line, how far they trust you, and has three tabs. Tips: the conversations still to have with them, the open ones first, each with what it needs (✓ done, · not yet) and what it gives. History: your last five conversations with them, one open at a time, each with the day, the time of day and what you earned. Words: the words of their conversations, heard on the left (shaky ones marked) and not yet on the right.
+- For someone you haven't met, the page says where to find them: "where: Warehouse, off Market Street".
+- Conversations are kept from this version on; ones had before it can't be shown.
+
 ## 0.18.5 (2026-09-29)
 
 - In China City your room is back on Main Street, open from the first day, and it's the only place to sleep: no more sleeping rough by the road before you've met Mr Li.

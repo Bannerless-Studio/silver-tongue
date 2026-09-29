@@ -1,15 +1,16 @@
 import { useState } from "preact/hooks";
 import type { CatalogEntry, WordState } from "@silver-tongue/core";
-import { dayPart, hudValues, nextSpeed, notebookDefault, notebookEntries, rentDueInDays, settingsRows, type SettingsScreen } from "@silver-tongue/view";
+import { dayPart, hudValues, nextSpeed, notebookDefault, notebookEntries, peopleList, rentDueInDays, settingsRows, type SettingsScreen } from "@silver-tongue/view";
 import type { Quiet } from "../quiet";
 import type { Page } from "./App";
 import { partLabel } from "./Anchor";
+import { Person, trustBar } from "./Person";
 
-function Overlay({ q, title, head, onClose, children }: { q: Quiet; title: string; head?: preact.ComponentChildren; onClose: () => void; children: preact.ComponentChildren }) {
+export function Overlay({ q, title, head, hideTitle, onClose, children }: { q: Quiet; title: string; head?: preact.ComponentChildren; hideTitle?: boolean; onClose: () => void; children: preact.ComponentChildren }) {
   return (
     <div class="overlay" role="dialog" aria-label={title}>
       <header class="ov-head">
-        <span class="ov-title">{title}</span>
+        {!hideTitle && <span class="ov-title">{title}</span>}
         {head && (typeof head === "string" ? <span class="dim">{head}</span> : head)}
         <button type="button" class="dim close" aria-label={q.t("web-close")} onClick={onClose}>{q.t("quiet-esc")}</button>
       </header>
@@ -84,12 +85,15 @@ export function Notebook({ q, onClose }: { q: Quiet; onClose: () => void }) {
   );
 }
 
-/** The full ledger: everything the anchor row leaves out. */
+/** The full ledger: everything the anchor row leaves out, and everyone: the people met, then the rest. Each opens their page. */
 export function Status({ q, audioAvailable, onClose }: { q: Quiet; audioAvailable: boolean; onClose: () => void }) {
+  const [person, setPerson] = useState<string | null>(null);
   const { t, course, core } = q;
+  if (person) return <Person q={q} npc={person} onBack={() => setPerson(null)} onClose={onClose} />;
   const s = core.state;
   const hud = hudValues(course, s, t, Date.now());
   const currency = course.world.currency;
+  const people = peopleList(course, s, t);
   const rows = [
     t("quiet-st-day", { day: s.day, part: partLabel(t, dayPart(course, s)) }),
     t("quiet-st-wallet", { currency, wallet: s.wallet }),
@@ -101,9 +105,18 @@ export function Status({ q, audioAvailable, onClose }: { q: Quiet; audioAvailabl
   return (
     <Overlay q={q} title={t("quiet-status")} onClose={onClose}>
       {rows.map((r) => <p key={r}>{r}</p>)}
-      <div class="trust">
-        {Object.keys(course.world.npcs).map((npc) => <p key={npc}>{t("quiet-st-trust", { npc: t(`npc-${npc}`), trust: s.trust[npc] ?? 0 })}</p>)}
-      </div>
+      <p class="dim st-people">{t("quiet-people")}</p>
+      {people.met.map((r) => (
+        <button key={r.npc} type="button" class="person" onClick={() => setPerson(r.npc)}>
+          <span class="cyan">{r.name}</span><span class="cyan">{trustBar(r.trust)}</span><span class="dim">›</span>
+        </button>
+      ))}
+      {people.unmet.length > 0 && <p class="dim st-people">{t("quiet-unmet", { count: people.unmet.length })}</p>}
+      {people.unmet.map((r) => (
+        <button key={r.npc} type="button" class="person dim" onClick={() => setPerson(r.npc)}>
+          <span>{r.name}</span><span class="p-small">{r.place}</span><span>›</span>
+        </button>
+      ))}
     </Overlay>
   );
 }

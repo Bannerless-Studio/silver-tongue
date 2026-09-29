@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": { "build": "node build.mjs" },
   "dependencies": {
-    "@silver-tongue/core": "npm:@bannerless-studio/silver-tongue-core@^0.18.0",
+    "@silver-tongue/core": "npm:@bannerless-studio/silver-tongue-core@^0.18.6",
     "@silver-tongue/view": "*",
     "@silver-tongue/web-common": "*",
     "preact": "^10.26.0"
