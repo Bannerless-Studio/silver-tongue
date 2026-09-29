@@ -2,9 +2,9 @@
 // tapped through (everything said lands in the transcript at once), money is not narrated line by
 // line (a reply's cost rides on the reply; food is silent; wages are the scene's closing prose), trust
 // is silent, the scene being played is exposed for the review tell, and any line can be revealed.
-import { describeRun, joinTiles, wordState, type Core, type Course, type GameEvent, type GameState, type Input, type RenderedLine, type WordId } from "@silver-tongue/core";
+import { describeRun, joinTiles, normalizeTyped, wordState, type Core, type Course, type GameEvent, type GameState, type Input, type RenderedLine, type WordId } from "@silver-tongue/core";
 import {
-  actionNarration, introLines, makeText, placeMenu, sentenceCard, tileEcho, waitingForMoney, wordCard,
+  actionNarration, introLines, makeText, placeMenu, sentenceCard, tileEcho, typePrompt, waitingForMoney, wordCard,
   type AudioOut, type MenuItem, type SentenceCard, type Speech, type Text, type WordCard,
 } from "@silver-tongue/view";
 
@@ -47,6 +47,8 @@ export type Phase =
   /** confused: "..." is offered after the replies, until the line has been said again */
   | { kind: "pick"; options: RenderedLine[]; confused: boolean }
   | { kind: "tiles"; tiles: string[]; placed: number[]; answer: string }
+  /** the reply is typed, in the language or its romanization; no hints here */
+  | { kind: "type"; prompt: string; confused: boolean }
   | { kind: "explore"; menu: MenuItem[]; waiting: string[] };
 export interface Toast { id: number; text: string; tone: "good" | "bad" | "info" }
 export interface QuietView {
@@ -78,6 +80,8 @@ export interface Quiet {
   placeTile(i: number): void;
   undoTile(): void;
   sendTiles(): void;
+  /** a typed reply; only dots ("...") looks confused */
+  sendText(text: string): void;
   /** `surface`: the word as written in the line, when it is another form of the word */
   lookUp(word: WordId, surface?: string): WordCard;
   /** a line's reading and meaning; not logged as help. Defaults to the line replies answer. */
@@ -121,7 +125,7 @@ export function createQuiet(opts: QuietOptions): Quiet {
   let scene: string | undefined;
   let queue: Beat[] = [];
   let speeches: Speech[] = [];
-  let reply: { mode: "pick"; options: RenderedLine[] } | { mode: "tiles"; tiles: string[] } | undefined;
+  let reply: { mode: "pick"; options: RenderedLine[] } | { mode: "tiles"; tiles: string[] } | { mode: "type" } | undefined;
   let placed: number[] = [];
   let lastLine: RenderedLine | undefined;
   let lastSpeech: Speech | undefined;
@@ -209,7 +213,7 @@ export function createQuiet(opts: QuietOptions): Quiet {
           break;
         }
         case "replyOptions":
-          reply = e.mode === "pick" ? { mode: "pick", options: e.options } : { mode: "tiles", tiles: e.tiles };
+          reply = e.mode === "pick" ? { mode: "pick", options: e.options } : e.mode === "tiles" ? { mode: "tiles", tiles: e.tiles } : { mode: "type" };
           placed = [];
           break;
         case "actionPerformed": {
@@ -321,6 +325,7 @@ export function createQuiet(opts: QuietOptions): Quiet {
     if (naming) return { kind: "name" };
     if (reply?.mode === "pick") return { kind: "pick", options: reply.options, confused: !!core.state.run && core.state.run.misses < 2 };
     if (reply?.mode === "tiles") return { kind: "tiles", tiles: reply.tiles, placed, answer: joinTiles(course, placed.map((i) => (reply as { tiles: string[] }).tiles[i])) };
+    if (reply?.mode === "type") return { kind: "type", prompt: typePrompt(t), confused: !!core.state.run && core.state.run.misses < 2 };
     return { kind: "explore", menu: placeMenu(course, core.state, t), waiting: waitingForMoney(course, core.state, t) };
   }
 
@@ -369,6 +374,14 @@ export function createQuiet(opts: QuietOptions): Quiet {
       if (reply?.mode !== "tiles" || !placed.length) return;
       const said = tileEcho(course, core.state, reply.tiles, placed);
       send({ type: "replyTiles", tiles: placed }, { speaker: "player", line: said.line }, said.right ? speech(said.clips) : undefined);
+    },
+    sendText(text) {
+      if (reply?.mode !== "type" || !text.trim()) return;
+      if (!normalizeTyped(text)) {
+        if ((core.state.run?.misses ?? 2) < 2) send({ type: "confused" }, { speaker: "player", text: CONFUSED });
+        return;
+      }
+      send({ type: "replyText", text }, { speaker: "player", text: text.trim() });
     },
     lookUp(word, surface) {
       const card = wordCard(course, word, surface);

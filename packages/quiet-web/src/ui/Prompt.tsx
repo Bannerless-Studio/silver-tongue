@@ -6,6 +6,7 @@ export function Prompt({ q, view }: { q: Quiet; view: QuietView }) {
   const p = view.phase;
   const t = q.t;
   const [name, setName] = useState("");
+  const [text, setText] = useState("");
   if (p.kind === "name") {
     return (
       <form class="prompt" onSubmit={(e) => (e.preventDefault(), q.setName(name))}>
@@ -33,6 +34,19 @@ export function Prompt({ q, view }: { q: Quiet; view: QuietView }) {
         )}
         <p class="cursor-line"><span class="cur">›</span> <span class="blink">▌</span></p>
       </div>
+    );
+  }
+  if (p.kind === "type") {
+    return (
+      <form class="prompt" onSubmit={(e) => (e.preventDefault(), q.sendText(text), setText(""))}>
+        {p.confused && <p class="prose dim">{t("type-send")}</p>}
+        <label class="cursor-line">
+          <span class="cur">›</span>
+          <input autoFocus value={text} maxLength={60} placeholder={p.prompt} aria-label={p.prompt} autoComplete="off" autoCapitalize="off" spellcheck={false}
+            onInput={(e) => setText((e.target as HTMLInputElement).value)} />
+          <button type="submit" class="dim" aria-label={t("vn-send")}>↵</button>
+        </label>
+      </form>
     );
   }
   if (p.kind === "tiles") {
