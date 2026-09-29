@@ -58,6 +58,7 @@ p { margin: 0; }
 .ln.you .who { color: var(--muted); }
 /* An NPC's reaction reads like any NPC line; only the narration above it is dim. */
 .ln .restate { margin-left: 1ch; }
+.ln.tap { cursor: pointer; }
 .ln .q { color: var(--line); margin-left: auto; padding: 0 0.4rem; }
 .ln .q:hover, .ln .q[aria-expanded="true"] { color: var(--cyan); }
 .ln .tag { color: var(--muted); font-size: 0.8em; margin-left: auto; }

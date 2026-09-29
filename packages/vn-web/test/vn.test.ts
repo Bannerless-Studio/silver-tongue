@@ -81,6 +81,15 @@ describe("visual novel controller", () => {
     expect(vn.view().phase).toMatchObject({ kind: "beat", beat: { fresh: ["w_ni", "w_hao"] } });
   });
 
+  it("a course with the Book underlines no word as new: the readings under the line are the help", () => {
+    const { vn } = setup(() => {}, (c) => void ((c as unknown as CourseExtra).language.book = true));
+    skip(vn);
+    vn.choose(0);
+    vn.choose(0);
+    vn.advance();
+    expect(vn.view().phase).toMatchObject({ kind: "beat", beat: { line: { text: "你好！" }, fresh: [] } });
+  });
+
   it("ignores choices while a beat is showing, and a second tap on the same choice", () => {
     const s = setup();
     skip(s.vn);

@@ -23,7 +23,7 @@ npc-clerk = The clerk
 
 # Scene names for the menu; scene-<id>-start and scene-<id>-end are optional narration.
 scene-room-wake = Answer the door
-scene-room-wake-start = The knocking gets louder. A woman's voice calls a name that isn't yours. Stuck? Press [w] to look a word up.
+scene-room-wake-start = The knocking gets louder. A woman in slippers, keys in hand: the landlady. Stuck? Press [w] to look a word up.
 scene-room-wake-end = The landlady looks you up and down, then at the room behind you, and goes back downstairs without another word.
 
 scene-street-hello = Say hello to the old man

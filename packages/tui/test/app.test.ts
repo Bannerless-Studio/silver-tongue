@@ -51,6 +51,18 @@ describe("tui app", () => {
     expect(s.join("\n")).not.toContain("Speaks");
   });
 
+  it("underlines a word heard for the first time, except on a course with the Book: its readings are the help", () => {
+    const spansOf = (term: FakeTerminal, text: string) => term.frames.at(-1)!.flat().filter((sp) => sp.text === text);
+    const plainCourse = setup();
+    plainCourse.term.press("1", "1");
+    expect(spansOf(plainCourse.term, "你")).toContainEqual({ text: "你", underline: true, color: "cyan" });
+    const book = setup(() => {}, (c) => void ((c as unknown as CourseExtra).language.book = true));
+    book.term.press("1", "1");
+    const said = spansOf(book.term, "你");
+    expect(said.length).toBeGreaterThan(0);
+    for (const sp of said) expect(sp.underline).toBeFalsy();
+  });
+
   it("shows a line's reading under it while its words are new, and not once they're known", () => {
     const { term } = setup();
     term.press("1", "1");
@@ -1373,6 +1385,27 @@ describe("readings under words", () => {
     expect(s[i + 1]).toContain("hǎo");
     expect(s[i + 1]).not.toContain("nǐ");
     expect(col(s[i + 1], "hǎo")).toBe(col(s[i], "好"));
+  });
+
+  it("while under ten words are heard, a reading under an NPC's word carries its short gloss; replies keep readings only", () => {
+    const { term } = play();
+    term.press("1", "1");
+    const s = term.screen();
+    const i = s.findIndex((l) => l.includes("Cook: 你好！"));
+    expect(s[i + 1]).toMatch(/hǎo · \S/);
+    const reply = s.findIndex((l) => /│ 1\) /.test(l));
+    expect(s[reply + 1]).not.toContain(" · ");
+    const many = Object.fromEntries(Array.from({ length: 10 }, (_, n) => [`x${n}`, { ...known }]));
+    const later = play(undefined, (st) => (st.words = many));
+    later.term.press("1", "1");
+    const t = later.term.screen();
+    expect(t[t.findIndex((l) => l.includes("Cook: 你好！")) + 1]).not.toContain(" · ");
+  });
+
+  it("no onboarding glosses on a course without the Book", () => {
+    const { term } = setup();
+    term.press("1", "1");
+    expect(term.screen().join("\n")).not.toMatch(/[āáǎàǐ][a-z]* · /);
   });
 
   it("on: under known words too", () => {

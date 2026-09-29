@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "preact/hooks";
 import type { WordId } from "@silver-tongue/core";
-import { firstTimeWords, quietRuby, sentenceCard, type RubySetting, type SentenceCard, type WordCard } from "@silver-tongue/view";
-import type { Beat, Quiet, QuietView } from "../quiet";
+import { bookOn, firstTimeWords, quietRuby, sentenceCard, speakerNamed, type RubySetting, type SentenceCard, type WordCard } from "@silver-tongue/view";
+import { latestNpcLine, type Beat, type Quiet, type QuietView } from "../quiet";
 import { Line } from "./Line";
 
 /** What is open under a line: its whole reading and meaning, or one word's card. */
@@ -27,8 +27,12 @@ function Card({ q, reveal }: { q: Quiet; reveal: Reveal }) {
   );
 }
 
-function Said({ q, b, ruby, reveal, onWord, onReveal }: {
-  q: Quiet; b: Beat; ruby: RubySetting; reveal?: Reveal; onWord: (b: Beat, w: WordId, surface: string) => void; onReveal: (b: Beat) => void;
+/**
+ * One spoken line. `named`: its speaker label shows (see speakerNamed). `latest`: the newest NPC line,
+ * the only one with a `?` on a course with the Book; an older line there opens the same on a tap.
+ */
+function Said({ q, b, ruby, named, latest, reveal, onWord, onReveal }: {
+  q: Quiet; b: Beat; ruby: RubySetting; named: boolean; latest: boolean; reveal?: Reveal; onWord: (b: Beat, w: WordId, surface: string) => void; onReveal: (b: Beat) => void;
 }) {
   const { t, course, core } = q;
   const now = Date.now();
@@ -42,21 +46,22 @@ function Said({ q, b, ruby, reveal, onWord, onReveal }: {
   // A rephrased line comes with everything; any other NPC line has a ? when it has a meaning to show
   // (the request's, when the line says it again).
   const rephrased = b.rephrase || !!r?.rephrase;
-  // Readings under the words, but not under one whose gloss row below already gives its reading.
-  const glossed = news.map((w) => w.word);
   const target = r?.line ?? b.line;
   const whole = target && !player ? sentenceCard(course, target) : undefined;
-  const cls = `ln ${player ? "you" : "npc"}`;
+  const book = bookOn(course);
+  const ask = whole && !rephrased && (!book || latest);
+  const tap = whole && !rephrased && !ask ? () => onReveal(b) : undefined;
+  const cls = `ln ${player ? "you" : "npc"}${tap ? " tap" : ""}`;
   return (
     <>
-      <div class={cls}>
-        <span class="who">{who}</span>
-        <span class="sep">: </span>
+      <div class={cls} onClick={tap}>
+        {named && <span class="who">{who}</span>}
+        {named && <span class="sep">: </span>}
         {b.title && <b>{b.title} </b>}
         {b.line ? (
           <Line
-            line={b.line} fresh={b.fresh} words={player ? undefined : core.state.words} now={now}
-            ruby={player ? undefined : quietRuby(course, b.line, core.state.words, now, ruby, glossed)}
+            line={b.line} fresh={b.fresh} words={player ? undefined : core.state.words} now={now} book={book}
+            ruby={player ? undefined : quietRuby(course, b.line, core.state.words, now, ruby, b.onboard)}
             onWord={player ? undefined : (w, s) => onWord(b, w, s)}
           />
         ) : (
@@ -64,10 +69,10 @@ function Said({ q, b, ruby, reveal, onWord, onReveal }: {
         )}
         {r && (
           <span class="restate">
-            <Line line={r.line} fresh={r.fresh ?? []} words={core.state.words} now={now} ruby={quietRuby(course, r.line, core.state.words, now, ruby, glossed)} onWord={(w, s) => onWord(b, w, s)} />
+            <Line line={r.line} fresh={r.fresh ?? []} words={core.state.words} now={now} book={book} ruby={quietRuby(course, r.line, core.state.words, now, ruby, b.onboard)} onWord={(w, s) => onWord(b, w, s)} />
           </span>
         )}
-        {whole && !rephrased && (
+        {ask && (
           <button type="button" class="q" aria-label={t("quiet-reveal")} aria-expanded={reveal?.kind === "line"} onClick={() => onReveal(b)}>?</button>
         )}
         {rephrased && <span class="tag">{t(r?.rephrase === "slower" ? "rephrased" : "quiet-rephrase")}</span>}
@@ -97,6 +102,8 @@ export function Transcript({ q, view, ruby, reveal, onWord, onReveal, children }
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const last = view.backlog.at(-1)?.id;
+  const named = speakerNamed(q.course, view.backlog);
+  const latest = latestNpcLine(view.backlog)?.id;
   useEffect(() => {
     const el = ref.current;
     if (el) el.scrollTop = el.scrollHeight;
@@ -104,9 +111,9 @@ export function Transcript({ q, view, ruby, reveal, onWord, onReveal, children }
   return (
     <main class="body" ref={ref}>
       <div class="log" role="log" aria-live="polite">
-        {view.backlog.map((b) => {
+        {view.backlog.map((b, i) => {
           const open = reveal?.beat === b.id ? reveal : undefined;
-          if (b.speaker) return <Said key={b.id} q={q} b={b} ruby={ruby} reveal={open} onWord={onWord} onReveal={onReveal} />;
+          if (b.speaker) return <Said key={b.id} q={q} b={b} ruby={ruby} named={named[i]} latest={b.id === latest} reveal={open} onWord={onWord} onReveal={onReveal} />;
           return <p key={b.id} class={`prose${b.tone ? ` ${b.tone}` : ""}${b.day ? " day" : ""}`}>{b.title && <b>{b.title} </b>}{b.text}</p>;
         })}
       </div>

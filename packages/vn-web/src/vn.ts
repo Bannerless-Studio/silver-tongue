@@ -1,5 +1,6 @@
 import { describeRun, normalizeTyped, type Core, type Course, type GameEvent, type GameState, type Input, type RenderedLine, type WordId } from "@silver-tongue/core";
 import {
+  freshMarks,
   actionNarration, bedHint, hintView, introLines, joinTilesForDisplay, makeText, placeMenu, sentenceCard, tileEcho, waitingForMoney, wordCard,
   type AudioOut, type HintView, type MenuItem, type SentenceCard, type Speech, type Text, type WordCard,
 } from "@silver-tongue/view";
@@ -16,7 +17,7 @@ export interface Beat {
   /** a mentor note's title */
   title?: string;
   tone?: "plain" | "warn" | "good";
-  /** words heard for the first time in this line */
+  /** words heard for the first time in this line; none on a course with the Book (see freshMarks) */
   fresh?: WordId[];
   speech?: Speech;
   cue?: Cue;
@@ -205,7 +206,7 @@ export function createVn(opts: VnOptions): Vn {
 
   function apply(events: GameEvent[]) {
     const fresh = new Set(events.flatMap((e) => (e.type === "wordStateChanged" && e.from === "unseen" ? [e.word] : [])));
-    const freshIn = (l: RenderedLine) => l.tokens.map((tk) => tk.word).filter((w) => fresh.has(w));
+    const freshIn = (l: RenderedLine) => (!freshMarks(course) ? [] : l.tokens.map((tk) => tk.word).filter((w) => fresh.has(w)));
     // One hint however many notes became ready at once, and none while older ones still wait unheard.
     let hinted = core.state.notes.ready.length > events.filter((e) => e.type === "noteReady").length;
     for (const e of events) {

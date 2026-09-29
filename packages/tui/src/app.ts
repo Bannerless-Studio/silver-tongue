@@ -20,7 +20,7 @@ import { innerWidth, NARROW, renderFrame, type Panel } from "./panel";
 import { strWidth, wrapLine } from "./width";
 import type { Key, StyledLine, Terminal } from "./terminal";
 import {
-  actionNarration, bookOn, DEFAULT_RUBY, hasLetters, hintView, hudValues, introLines, jobView, joinTilesForDisplay, lettersView, makeText, nextRuby, notebookEntries, papers,
+  actionNarration, bookOn, freshMarks, DEFAULT_RUBY, hasLetters, heardCount, onboarding, hintView, hudValues, introLines, jobView, joinTilesForDisplay, lettersView, makeText, nextRuby, notebookEntries, papers,
   placeMenu, readingRow, reviewCard, reviewOffer, rubyRow, sentenceCard, settingsRows, typePrompt, tileEcho, waitingForMoney, wordCard, wordExample,
   type HintView, type HudValues, type JobView, type ReviewCard, type SentenceCard, type SettingsScreen, type Text,
 } from "@silver-tongue/view";
@@ -147,7 +147,9 @@ export function startApp(opts: AppOptions): App {
     ...lineSpans(line, fresh),
   ];
   /** The readings written under a line's words, as the ruby setting has them; `indent`: where the line's text starts. */
-  const rubyUnder = (line: RenderedLine, indent: number) => rubyLine(line, rubyRow(course, line, core.state.words, opts.now(), ruby), indent);
+  const rubyUnder = (line: RenderedLine, indent: number, onboard = false) => rubyLine(line, rubyRow(course, line, core.state.words, opts.now(), ruby, onboard), indent);
+  /** whether the NPC lines being applied were said in the onboarding window: their readings carry short glosses (see onboarding) */
+  let onboardNow = false;
   /** Whether this course uses the Book: readings under each word, the Letters and Papers tabs. */
   const hasBook = bookOn(course);
   /**
@@ -161,7 +163,7 @@ export function startApp(opts: AppOptions): App {
     const indent = strWidth(`${npcName(npc)}${suffix}: `);
     push(row);
     if (hasBook) {
-      const reading = rubyUnder(line, indent);
+      const reading = rubyUnder(line, indent, onboardNow);
       if (reading) push(reading);
     } else {
       const reading = readingRow(course, core.state, line, opts.now());
@@ -245,8 +247,11 @@ export function startApp(opts: AppOptions): App {
   }
 
   function apply(events: GameEvent[]) {
+    // Counted before this batch's own new words: a line that brings the tenth word still glosses it.
+    onboardNow = onboarding(course, heardCount(core.state.words, opts.now()) - events.filter((e) => e.type === "wordStateChanged" && e.from === "unseen").length);
+    // Words heard for the first time are underlined; a course with the Book leaves them to the readings (see freshMarks).
     const fresh = new Set(
-      events.flatMap((e) => (e.type === "wordStateChanged" && e.from === "unseen" ? [e.word] : [])),
+      freshMarks(course) ? events.flatMap((e) => (e.type === "wordStateChanged" && e.from === "unseen" ? [e.word] : [])) : [],
     );
     // A scene's own wages line already says it earned; "Done." only for the (normally unreachable)
     // case where it paid but no wallet line showed it.

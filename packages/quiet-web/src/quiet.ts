@@ -5,6 +5,7 @@
 // be revealed.
 import { describeRun, normalizeTyped, wordState, type Core, type Course, type GameEvent, type GameState, type Input, type RenderedLine, type WordId } from "@silver-tongue/core";
 import {
+  bookOn, freshMarks, heardCount, onboarding,
   actionNarration, bedHint, introLines, joinTilesForDisplay, makeText, placeMenu, sentenceCard, tileEcho, typePrompt, waitingForMoney, wordCard,
   type AudioOut, type MenuItem, type SentenceCard, type Speech, type Text, type WordCard,
 } from "@silver-tongue/view";
@@ -25,7 +26,7 @@ export interface Beat {
   tone?: "plain" | "warn" | "good" | "react" | "narr" | "done";
   /** words new to the player when this line was said: heard for the first time, or never heard at all
    * (a reaction line is not counted as hearing), and not glossed yet in this transcript. The only words
-   * that gloss themselves; each word glosses once per game session. */
+   * that gloss themselves; each word glosses once per game session. None on a course with the Book (see freshMarks). */
   fresh?: WordId[];
   /** what the player's reply cost (a negative wallet change), shown on the reply; mixup when a miss cost it */
   cost?: { amount: number; reason: "mixup" | "shopping" };
@@ -36,6 +37,10 @@ export interface Beat {
   restate?: Restate;
   /** a new day starts here */
   day?: number;
+  /** an NPC's line: the scene run it was said in (the run's first beat id), for speakerNamed */
+  run?: number;
+  /** an NPC's line said in the onboarding window (see onboarding): its readings carry short glosses */
+  onboard?: boolean;
 }
 export interface Restate {
   line: RenderedLine;
@@ -166,8 +171,12 @@ export function createQuiet(opts: QuietOptions): Quiet {
     if (!scene) toast(text, tone);
     else if (!held.some((h) => h.text === text)) held.push({ text, tone });
   };
+  /** whether the lines being applied were said in the onboarding window (see onboarding) */
+  let onboard = false;
+  const book = bookOn(course);
   const push = (b: Omit<Beat, "id">, s?: Speech): Beat => {
-    const beat = { id: nextId++, ...b };
+    const npc = book && b.speaker && b.speaker !== "player";
+    const beat: Beat = { id: nextId++, ...b, ...(npc && scene ? { run: sceneFrom } : {}), ...(npc && onboard ? { onboard } : {}) };
     queue.push(beat);
     if (s) speeches.push(s);
     return beat;
@@ -214,7 +223,10 @@ export function createQuiet(opts: QuietOptions): Quiet {
   function apply(events: GameEvent[]) {
     const fresh = new Set(events.flatMap((e) => (e.type === "wordStateChanged" && e.from === "unseen" ? [e.word] : [])));
     const now = opts.now();
+    // Counted before this batch's own new words: a line that brings the tenth word still glosses it.
+    onboard = onboarding(course, heardCount(core.state.words, now) - events.filter((e) => e.type === "wordStateChanged" && e.from === "unseen").length);
     const freshIn = (l: RenderedLine) => {
+      if (!freshMarks(course)) return [];
       const out = [...new Set(l.tokens.map((tk) => tk.word).filter((w) => !glossed.has(w) && (fresh.has(w) || wordState(core.state.words[w], now) === "unseen")))];
       for (const w of out) glossed.add(w);
       return out;

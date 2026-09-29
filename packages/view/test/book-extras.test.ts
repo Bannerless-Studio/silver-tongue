@@ -18,6 +18,12 @@ import {
   tileEcho,
   parseSettings,
   rubyRow,
+  freshMarks,
+  glossPolicy,
+  heardCount,
+  onboarding,
+  speakerNamed,
+  ONBOARDING_WORDS,
   settingsRows,
   type CourseExtra,
 } from "../src/index";
@@ -274,10 +280,64 @@ describe("quietRuby", () => {
     ],
   };
 
-  it("leaves out a word whose gloss row already gives its reading", () => {
-    expect(quietRuby(c, line, {}, T0, "auto", ["k_haksaeng"]).map((r) => r.text)).toEqual(["jeo", "neun"]);
+  it("reads every word not known yet: a course with the Book has no gloss rows to share the job with", () => {
+    expect(freshMarks(c)).toBe(false);
+    expect(freshMarks(fixtureWithText())).toBe(true);
     expect(quietRuby(c, line, {}, T0, "auto").map((r) => r.text)).toEqual(["jeo", "neun", "haksaeng"]);
     expect(quietRuby(c, line, {}, T0, "off")).toEqual([]);
+  });
+
+  it("while onboarding, a word not known yet carries its short gloss after its reading; a known one doesn't", () => {
+    expect(quietRuby(c, line, {}, T0, "auto", true).map((r) => r.text)).toEqual(["jeo · I", "neun · topic", "haksaeng · student"]);
+    expect(quietRuby(c, line, { k_jeo: known }, T0, "on", true).map((r) => r.text)).toEqual(["jeo", "neun · topic", "haksaeng · student"]);
+    expect(quietRuby(c, line, {}, T0, "off", true)).toEqual([]);
+    expect(quietRuby(fixtureWithText(), line, {}, T0, "on", true)).toEqual([]);
+  });
+
+  it("draws every word bare on a course with the Book: its reading is the one mark", () => {
+    for (const s of ["unseen", "met", "shaky", "known"] as const) expect(glossPolicy(s, true)).toBe("bare");
+    expect(glossPolicy("unseen")).toBe("gloss");
+    expect(glossPolicy("shaky")).toBe("mark");
+  });
+});
+
+describe("onboarding", () => {
+  const heard = (n: number) => Object.fromEntries(Array.from({ length: n }, (_, i) => [`w${i}`, known]));
+
+  it("counts the words heard at all", () => {
+    expect(heardCount(heard(9), T0)).toBe(9);
+    expect(heardCount({}, T0)).toBe(0);
+  });
+
+  it("glosses readings until the tenth word is heard, on a course with the Book only", () => {
+    const c = koLike(" ");
+    expect(ONBOARDING_WORDS).toBe(10);
+    expect(onboarding(c, heardCount(heard(9), T0))).toBe(true);
+    expect(onboarding(c, heardCount(heard(10), T0))).toBe(false);
+    expect(onboarding(fixtureWithText(), 0)).toBe(false);
+  });
+});
+
+describe("speakerNamed", () => {
+  const lines = [
+    { speaker: "landlady", run: 1 },
+    { speaker: "player" },
+    { speaker: "landlady", run: 1 },
+    {},
+    { speaker: "landlady", run: 1 },
+    { speaker: "minjun", run: 1 },
+    { speaker: "landlady", run: 1 },
+    { speaker: "landlady", run: 9 },
+    { speaker: "mentor" },
+    { speaker: "mentor" },
+  ];
+
+  it("names an NPC on a scene's first line and when the speaker changes, on a course with the Book", () => {
+    expect(speakerNamed(koLike(" "), lines)).toEqual([true, true, false, true, false, true, true, true, true, true]);
+  });
+
+  it("names every line on a course without the Book", () => {
+    expect(speakerNamed(fixtureWithText(), lines)).toEqual(lines.map(() => true));
   });
 });
 

@@ -1,6 +1,7 @@
 import { wordState, type Course, type GameState, type RenderedLine, type WordId, type WordState } from "@silver-tongue/core";
 import { displayGloss } from "./help";
 import { dayPart, type DayPart } from "./hud";
+import { bookOn } from "./course-extra";
 import { rubyRow, type RubySetting, type RubySpan } from "./ruby";
 import type { Text } from "./text";
 
@@ -53,8 +54,13 @@ export function anchorRow(course: Course, state: GameState, t: Text): AnchorRow 
 
 export type GlossPolicy = "gloss" | "mark" | "bare";
 
-/** How a word in a line is drawn: only an unseen word glosses itself; a shaky one is marked; the rest are bare. */
-export function glossPolicy(state: WordState): GlossPolicy {
+/**
+ * How a word in a line is drawn: only an unseen word glosses itself; a shaky one is marked; the rest
+ * are bare. `book` (a course with the Book, see bookOn): every word is bare, its reading under it
+ * (quietRuby) being the one mark.
+ */
+export function glossPolicy(state: WordState, book = false): GlossPolicy {
+  if (book) return "bare";
   if (state === "unseen") return "gloss";
   if (state === "shaky") return "mark";
   return "bare";
@@ -117,11 +123,35 @@ export function reviewTell(course: Course, sceneId: string, state?: GameState): 
 }
 
 /**
- * The readings written under a line on the quiet page. Ruby is not a gloss: a word whose gloss row
- * already gives its reading under this line (`glossed`, a first-time word) gets none, so nothing is said twice.
+ * The readings written under a line on the quiet page: rubyRow as the ruby setting has it, with short
+ * glosses while `onboard` (see onboarding). Only a course with the Book has readings, and it has no
+ * first-time gloss rows (see freshMarks), so nothing is said twice.
  */
-export function quietRuby(course: Course, line: RenderedLine, words: GameState["words"], now: number, ruby: RubySetting, glossed: Iterable<WordId> = []): RubySpan[] {
-  const skip = new Set(glossed);
-  const at = new Map(line.tokens.map((tk) => [tk.start, tk.word]));
-  return rubyRow(course, line, words, now, ruby).filter((r) => !skip.has(at.get(r.start)!));
+export function quietRuby(course: Course, line: RenderedLine, words: GameState["words"], now: number, ruby: RubySetting, onboard = false): RubySpan[] {
+  return rubyRow(course, line, words, now, ruby, onboard);
+}
+
+/** A transcript line as speakerNamed sees it: who said it, and which scene run it was said in. */
+export interface Spoken {
+  /** an NPC id, "player" for the player's own reply, absent for narration */
+  speaker?: string;
+  /** the scene run the line was said in (any id unique to that run); absent outside a scene */
+  run?: number;
+}
+
+/**
+ * Whether each line's speaker label is shown. A course with the Book names an NPC once: on the
+ * scene's first NPC line and when the NPC speaking changes. The player's own replies and narration
+ * between don't count as a change. The player's lines, lines outside a scene, and every line of a
+ * course without the Book keep their label.
+ */
+export function speakerNamed(course: Course, lines: readonly Spoken[]): boolean[] {
+  if (!bookOn(course)) return lines.map(() => true);
+  let prev: Spoken | undefined;
+  return lines.map((l) => {
+    if (!l.speaker || l.speaker === "player") return true;
+    const named = l.run === undefined || !prev || prev.run !== l.run || prev.speaker !== l.speaker;
+    prev = l;
+    return named;
+  });
 }

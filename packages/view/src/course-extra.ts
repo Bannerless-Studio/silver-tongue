@@ -52,3 +52,10 @@ export const extra = (course: Course): CourseExtra => course as CourseExtra;
 
 /** Whether the course uses the Book (its pack sets `book`): readings under words, Letters and Papers. */
 export const bookOn = (course: Course): boolean => extra(course).language.book === true;
+
+/**
+ * Whether a word met for the first time is marked as new: underlined or boxed, and on the quiet page
+ * glossed on a row of its own. A course with the Book marks none: readings under the words (rubyRow)
+ * are the one help shown, and a word's meaning is a tap away and in the Book.
+ */
+export const freshMarks = (course: Course): boolean => !bookOn(course);

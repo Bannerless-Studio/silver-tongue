@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { comboKey, createCore, mulberry32, newGame, type Course, type GameState, type RenderedLine } from "@silver-tongue/core";
+import { comboKey, createCore, wordState, mulberry32, newGame, type Course, type GameState, type RenderedLine } from "@silver-tongue/core";
 import { fixtureWithText } from "@silver-tongue/view/testing";
-import type { AudioOut, CourseExtra, Speech } from "@silver-tongue/view";
+import { firstTimeWords, quietRuby, speakerNamed, type AudioOut, type CourseExtra, type Speech } from "@silver-tongue/view";
 import { createQuiet, latestNpcLine, type QuietOptions } from "../src/quiet";
 
 const T0 = 1_000_000;
@@ -55,6 +55,67 @@ describe("quiet terminal controller", () => {
     const said = v.backlog.find((b) => b.speaker === "cook")!;
     expect(said.line!.text).toBe("你好！");
     expect(said.fresh).toEqual(["w_ni", "w_hao"]);
+  });
+
+  it("a course with the Book marks no word as new: no boxes, no gloss rows, readings under every unknown word", () => {
+    const { q, course, core } = setup(() => {}, (c) => void ((c as unknown as CourseExtra).language.book = true));
+    q.choose(0);
+    q.choose(0);
+    const said = q.view().backlog.find((b) => b.speaker === "cook")!;
+    expect(said.line!.text).toBe("你好！");
+    expect(said.fresh).toEqual([]); // nothing boxed, so no gloss row under the line
+    const unknown = said.line!.tokens.filter((tk) => wordState(core.state.words[tk.word], T0) !== "known");
+    expect(unknown.length).toBe(said.line!.tokens.length);
+    expect(quietRuby(course, said.line!, core.state.words, T0, "auto").map((r) => r.start)).toEqual(unknown.map((tk) => tk.start));
+    q.choose(wrongIndex(core));
+    for (const b of q.view().backlog) expect(b.fresh ?? [], b.line?.text ?? b.text).toEqual([]);
+  });
+
+  it("a course with the Book names the cook once a scene, misses too; its first lines onboard", () => {
+    const { q, course, core } = setup(() => {}, (c) => void ((c as unknown as CourseExtra).language.book = true));
+    q.choose(0);
+    q.choose(0);
+    q.choose(wrongIndex(core));
+    q.choose(rightIndex(core));
+    const backlog = q.view().backlog;
+    const npc = backlog.filter((b) => b.speaker === "cook");
+    expect(npc.length).toBeGreaterThan(1);
+    for (const b of npc) expect(b).toMatchObject({ run: npc[0].run, onboard: true });
+    const named = speakerNamed(course, backlog);
+    expect(backlog.flatMap((b, i) => (b.speaker === "cook" ? [named[i]] : []))).toEqual(npc.map((_, i) => i === 0));
+    expect(backlog.flatMap((b, i) => (b.speaker === "player" ? [named[i]] : []))).not.toContain(false);
+  });
+
+  it("a course with the Book stops onboarding once ten words have been heard", () => {
+    const rec = { right: 3, wrong: 0, streak: 3, helps: 0, lapsed: false, firstSeen: T0, lastSeen: T0 };
+    const { q } = setup(
+      (s) => { for (let i = 0; i < 10; i++) s.words[`x${i}`] = { ...rec }; },
+      (c) => void ((c as unknown as CourseExtra).language.book = true),
+    );
+    q.choose(0);
+    q.choose(0);
+    const said = q.view().backlog.find((b) => b.speaker === "cook")!;
+    expect(said.onboard).toBeUndefined();
+  });
+
+  it("a course without the Book names every line and keeps no scene run or onboarding on its beats", () => {
+    const { q, course, core } = setup();
+    q.choose(0);
+    q.choose(0);
+    q.choose(wrongIndex(core));
+    const backlog = q.view().backlog;
+    for (const b of backlog) expect(b.run === undefined && b.onboard === undefined).toBe(true);
+    expect(speakerNamed(course, backlog)).not.toContain(false);
+  });
+
+  it("a course without the Book: new words boxed and glossed, no readings under them", () => {
+    const { q, course, core } = setup();
+    q.choose(0);
+    q.choose(0);
+    const said = q.view().backlog.find((b) => b.speaker === "cook")!;
+    expect(said.fresh).toEqual(["w_ni", "w_hao"]);
+    expect(firstTimeWords(course, said.line!, new Set(said.fresh)).map((w) => w.word)).toEqual(["w_ni", "w_hao"]);
+    expect(quietRuby(course, said.line!, core.state.words, T0, "on")).toEqual([]);
   });
 
   it("a miss costs on the player's own line, not as a money line; the NPC reacts", () => {
