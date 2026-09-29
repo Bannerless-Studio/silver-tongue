@@ -428,6 +428,22 @@
   ]
  },
  {
+  "id": "ko-geureut",
+  "w": "그릇",
+  "lv": "T1",
+  "readings": [
+   "geureut"
+  ]
+ },
+ {
+  "id": "ko-jul",
+  "w": "줄",
+  "lv": "T1",
+  "readings": [
+   "jul"
+  ]
+ },
+ {
   "id": "ko-myeot",
   "w": "몇",
   "lv": "T1",

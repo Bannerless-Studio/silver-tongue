@@ -5,7 +5,7 @@
  "slotsPerDay": 4,
  "homeScene": "room-wake",
  "startWallet": 20000,
- "foodPerDay": 3000,
+ "foodPerDay": 5000,
  "rentPerWeek": 50000,
  "places": {
   "room": {

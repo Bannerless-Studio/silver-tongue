@@ -11,7 +11,7 @@ money-reply = No, I don't.
 money-reply-intent = Say you have none
 money-alt1 = Yes, thank you.
 money-alt1-intent = Say yes and thank him
-money-alt2 = I'm Park.
+money-alt2 = I'm Grandpa Park.
 money-alt2-intent = Give a name
 
 stall = There's a snack stall over there.

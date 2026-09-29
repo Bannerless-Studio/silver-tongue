@@ -136,14 +136,17 @@
 }
 -tteokbokki = { $form ->
     [cap] Tteokbokki
+    [counted] bowls of tteokbokki
    *[base] tteokbokki
 }
 -gimbap = { $form ->
     [cap] Gimbap
+    [counted] rolls of gimbap
    *[base] gimbap
 }
 -eomuk = { $form ->
     [cap] Fish cake
+    [counted] fish cakes
    *[base] fish cake
 }
 -milk = { $form ->

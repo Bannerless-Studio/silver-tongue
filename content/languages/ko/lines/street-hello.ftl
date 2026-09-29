@@ -6,7 +6,7 @@ hello-reply = 안녕하세요.
 hello-alt1 = 안녕히 가세요.
 hello-alt2 = 아니요.
 
-park = 저는 박이에요.
+park = 박 할아버지예요.
 park-reply = 박 할아버지, 안녕하세요.
 park-alt1 = 민준 씨?
 park-alt2 = 안녕히 계세요.
@@ -24,4 +24,4 @@ sit-alt2 = 누구예요?
 understand = 한국어 알아요?
 understand-reply = 아니요, 몰라요.
 understand-alt1 = 네, 감사합니다.
-understand-alt2 = 저는 박이에요.
+understand-alt2 = 박 할아버지예요.

@@ -11,3 +11,5 @@ ko-do = too
 ko-e = at; per
 ko-kkaji = until
 ko-gae = (counter)
+ko-geureut = bowl
+ko-jul = roll

@@ -6,7 +6,7 @@ hello-alt1-intent = See him off
 hello-alt2 = No.
 hello-alt2-intent = Say no
 
-park = I'm Park.
+park = I'm Grandpa Park.
 park-reply = Hello, Grandpa Park.
 park-reply-intent = Greet him by name
 park-alt1 = Min-jun?
@@ -35,5 +35,5 @@ understand-reply = No, I don't.
 understand-reply-intent = Admit you don't
 understand-alt1 = Yes, thank you.
 understand-alt1-intent = Say yes and thank him
-understand-alt2 = I'm Park.
+understand-alt2 = I'm Grandpa Park.
 understand-alt2-intent = Give a name

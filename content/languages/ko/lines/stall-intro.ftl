@@ -6,9 +6,9 @@ welcome-reply = 안녕하세요.
 welcome-alt1 = 안녕히 계세요.
 welcome-alt2 = 아니요, 없어요.
 
-jiwoo = 저는 지우예요. 누구예요?
+jiwoo = 저는 지우예요. 이름이 뭐예요?
 jiwoo-reply = 저는 { $player }입니다.
-jiwoo-alt1 = 저는 박이에요.
+jiwoo-alt1 = 박 할아버지예요.
 jiwoo-alt2 = 분식집이에요?
 
 hungry = 배고파요?

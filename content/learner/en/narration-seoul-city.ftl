@@ -37,7 +37,7 @@ scene-street-hungry-end = He points down the alley at a tent with steam rising f
 
 scene-stall-intro = Visit the snack stall
 scene-stall-intro-start = A young woman in an apron looks up from a pan of red rice cakes.
-scene-stall-intro-end = Ji-woo won't take your money. She hands you an apron instead: you start tomorrow.
+scene-stall-intro-end = Ji-woo waves away your thanks. She hands you an apron instead: you start tomorrow.
 scene-stall-shift = Work a shift
 scene-stall-shift-start = Ji-woo calls the orders over the hiss of the pan: bring what she asks for, as many as she asks.
 scene-stall-shift-end = The last customer leaves. Ji-woo counts out your pay from a tin.
