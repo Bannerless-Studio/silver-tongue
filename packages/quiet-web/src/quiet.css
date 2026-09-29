@@ -122,6 +122,9 @@ p { margin: 0; }
 .nb-note p { color: var(--muted); }
 .links { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; margin-top: 1.2rem; }
 .link { color: var(--cyan); }
+.tabs { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; }
+.tab { color: var(--muted); padding: 0.1rem 0; border-bottom: 2px solid transparent; }
+.tab.on { color: var(--cyan); border-bottom-color: var(--cyan); }
 .trust { margin-top: 0.8rem; }
 .row { display: block; width: 100%; padding: 0.45rem 0; color: var(--text); text-decoration: none; border-bottom: 1px solid #16242a; }
 .row:hover { color: var(--cyan); }

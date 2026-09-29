@@ -140,6 +140,8 @@ export function createQuiet(opts: QuietOptions): Quiet {
   let sceneFrom = 0;
   /** the conversation just finished: its beats, and the one line they fold into once the player moves on */
   let finished: { from: number; to: number; text: string } | undefined;
+  /** beats before this are the opening story (or where a picked-up game is): gone with the first fold */
+  let preludeTo = 0;
   /** words already glossed in this transcript: a word is boxed and glossed once, then rendered as usual */
   const glossed = new Set<WordId>();
   let save = opts.save;
@@ -176,6 +178,9 @@ export function createQuiet(opts: QuietOptions): Quiet {
     const i = backlog.findIndex((b) => b.id >= from);
     if (i < 0) return;
     backlog = [...backlog.slice(0, i), { id: from, text, tone: "done" }, ...backlog.slice(i).filter((b) => b.id >= to)];
+    // The opening story has been read and acted on by now.
+    if (preludeTo) backlog = backlog.filter((b) => b.id >= preludeTo);
+    preludeTo = 0;
   }
 
   /** Moves everything said into the transcript and says it aloud, in order. */
@@ -366,6 +371,7 @@ export function createQuiet(opts: QuietOptions): Quiet {
   resuming = false;
   // A game picked up between scenes: say where the player is, so the screen is never blank.
   if (!intro.length && !scene) push({ text: t("quiet-resume", { place: t(`place-${core.state.place}`) }), tone: "narr" });
+  if (!scene) preludeTo = nextId;
   flush(true);
 
   return {

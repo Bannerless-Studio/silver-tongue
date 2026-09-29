@@ -112,9 +112,9 @@ describe("quiet terminal controller", () => {
 
   it("a finished conversation stays until the player moves on, then folds into one line", () => {
     const { q, core, course } = setup();
+    const before = q.view().backlog.map((b) => b.id);
     q.choose(0);
     q.choose(0);
-    const before = q.view().backlog.filter((b) => !b.speaker).map((b) => b.id);
     while (core.state.run) q.choose(rightIndex(core));
     // Just finished: how it ended is still there to read.
     expect(q.view().backlog.some((b) => b.speaker === "player")).toBe(true);
@@ -123,8 +123,10 @@ describe("quiet terminal controller", () => {
     const log = q.view().backlog;
     expect(log.filter((b) => b.tone === "done").map((b) => b.text)).toEqual([`✓ ${course.learnerFtl.match(/^scene-intro = (.+)$/m)![1]} · Cook`]);
     expect(log.some((b) => b.speaker === "player")).toBe(false);
-    // What came before the conversation stays.
-    expect(log.map((b) => b.id)).toEqual(expect.arrayContaining(before.filter((id) => id < log.find((b) => b.tone === "done")!.id)));
+    // The opening story went with it: read, and acted on.
+    expect(before.length).toBeGreaterThan(0);
+    expect(log.some((b) => before.includes(b.id))).toBe(false);
+    expect(log[0].tone).toBe("done");
   });
 
   it("sleeping: food is silent, the new day is a line", () => {

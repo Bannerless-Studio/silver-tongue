@@ -277,17 +277,16 @@ quiet-rephrase = rephrase
 quiet-reveal = Show this line
 quiet-notebook = Notebook
 quiet-status = Status
-quiet-counts = shaky { $shaky } · met { $met } · known { $known } · unseen { $unseen }
 quiet-why-missed = { $count ->
     [1] missed
    *[other] missed ×{ $count }
 }
 quiet-why-helped = helped
 quiet-why-decayed = decayed
-quiet-nb-shaky = shaky ▸
-quiet-nb-known = known ▸
-quiet-nb-met = met ▸
-quiet-nb-all = all ▸
+quiet-tab-shaky = shaky { $count }
+quiet-tab-met = met { $count }
+quiet-tab-known = known { $count }
+quiet-tab-all = all { $count }
 quiet-nb-none = Nothing shaky. Every word you've heard is holding.
 quiet-esc = esc close
 quiet-st-wallet = Wallet: { $currency }{ $wallet }

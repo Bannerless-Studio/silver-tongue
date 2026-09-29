@@ -22,8 +22,8 @@ things stay one key away; absence is said plainly.
   gloss); shaky → dotted underline; met/known → bare. No pinyin or translation under NPC lines or on
   pick options.
 - **Notebook** (`notebookDefault`): opens on the shaky words with why: `missed ×n` (wrong ≥ helps),
-  `helped`, or `decayed`; shakiest first (most misses, then most recently seen). Header counts every
-  state. `known ▸ met ▸ all ▸` switch to the full grouped notebook. No bars, no badges.
+  `helped`, or `decayed`; shakiest first (most misses, then most recently seen). Tabs at the top,
+  `shaky n · met n · known n · all n`, switch views; the one open is highlighted. No bars, no badges.
 - **Review tell** (`reviewTell`): a repeatable scene already done once is a repeat shift; pay is the sum
   of its exchanges' full pay.
 
@@ -39,7 +39,8 @@ current line and replies (core `describeRun`); between scenes it says where the 
 
 A finished conversation stays whole until the player's next accepted input, so its ending can be read;
 then it folds into one dim line, `✓ Scene · NPC · +¥X` (the NPC left out when the scene's name says it,
-the pay only when there was some). What came before and after it stays. The notebook's Phrases tab keeps
+the pay only when there was some). What came before and after it stays, except the opening story (or
+the line saying where a picked-up game is), which goes with the first fold. The notebook's Phrases tab keeps
 what was said.
 
 A miss is one beat of at most three rows, and every try stays in the transcript:
