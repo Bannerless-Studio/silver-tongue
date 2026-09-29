@@ -28,6 +28,8 @@ export const UI_KEYS: Record<string, string[]> = {
   "hud-top": ["day"],
   "hud-goal": ["goal"],
   "hud-goal-sleep": [],
+  "sleep-go": ["place"],
+  "sleep-go-via": ["place", "via"],
   "hud-rent": ["days"],
   "hud-rent-late": [],
   "hud-parcel": [],

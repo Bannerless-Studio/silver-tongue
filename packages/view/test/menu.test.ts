@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { newGame } from "@silver-tongue/core";
 import { fixtureWithText } from "../src/testing";
-import { makeText, placeMenu, waitingForMoney } from "../src/index";
+import { bedHint, makeText, placeMenu, waitingForMoney } from "../src/index";
 
 const setup = () => {
   const course = fixtureWithText();
@@ -117,6 +117,26 @@ describe("place menu", () => {
     expect(placeMenu(course, state, t).map((m) => m.kind)).not.toContain("sleep");
     state.place = "street";
     expect(placeMenu(course, state, t).at(-1)!.kind).toBe("sleep");
+  });
+
+  it("says where the bed is once it's time to sleep and it's elsewhere", () => {
+    const { course, state } = setup();
+    course.learnerFtl += "\nplace-room = Your Room\n";
+    const t = makeText(course.learnerFtl, "en");
+    course.world.places.room = { links: ["street"] };
+    course.world.places.street.links.push("room");
+    course.world.home = "room";
+    state.place = "noodle_shop";
+    state.scenesDone.intro = 1;
+    state.trust.cook = 1;
+    expect(bedHint(course, state, t)).toEqual([]);
+    state.slot = course.world.slotsPerDay;
+    const street = t("place-street");
+    expect(bedHint(course, state, t)).toEqual([`Go to Your Room, off ${street}, to sleep.`]);
+    state.place = "street";
+    expect(bedHint(course, state, t)).toEqual(["Go to Your Room to sleep."]);
+    state.place = "room";
+    expect(bedHint(course, state, t)).toEqual([]);
   });
 
   it("leaves a place off the menu until the scenes that reveal it are done", () => {

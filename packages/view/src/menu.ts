@@ -1,4 +1,4 @@
-import { availableSceneIds, canSleep, mentorAvailable, moneyBlocked, placeKnown, sceneCost, type Course, type GameState, type Input } from "@silver-tongue/core";
+import { availableSceneIds, canSleep, hasHome, mentorAvailable, moneyBlocked, placeKnown, sceneCost, type Course, type GameState, type Input } from "@silver-tongue/core";
 import type { Text } from "./text";
 
 /** Scenes, exits and the mentor's visit before sleep; the content checker keeps places within it. */
@@ -60,11 +60,29 @@ export function placeMenu(course: Course, state: GameState, t: Text): MenuItem[]
     items.push({ kind: "go", label: t("menu-go", { place: t(`place-${p}`) }), input: { type: "goTo", place: p }, place: p });
   }
   // Sleep is offered only where the core allows it (home, or the start before there is a home), and
-  // only once it's what's left to do: the day's time is gone, or no scene or visit is open anywhere.
-  const nothingLeft = !availableSceneIds(course, state).length && !(mentorAvailable(course, state) && state.notes.ready.length);
+  // only once it's what's left to do.
   const sleep: MenuItem[] =
-    canSleep(course, state) && (noSlots || nothingLeft) ? [{ kind: "sleep", label: t("menu-sleep"), input: { type: "sleep" } }] : [];
+    canSleep(course, state) && bedtime(course, state) ? [{ kind: "sleep", label: t("menu-sleep"), input: { type: "sleep" } }] : [];
   return [...items.slice(0, MAX_PLACE_ITEMS), ...sleep];
+}
+
+/** Time to sleep: the day's time is gone, or no scene or visit is open anywhere. */
+function bedtime(course: Course, state: GameState): boolean {
+  if (state.slot >= course.world.slotsPerDay) return true;
+  return !availableSceneIds(course, state).length && !(mentorAvailable(course, state) && state.notes.ready.length);
+}
+
+/**
+ * Where to sleep, once it's time and the bed is elsewhere: its place, and the known place it's off
+ * unless that's here. Nothing otherwise, so the menu's sleep item is never repeated.
+ */
+export function bedHint(course: Course, state: GameState, t: Text): string[] {
+  if (canSleep(course, state) || !bedtime(course, state)) return [];
+  const bed = hasHome(course, state) && course.world.home ? course.world.home : course.world.start;
+  const links = course.world.places[bed].links;
+  const via = links.includes(state.place) ? undefined : links.find((p) => placeKnown(course, state, p));
+  const place = t(`place-${bed}`);
+  return [via ? t("sleep-go-via", { place, via: t(`place-${via}`) }) : t("sleep-go", { place })];
 }
 
 /** Scenes here that wait only for money: shown, not offered, so an empty shop says why. */

@@ -2,6 +2,10 @@
 
 Every release of Silver Tongue, newest first.
 
+## 0.18.5 (2026-09-29)
+
+- Once it's time to sleep and your bed is somewhere else, the quiet page and the visual novel say where to go: "Go to Your Room, off Market Street, to sleep."
+
 ## 0.18.4 (2026-09-29)
 
 - Typing a reply, on the quiet page and in the visual novel, the browser no longer offers a saved payment card: the reply box isn't a form field any more, so autofill leaves it alone. Enter still says it, and N, S and the other shortcut letters still type.

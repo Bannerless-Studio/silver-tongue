@@ -5,7 +5,7 @@
 // be revealed.
 import { describeRun, joinTiles, normalizeTyped, wordState, type Core, type Course, type GameEvent, type GameState, type Input, type RenderedLine, type WordId } from "@silver-tongue/core";
 import {
-  actionNarration, introLines, makeText, placeMenu, sentenceCard, tileEcho, typePrompt, waitingForMoney, wordCard,
+  actionNarration, bedHint, introLines, makeText, placeMenu, sentenceCard, tileEcho, typePrompt, waitingForMoney, wordCard,
   type AudioOut, type MenuItem, type SentenceCard, type Speech, type Text, type WordCard,
 } from "@silver-tongue/view";
 
@@ -371,7 +371,7 @@ export function createQuiet(opts: QuietOptions): Quiet {
     if (reply?.mode === "pick") return { kind: "pick", options: reply.options, confused: !!core.state.run && core.state.run.misses < 2 };
     if (reply?.mode === "tiles") return { kind: "tiles", tiles: reply.tiles, placed, answer: joinTiles(course, placed.map((i) => (reply as { tiles: string[] }).tiles[i])) };
     if (reply?.mode === "type") return { kind: "type", prompt: typePrompt(t), confused: !!core.state.run && core.state.run.misses < 2 };
-    return { kind: "explore", menu: placeMenu(course, core.state, t), waiting: waitingForMoney(course, core.state, t) };
+    return { kind: "explore", menu: placeMenu(course, core.state, t), waiting: [...waitingForMoney(course, core.state, t), ...bedHint(course, core.state, t)] };
   }
 
   if (opts.notice) toast(t(opts.notice), "bad");

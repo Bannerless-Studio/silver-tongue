@@ -31,6 +31,8 @@ menu-review = Quick review · { $count ->
    *[other] { $count } fading words
 }
 menu-sleep = Sleep (end the day)
+sleep-go = Go to { $place } to sleep.
+sleep-go-via = Go to { $place }, off { $via }, to sleep.
 menu-quit = Save and quit
 
 keys-explore = [{ $keys }] choose · [n] notebook · [q] quit
