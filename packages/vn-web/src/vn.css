@@ -83,6 +83,8 @@ form.box button { padding: 1cqh 2cqw; border-radius: 1cqh; }
 .version { position: absolute; right: 1.5cqw; bottom: 1cqh; font-size: 2cqh; color: #ffffff88; }
 .type-reply { position: absolute; left: 3%; right: 3%; bottom: 29%; display: flex; flex-direction: column; gap: 1cqh; }
 .type-row { display: flex; gap: 1cqh; }
+.reply-line { white-space: pre; overflow: hidden; cursor: text; outline: none; }
+.reply-line:empty::before { content: attr(data-placeholder); color: var(--muted); pointer-events: none; }
 .type-input { flex: 1; min-width: 0; padding: 1cqh 1.4cqw; border-radius: 1cqh; border: 0.3cqh solid var(--accent); background: #10141c; color: var(--text); font-size: 3.6cqh; }
 .hint { padding: 1cqh 1.4cqw; border-radius: 1cqh; background: #10141ce6; border: 0.2cqh solid #d9b44a66; font-size: 2.8cqh; color: var(--text); }
 .hint-title { color: #d9b44a; font-weight: bold; } .hint-title span { color: var(--muted); font-weight: normal; }

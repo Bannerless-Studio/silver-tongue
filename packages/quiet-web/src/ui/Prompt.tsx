@@ -1,5 +1,6 @@
 import { useState } from "preact/hooks";
 import { CONFUSED, type Quiet, type QuietView } from "../quiet";
+import { ReplyLine } from "./ReplyLine";
 
 /** What the player can do now: a name, a numbered reply, tiles, or the place's commands. */
 export function Prompt({ q, view }: { q: Quiet; view: QuietView }) {
@@ -37,16 +38,16 @@ export function Prompt({ q, view }: { q: Quiet; view: QuietView }) {
     );
   }
   if (p.kind === "type") {
+    const send = () => (q.sendText(text), setText(""));
     return (
-      <form class="prompt" onSubmit={(e) => (e.preventDefault(), q.sendText(text), setText(""))}>
+      <div class="prompt">
         {p.confused && <p class="prose dim">{t("type-send")}</p>}
-        <label class="cursor-line">
+        <div class="cursor-line">
           <span class="cur">›</span>
-          <input autoFocus value={text} maxLength={60} placeholder={p.prompt} aria-label={p.prompt} autoComplete="off" autoCapitalize="off" spellcheck={false}
-            onInput={(e) => setText((e.target as HTMLInputElement).value)} />
-          <button type="submit" class="dim" aria-label={t("vn-send")}>↵</button>
-        </label>
-      </form>
+          <ReplyLine value={text} onInput={setText} onEnter={send} placeholder={p.prompt} maxLength={60} />
+          <button type="button" class="dim" aria-label={t("vn-send")} onClick={send}>↵</button>
+        </div>
+      </div>
     );
   }
   if (p.kind === "tiles") {
