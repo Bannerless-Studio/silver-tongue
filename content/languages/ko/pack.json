@@ -13,5 +13,6 @@
  },
  "typing": null,
  "spaced": false,
- "tileGap": " "
+ "tileGap": " ",
+ "book": true
 }
