@@ -84,6 +84,9 @@ p { margin: 0; }
 .tiles { display: flex; flex-wrap: wrap; gap: 0.4rem; padding-left: 0.75rem; }
 .tile { border: 1px solid var(--line); border-radius: 2px; padding: 0.1rem 0.6rem; }
 .tile:hover:not(:disabled) { color: var(--cyan); }
+/* Say it, inline after the tiles so a thumb doesn't travel to the ↵ at the far edge. */
+.tile.send { color: var(--green); border-color: var(--green); }
+.tile.send:hover:not(:disabled) { color: var(--bg); background: var(--green); }
 /* › in its own column, so wrapped commands line up under the first. */
 .cmds { display: grid; grid-template-columns: auto 1fr; column-gap: 0.6rem; align-items: baseline; color: var(--muted); }
 .cmd-list { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 1.4rem; min-width: 0; }

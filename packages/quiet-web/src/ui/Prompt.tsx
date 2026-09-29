@@ -56,6 +56,7 @@ export function Prompt({ q, view }: { q: Quiet; view: QuietView }) {
           {p.tiles.map((tile, i) => (
             <button key={i} type="button" class="tile" disabled={p.placed.includes(i)} onClick={() => q.placeTile(i)}>{tile}</button>
           ))}
+          <button type="button" class="tile send" aria-label={t("vn-send")} title={t("vn-send")} disabled={!p.placed.length} onClick={() => q.sendTiles()}>✓</button>
         </div>
         <p class="cursor-line">
           <span class="cur">›</span> <span>{p.answer}</span><span class="blink">▌</span>
