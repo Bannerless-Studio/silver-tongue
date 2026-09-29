@@ -2,6 +2,12 @@
 
 Every release of Silver Tongue, newest first.
 
+## 0.18.5 (2026-09-29)
+
+- In China City your room is back on Main Street, open from the first day, and it's the only place to sleep: no more sleeping rough by the road before you've met Mr Li.
+- The time of day is named instead of counted: morning, midday, afternoon and evening, then night. The quiet page marks it with a circle that fills as the day goes ("Day 1, ◔ midday"); the visual novel shows "☀️ midday" in place of its four dots.
+- Once it's time to sleep and you're not in your room, the quiet page and the visual novel say where to go: "Go to Your Room, off Main Street, to sleep."
+
 ## 0.18.4 (2026-09-29)
 
 - Typing a reply, on the quiet page and in the visual novel, the browser no longer offers a saved payment card: the reply box isn't a form field any more, so autofill leaves it alone. Enter still says it, and N, S and the other shortcut letters still type.

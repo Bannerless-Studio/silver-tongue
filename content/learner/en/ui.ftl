@@ -2,6 +2,11 @@
 
 # The top border (right) and the HUD row under it.
 hud-top = Day { $day }
+day-part-morning = morning
+day-part-midday = midday
+day-part-afternoon = afternoon
+day-part-evening = evening
+day-part-night = night
 hud-goal = Next: { $goal }
 hud-goal-sleep = Next: find your bed
 hud-rent = { $days ->
@@ -31,6 +36,8 @@ menu-review = Quick review · { $count ->
    *[other] { $count } fading words
 }
 menu-sleep = Sleep (end the day)
+sleep-go = Go to { $place } to sleep.
+sleep-go-via = Go to { $place }, off { $via }, to sleep.
 menu-quit = Save and quit
 
 keys-explore = [{ $keys }] choose · [n] notebook · [q] quit
@@ -256,7 +263,7 @@ vn-play-word = Hear it
 gesture-narration = { $npc } mimes it:
 
 # The quiet terminal page (packages/quiet-web).
-quiet-anchor = { $place } · Day { $day }, { $slot }/{ $slots }
+quiet-anchor = { $place } · Day { $day }, { $part }
 quiet-rent = rent { $currency }{ $rent } due { $days ->
     [0] tonight
     [1] tomorrow
@@ -295,7 +302,7 @@ quiet-st-rent = Rent: { $currency }{ $rent }, due { $days ->
     [1] tomorrow
    *[other] in { $days } days
 }
-quiet-st-day = Day { $day }, slot { $slot }/{ $slots }
+quiet-st-day = Day { $day }, { $part }
 quiet-st-trust = { $npc }: trust { $trust }
 quiet-st-parcel = Carrying a parcel
 quiet-st-no-parcel = No parcel

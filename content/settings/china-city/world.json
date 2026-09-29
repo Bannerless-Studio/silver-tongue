@@ -3,7 +3,6 @@
   "home": "room",
   "currency": "¥",
   "slotsPerDay": 4,
-  "homeScene": "room-hello",
   "startWallet": 20,
   "foodPerDay": 5,
   "rentPerWeek": 50,
@@ -11,6 +10,7 @@
     "street": {
       "links": [
         "noodle_shop",
+        "room",
         "market"
       ]
     },
@@ -25,7 +25,6 @@
     "market": {
       "links": [
         "street",
-        "room",
         "warehouse",
         "station_road",
         "shop"
@@ -36,11 +35,8 @@
     },
     "room": {
       "links": [
-        "market",
+        "street",
         "stairs"
-      ],
-      "after": [
-        "street-hungry"
       ]
     },
     "warehouse": {

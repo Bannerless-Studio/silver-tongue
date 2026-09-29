@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { newGame } from "@silver-tongue/core";
 import { fixtureWithText } from "../src/testing";
-import { clock, hudValues, makeText, nextGoal } from "../src/index";
+import { clock, dayPart, hudValues, makeText, nextGoal } from "../src/index";
 
 describe("hud values", () => {
   it("gives the day, slots, wallet, rank and flags", () => {
@@ -11,8 +11,17 @@ describe("hud values", () => {
     state.rentLate = true;
     expect(hudValues(course, state, makeText(course.learnerFtl, "en"), 0)).toEqual({
       day: 1, slot: 0, slots: 4, currency: "¥", wallet: 20, rank: 0, rankLabel: "Pidgin", parcel: true, rentLate: true, rentInDays: 0,
-      goal: "Next: Say hello · Noodle shop", clock: "08:00",
+      goal: "Next: Say hello · Noodle shop", clock: "08:00", part: "morning",
     });
+  });
+
+  it("names the part of the day instead of counting slots", () => {
+    const course = fixtureWithText();
+    const state = newGame(course);
+    const t = makeText(course.learnerFtl, "en");
+    const parts = [0, 1, 2, 3, 4].map((slot) => dayPart(course, { ...state, slot }));
+    expect(parts).toEqual(["morning", "midday", "afternoon", "evening", "night"]);
+    expect(parts.map((p) => t(`day-part-${p}`))).toEqual(["morning", "midday", "afternoon", "evening", "night"]);
   });
 
   it("tells the time: each slot on its hour of an 08:00-20:00 day, a few minutes on per exchange", () => {

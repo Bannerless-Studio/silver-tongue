@@ -17,6 +17,8 @@ export interface HudValues {
   goal?: string;
   /** The time of day, "08:00" to "20:00" (see `clock`). */
   clock: string;
+  /** The part of the day it is (see `dayPart`). */
+  part: DayPart;
   /** Where and when the story is set ("Suzhou, 1980"), when the setting says. */
   where?: string;
 }
@@ -31,11 +33,29 @@ const DAY_LENGTH = 12 * 60;
  * once every slot is used it's 20:00.
  */
 export function clock(course: Course, state: GameState): string {
+  const m = Math.floor(minutesOfDay(course, state));
+  return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+}
+
+function minutesOfDay(course: Course, state: GameState): number {
   const per = DAY_LENGTH / course.world.slotsPerDay;
   const run = state.run;
-  const minutes = run ? DAY_START + (state.slot - 1) * per + 5 + run.exchange * 4 + run.misses : DAY_START + Math.min(state.slot, course.world.slotsPerDay) * per;
-  const m = Math.floor(minutes);
-  return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+  return run ? DAY_START + (state.slot - 1) * per + 5 + run.exchange * 4 + run.misses : DAY_START + Math.min(state.slot, course.world.slotsPerDay) * per;
+}
+
+export type DayPart = "morning" | "midday" | "afternoon" | "evening" | "night";
+
+/** The parts of the day, each with the hour it starts. */
+const DAY_PARTS: [DayPart, number][] = [["morning", 0], ["midday", 11], ["afternoon", 14], ["evening", 17], ["night", 20]];
+
+/**
+ * The part of the day by the clock, named rather than counted: with four slots, the day is morning,
+ * midday, afternoon and evening, and night once they're used. Its name is `day-part-<part>`; each
+ * front end picks an icon that fits its look.
+ */
+export function dayPart(course: Course, state: GameState): DayPart {
+  const hour = minutesOfDay(course, state) / 60;
+  return DAY_PARTS.filter(([, from]) => hour >= from).at(-1)![0];
 }
 
 /**
@@ -69,6 +89,7 @@ export function hudValues(course: Course, state: GameState, t: Text, now: number
     rentInDays: state.rentLate ? 0 : (7 - (state.day % 7)) % 7,
     ...(goal ? { goal } : {}),
     clock: clock(course, state),
+    part: dayPart(course, state),
     ...(t.has("setting-where") ? { where: t("setting-where") } : {}),
   };
 }

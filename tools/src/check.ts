@@ -46,6 +46,22 @@ export const MAX_LINE_WORDS = 9;
  */
 export const MAX_PLACE_ITEMS = 7;
 
+/**
+ * At most how many of a place's scenes are offered at once. A one-off scene is gone once done, so it's
+ * never offered with a scene there that comes after it: each one-off is paired with its own follow-up
+ * and counts only when it has none.
+ */
+function mostScenesAtOnce(scenes: Scene[]): number {
+  const taken = new Set<string>();
+  let replaced = 0;
+  for (const x of scenes) {
+    if (x.repeatable) continue;
+    const next = scenes.find((y) => y.after.includes(x.id) && !taken.has(y.id));
+    if (next) (taken.add(next.id), replaced++);
+  }
+  return scenes.length - replaced;
+}
+
 /** Scenes in `after` order; ties keep file order. */
 export function orderScenes(scenes: Scene[]): { ordered: Scene[]; errors: string[] } {
   const done = new Set<string>();
@@ -186,7 +202,7 @@ export function checkCourse(input: CheckInput): string[] {
   for (const [id, p] of Object.entries(world.places)) {
     // The mentor's visit is an item too, at the mentor's place.
     const mentorItem = world.mentor && world.npcs[world.mentor.npc]?.place === id ? 1 : 0;
-    const items = p.links.length + course.scenes.filter((s) => s.place === id).length + mentorItem;
+    const items = p.links.length + mostScenesAtOnce(course.scenes.filter((s) => s.place === id)) + mentorItem;
     if (items > MAX_PLACE_ITEMS) errors.push(`world: place "${id}" has ${items} menu items; at most ${MAX_PLACE_ITEMS}`);
   }
   if (world.home !== undefined && !world.places[world.home]) errors.push(`world: home "${world.home}" is not a place`);

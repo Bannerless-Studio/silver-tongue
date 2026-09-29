@@ -10,9 +10,9 @@ const game = (patch: Partial<GameState>): GameState => ({ ...newGame(course), ..
 const rec = (patch: Partial<WordRecord>): WordRecord => ({ right: 0, wrong: 0, streak: 0, helps: 0, lapsed: false, firstSeen: 0, lastSeen: NOW, ...patch });
 
 describe("anchor row", () => {
-  it("is place and slot only on an ordinary day", () => {
+  it("is place and part of the day only on an ordinary day", () => {
     const row = anchorRow(course, game({ day: 3, slot: 2, wallet: 500 }), t);
-    expect(row).toEqual({ place: "The street", day: 3, slot: 2, slots: 4 });
+    expect(row).toEqual({ place: "The street", day: 3, part: "afternoon" });
   });
 
   it("rent is due on the sleep ending a day divisible by 7", () => {

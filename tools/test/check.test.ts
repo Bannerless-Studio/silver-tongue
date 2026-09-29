@@ -264,9 +264,20 @@ describe("checkCourse", () => {
 
   it("keeps each place's menu on keys 1-7, before sleep and quit", () => {
     const c = fixtureCourse();
-    c.world.places.noodle_shop.links = ["street", "a", "b", "c", "d", "e"];
-    for (const l of ["a", "b", "c", "d", "e"]) c.world.places[l] = { links: [] };
+    c.world.places.noodle_shop.links = ["street", "a", "b", "c", "d", "e", "f"];
+    for (const l of ["a", "b", "c", "d", "e", "f"]) c.world.places[l] = { links: [] };
     expect(checkCourse(input({ course: c }))).toContain('world: place "noodle_shop" has 8 menu items; at most 7');
+  });
+
+  it("counts a one-off scene and the scene after it here as one menu item", () => {
+    const c = fixtureCourse();
+    const extra = ["a", "b", "c", "d", "e"];
+    c.world.places.noodle_shop.links = ["street", ...extra];
+    for (const l of extra) c.world.places[l] = { links: [] };
+    const learnerIds = new Set([...LEARNER, ...extra.flatMap((l) => [`place-${l}`, `place-${l}-desc`])]);
+    expect(checkCourse(input({ course: c, learnerIds }))).toEqual([]);
+    c.scenes[1].after = [];
+    expect(checkCourse(input({ course: c, learnerIds }))).toContain('world: place "noodle_shop" has 8 menu items; at most 7');
   });
 
   it("needs an asked- line for every action a scene uses", () => {
@@ -320,8 +331,8 @@ describe("checkCourse", () => {
 
   it("counts the mentor's visit in their place's menu", () => {
     const c = fixtureCourse();
-    // 2 scenes + 5 exits = 7: allowed, until the mentor sits here too.
-    const extra = ["a", "b", "c", "d"];
+    // The intro gives way to the shift, so 1 scene + 6 exits = 7: allowed, until the mentor sits here too.
+    const extra = ["a", "b", "c", "d", "e"];
     c.world.places.noodle_shop.links = ["street", ...extra];
     for (const l of extra) c.world.places[l] = { links: [] };
     const learnerIds = new Set([...LEARNER, ...extra.flatMap((l) => [`place-${l}`, `place-${l}-desc`])]);

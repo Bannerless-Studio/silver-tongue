@@ -28,6 +28,13 @@ export const UI_KEYS: Record<string, string[]> = {
   "hud-top": ["day"],
   "hud-goal": ["goal"],
   "hud-goal-sleep": [],
+  "day-part-morning": [],
+  "day-part-midday": [],
+  "day-part-afternoon": [],
+  "day-part-evening": [],
+  "day-part-night": [],
+  "sleep-go": ["place"],
+  "sleep-go-via": ["place", "via"],
   "hud-rent": ["days"],
   "hud-rent-late": [],
   "hud-parcel": [],
@@ -211,7 +218,7 @@ export const VN_UI_KEYS: Record<string, string[]> = {
 
 /** Message ids the quiet terminal page uses, with their variables; checked like UI_KEYS. */
 export const QUIET_UI_KEYS: Record<string, string[]> = {
-  "quiet-anchor": ["place", "day", "slot", "slots"],
+  "quiet-anchor": ["place", "day", "part"],
   "quiet-rent": ["currency", "rent", "days", "wallet"],
   "quiet-rent-late": [],
   "quiet-scene-with": ["scene", "npc"],
@@ -236,7 +243,7 @@ export const QUIET_UI_KEYS: Record<string, string[]> = {
   "quiet-esc": [],
   "quiet-st-wallet": ["currency", "wallet"],
   "quiet-st-rent": ["currency", "rent", "days"],
-  "quiet-st-day": ["day", "slot", "slots"],
+  "quiet-st-day": ["day", "part"],
   "quiet-st-trust": ["npc", "trust"],
   "quiet-st-parcel": [],
   "quiet-st-no-parcel": [],
