@@ -17,7 +17,7 @@
     "bundle": "esbuild src/main.ts --bundle --platform=node --format=esm --outfile=dist/silver-tongue.mjs --banner:js=\"#!/usr/bin/env node\" && node bundle-courses.mjs"
   },
   "devDependencies": {
-    "@silver-tongue/core": "npm:@bannerless-studio/silver-tongue-core@^0.17.2",
+    "@silver-tongue/core": "npm:@bannerless-studio/silver-tongue-core@^0.18.0",
     "@silver-tongue/tui": "*",
     "esbuild": "^0.28.2"
   }

@@ -2,7 +2,7 @@
 
 Every release of Silver Tongue, newest first.
 
-## 0.18.0 (unreleased)
+## 0.18.0 (2026-09-29)
 
 - A third way to play in the browser, the quiet terminal, at /quiet/. It shows only what changed: rent appears when you are about to fall short, a new word explains itself once, and a word you keep missing is underlined. Tap `?` on any line to see its reading and meaning, N for your notebook (it opens on the words that need work and why), S for your money, rent and standing.
 - Once you know every word of a reply, you type it: in Chinese or pinyin (Japanese or rōmaji). Tones, spaces and punctuation don't matter, and you can mix characters and letters. Two wrong tries and the choices come back.
