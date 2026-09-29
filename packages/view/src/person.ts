@@ -1,5 +1,6 @@
 import { isAvailable, personalize, placeKnown, sceneCost, wordState, type Course, type GameState, type Scene, type WordId } from "@silver-tongue/core";
 import { wordLine, type WordLine } from "./assist";
+import { playerName } from "./help";
 import { dayPart, type DayPart } from "./hud";
 import type { Text } from "./text";
 
@@ -147,7 +148,7 @@ export function personView(course: Course, state: GameState, t: Text, npc: strin
   const theirs = course.scenes.filter((s) => s.npc === npc);
   const tips = theirs.filter((s) => s.repeatable || !(state.scenesDone[s.id] ?? 0)).map((s) => tipFor(course, state, t, s));
   const home = course.world.npcs[npc].place;
-  const name = state.player ?? "";
+  const name = playerName(state);
   const talks: PersonTalk[] = (state.talks ?? [])
     .flatMap((talk) => {
       const scene = theirs.find((s) => s.id === talk.scene);

@@ -4,6 +4,8 @@ import { lineClips, type Clip, type Voices } from "./voices";
 /** Group ids end up in message ids (letters-group-<id>), so they stay simple. */
 const NAME = /^[A-Za-z0-9_-]+$/;
 const OPTIONAL_TEXT = ["name", "reading", "say"] as const;
+/** Every field a letter may have; `audio` is added by the build, never written by hand. */
+const LETTER_KEYS = new Set<string>(["ch", ...OPTIONAL_TEXT]);
 
 /** Problems with content/languages/<lang>/letters.json, each naming where it is. */
 export function letterProblems(chart: unknown): string[] {
@@ -29,6 +31,7 @@ export function letterProblems(chart: unknown): string[] {
       }
       if (seen.has(l.ch)) errors.push(`${where}: "${l.ch}" is listed twice`);
       seen.add(l.ch);
+      for (const k of Object.keys(l)) if (!LETTER_KEYS.has(k)) errors.push(`${where}: "${l.ch}" has an unknown field "${k}"`);
       for (const k of OPTIONAL_TEXT) {
         if (l[k] !== undefined && (typeof l[k] !== "string" || l[k] === "")) errors.push(`${where}: "${l.ch}" ${k} must be text`);
       }

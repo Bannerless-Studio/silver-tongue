@@ -1,5 +1,5 @@
 import { DAY_MS, personalize, placeKnown, PLAYER_MARK, rankFor, wordState, type Course, type GameState, type WordId, type WordRecord, type WordState } from "@silver-tongue/core";
-import { displayGloss, sentenceCard } from "./help";
+import { displayGloss, playerName, sentenceCard } from "./help";
 import type { Text } from "./text";
 
 /** What the notebook calls a word: "new" until it is first answered right, then its state. */
@@ -69,7 +69,7 @@ export interface NotebookPlace {
  * an introduction), both sides, each once.
  */
 function phrasesOf(course: Course, state: GameState, t: Text): Notebook["phrases"] {
-  const name = state.player ?? "";
+  const name = playerName(state);
   const seen = new Set<string>();
   const out: Notebook["phrases"] = [];
   for (const scene of course.scenes) {
@@ -165,7 +165,7 @@ export function notebookEntries(course: Course, state: GameState, t: Text, now: 
       label: st === "met" && rec.streak === 0 ? "new" : (st as NotebookLabel),
       clips: w.audio ?? [],
       // Saves from before 0.7.0 may hold the name's mark instead of the name.
-      ...(rec.first ? { first: rec.first.line.split(PLAYER_MARK).join(state.player ?? "") } : {}),
+      ...(rec.first ? { first: rec.first.line.split(PLAYER_MARK).join(playerName(state)) } : {}),
     };
   };
   const groups: NotebookGroup[] = [];

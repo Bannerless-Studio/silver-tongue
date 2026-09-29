@@ -41,6 +41,16 @@ describe("import-vocab-pack", () => {
     expect(again.meta.stages).toEqual({ "1": ["1", "2"] });
   });
 
+  it("keeps a hand-set tileGap and each word's attach on re-import", () => {
+    const first = convertPack(pack, words);
+    expect("tileGap" in first.meta).toBe(false);
+    const hand = first.words.map((w) => (w.id === "w0900" ? { ...w, attach: true } : w));
+    const again = convertPack(pack, words, { ...first.meta, tileGap: " " }, hand);
+    expect(again.meta.tileGap).toBe(" ");
+    expect(again.words.find((w) => w.id === "w0900")).toMatchObject({ attach: true });
+    expect(again.words.find((w) => w.id === "w0133")).not.toHaveProperty("attach");
+  });
+
   it("keeps alternatives, part of speech, typing rules and an explicit locale", () => {
     const typing = { caseSensitive: false, accents: "lenient" };
     const es = { key: "es", name: "Spanish", tts: "es-ES", langTag: "es-419", levels: [{ id: "A1", label: "A1" }], typing, spaced: true };

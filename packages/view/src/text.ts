@@ -233,15 +233,6 @@ export const VN_UI_KEYS: Record<string, string[]> = {
   "vn-turn-phone": [],
   "vn-dismiss": [],
   "vn-play-word": [],
-  "settings-ruby": ["ruby"],
-  "settings-ruby-auto": [],
-  "settings-ruby-on": [],
-  "settings-ruby-off": [],
-  "notebook-letters": [],
-  "notebook-papers": [],
-  "notebook-papers-empty": [],
-  "notebook-paper-progress": ["known", "total"],
-  "notebook-paper-from": ["npc", "place"],
 };
 
 /** Message ids the quiet terminal page uses, with their variables; checked like UI_KEYS. */
@@ -289,15 +280,6 @@ export const QUIET_UI_KEYS: Record<string, string[]> = {
   "quiet-st-parcel": [],
   "quiet-st-no-parcel": [],
   "quiet-no-save": [],
-  "settings-ruby": ["ruby"],
-  "settings-ruby-auto": [],
-  "settings-ruby-on": [],
-  "settings-ruby-off": [],
-  "notebook-letters": [],
-  "notebook-papers": [],
-  "notebook-papers-empty": [],
-  "notebook-paper-progress": ["known", "total"],
-  "notebook-paper-from": ["npc", "place"],
 };
 
 /** Every UI message that is missing or can't be formatted with the variables the TUI passes. */

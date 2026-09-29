@@ -40,10 +40,11 @@ export function packProblems(pack: VocabPackJson, words: VocabWordJson[], existi
 }
 
 /**
- * Converts a vocab-engine pack. `existing` is our current pack.json, whose
- * hand-set fields (stages) survive a re-import. Throws on bad input, listing every problem.
+ * Converts a vocab-engine pack. `existing` is our current pack.json and `existingWords` our current
+ * words.json, whose hand-set fields (stages and tileGap; each word's attach) survive a re-import.
+ * Throws on bad input, listing every problem.
  */
-export function convertPack(pack: VocabPackJson, words: VocabWordJson[], existing?: PackMeta): ImportResult {
+export function convertPack(pack: VocabPackJson, words: VocabWordJson[], existing?: PackMeta, existingWords: PackWord[] = []): ImportResult {
   const problems = packProblems(pack, words, existing);
   if (problems.length) throw new Error(`vocab-engine pack "${pack.key}" can't be imported:\n  ${problems.join("\n  ")}`);
   const levels = pack.levels.map((l) => String(l.id));
@@ -57,12 +58,15 @@ export function convertPack(pack: VocabPackJson, words: VocabWordJson[], existin
     stages: existing?.stages ?? Object.fromEntries(levels.map((lv, i) => [String(i + 1), [lv]])),
     typing: pack.typing ?? existing?.typing ?? null,
     spaced: pack.spaced !== false,
+    ...(existing?.tileGap !== undefined && { tileGap: existing.tileGap }),
   };
+  const attached = new Set(existingWords.filter((w) => w.attach === true).map((w) => w.id));
   const out: PackWord[] = words.map((v) => {
     const w: PackWord = { id: v.id, w: v.w, lv: String(v.lv) };
     if (v.alt?.length) w.alt = v.alt;
     if (v.pron) w.pron = v.pron;
     if (v.pos) w.pos = v.pos;
+    if (attached.has(v.id)) w.attach = true;
     return w;
   });
   const glossesFtl =
@@ -82,11 +86,13 @@ function main(): void {
   const words = JSON.parse(readFileSync(join(src, "words.json"), "utf8")) as VocabWordJson[];
   const metaPath = join(outDir, "pack.json");
   const existing = existsSync(metaPath) ? (JSON.parse(readFileSync(metaPath, "utf8")) as PackMeta) : undefined;
-  const res = convertPack(pack, words, existing);
+  const wordsPath = join(outDir, "words.json");
+  const existingWords = existsSync(wordsPath) ? (JSON.parse(readFileSync(wordsPath, "utf8")) as PackWord[]) : [];
+  const res = convertPack(pack, words, existing, existingWords);
   mkdirSync(outDir, { recursive: true });
   mkdirSync(dirname(glossesPath), { recursive: true });
   writeFileSync(metaPath, JSON.stringify(res.meta, null, 2) + "\n");
-  writeFileSync(join(outDir, "words.json"), JSON.stringify(res.words, null, 1) + "\n");
+  writeFileSync(wordsPath, JSON.stringify(res.words, null, 1) + "\n");
   writeFileSync(glossesPath, res.glossesFtl);
   console.log(`imported ${res.words.length} words into ${outDir}`);
 }

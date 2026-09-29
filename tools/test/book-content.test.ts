@@ -98,6 +98,10 @@ describe("letters.json", () => {
       'letters.json: group "a": "x" name must be text',
       'letters.json: group "a": "x" reading must be text',
     ]);
+    expect(letterProblems({ groups: [{ id: "a", letters: [{ ch: "x", audio: ["c1"], sound: "x" }] }] })).toEqual([
+      'letters.json: group "a": "x" has an unknown field "audio"',
+      'letters.json: group "a": "x" has an unknown field "sound"',
+    ]);
   });
 });
 
@@ -152,6 +156,15 @@ describe("attach words and the tile gap", () => {
     const { course } = buildCourse(CONTENT, "zh-china");
     expect("tileGap" in course!.language).toBe(false);
     expect(Object.values(extra(course!).words).some((w) => "attach" in w)).toBe(false);
+  });
+
+  it("reports an attach that isn't true or false", () => {
+    const { errors } = buildChanged((d) =>
+      editJson(d, "languages/zh/words.json", (words) => {
+        words.find((x: { w: string }) => x.w === "了").attach = "yes";
+      }),
+    );
+    expect(errors.some((e) => /: attach must be true or false$/.test(e) && e.includes('"了"'))).toBe(true);
   });
 
   it("reports a tileGap that isn't text", () => {

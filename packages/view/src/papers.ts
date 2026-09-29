@@ -1,6 +1,6 @@
 import { personalize, wordState, type Course, type GameState, type Token, type WordId } from "@silver-tongue/core";
 import { extra } from "./course-extra";
-import { displayGloss, readingsOf } from "./help";
+import { displayGloss, playerName, readingsOf } from "./help";
 import type { Text } from "./text";
 
 /** One word on a paper: known words are shown, the rest are blanks with their reading. */
@@ -32,7 +32,7 @@ export interface Paper {
 
 /** Every pinned line of every scene done, in course order. */
 export function papers(course: Course, state: GameState, t: Text, now: number): Paper[] {
-  const name = state.player ?? "";
+  const name = playerName(state);
   const out: Paper[] = [];
   for (const scene of extra(course).scenes) {
     if (!(state.scenesDone[scene.id] ?? 0)) continue;

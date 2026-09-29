@@ -1,4 +1,5 @@
 import { comboKey, joinTiles, personalize, PLAYER_MARK, tilePieces, type Course, type GameState, type RenderedLine } from "@silver-tongue/core";
+import { playerName } from "./help";
 import { joinTilesForDisplay } from "./tiles";
 
 /** The right reply for the exchange being played. */
@@ -17,7 +18,7 @@ export function tileEcho(course: Course, state: GameState, tiles: string[], plac
   const chosen = placed.map((i) => tiles[i]);
   const graded = joinTiles(course, chosen);
   const reply = rightReply(course, state);
-  const name = state.player ?? "";
+  const name = playerName(state);
   const right = !!reply && joinTiles(course, tilePieces(reply).map((x) => (x === PLAYER_MARK ? name : x))) === graded;
   return { line: right ? personalize(reply!, name) : { text: joinTilesForDisplay(course, chosen), tokens: [] }, right, clips: reply?.audio ?? [] };
 }

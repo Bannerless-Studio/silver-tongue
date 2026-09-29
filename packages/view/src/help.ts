@@ -103,9 +103,18 @@ export function displayGloss(w: { gloss: string; short?: string } | undefined): 
   return shortGloss(w?.gloss ?? "");
 }
 
-/** How to say a word as it is written in a line: that form's readings, else the word's own. */
+/** The player's name as core writes it into lines; "?" until one is given, as core has it. */
+export const playerName = (state: GameState): string => state.player ?? "?";
+
+/**
+ * How to say a word as it is written in a line: that form's readings, else the word's own. Written
+ * some other way (an `alt` spelling), it has none: the word's own readings would say
+ * the wrong thing.
+ */
 export function readingsOf(w: Word | undefined, surface?: string): string[] {
-  return (surface !== undefined && w?.forms?.[surface]) || w?.readings || [];
+  if (!w) return [];
+  if (surface === undefined || surface === w.w) return w.readings ?? [];
+  return w.forms?.[surface] ?? [];
 }
 
 /** What looking up a word shows; `surface` is the word as written in the line, when known. */

@@ -14,6 +14,7 @@ import {
   paperParts,
   papers,
   quietRuby,
+  readingsOf,
   tileEcho,
   parseSettings,
   rubyRow,
@@ -111,6 +112,14 @@ describe("rubyRow", () => {
     expect(rubyRow(f, fl, {}, T0, "on")).toEqual([{ start: 0, end: 2, text: "nǐ le" }]);
   });
 
+  it("gives an other spelling (alt) no reading: the word's own would be wrong", () => {
+    const l = { text: "학생은", tokens: [{ start: 0, end: 2, word: "k_haksaeng" }, { start: 2, end: 3, word: "k_neun" }] };
+    expect(rubyRow(c, l, {}, T0, "on")).toEqual([{ start: 0, end: 2, text: "haksaeng" }]);
+    expect(readingsOf(c.words.k_neun, "은")).toEqual([]);
+    expect(readingsOf(c.words.k_neun, "는")).toEqual(["neun"]);
+    expect(readingsOf(c.words.k_neun)).toEqual(["neun"]);
+  });
+
   it("skips a reading that only repeats the word", () => {
     const k = structuredClone(c) as unknown as CourseExtra;
     k.words.k_jeo.readings = ["저"];
@@ -201,6 +210,37 @@ describe("papers", () => {
     ]);
     expect(t("notebook-paper-progress", { known: p.known, total: p.total })).toBe("1 of 2 words known");
     expect(paperLabel(t, p)).toEqual({ npcName: "Cook", placeName: "Noodle shop" });
+  });
+
+  it("finds each word after the player's name mid-line, and writes \"?\" as core does before there is a name", () => {
+    const c = structuredClone(fixtureWithText());
+    const ex = extra(c).scenes[0].exchanges[0];
+    ex.pin = true;
+    const v = ex.variants[""];
+    // 你 + name + 好！: 好 moves along by the name's length
+    v.npc = { ...v.npc, text: `你${PLAYER_MARK}好！`, tokens: [{ start: 0, end: 1, word: "w_ni" }, { start: 1 + PLAYER_MARK.length, end: 2 + PLAYER_MARK.length, word: "w_hao" }] };
+    const t = makeText(c.learnerFtl, "en");
+    const state = newGame(c);
+    state.scenesDone = { intro: 1 };
+    state.words = { w_hao: known };
+    state.player = "Mei";
+    const [p] = papers(c, state, t, T0);
+    expect(p.text).toBe("你Mei好！");
+    expect(p.tokens.map((tk) => p.text.slice(tk.start, tk.end))).toEqual(["你", "好"]);
+    expect(p.blanks.map((b) => [p.text.slice(b.start, b.end), b.known])).toEqual([["你", false], ["好", true]]);
+    expect(paperParts(p).map((x) => x.text)).toEqual(["你", "Mei", "好", "！"]);
+    delete state.player;
+    expect(papers(c, state, t, T0)[0].text).toBe("你?好！");
+  });
+
+  it("skips a done scene the course no longer has", () => {
+    const c = structuredClone(fixtureWithText());
+    extra(c).scenes[0].exchanges[0].pin = true;
+    const state = newGame(c);
+    state.scenesDone = { gone: 3, intro: 1 };
+    expect(papers(c, state, makeText(c.learnerFtl, "en"), T0).map((p) => p.scene)).toEqual(["intro"]);
+    state.scenesDone = { gone: 3 };
+    expect(papers(c, state, makeText(c.learnerFtl, "en"), T0)).toEqual([]);
   });
 
   it("leaves unpinned exchanges out", () => {

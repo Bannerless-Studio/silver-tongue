@@ -144,6 +144,8 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
   const words: Record<string, WordExtra> = {};
   for (const w of packWords) {
     if (glosses && !glosses.has(w.id)) errors.push(`glosses: no ${learner} gloss for ${w.id} "${w.w}"`);
+    const { attach } = w as { attach?: unknown };
+    if (attach !== undefined && typeof attach !== "boolean") errors.push(`words: ${w.id} "${w.w}": attach must be true or false`);
     words[w.id] = {
       id: w.id,
       w: w.w,
@@ -155,7 +157,7 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
       ...(w.bonus ? { bonus: true } : {}),
       // attach: a particle or ending the front ends show glued to the tile before it; its other
       // spellings come along so a tile spelled that way is found too
-      ...(w.attach ? { attach: true, ...(w.alt?.length ? { alt: w.alt } : {}) } : {}),
+      ...(w.attach === true ? { attach: true, ...(w.alt?.length ? { alt: w.alt } : {}) } : {}),
     };
   }
 
