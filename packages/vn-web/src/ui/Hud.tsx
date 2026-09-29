@@ -1,4 +1,4 @@
-import { hudValues, type DayPart } from "@silver-tongue/view";
+import { bookOn, hudValues, type DayPart } from "@silver-tongue/view";
 
 /** The part of the day, drawn in the scene's colours. */
 const PART_ICON: Record<DayPart, string> = { morning: "🌅", midday: "☀️", afternoon: "🌤️", evening: "🌇", night: "🌙" };
@@ -22,7 +22,7 @@ export function Hud({ vn, view, onOpen }: { vn: Vn; view: VnView; onOpen: (o: "n
       {h.rentLate && <span class="badge warn">{vn.t("vn-rent-late")}</span>}
       <span class="hud-buttons">
         <button type="button" aria-label={vn.t("vn-sound")} title={vn.t("vn-sound")} onClick={() => vn.toggleSound()}>{soundOff ? "♪̸" : "♪"}</button>
-        <button type="button" aria-label={vn.t("vn-notebook")} title={vn.t("vn-notebook")} onClick={() => onOpen("notebook")}>✎</button>
+        <button type="button" aria-label={vn.t(bookOn(vn.course) ? "vn-book" : "vn-notebook")} title={vn.t(bookOn(vn.course) ? "vn-book" : "vn-notebook")} onClick={() => onOpen("notebook")}>✎</button>
         <button type="button" aria-label={vn.t("vn-backlog")} title={vn.t("vn-backlog")} onClick={() => onOpen("backlog")}>⟲</button>
         <button type="button" aria-label={vn.t("vn-menu")} title={vn.t("vn-menu")} onClick={() => onOpen("menu")}>☰</button>
       </span>

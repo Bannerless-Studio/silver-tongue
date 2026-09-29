@@ -1,5 +1,6 @@
 import type { CatalogEntry, Course, GameState } from "@silver-tongue/core";
 import type { SpeechSpeed } from "./audio";
+import { bookOn } from "./course-extra";
 import type { RubySetting } from "./ruby";
 import type { Text } from "./text";
 
@@ -26,7 +27,7 @@ export interface SettingsContext {
    * share this function but pick speed some other way, so this stays unset for them.
    */
   terminal?: { speed: SpeechSpeed };
-  /** the readings-over-words choice; a front end that writes readings over words sets it to get the row */
+  /** the readings-over-words choice; a front end that writes readings over words sets it to get the row (only for a course with the Book) */
   ruby?: RubySetting;
 }
 
@@ -58,6 +59,6 @@ export function settingsRows(screen: SettingsScreen, c: SettingsContext): Settin
     { label: soundLabel, action: { kind: "sound" } },
   ];
   if (c.terminal) rows.push({ label: t("settings-speed", { speed: t(`settings-speed-${c.terminal.speed}`) }), action: { kind: "speed" } });
-  if (c.ruby) rows.push({ label: t("settings-ruby", { ruby: t(`settings-ruby-${c.ruby}`) }), action: { kind: "ruby" } });
+  if (c.ruby && bookOn(c.course)) rows.push({ label: t("settings-ruby", { ruby: t(`settings-ruby-${c.ruby}`) }), action: { kind: "ruby" } });
   return rows;
 }

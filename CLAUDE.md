@@ -52,7 +52,7 @@ npm run build:site       # all three pages into site/, as GitHub Pages serves th
 
 - Front ends talk to core only through `send` and `state`. Never copy core's source into this repo; a change to the rules is made in `silver-tongue-core`, released there, then picked up here by bumping the `@silver-tongue/core` version in every package that depends on it.
 - Always run `npm run build:course` after changing anything under `content/`; never ship a course with checker errors. A changed line needs its clip: run `npm run audio` and commit `content/audio/`.
-- Never edit generated files: `content/languages/zh/words.json` (except a word's `attach`), `content/languages/zh/pack.json` (except `stages` and `tileGap`), `content/learner/en/glosses-zh.ftl`, `content/audio/`, `dist/`. Re-run the import or the build instead.
+- Never edit generated files: `content/languages/zh/words.json` (except a word's `attach`), `content/languages/zh/pack.json` (except `stages`, `tileGap` and `book`), `content/learner/en/glosses-zh.ftl`, `content/audio/`, `dist/`. Re-run the import or the build instead.
 - `content/learner/<l>/glosses-<lang>-short.ftl` is hand-edited, not generated: curated 1-3 word display glosses for words the short-gloss heuristic (`packages/view/src/help.ts`) can't shorten well on its own. `npm run build:course` warns (without failing) when a stage word has none and needs one.
 - Bonus (off-list) words go in `content/languages/<lang>/extra-words.json` with glosses in `content/learner/<l>/glosses-<lang>-extra.ftl`.
 - Every UI string the TUI uses must be listed in `packages/view/src/text.ts` `UI_KEYS`.

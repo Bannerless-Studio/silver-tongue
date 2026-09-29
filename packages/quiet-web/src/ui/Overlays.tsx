@@ -1,7 +1,7 @@
 import { useState } from "preact/hooks";
 import type { CatalogEntry, WordState } from "@silver-tongue/core";
 import {
-  dayPart, hasLetters, hudValues, lettersView, nextRuby, nextSpeed, notebookDefault, notebookEntries, paperGlosses, paperParts, papers, peopleList, rentDueInDays, settingsRows,
+  bookOn, dayPart, hasLetters, hudValues, lettersView, nextRuby, nextSpeed, notebookDefault, notebookEntries, paperGlosses, paperParts, papers, peopleList, rentDueInDays, settingsRows,
   type Paper, type SettingsScreen,
 } from "@silver-tongue/view";
 import type { Quiet } from "../quiet";
@@ -54,18 +54,19 @@ export function Notebook({ q, onClose }: { q: Quiet; onClose: () => void }) {
   const keep = (s: WordState) => tab === "all" || s === tab;
   const kept = tab === "papers" ? papers(course, core.state, t, now) : [];
   const pick = (v: NotebookView) => (setTab(v), setOpen(null));
+  const book = bookOn(course);
   const tabButton = (v: NotebookView, label: string) => (
     <button key={v} type="button" role="tab" aria-selected={v === tab} class={v === tab ? "tab on" : "tab"} onClick={() => pick(v)}>{label}</button>
   );
   const tabs = (
     <nav class="tabs" role="tablist">
-      {hasLetters(course) && tabButton("letters", t("notebook-letters"))}
+      {book && hasLetters(course) && tabButton("letters", t("notebook-letters"))}
       {VIEWS.map((v) => tabButton(v, t(`quiet-tab-${v}`, v === "all" ? { count: nb.counts.shaky + nb.counts.met + nb.counts.known } : { count: nb.counts[v] })))}
-      {tabButton("papers", t("notebook-papers"))}
+      {book && tabButton("papers", t("notebook-papers"))}
     </nav>
   );
   return (
-    <Overlay q={q} title={t("quiet-notebook")} head={tabs} onClose={onClose}>
+    <Overlay q={q} title={t(book ? "quiet-book" : "quiet-notebook")} head={tabs} onClose={onClose}>
       {tab === "letters" && lettersView(course, t).map((g) => (
         <section key={g.id}>
           <p class="nb-place">{g.label}</p>

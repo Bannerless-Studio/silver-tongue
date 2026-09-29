@@ -1,4 +1,5 @@
 import { wordState, type Course, type GameState, type RenderedLine } from "@silver-tongue/core";
+import { bookOn } from "./course-extra";
 import { readingsOf } from "./help";
 
 /** When a word's reading is written over it: while it isn't known yet ("auto"), always, or never. */
@@ -18,11 +19,12 @@ export interface RubySpan {
 
 /**
  * The readings written over a line's words: each word's plainest reading, as that word is written in
- * the line. "auto" gives them for the words not known yet, "on" for every word, "off" for none. A word
+ * the line. "auto" gives them for the words not known yet, "on" for every word, "off" for none; a
+ * course without the Book (see bookOn) has none whatever the setting. A word
  * with no reading, or whose reading is just its own spelling, gets none.
  */
 export function rubyRow(course: Course, line: RenderedLine, words: GameState["words"], now: number, ruby: RubySetting = DEFAULT_RUBY): RubySpan[] {
-  if (ruby === "off") return [];
+  if (ruby === "off" || !bookOn(course)) return [];
   return line.tokens.flatMap((tk) => {
     if (ruby === "auto" && wordState(words[tk.word], now) === "known") return [];
     const surface = line.text.slice(tk.start, tk.end);

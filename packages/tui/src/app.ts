@@ -14,14 +14,14 @@ import {
   type WordId,
 } from "@silver-tongue/core";
 import type { AudioOut, RubySetting, Speech, SpeechSpeed } from "@silver-tongue/view";
-import { moveLetter, notebookBody, notebookGroups, notebookHead, notebookTabs, phraseGroups, type BookExtras, type NotebookView } from "./notebook";
+import { moveLetter, NOTEBOOK_TABS_OLD, notebookBody, notebookGroups, notebookHead, notebookTabs, phraseGroups, type BookExtras, type NotebookView } from "./notebook";
 import { cardBox, lineSpans, rubyLine, wrapItems } from "./screen";
 import { innerWidth, NARROW, renderFrame, type Panel } from "./panel";
 import { strWidth, wrapLine } from "./width";
 import type { Key, StyledLine, Terminal } from "./terminal";
 import {
-  actionNarration, DEFAULT_RUBY, hasLetters, hintView, hudValues, introLines, jobView, joinTilesForDisplay, lettersView, makeText, nextRuby, notebookEntries, papers,
-  placeMenu, reviewCard, reviewOffer, rubyRow, sentenceCard, settingsRows, typePrompt, tileEcho, waitingForMoney, wordCard, wordExample,
+  actionNarration, bookOn, DEFAULT_RUBY, hasLetters, hintView, hudValues, introLines, jobView, joinTilesForDisplay, lettersView, makeText, nextRuby, notebookEntries, papers,
+  placeMenu, readingRow, reviewCard, reviewOffer, rubyRow, sentenceCard, settingsRows, typePrompt, tileEcho, waitingForMoney, wordCard, wordExample,
   type HintView, type HudValues, type JobView, type ReviewCard, type SentenceCard, type SettingsScreen, type Text,
 } from "@silver-tongue/view";
 
@@ -148,17 +148,25 @@ export function startApp(opts: AppOptions): App {
   ];
   /** The readings written under a line's words, as the ruby setting has them; `indent`: where the line's text starts. */
   const rubyUnder = (line: RenderedLine, indent: number) => rubyLine(line, rubyRow(course, line, core.state.words, opts.now(), ruby), indent);
+  /** Whether this course uses the Book: readings under each word, the Letters and Papers tabs. */
+  const hasBook = bookOn(course);
   /**
-   * An NPC's line, then the readings of its words (by the ruby setting: by default, those not known
-   * yet), each under its word. The row keeps the readings it had when said: the log doesn't fade
-   * them afterwards. Returns where the line sits in the log, for a card opened on one of its words.
+   * An NPC's line, then its readings. With the Book: each word's reading under it, by the ruby
+   * setting (by default, the words not known yet); the row keeps the readings it had when said: the
+   * log doesn't fade them afterwards. Without: the line's whole reading while any word in it isn't
+   * known yet. Returns where the line sits in the log, for a card opened on one of its words.
    */
   const sayLine = (npc: string, line: RenderedLine, fresh: Set<WordId>, suffix = "") => {
     const row = say(npc, line, fresh, suffix);
     const indent = strWidth(`${npcName(npc)}${suffix}: `);
     push(row);
-    const reading = rubyUnder(line, indent);
-    if (reading) push(reading);
+    if (hasBook) {
+      const reading = rubyUnder(line, indent);
+      if (reading) push(reading);
+    } else {
+      const reading = readingRow(course, core.state, line, opts.now());
+      if (reading) push([{ text: " ".repeat(indent) + reading, color: "yellow", dim: true }]);
+    }
     return { row, end: log[log.length - 1], indent };
   };
 
@@ -459,8 +467,8 @@ export function startApp(opts: AppOptions): App {
     return false;
   }
 
-  /** The Book's tabs: Letters only for a language with a letter chart. */
-  const bookTabs = () => notebookTabs(hasLetters(course));
+  /** The notebook's tabs: with the Book, Letters (for a language with a letter chart) and Papers too. */
+  const bookTabs = () => (hasBook ? notebookTabs(hasLetters(course)) : NOTEBOOK_TABS_OLD);
   /** The letter chart and the papers kept, for the Book's Letters and Papers tabs. */
   const bookExtras = (): BookExtras => ({ course, letters: lettersView(course, t), papers: papers(course, core.state, t, opts.now()) });
 
@@ -817,8 +825,8 @@ export function startApp(opts: AppOptions): App {
       const body = notebookBody(book, t, nbView, cols, height, bookExtras());
       nbView = { ...nbView, top: body.top };
       const moves = ["words", "phrases", "letters", "papers"].includes(nbView.tab);
-      const footer = t(moves ? "keys-notebook" : "keys-notebook-scroll", { tabs: tabs.length });
-      const frame = { title: t("notebook-title"), right: book.rankLabel, panels: [{ lines: head }, { lines: body.lines }], footer };
+      const footer = hasBook ? t(moves ? "keys-book" : "keys-book-scroll", { tabs: tabs.length }) : t(moves ? "keys-notebook" : "keys-notebook-scroll");
+      const frame = { title: t(hasBook ? "book-title" : "notebook-title"), right: book.rankLabel, panels: [{ lines: head }, { lines: body.lines }], footer };
       term.write(renderFrame({ ...frame, footerRight: footerRight(footer, cols) }, cols, rows));
       return;
     }
@@ -846,7 +854,9 @@ export function startApp(opts: AppOptions): App {
             ? ["keys-pick", pickCount()]
             : ["keys-tiles", tiles.length];
     // [o] is listed last, so a narrow screen drops it first.
-    const keys = t(footerId, { keys: keyRange(count) });
+    // With the Book, [n] opens "the book": the hints that name it have their own messages.
+    const named = hasBook && ["keys-explore", "keys-pick", "keys-tiles"].includes(footerId) ? `${footerId}-book` : footerId;
+    const keys = t(named, { keys: keyRange(count) });
     const footer = opts.settings && ["explore", "scene", "help"].includes(mode) ? `${keys} · ${t("keys-o")}` : keys;
     const inner = innerWidth(cols);
     const shownCard = card && mode !== "explore" ? card : null;

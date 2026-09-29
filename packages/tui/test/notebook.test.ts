@@ -42,7 +42,7 @@ describe("notebook", () => {
 
   it("heads the page with the tabs and progress", () => {
     const head = notebookHead(notebookEntries(course, state, t, LATER), t, "words").map(plain);
-    expect(head[0]).toMatch(/1\) Words +2\) Phrases +3\) Papers +4\) People +5\) Places +6\) Notes/);
+    expect(head[0]).toMatch(/1\) Words +2\) Phrases +3\) People +4\) Places +5\) Notes/);
     expect(head[1]).toBe("Stage 1: 1 of 12 words known");
   });
 

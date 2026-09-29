@@ -790,7 +790,7 @@ describe("tui app", () => {
     term.resize(80, 24);
     term.press("1", "1", "n");
     const bottom = term.screen().at(-1)!;
-    for (const k of ["[esc]", "[1-6]", "[enter]", "[p]"]) expect(bottom).toContain(k);
+    for (const k of ["[esc]", "[1-5]", "[enter]", "[p]"]) expect(bottom).toContain(k);
   });
 
   it("opens the notebook with n: words by group, notes, and back where it was", () => {
@@ -799,7 +799,7 @@ describe("tui app", () => {
     term.press(rightKey(core));
     term.press("n");
     let s = term.screen();
-    expect(s[0]).toMatch(/Book ─+ Speaks: Pidgin/);
+    expect(s[0]).toMatch(/Notebook ─+ Speaks: Pidgin/);
     expect(s.join("\n")).toContain("Stage 1: 0 of 12 words known");
     expect(s.join("\n")).toMatch(/▸ Noodle shop \(\d+\)/); // no Recent: it would hold every word
     expect(s.at(-1)).toContain("[esc] back");
@@ -809,7 +809,7 @@ describe("tui app", () => {
     expect(first).toBeDefined();
     term.press("down");
     expect(chosen()).not.toBe(first);
-    term.press("6");
+    term.press("5");
     expect(term.screen().join("\n")).toContain("No notes yet.");
     term.press("escape");
     s = term.screen();
@@ -846,7 +846,7 @@ describe("tui app", () => {
     term.resize(90, 20);
     expect(term.screen().at(-1)).toMatch(/no audio · Silver Tongue v0\.5\.0 ┘$/);
     term.resize(46, 20);
-    expect(term.screen().at(-1)).toMatch(/^─ \[1-2\] choose · \[n\] book ─* no audio ─$/);
+    expect(term.screen().at(-1)).toMatch(/^─ \[1-2\] choose · \[n\] notebook ─* no audio ─$/);
   });
 
   const ERRAND_TEXT = `
@@ -1071,7 +1071,7 @@ asked-deliver = They wanted it taken to the { $place }.
       term.resize(46, 20);
       term.press("1", "1");
       expect(term.screen().at(-1)).toMatch(/^─ \[1-4\] reply · \[w\] help · \[r\] again ─*─$/);
-      expect(fixtureWithText().learnerFtl).toMatch(/keys-tiles = .*\[n\] book/);
+      expect(fixtureWithText().learnerFtl).toMatch(/keys-tiles = .*\[n\] notebook/);
       void core;
     });
 
@@ -1156,8 +1156,7 @@ describe("settings screen", () => {
     expect(screen(term)).toContain("2) Reading: English");
     expect(screen(term)).toContain("3) Sound: no audio (or [m])");
     expect(screen(term)).toContain("4) Speed: slow");
-    expect(screen(term)).toContain("5) Readings over words: new words only");
-    expect(screen(term)).toContain("[1-5] change");
+    expect(screen(term)).toContain("[1-4] change");
     for (const l of term.frames.at(-1)!) expect(lineWidth(l)).toBe(46);
     term.press("escape");
     expect(screen(term)).not.toContain("Settings");
@@ -1255,8 +1254,7 @@ describe("settings screen", () => {
     expect(screen(term)).toContain("3) Sound: no audio");
     expect(screen(term)).not.toContain("(or [m])");
     expect(screen(term)).not.toContain("Speed");
-    expect(screen(term)).toContain("4) Readings over words: new words only");
-    expect(screen(term)).toContain("[1-4] change");
+    expect(screen(term)).toContain("[1-3] change");
   });
 
   it("has no [o] without settings", () => {
@@ -1343,10 +1341,17 @@ describe("menu surprisal and place notices", () => {
   });
 });
 
+/** The fixture with the Book on, as a pack sets it with "book": true. */
+function bookFixture(): Course {
+  const c = fixtureWithText();
+  (c as unknown as CourseExtra).language.book = true;
+  return c;
+}
+
 describe("readings under words", () => {
   const known = { right: 3, wrong: 0, streak: 3, helps: 0, lapsed: false, firstSeen: T0, lastSeen: T0 };
   function play(ruby?: AppOptions["ruby"], patch: (s: GameState) => void = () => {}) {
-    const course = fixtureWithText();
+    const course = bookFixture();
     course.learnerFtl += "\nlanguage-zh = Chinese\n";
     const state = newGame(course);
     patch(state);
@@ -1412,6 +1417,7 @@ describe("the Book's tabs", () => {
       (s) => (s.scenesDone = { intro: 1 }),
       (c) => {
         const x = c as unknown as CourseExtra;
+        x.language.book = true;
         x.letters = { groups: [{ id: "consonants", letters: [{ ch: "ㄱ", reading: "g/k", audio: ["l1"] }, { ch: "ㄴ", reading: "n", audio: ["l2"] }] }] };
         const greet = x.scenes[0].exchanges[0];
         greet.pin = true;
@@ -1434,6 +1440,40 @@ describe("the Book's tabs", () => {
     term.press("return", "p");
     expect(term.screen().join("\n")).toContain("nǐhǎo！");
     expect(played.at(-1)).toEqual([{ clips: ["greet-npc"] }]);
+  });
+});
+
+describe("with and without the Book", () => {
+  it("a course without it keeps the notebook, its line reading and settings as they were; with it, the Book", () => {
+    const plain = setup();
+    plain.term.press("1", "1");
+    let s = plain.term.screen().join("\n");
+    expect(s).toMatch(/Cook: 你好！ *│\n│ +nǐ hǎo/); // the whole line's reading, as before
+    expect(plain.term.screen().at(-1)).toContain("[n] notebook");
+    plain.term.press("n");
+    expect(plain.term.screen()[0]).toMatch(/Notebook/);
+    expect(plain.term.screen().join("\n")).toMatch(/1\) Words +2\) Phrases +3\) People +4\) Places +5\) Notes/);
+    const book = setup(() => {}, (c) => void ((c as unknown as CourseExtra).language.book = true));
+    book.term.resize(120, 24);
+    book.term.press("1", "1");
+    expect(book.term.screen().at(-1)).toContain("[n] book");
+    book.term.press("n");
+    s = book.term.screen().join("\n");
+    expect(book.term.screen()[0]).toMatch(/┌ Book ─/);
+    expect(s).toMatch(/1\) Words +2\) Phrases +3\) Papers +4\) People +5\) Places +6\) Notes/);
+    expect(book.term.screen().at(-1)).toContain("[1-6] tab");
+  });
+
+  it("offers the Readings row only with the Book", () => {
+    const catalog: CatalogEntry[] = [{ id: "test-course", language: "zh", setting: "s", learners: ["en"], learnerNames: { en: "English" } }];
+    const rows = (change: (c: Course) => void) => {
+      const { term } = setup(() => {}, (c) => (change(c), (c.learnerFtl += "\nlanguage-zh = Chinese\n")), fixtureWithText, { courses: catalog, switchTo: () => {} });
+      term.resize(80, 20);
+      term.press("o");
+      return term.screen().join("\n");
+    };
+    expect(rows(() => {})).not.toContain("Readings over words");
+    expect(rows((c) => void ((c as unknown as CourseExtra).language.book = true))).toContain("Readings over words: new words only");
   });
 });
 

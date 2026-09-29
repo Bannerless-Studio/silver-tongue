@@ -1,6 +1,6 @@
 import { useEffect, useState } from "preact/hooks";
 import type { CatalogEntry, WordId } from "@silver-tongue/core";
-import { wordExample, type RubySetting, type SpeechSpeed } from "@silver-tongue/view";
+import { bookOn, wordExample, type RubySetting, type SpeechSpeed } from "@silver-tongue/view";
 import { keyAction, type Overlay } from "../keys";
 import { latestNpcLine, type Beat, type Quiet } from "../quiet";
 import { Anchor } from "./Anchor";
@@ -99,7 +99,7 @@ export function App({ q, page }: { q: Quiet; page: Page }) {
         <Prompt q={q} view={view} ruby={page.ruby} />
       </Transcript>
       <footer class="bar">
-        <button type="button" class="dim" onClick={() => setOpen("notebook")}>{t("quiet-notebook").toLowerCase()}</button>
+        <button type="button" class="dim" onClick={() => setOpen("notebook")}>{t(bookOn(q.course) ? "quiet-book" : "quiet-notebook").toLowerCase()}</button>
         <button type="button" class="dim" onClick={() => setOpen("status")}>{t("quiet-status").toLowerCase()}</button>
         <button type="button" class="dim" onClick={() => setOpen("settings")}>{t("vn-settings").toLowerCase()}</button>
       </footer>

@@ -167,6 +167,16 @@ describe("attach words and the tile gap", () => {
     expect(errors.some((e) => /: attach must be true or false$/.test(e) && e.includes('"了"'))).toBe(true);
   });
 
+  it("copies book: true into the course, and reports a book that isn't true or false", () => {
+    const on = buildChanged((d) => editJson(d, "languages/zh/pack.json", (p) => void (p.book = true)));
+    expect(on.errors).toEqual([]);
+    expect(extra(on.course!).language.book).toBe(true);
+    const { course } = buildCourse(CONTENT, "zh-china");
+    expect("book" in course!.language).toBe(false);
+    const bad = buildChanged((d) => editJson(d, "languages/zh/pack.json", (p) => void (p.book = "yes")));
+    expect(bad.errors).toContain('pack.json: "book" must be true or false, got "yes"');
+  });
+
   it("reports a tileGap that isn't text", () => {
     const { errors } = buildChanged((d) =>
       editJson(d, "languages/zh/pack.json", (p) => {

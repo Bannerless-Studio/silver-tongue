@@ -45,8 +45,10 @@ describe("import-vocab-pack", () => {
     const first = convertPack(pack, words);
     expect("tileGap" in first.meta).toBe(false);
     const hand = first.words.map((w) => (w.id === "w0900" ? { ...w, attach: true } : w));
-    const again = convertPack(pack, words, { ...first.meta, tileGap: " " }, hand);
+    const again = convertPack(pack, words, { ...first.meta, tileGap: " ", book: true }, hand);
     expect(again.meta.tileGap).toBe(" ");
+    expect(again.meta.book).toBe(true);
+    expect("book" in first.meta).toBe(false);
     expect(again.words.find((w) => w.id === "w0900")).toMatchObject({ attach: true });
     expect(again.words.find((w) => w.id === "w0133")).not.toHaveProperty("attach");
   });

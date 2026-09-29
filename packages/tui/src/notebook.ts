@@ -7,6 +7,9 @@ import { fitLine, strWidth, wrapLine } from "./width";
 export const NOTEBOOK_TABS = ["letters", "words", "phrases", "papers", "people", "places", "notes"] as const;
 export type NotebookTab = (typeof NOTEBOOK_TABS)[number];
 
+/** The notebook's tabs for a course without the Book, as they always were. */
+export const NOTEBOOK_TABS_OLD: readonly NotebookTab[] = ["words", "phrases", "people", "places", "notes"];
+
 /** The Book's tabs for a course, in order: Letters only when the language has a letter chart. */
 export const notebookTabs = (letters: boolean): NotebookTab[] => NOTEBOOK_TABS.filter((id) => letters || id !== "letters");
 
@@ -58,7 +61,7 @@ export function phraseGroups(nb: Notebook): Group<NotebookPhrase>[] {
 }
 
 /** The tab line, then (on Words) progress on each stage's word list. */
-export function notebookHead(nb: Notebook, t: Text, tab: NotebookTab, shown: readonly NotebookTab[] = notebookTabs(false)): StyledLine[] {
+export function notebookHead(nb: Notebook, t: Text, tab: NotebookTab, shown: readonly NotebookTab[] = NOTEBOOK_TABS_OLD): StyledLine[] {
   const tabs = shown.flatMap((id, i): Span[] => [
     ...(i ? [{ text: "  " }] : []),
     id === tab ? { text: `${i + 1}) ${t(`notebook-${id}`)}`, bold: true, color: "cyan" } : { text: `${i + 1}) ${t(`notebook-${id}`)}`, dim: true },

@@ -30,8 +30,12 @@ export interface LetterChart {
  * its other spellings (`alt`), so a reply tile spelled that way is found.
  */
 export type WordExtra = Word & { attach?: boolean; alt?: string[] };
-/** `tileGap`: what goes between two reply tiles of a language whose tiles aren't `spaced`; "" when unset. */
-export type LanguageExtra = LanguageProfile & { tileGap?: string };
+/**
+ * `tileGap`: what goes between two reply tiles of a language whose tiles aren't `spaced`; "" when unset.
+ * `book`: the course uses the Book (readings under words, the Letters and Papers tabs); unset, the
+ * notebook stays as it was.
+ */
+export type LanguageExtra = LanguageProfile & { tileGap?: string; book?: boolean };
 /** `pin`: the NPC's line is a paper (a notice, a form) kept in the Book once the scene is done. */
 export type ExchangeExtra = Exchange & { pin?: boolean };
 export type SceneExtra = Omit<Scene, "exchanges"> & { exchanges: ExchangeExtra[] };
@@ -45,3 +49,6 @@ export type CourseExtra = Omit<Course, "words" | "language" | "scenes"> & {
 
 /** A course seen with the fields the build adds. */
 export const extra = (course: Course): CourseExtra => course as CourseExtra;
+
+/** Whether the course uses the Book (its pack sets `book`): readings under words, Letters and Papers. */
+export const bookOn = (course: Course): boolean => extra(course).language.book === true;

@@ -28,7 +28,7 @@ const known: WordRecord = { right: 3, wrong: 0, streak: 3, helps: 0, lapsed: fal
 /** A small unspaced course written with spaces between words, like Korean: 저 + 는 + 학생 + 이에요. */
 function koLike(tileGap?: string): Course {
   const c = structuredClone(fixtureWithText()) as CourseExtra;
-  c.language = { ...c.language, ...(tileGap !== undefined ? { tileGap } : {}) };
+  c.language = { ...c.language, book: true, ...(tileGap !== undefined ? { tileGap } : {}) };
   c.words = {
     k_jeo: { id: "k_jeo", w: "저", lv: "1", gloss: "I", readings: ["jeo"] },
     k_neun: { id: "k_neun", w: "는", lv: "1", gloss: "(topic)", readings: ["neun"], attach: true, alt: ["은"] },
@@ -108,6 +108,7 @@ describe("rubyRow", () => {
     const l = { text: "이예요", tokens: [{ start: 0, end: 1, word: "k_i_this" }, { start: 1, end: 3, word: "k_ieyo" }] };
     expect(rubyRow(c, l, {}, T0, "on")).toEqual([{ start: 1, end: 3, text: "yeyo" }]);
     const f = formsCourse();
+    extra(f).language.book = true;
     const fl = { text: "你了", tokens: [{ start: 0, end: 2, word: "w_ni" }] };
     expect(rubyRow(f, fl, {}, T0, "on")).toEqual([{ start: 0, end: 2, text: "nǐ le" }]);
   });
@@ -139,13 +140,24 @@ describe("ruby setting", () => {
     expect(parseSettings('{"ruby":true}')).toEqual({});
   });
 
-  it("gets a settings row only when the front end passes the choice", () => {
+  it("gets a settings row only when the front end passes the choice, and only for a course with the Book", () => {
     const course = fixtureWithText();
     const t = makeText(course.learnerFtl, "en");
     const base = { course, catalog: [], state: newGame(course), t, audioAvailable: true };
+    expect(settingsRows("main", { ...base, ruby: "auto" }).some((r) => r.action.kind === "ruby")).toBe(false);
+    extra(course).language.book = true;
     expect(settingsRows("main", base).some((r) => r.action.kind === "ruby")).toBe(false);
     const row = settingsRows("main", { ...base, ruby: "auto" }).at(-1)!;
     expect(row).toEqual({ label: "Readings over words: new words only", action: { kind: "ruby" } });
+  });
+
+  it("without the Book, no readings whatever the setting", () => {
+    const course = fixtureWithText();
+    const line = { text: "你好", tokens: [{ start: 0, end: 1, word: "w_ni" }, { start: 1, end: 2, word: "w_hao" }] };
+    expect(rubyRow(course, line, {}, T0, "on")).toEqual([]);
+    expect(quietRuby(course, line, {}, T0, "on")).toEqual([]);
+    extra(course).language.book = true;
+    expect(rubyRow(course, line, {}, T0, "on").map((r) => r.text)).toEqual(["nǐ", "hǎo"]);
   });
 });
 

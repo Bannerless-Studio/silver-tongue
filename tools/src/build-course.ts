@@ -355,11 +355,12 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
     ) ?? "";
 
   if (meta.tileGap !== undefined && typeof meta.tileGap !== "string") errors.push(`pack.json: "tileGap" must be text, got ${JSON.stringify(meta.tileGap)}`);
+  if (meta.book !== undefined && typeof meta.book !== "boolean") errors.push(`pack.json: "book" must be true or false, got ${JSON.stringify(meta.book)}`);
   const course: CourseExtra = {
     id: cfg.id,
     learner,
     ...(cfg.aliases?.length ? { aliases: cfg.aliases } : {}),
-    language: { code: meta.key, locale: meta.locale, tts: meta.tts, spaced: meta.spaced, ...(typeof meta.tileGap === "string" && meta.tileGap ? { tileGap: meta.tileGap } : {}) },
+    language: { code: meta.key, locale: meta.locale, tts: meta.tts, spaced: meta.spaced, ...(typeof meta.tileGap === "string" && meta.tileGap ? { tileGap: meta.tileGap } : {}), ...(meta.book === true ? { book: true } : {}) },
     typing: meta.typing !== null,
     words,
     concepts,

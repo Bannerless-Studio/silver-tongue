@@ -18,6 +18,8 @@ export interface PackMeta {
   direction?: "ltr" | "rtl";
   /** what goes between two reply tiles when shown, for an unspaced language that writes spaces between words; "" when absent */
   tileGap?: string;
+  /** true: the course uses the Book (readings under words, Letters and Papers tabs); absent means the notebook as it was */
+  book?: boolean;
 }
 
 export interface PackWord {
