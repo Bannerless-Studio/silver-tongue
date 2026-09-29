@@ -9,12 +9,20 @@ function setMeta(html: string, name: string, from: string, to: string): string {
   return html.replace(tag, `name="${name}" content="${to}"`);
 }
 
-/** The pages as the site serves them: the visual novel at /, the text game at /text/, the quiet terminal at /quiet/. */
-export function sitePages(vnHtml: string, textHtml: string, quietHtml: string): { vn: string; text: string; quiet: string } {
+/** The course the Korean page (/ko/) starts on. */
+export const KO_COURSE = "ko-seoul";
+
+/**
+ * The pages as the site serves them: the visual novel at /, the text game at /text/, the quiet
+ * terminal at /quiet/, and the quiet terminal made for the Korean game at /ko/.
+ */
+export function sitePages(vnHtml: string, textHtml: string, quietHtml: string): { vn: string; text: string; quiet: string; ko: string } {
+  const quiet = setMeta(setMeta(setMeta(quietHtml, "st-courses", "courses/", "../courses/"), "st-text", "", "../text/"), "st-vn", "", "../");
   return {
     vn: setMeta(setMeta(vnHtml, "st-text", "", "text/"), "st-quiet", "", "quiet/"),
     text: setMeta(setMeta(setMeta(textHtml, "st-courses", "courses/", "../courses/"), "st-vn", "", "../"), "st-quiet", "", "../quiet/"),
-    quiet: setMeta(setMeta(setMeta(quietHtml, "st-courses", "courses/", "../courses/"), "st-text", "", "../text/"), "st-vn", "", "../"),
+    quiet,
+    ko: setMeta(quiet, "st-course", "", KO_COURSE),
   };
 }
 
@@ -27,11 +35,13 @@ export function buildSite(repo: string): void {
   rmSync(out, { recursive: true, force: true });
   mkdirSync(join(out, "text"), { recursive: true });
   mkdirSync(join(out, "quiet"), { recursive: true });
+  mkdirSync(join(out, "ko"), { recursive: true });
   writeFileSync(join(out, "index.html"), pages.vn);
   writeFileSync(join(out, "text", "index.html"), pages.text);
   writeFileSync(join(out, "quiet", "index.html"), pages.quiet);
+  writeFileSync(join(out, "ko", "index.html"), pages.ko);
   cpSync(join(vnDist, "courses"), join(out, "courses"), { recursive: true });
-  console.log(`site/: the visual novel at /, the text game at /text/, the quiet terminal at /quiet/, courses at /courses/`);
+  console.log(`site/: the visual novel at /, the text game at /text/, the quiet terminal at /quiet/, the Korean game at /ko/, courses at /courses/`);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) buildSite(resolve(fileURLToPath(new URL("../..", import.meta.url))));

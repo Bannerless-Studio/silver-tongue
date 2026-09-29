@@ -3,7 +3,6 @@ import { WebglAddon } from "@xterm/addon-webgl";
 import { Terminal as XTerm } from "@xterm/xterm";
 import { createCore, mulberry32, type CatalogEntry, type Core, type Course, type GameState } from "@silver-tongue/core";
 import {
-  chooseStart,
   courseLabels,
   decodeSave,
   DEFAULT_RUBY,
@@ -25,9 +24,11 @@ import {
   createWebAudio,
   fetchJson,
   fromLocalStorage,
+  hasAnySession,
   loadWebSettings,
   metaContent,
   migrateWebAliases,
+  pageStart,
   updateWebSettings,
   WebSessions,
   type KeyValue,
@@ -339,10 +340,11 @@ async function boot() {
   ruby = settings.ruby ?? DEFAULT_RUBY;
   try {
     catalog = await fetchJson<CatalogEntry[]>(`${base}index.json`);
-    const picked = chooseStart(catalog, settings);
+    // A page made for one course (st-course) starts on it; see pageStart.
+    const { start: picked, remember } = pageStart(catalog, settings, metaContent(document, "st-course"), hasAnySession(kv));
     if ("error" in picked) throw new Error(picked.error);
     if (!picked.ask) {
-      use(await fetchCourse(picked.course, picked.learner), true);
+      use(await fetchCourse(picked.course, picked.learner), remember);
       return play(sessions!.continueLast());
     }
     // Several courses and none chosen yet: list them, named in the first course's reading language,

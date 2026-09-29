@@ -1,8 +1,8 @@
 import { render } from "preact";
 import { createCore, mulberry32, type CatalogEntry, type Course, type GameState } from "@silver-tongue/core";
-import { chooseStart, courseLabels, decodeSave, DEFAULT_RUBY, DEFAULT_SPEED, encodeSave, learnerFor, makeText, playbackRate, sessionLines, type Text } from "@silver-tongue/view";
+import { courseLabels, decodeSave, DEFAULT_RUBY, DEFAULT_SPEED, encodeSave, learnerFor, makeText, playbackRate, sessionLines, type Text } from "@silver-tongue/view";
 import {
-  coursesBase, createWebAudio, fetchJson, fromLocalStorage, loadWebSettings, metaContent, migrateWebAliases, updateWebSettings, WebSessions,
+  coursesBase, createWebAudio, fetchJson, fromLocalStorage, hasAnySession, loadWebSettings, metaContent, migrateWebAliases, pageStart, updateWebSettings, WebSessions,
   type KeyValue, type Opened,
 } from "@silver-tongue/web-common";
 import { loadArt, withArt, type Art } from "./art";
@@ -151,10 +151,11 @@ async function boot() {
   prefs = { speed: settings.speed ?? DEFAULT_SPEED, autoAdvance: settings.autoAdvance ?? true, ruby: settings.ruby ?? DEFAULT_RUBY };
   try {
     catalog = await withArt(await fetchJson<CatalogEntry[]>(`${base}index.json`), base, getText);
-    const picked = chooseStart(catalog, settings);
+    // A page made for one course (st-course) starts on it; see pageStart.
+    const { start: picked, remember } = pageStart(catalog, settings, metaContent(document, "st-course"), hasAnySession(kv));
     if ("error" in picked) throw new Error(picked.error);
     if (!picked.ask) {
-      use(await load(picked.course, picked.learner), true);
+      use(await load(picked.course, picked.learner), remember);
       return title();
     }
     // Several courses and none chosen yet: list them, named in the first course's reading language.
