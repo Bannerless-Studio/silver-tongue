@@ -1,6 +1,9 @@
 import { useState } from "preact/hooks";
 import type { CatalogEntry, WordState } from "@silver-tongue/core";
-import { dayPart, hudValues, nextSpeed, notebookDefault, notebookEntries, peopleList, rentDueInDays, settingsRows, type SettingsScreen } from "@silver-tongue/view";
+import {
+  dayPart, hasLetters, hudValues, lettersView, nextRuby, nextSpeed, notebookDefault, notebookEntries, paperGlosses, paperParts, papers, peopleList, rentDueInDays, settingsRows,
+  type Paper, type SettingsScreen,
+} from "@silver-tongue/view";
 import type { Quiet } from "../quiet";
 import type { Page } from "./App";
 import { partLabel } from "./Anchor";
@@ -19,31 +22,79 @@ export function Overlay({ q, title, head, hideTitle, onClose, children }: { q: Q
   );
 }
 
-type NotebookView = "shaky" | "met" | "known" | "all";
-const VIEWS: NotebookView[] = ["shaky", "met", "known", "all"];
+type WordsView = "shaky" | "met" | "known" | "all";
+type NotebookView = "letters" | WordsView | "papers";
+const VIEWS: WordsView[] = ["shaky", "met", "known", "all"];
+
+/** A paper's line: known words as they are, the rest blanks, or their reading (dim) when there is one. */
+function PaperLine({ paper }: { paper: Paper }) {
+  return (
+    <span class="line">
+      {paperParts(paper).map((part, i) =>
+        !("word" in part) ? <span key={i}>{part.text}</span>
+          : part.blank.known ? <span key={i} class="nb-w">{part.text}</span>
+          : <span key={i} class="dim blank">{part.blank.reading ?? "____"}</span>,
+      )}
+    </span>
+  );
+}
 
 /** Opens on the words that need work and why; the rest are one tap away on the tabs up top, which
- * count their words. No bars, no badges. */
+ * count their words. No bars, no badges. Letters (for a language with a chart) come first, papers last. */
 export function Notebook({ q, onClose }: { q: Quiet; onClose: () => void }) {
   const [tab, setTab] = useState<NotebookView>("shaky");
+  const [open, setOpen] = useState<number | null>(null);
   const { t, course, core } = q;
   const now = Date.now();
   const nb = notebookDefault(course, core.state, now);
   const whyText = (w: (typeof nb.shaky)[number]) =>
     w.why === "missed" ? t("quiet-why-missed", { count: w.count ?? 1 }) : t(`quiet-why-${w.why}`);
-  const full = tab === "shaky" ? undefined : notebookEntries(course, core.state, t, now);
+  const words = tab !== "letters" && tab !== "papers";
+  const full = !words || tab === "shaky" ? undefined : notebookEntries(course, core.state, t, now);
   const keep = (s: WordState) => tab === "all" || s === tab;
+  const kept = tab === "papers" ? papers(course, core.state, t, now) : [];
+  const pick = (v: NotebookView) => (setTab(v), setOpen(null));
+  const tabButton = (v: NotebookView, label: string) => (
+    <button key={v} type="button" role="tab" aria-selected={v === tab} class={v === tab ? "tab on" : "tab"} onClick={() => pick(v)}>{label}</button>
+  );
   const tabs = (
     <nav class="tabs" role="tablist">
-      {VIEWS.map((v) => (
-        <button key={v} type="button" role="tab" aria-selected={v === tab} class={v === tab ? "tab on" : "tab"} onClick={() => setTab(v)}>
-          {t(`quiet-tab-${v}`, v === "all" ? { count: nb.counts.shaky + nb.counts.met + nb.counts.known } : { count: nb.counts[v] })}
-        </button>
-      ))}
+      {hasLetters(course) && tabButton("letters", t("notebook-letters"))}
+      {VIEWS.map((v) => tabButton(v, t(`quiet-tab-${v}`, v === "all" ? { count: nb.counts.shaky + nb.counts.met + nb.counts.known } : { count: nb.counts[v] })))}
+      {tabButton("papers", t("notebook-papers"))}
     </nav>
   );
   return (
     <Overlay q={q} title={t("quiet-notebook")} head={tabs} onClose={onClose}>
+      {tab === "letters" && lettersView(course, t).map((g) => (
+        <section key={g.id}>
+          <p class="nb-place">{g.label}</p>
+          <div class="letters">
+            {g.letters.map((l, i) => (
+              <button key={i} type="button" class="letter" aria-label={[l.ch, l.name, l.reading].filter(Boolean).join(" ")} onClick={() => q.play(l.audio ?? [])}>
+                <span class="nb-w">{l.ch}</span><span class="nb-r">{l.reading ?? ""}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+      ))}
+      {tab === "papers" && (kept.length ? kept.map((p, i) => (
+        <section key={`${p.scene}/${p.exchange}`} class="paper-row">
+          <button type="button" class="nb-paper" aria-expanded={open === i} onClick={() => setOpen(open === i ? null : i)}>
+            <span>{t("notebook-paper-from", { npc: p.npcName, place: p.placeName })}</span>
+            <span class="dim">{t("notebook-paper-progress", { known: p.known, total: p.total })}</span>
+          </button>
+          {open === i && (
+            <div class="paper-body">
+              <p>
+                <PaperLine paper={p} />
+                {p.audio.length > 0 && <button type="button" class="play" aria-label={t("vn-play-word")} onClick={() => q.play(p.audio)}>▶</button>}
+              </p>
+              {paperGlosses(course, p).map((g) => <p key={g.word}><span class="nb-w">{g.text}</span> <span class="dim">{g.gloss}</span></p>)}
+            </div>
+          )}
+        </section>
+      )) : <p class="dim">{t("notebook-papers-empty")}</p>)}
       {tab === "shaky" && (nb.shaky.length ? (
         <div class="nb-grid">
           {nb.shaky.map((w) => (
@@ -124,7 +175,8 @@ export function Status({ q, audioAvailable, onClose }: { q: Quiet; audioAvailabl
 export function Menu({ q, page, onClose, onGames }: { q: Quiet; page: Page; onClose: () => void; onGames: () => void }) {
   const [screen, setScreen] = useState<SettingsScreen>("main");
   const [speed, setSpeed] = useState(page.speed); // its own copy, so a press repaints the row
-  const rows = settingsRows(screen, { course: q.course, catalog: page.catalog as CatalogEntry[], state: q.core.state, t: q.t, audioAvailable: page.audioAvailable });
+  const [ruby, setRuby] = useState(page.ruby);
+  const rows = settingsRows(screen, { course: q.course, catalog: page.catalog as CatalogEntry[], state: q.core.state, t: q.t, audioAvailable: page.audioAvailable, ruby });
   const title = screen === "main" ? q.t("vn-settings") : screen === "course" ? q.t("settings-pick-course") : q.t("settings-pick-reading");
   return (
     <Overlay q={q} title={title} onClose={onClose}>
@@ -134,7 +186,11 @@ export function Menu({ q, page, onClose, onGames }: { q: Quiet; page: Page; onCl
           if (a.kind === "open") setScreen(a.screen);
           else if (a.kind === "back") setScreen("main");
           else if (a.kind === "switch") page.switchTo(a.course, a.learner);
-          else q.toggleSound();
+          else if (a.kind === "ruby") {
+            const next = nextRuby(ruby);
+            setRuby(next);
+            page.setRuby(next);
+          } else q.toggleSound();
         }}>{r.label}</button>
       ))}
       {screen === "main" && <button type="button" class="row" onClick={() => {

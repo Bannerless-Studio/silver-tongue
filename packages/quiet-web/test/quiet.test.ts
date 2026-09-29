@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { comboKey, createCore, mulberry32, newGame, type Course, type GameState, type RenderedLine } from "@silver-tongue/core";
 import { fixtureWithText } from "@silver-tongue/view/testing";
-import type { AudioOut, Speech } from "@silver-tongue/view";
+import type { AudioOut, CourseExtra, Speech } from "@silver-tongue/view";
 import { createQuiet, latestNpcLine, type QuietOptions } from "../src/quiet";
 
 const T0 = 1_000_000;
@@ -450,3 +450,22 @@ describe("quiet terminal controller", () => {
     expect(again.q.view().backlog.some((b) => b.tone === "done")).toBe(true);
   });
 });
+
+describe("tile answer as shown", () => {
+  it("joins the placed tiles with the language's tile gap; what is graded is unchanged", () => {
+    const known = { right: 3, wrong: 0, streak: 3, helps: 0, lapsed: false, firstSeen: 0, lastSeen: 0 };
+    const s = setup(
+      (st) => (st.words = { w_ni: { ...known }, w_hao: { ...known } }),
+      (c) => void ((c as CourseExtra).language.tileGap = " "),
+    );
+    s.q.choose(0);
+    s.q.choose(0);
+    const p = s.q.view().phase;
+    expect(p.kind).toBe("tiles");
+    if (p.kind !== "tiles") return;
+    s.q.placeTile(0);
+    s.q.placeTile(1);
+    expect(s.q.view().phase).toMatchObject({ answer: `${p.tiles[0]} ${p.tiles[1]}` });
+  });
+});
+

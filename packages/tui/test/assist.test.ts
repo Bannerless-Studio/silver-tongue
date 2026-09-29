@@ -176,14 +176,14 @@ describe("notebook tabs", () => {
 
   it("lists the people met, with trust and what you talked about", () => {
     const g = afterIntro();
-    g.term.press("n", "3");
+    g.term.press("n", "4");
     expect(g.screen()).toMatch(/Cook · Noodle shop +██░░░ trust/);
     expect(g.screen()).toContain("Talked about: Say hello");
   });
 
   it("lists the places known, and where you are", () => {
     const g = afterIntro();
-    g.term.press("n", "4");
+    g.term.press("n", "5");
     expect(g.screen()).toMatch(/The street +◂ you are here/);
     expect(g.screen()).toContain("Steam everywhere.");
   });

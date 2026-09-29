@@ -1,4 +1,5 @@
 import type { RenderedLine, WordId } from "@silver-tongue/core";
+import type { RubySpan } from "@silver-tongue/view";
 import type { StyledLine } from "./terminal";
 import { lineWidth, strWidth, wrapLine } from "./width";
 
@@ -14,6 +15,22 @@ export function lineSpans(line: RenderedLine, fresh: Set<WordId>): StyledLine {
   }
   if (at < line.text.length) out.push({ text: line.text.slice(at) });
   return out;
+}
+
+/**
+ * The readings written under a line's words: each starts under its word, `indent` columns in (where
+ * the line's text starts), in terminal columns so wide letters line up. A reading that would run into
+ * the one before starts a space after it instead. None: undefined, so no empty row is drawn.
+ */
+export function rubyLine(line: RenderedLine, spans: RubySpan[], indent = 0): StyledLine | undefined {
+  if (!spans.length) return undefined;
+  let text = " ".repeat(indent);
+  for (const r of spans) {
+    const col = indent + strWidth(line.text.slice(0, r.start));
+    const at = strWidth(text);
+    text += (col > at ? " ".repeat(col - at) : at > indent ? " " : "") + r.text;
+  }
+  return [{ text, color: "yellow", dim: true }];
 }
 
 /** Lays out short items (tiles, words) left to right, starting a new line when one would not fit. */

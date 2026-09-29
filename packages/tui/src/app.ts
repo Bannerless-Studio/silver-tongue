@@ -1,7 +1,6 @@
 import {
   comboKey,
   describeRun,
-  joinTiles,
   MAX_NAME_LENGTH,
   normalizeTyped,
   wordState,
@@ -14,15 +13,15 @@ import {
   type RenderedLine,
   type WordId,
 } from "@silver-tongue/core";
-import type { AudioOut, Speech, SpeechSpeed } from "@silver-tongue/view";
-import { NOTEBOOK_TABS, notebookBody, notebookGroups, notebookHead, phraseGroups, type NotebookView } from "./notebook";
-import { cardBox, lineSpans, wrapItems } from "./screen";
+import type { AudioOut, RubySetting, Speech, SpeechSpeed } from "@silver-tongue/view";
+import { moveLetter, notebookBody, notebookGroups, notebookHead, notebookTabs, phraseGroups, type BookExtras, type NotebookView } from "./notebook";
+import { cardBox, lineSpans, rubyLine, wrapItems } from "./screen";
 import { innerWidth, NARROW, renderFrame, type Panel } from "./panel";
 import { strWidth, wrapLine } from "./width";
 import type { Key, StyledLine, Terminal } from "./terminal";
 import {
-  actionNarration, hintView, hudValues, introLines, jobView, makeText, notebookEntries, placeMenu, readingRow, reviewCard, reviewOffer, sentenceCard, settingsRows, typePrompt,
-  tileEcho, waitingForMoney, wordCard, wordExample,
+  actionNarration, DEFAULT_RUBY, hasLetters, hintView, hudValues, introLines, jobView, joinTilesForDisplay, lettersView, makeText, nextRuby, notebookEntries, papers,
+  placeMenu, reviewCard, reviewOffer, rubyRow, sentenceCard, settingsRows, typePrompt, tileEcho, waitingForMoney, wordCard, wordExample,
   type HintView, type HudValues, type JobView, type ReviewCard, type SentenceCard, type SettingsScreen, type Text,
 } from "@silver-tongue/view";
 
@@ -47,6 +46,11 @@ export interface AppOptions {
   speed?: {
     value: SpeechSpeed;
     onChange(speed: SpeechSpeed): void;
+  };
+  /** When readings are written under words, and how to remember a change; without it, "auto". */
+  ruby?: {
+    value: RubySetting;
+    onChange(ruby: RubySetting): void;
   };
   /** Switching course and reading language from [o]; without it there is no [o]. */
   settings?: {
@@ -74,6 +78,8 @@ const LOG_LIMIT = 200;
 const CONFUSED = "...";
 /** Longest typed reply. */
 const MAX_TYPED = 60;
+/** Fewest rows the conversation keeps before the readings under the replies are left out. */
+const MIN_LOG = 6;
 /** Memory cells on a review answer: the word's right-answer streak. */
 const MEMORY = 6;
 
@@ -111,6 +117,7 @@ export function startApp(opts: AppOptions): App {
   let tileReply: string[] = []; // the right reply's clips, said if the tiles match
   let queue: Speech[] = []; // what this key press has people say, in order
   let speed: SpeechSpeed = opts.speed?.value ?? "slow";
+  let ruby: RubySetting = opts.ruby?.value ?? DEFAULT_RUBY;
   let currentNpc: string | undefined; // the scene's NPC, for hints that name who asked
   let pendingNotes = new Set<string>(); // notes ready while a scene ran, shown once explore mode is back
   // Shown once per batch of ready-unread notes: set the moment the hint is shown, cleared only when
@@ -139,16 +146,19 @@ export function startApp(opts: AppOptions): App {
     { text: `${npcName(npc)}${suffix}: `, color: "cyan", bold: true },
     ...lineSpans(line, fresh),
   ];
+  /** The readings written under a line's words, as the ruby setting has them; `indent`: where the line's text starts. */
+  const rubyUnder = (line: RenderedLine, indent: number) => rubyLine(line, rubyRow(course, line, core.state.words, opts.now(), ruby), indent);
   /**
-   * An NPC's line, then its reading while any word in it isn't known yet, lined up under the words.
-   * Returns where the line sits in the log, for a card opened on one of its words.
+   * An NPC's line, then the readings of its words (by the ruby setting: by default, those not known
+   * yet), each under its word. The row keeps the readings it had when said: the log doesn't fade
+   * them afterwards. Returns where the line sits in the log, for a card opened on one of its words.
    */
   const sayLine = (npc: string, line: RenderedLine, fresh: Set<WordId>, suffix = "") => {
     const row = say(npc, line, fresh, suffix);
     const indent = strWidth(`${npcName(npc)}${suffix}: `);
     push(row);
-    const reading = readingRow(course, core.state, line, opts.now());
-    if (reading) push([{ text: " ".repeat(indent) + reading, color: "yellow", dim: true }]);
+    const reading = rubyUnder(line, indent);
+    if (reading) push(reading);
     return { row, end: log[log.length - 1], indent };
   };
 
@@ -449,6 +459,11 @@ export function startApp(opts: AppOptions): App {
     return false;
   }
 
+  /** The Book's tabs: Letters only for a language with a letter chart. */
+  const bookTabs = () => notebookTabs(hasLetters(course));
+  /** The letter chart and the papers kept, for the Book's Letters and Papers tabs. */
+  const bookExtras = (): BookExtras => ({ course, letters: lettersView(course, t), papers: papers(course, core.state, t, opts.now()) });
+
   const settingsScreen = (): SettingsScreen => (mode === "settings-course" ? "course" : mode === "settings-reading" ? "reading" : "main");
   /** The rows the settings screen shows, and what choosing each one does. */
   function settingsChoices(): { label: string; choose: () => void }[] {
@@ -459,6 +474,7 @@ export function startApp(opts: AppOptions): App {
       t,
       audioAvailable: !!opts.audio?.available,
       ...(opts.speed ? { terminal: { speed } } : {}),
+      ruby,
     };
     return settingsRows(settingsScreen(), ctx).map((r) => ({
       label: r.label,
@@ -470,6 +486,9 @@ export function startApp(opts: AppOptions): App {
         else if (a.kind === "speed") {
           speed = SPEED_CYCLE[(SPEED_CYCLE.indexOf(speed) + 1) % SPEED_CYCLE.length];
           opts.speed?.onChange(speed);
+        } else if (a.kind === "ruby") {
+          ruby = nextRuby(ruby);
+          opts.ruby?.onChange(ruby);
         } else soundKey("m");
       },
     }));
@@ -559,7 +578,7 @@ export function startApp(opts: AppOptions): App {
   }
 
   /** The panel at the bottom: what the player can do now. `width` is the room inside the frame. */
-  function replyPanel(width: number): Panel {
+  function replyPanel(width: number, readings = true): Panel {
     if (mode === "name") {
       return { lines: [[{ text: t("name-prompt"), bold: true }], [{ text: "> " }, { text: nameInput, bold: true }, { text: "_", dim: true }]] };
     }
@@ -597,13 +616,18 @@ export function startApp(opts: AppOptions): App {
     if (replyMode === "pick")
       return {
         title: t("reply-title"),
-        lines: pickOptions.map((o, i) => [
-          { text: `${i + 1}) ` },
-          ...lineSpans(o, new Set()),
-          // Once every word in a reply is known, its meaning is no longer news.
-          // What it does ("Ask the price"), else what it means; once every word is known, neither is news.
-          ...((o.intent ?? o.meaning) && replyNeedsGloss(o) ? [{ text: `  (${o.intent ?? o.meaning})`, dim: true }] : []),
-        ]).concat(confusedOffered() ? [[{ text: `${pickOptions.length + 1}) ${CONFUSED}` }, { text: `  (${t("reply-confused")})`, dim: true }]] : []),
+        lines: pickOptions.flatMap((o, i): StyledLine[] => {
+          const reading = readings ? rubyUnder(o, strWidth(`${i + 1}) `)) : undefined;
+          return [
+            [
+              { text: `${i + 1}) ` },
+              ...lineSpans(o, new Set()),
+              // What it does ("Ask the price"), else what it means; once every word is known, neither is news.
+              ...((o.intent ?? o.meaning) && replyNeedsGloss(o) ? [{ text: `  (${o.intent ?? o.meaning})`, dim: true }] : []),
+            ],
+            ...(reading ? [reading] : []),
+          ];
+        }).concat(confusedOffered() ? [[{ text: `${pickOptions.length + 1}) ${CONFUSED}` }, { text: `  (${t("reply-confused")})`, dim: true }]] : []),
       };
     if (replyMode === "type") {
       return {
@@ -619,7 +643,7 @@ export function startApp(opts: AppOptions): App {
       title: t("reply-title"),
       lines: [
         ...wrapItems(tiles.map((x, i) => `[${i + 1}]${x}`), width, " "),
-        [{ text: `${t("tiles-answer")} `, dim: true }, { text: joinTiles(course, tileInput.map((i) => tiles[i])), bold: true }],
+        [{ text: `${t("tiles-answer")} `, dim: true }, { text: joinTilesForDisplay(course, tileInput.map((i) => tiles[i])), bold: true }],
       ],
     };
   }
@@ -786,12 +810,14 @@ export function startApp(opts: AppOptions): App {
     const top = { title, right: right.join(" · ") };
     if (mode === "notebook") {
       const book = notebookEntries(course, s, t, opts.now());
-      const head = notebookHead(book, t, nbView.tab);
+      const tabs = bookTabs();
+      const head = notebookHead(book, t, nbView.tab, tabs);
       const headRows = head.flatMap((l) => wrapLine(l, innerWidth(cols))).length;
       const height = Math.max(1, rows - 3 - headRows); // top border, the rule under the head, bottom border
-      const body = notebookBody(book, t, nbView, cols, height);
+      const body = notebookBody(book, t, nbView, cols, height, bookExtras());
       nbView = { ...nbView, top: body.top };
-      const footer = t(nbView.tab === "words" || nbView.tab === "phrases" ? "keys-notebook" : "keys-notebook-scroll");
+      const moves = ["words", "phrases", "letters", "papers"].includes(nbView.tab);
+      const footer = t(moves ? "keys-notebook" : "keys-notebook-scroll", { tabs: tabs.length });
       const frame = { title: t("notebook-title"), right: book.rankLabel, panels: [{ lines: head }, { lines: body.lines }], footer };
       term.write(renderFrame({ ...frame, footerRight: footerRight(footer, cols) }, cols, rows));
       return;
@@ -823,22 +849,27 @@ export function startApp(opts: AppOptions): App {
     const keys = t(footerId, { keys: keyRange(count) });
     const footer = opts.settings && ["explore", "scene", "help"].includes(mode) ? `${keys} · ${t("keys-o")}` : keys;
     const inner = innerWidth(cols);
-    const reply = replyPanel(inner);
     const shownCard = card && mode !== "explore" ? card : null;
+    const job = mode === "scene" || mode === "help" || mode === "explore" ? jobView(course, s, t, opts.now()) : undefined;
+    const wrapped = (ls: StyledLine[]) => ls.flatMap((l) => wrapLine(l, inner)).length;
     // The card opens under the line it's from when the log has room for both; otherwise (the line
     // scrolled away, a short screen) it's one line in a box of its own above the replies.
-    let lines = log;
-    let inline = false;
-    const from = shownCard && anchor ? log.indexOf(anchor.row) : -1;
-    const at = shownCard && anchor ? log.indexOf(anchor.end) : -1;
-    if (shownCard && from >= 0 && at >= from) {
+    const place = (reply: Panel) => {
+      const from = shownCard && anchor ? log.indexOf(anchor.row) : -1;
+      const at = shownCard && anchor ? log.indexOf(anchor.end) : -1;
+      if (!shownCard || from < 0 || at < from) return { reply, lines: log, inline: false };
       const box = cardBox(shownCard.rows, shownCard.col, inner);
-      const wrapped = (ls: StyledLine[]) => ls.flatMap((l) => wrapLine(l, inner)).length;
       const room = rows - 5 - wrapped(reply.lines); // borders, the HUD, and the rules above the log and the replies
-      inline = wrapped(log.slice(from, at + 1)) + box.length <= room;
-      if (inline) lines = [...log.slice(0, at + 1), ...box, ...log.slice(at + 1)];
-    }
-    const job = mode === "scene" || mode === "help" || mode === "explore" ? jobView(course, s, t, opts.now()) : undefined;
+      const inline = wrapped(log.slice(from, at + 1)) + box.length <= room;
+      return { reply, lines: inline ? [...log.slice(0, at + 1), ...box, ...log.slice(at + 1)] : log, inline };
+    };
+    // The readings under the replies are the first thing a short screen gives up: before the card
+    // leaves its line, and before the conversation has fewer than MIN_LOG rows.
+    let laid = place(replyPanel(inner));
+    const plain = place(replyPanel(inner, false));
+    const logRoom = rows - 5 - wrapped(laid.reply.lines) - (job ? wrapped(jobLines(job)) : 0);
+    if (wrapped(laid.reply.lines) > wrapped(plain.reply.lines) && ((shownCard && !laid.inline && plain.inline) || logRoom < MIN_LOG)) laid = plain;
+    const { reply, lines, inline } = laid;
     const panels: Panel[] = [
       { lines: [hudRow(h)], drop: 2 },
       ...(job ? [{ lines: jobLines(job), drop: 3 }] : []),
@@ -910,10 +941,27 @@ export function startApp(opts: AppOptions): App {
       const groups: { items: { clips: string[] }[] }[] = v.tab === "phrases" ? phraseGroups(book) : notebookGroups(book, t);
       const g = Math.max(0, Math.min(v.group, groups.length - 1));
       const words = groups[g]?.items ?? [];
-      const tab = /^[1-9]$/.test(key.name) ? NOTEBOOK_TABS[Number(key.name) - 1] : undefined;
+      const tab = /^[1-9]$/.test(key.name) ? bookTabs()[Number(key.name) - 1] : undefined;
+      const arrow = key.name === "up" || key.name === "down" || key.name === "left" || key.name === "right" ? key.name : undefined;
       if (key.name === "escape" || key.name === "n") mode = notebookFrom;
       else if (tab) nbView = { tab, group: 0, word: 0, open: false, top: 0 };
-      else if (v.tab !== "words" && v.tab !== "phrases") {
+      else if (v.tab === "letters") {
+        const letters = bookExtras().letters;
+        if (arrow) nbView = { ...v, word: moveLetter(letters, term.size().cols, v.word, arrow) };
+        else if (key.name === "p") {
+          hear(letters.flatMap((gr) => gr.letters)[v.word]?.audio);
+          flush();
+        }
+      } else if (v.tab === "papers") {
+        const kept = bookExtras().papers;
+        const at = Math.max(0, Math.min(v.word, kept.length - 1));
+        if (key.name === "up" || key.name === "down") nbView = { ...v, word: Math.max(0, Math.min(kept.length - 1, at + (key.name === "down" ? 1 : -1))), open: false };
+        else if (key.name === "return") nbView = { ...v, word: at, open: !v.open };
+        else if (key.name === "p") {
+          hear(kept[at]?.audio);
+          flush();
+        }
+      } else if (v.tab !== "words" && v.tab !== "phrases") {
         if (key.name === "down") nbView = { ...v, top: v.top + 1 };
         else if (key.name === "up") nbView = { ...v, top: Math.max(0, v.top - 1) };
       } else if (key.name === "left" || key.name === "right") {

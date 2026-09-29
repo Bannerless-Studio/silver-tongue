@@ -3,9 +3,9 @@
 // line (a reply's cost rides on the reply; food is silent; wages ride on the one line a finished scene
 // folds into), trust is silent, the scene being played is exposed for the review tell, and any line can
 // be revealed.
-import { describeRun, joinTiles, normalizeTyped, wordState, type Core, type Course, type GameEvent, type GameState, type Input, type RenderedLine, type WordId } from "@silver-tongue/core";
+import { describeRun, normalizeTyped, wordState, type Core, type Course, type GameEvent, type GameState, type Input, type RenderedLine, type WordId } from "@silver-tongue/core";
 import {
-  actionNarration, bedHint, introLines, makeText, placeMenu, sentenceCard, tileEcho, typePrompt, waitingForMoney, wordCard,
+  actionNarration, bedHint, introLines, joinTilesForDisplay, makeText, placeMenu, sentenceCard, tileEcho, typePrompt, waitingForMoney, wordCard,
   type AudioOut, type MenuItem, type SentenceCard, type Speech, type Text, type WordCard,
 } from "@silver-tongue/view";
 
@@ -369,7 +369,7 @@ export function createQuiet(opts: QuietOptions): Quiet {
   function phase(): Phase {
     if (naming) return { kind: "name" };
     if (reply?.mode === "pick") return { kind: "pick", options: reply.options, confused: !!core.state.run && core.state.run.misses < 2 };
-    if (reply?.mode === "tiles") return { kind: "tiles", tiles: reply.tiles, placed, answer: joinTiles(course, placed.map((i) => (reply as { tiles: string[] }).tiles[i])) };
+    if (reply?.mode === "tiles") return { kind: "tiles", tiles: reply.tiles, placed, answer: joinTilesForDisplay(course, placed.map((i) => (reply as { tiles: string[] }).tiles[i])) };
     if (reply?.mode === "type") return { kind: "type", prompt: typePrompt(t), confused: !!core.state.run && core.state.run.misses < 2 };
     return { kind: "explore", menu: placeMenu(course, core.state, t), waiting: [...waitingForMoney(course, core.state, t), ...bedHint(course, core.state, t)] };
   }

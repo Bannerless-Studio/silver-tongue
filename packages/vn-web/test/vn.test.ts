@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { comboKey, createCore, mulberry32, newGame, type Course, type GameState } from "@silver-tongue/core";
 import { fixtureWithText } from "@silver-tongue/view/testing";
-import type { AudioOut, Speech } from "@silver-tongue/view";
+import type { AudioOut, CourseExtra, Speech } from "@silver-tongue/view";
 import { createVn, type VnOptions } from "../src/vn";
 import { dwellMs } from "../src/dwell";
 
@@ -447,3 +447,21 @@ describe("typed replies in the visual novel", () => {
     expect(s.vn.view().phase.kind).toBe("pick");
   });
 });
+
+describe("tile answer as shown", () => {
+  it("joins the placed tiles with the language's tile gap; what is graded is unchanged", () => {
+    const known = { right: 3, wrong: 0, streak: 3, helps: 0, lapsed: false, firstSeen: 0, lastSeen: 0 };
+    const s = setup(
+      (st) => (st.words = { w_ni: { ...known }, w_hao: { ...known } }),
+      (c) => void ((c as CourseExtra).language.tileGap = " "),
+    );
+    intoScene(s);
+    const p = s.vn.view().phase;
+    expect(p.kind).toBe("tiles");
+    if (p.kind !== "tiles") return;
+    s.vn.placeTile(0);
+    s.vn.placeTile(1);
+    expect(s.vn.view().phase).toMatchObject({ answer: `${p.tiles[0]} ${p.tiles[1]}` });
+  });
+});
+

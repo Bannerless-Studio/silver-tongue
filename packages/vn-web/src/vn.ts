@@ -1,6 +1,6 @@
-import { describeRun, joinTiles, normalizeTyped, type Core, type Course, type GameEvent, type GameState, type Input, type RenderedLine, type WordId } from "@silver-tongue/core";
+import { describeRun, normalizeTyped, type Core, type Course, type GameEvent, type GameState, type Input, type RenderedLine, type WordId } from "@silver-tongue/core";
 import {
-  actionNarration, bedHint, hintView, introLines, makeText, placeMenu, sentenceCard, tileEcho, waitingForMoney, wordCard,
+  actionNarration, bedHint, hintView, introLines, joinTilesForDisplay, makeText, placeMenu, sentenceCard, tileEcho, waitingForMoney, wordCard,
   type AudioOut, type HintView, type MenuItem, type SentenceCard, type Speech, type Text, type WordCard,
 } from "@silver-tongue/view";
 import { dwellMs } from "./dwell";
@@ -324,7 +324,7 @@ export function createVn(opts: VnOptions): Vn {
     if (current) return { kind: "beat", beat: current };
     if (reply?.mode === "pick") return { kind: "pick", options: reply.options };
     if (reply?.mode === "type") return { kind: "type", hints };
-    if (reply?.mode === "tiles") return { kind: "tiles", tiles: reply.tiles, placed, answer: joinTiles(course, placed.map((i) => (reply as { tiles: string[] }).tiles[i])) };
+    if (reply?.mode === "tiles") return { kind: "tiles", tiles: reply.tiles, placed, answer: joinTilesForDisplay(course, placed.map((i) => (reply as { tiles: string[] }).tiles[i])) };
     return { kind: "explore", menu: placeMenu(course, core.state, t), waiting: [...waitingForMoney(course, core.state, t), ...bedHint(course, core.state, t)] };
   }
 

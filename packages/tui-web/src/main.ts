@@ -6,12 +6,14 @@ import {
   chooseStart,
   courseLabels,
   decodeSave,
+  DEFAULT_RUBY,
   DEFAULT_SPEED,
   encodeSave,
   learnerFor,
   makeText,
   playbackRate,
   sessionLines,
+  type RubySetting,
   type SpeechSpeed,
   startApp,
   type Text,
@@ -62,6 +64,8 @@ let sessions: WebSessions | undefined;
 let audio: ReturnType<typeof createWebAudio> | undefined;
 /** How fast clips play, from the player's settings; the audio asks for it per clip. */
 let speed: SpeechSpeed = DEFAULT_SPEED;
+/** When readings are written under words, from the player's settings. */
+let ruby: RubySetting = DEFAULT_RUBY;
 /** The reading-language text; only called once a course has loaded. */
 const tx: Text = Object.assign((id: string, args?: Parameters<Text>[1]) => (t ? t(id, args) : id), { has: (id: string) => !!t?.has(id) });
 
@@ -226,6 +230,13 @@ function play(opened: Opened) {
       audio?.stop();
       status(tx("web-saved"));
     },
+    ruby: {
+      value: ruby,
+      onChange: (r) => {
+        ruby = r;
+        updateWebSettings(kv, { ruby: r });
+      },
+    },
     settings: { courses: catalog, switchTo: (id, learner, played) => void switchTo(id, learner, played) },
   });
   if (!touch) xterm.focus();
@@ -325,6 +336,7 @@ $("#version").textContent = `v${__VERSION__}`;
 async function boot() {
   const settings = loadWebSettings(kv);
   speed = settings.speed ?? DEFAULT_SPEED;
+  ruby = settings.ruby ?? DEFAULT_RUBY;
   try {
     catalog = await fetchJson<CatalogEntry[]>(`${base}index.json`);
     const picked = chooseStart(catalog, settings);

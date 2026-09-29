@@ -1,6 +1,6 @@
 import { render } from "preact";
 import { createCore, mulberry32, type CatalogEntry, type Course, type GameState } from "@silver-tongue/core";
-import { chooseStart, courseLabels, decodeSave, DEFAULT_SPEED, encodeSave, learnerFor, makeText, playbackRate, sessionLines, type Text } from "@silver-tongue/view";
+import { chooseStart, courseLabels, decodeSave, DEFAULT_RUBY, DEFAULT_SPEED, encodeSave, learnerFor, makeText, playbackRate, sessionLines, type Text } from "@silver-tongue/view";
 import {
   coursesBase, createWebAudio, fetchJson, fromLocalStorage, loadWebSettings, metaContent, migrateWebAliases, updateWebSettings, WebSessions,
   type KeyValue, type Opened,
@@ -36,7 +36,7 @@ let catalog: CatalogEntry[] = [];
 let loaded: Loaded | undefined;
 let current: { id: string; readOnly: boolean; state: () => GameState } | undefined;
 /** The player's reading preferences, kept in their own settings, not in a game. */
-let prefs = { speed: DEFAULT_SPEED, autoAdvance: true };
+let prefs: Page["prefs"] = { speed: DEFAULT_SPEED, autoAdvance: true, ruby: DEFAULT_RUBY };
 
 async function getText(url: string): Promise<string | null> {
   const res = await fetch(url);
@@ -148,7 +148,7 @@ function title(courses?: { label: string; pick: () => void }[], error?: string) 
 
 async function boot() {
   const settings = loadWebSettings(kv);
-  prefs = { speed: settings.speed ?? DEFAULT_SPEED, autoAdvance: settings.autoAdvance ?? true };
+  prefs = { speed: settings.speed ?? DEFAULT_SPEED, autoAdvance: settings.autoAdvance ?? true, ruby: settings.ruby ?? DEFAULT_RUBY };
   try {
     catalog = await withArt(await fetchJson<CatalogEntry[]>(`${base}index.json`), base, getText);
     const picked = chooseStart(catalog, settings);

@@ -9,8 +9,12 @@ import {
   hasLetters,
   makeText,
   nextRuby,
+  paperGlosses,
   paperLabel,
+  paperParts,
   papers,
+  quietRuby,
+  tileEcho,
   parseSettings,
   rubyRow,
   settingsRows,
@@ -206,3 +210,45 @@ describe("papers", () => {
     expect(papers(c, state, makeText(c.learnerFtl, "en"), T0)).toEqual([]);
   });
 });
+
+describe("quietRuby", () => {
+  const c = koLike(" ");
+  const line = {
+    text: "저는 학생",
+    tokens: [
+      { start: 0, end: 1, word: "k_jeo" },
+      { start: 1, end: 2, word: "k_neun" },
+      { start: 3, end: 5, word: "k_haksaeng" },
+    ],
+  };
+
+  it("leaves out a word whose gloss row already gives its reading", () => {
+    expect(quietRuby(c, line, {}, T0, "auto", ["k_haksaeng"]).map((r) => r.text)).toEqual(["jeo", "neun"]);
+    expect(quietRuby(c, line, {}, T0, "auto").map((r) => r.text)).toEqual(["jeo", "neun", "haksaeng"]);
+    expect(quietRuby(c, line, {}, T0, "off")).toEqual([]);
+  });
+});
+
+describe("tileEcho", () => {
+  it("shows wrong tiles joined for display, glued where a word attaches", () => {
+    const c = koLike(" ");
+    const said = tileEcho(c, newGame(c), ["저", "는", "학생"], [0, 1, 2]);
+    expect(said.right).toBe(false);
+    expect(said.line.text).toBe("저는 학생");
+  });
+});
+
+describe("paperParts and paperGlosses", () => {
+  it("cut the line into text and words, and gloss the known words once", () => {
+    const c = structuredClone(fixtureWithText());
+    extra(c).scenes[0].exchanges[0].pin = true;
+    const state = newGame(c);
+    state.scenesDone = { intro: 1 };
+    state.words = { w_ni: known };
+    const [p] = papers(c, state, makeText(c.learnerFtl, "en"), T0);
+    expect(paperParts(p).map((x) => ("word" in x ? `[${x.text}${x.blank.known ? "" : "?"}]` : x.text)).join("")).toBe("[你][好?]！");
+    expect(paperGlosses(c, p)).toEqual([{ word: "w_ni", text: "你", gloss: "you" }]);
+    expect(p.audio).toEqual([]);
+  });
+});
+

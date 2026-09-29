@@ -1,9 +1,12 @@
 import { useState } from "preact/hooks";
+import type { RenderedLine } from "@silver-tongue/core";
+import { quietRuby, type RubySetting } from "@silver-tongue/view";
 import { CONFUSED, type Quiet, type QuietView } from "../quiet";
+import { Line } from "./Line";
 import { ReplyLine } from "./ReplyLine";
 
 /** What the player can do now: a name, a numbered reply, tiles, or the place's commands. */
-export function Prompt({ q, view }: { q: Quiet; view: QuietView }) {
+export function Prompt({ q, view, ruby }: { q: Quiet; view: QuietView; ruby: RubySetting }) {
   const p = view.phase;
   const t = q.t;
   const [name, setName] = useState("");
@@ -21,11 +24,17 @@ export function Prompt({ q, view }: { q: Quiet; view: QuietView }) {
     );
   }
   if (p.kind === "pick") {
+    const now = Date.now();
+    // A reply with readings to write under it is drawn as a line; the rest stay plain text.
+    const readingsFor = (o: RenderedLine) => {
+      const spans = quietRuby(q.course, o, q.core.state.words, now, ruby);
+      return spans.length ? <Line line={o} now={now} ruby={spans} /> : o.text;
+    };
     return (
       <div class="prompt">
         {p.options.map((o, i) => (
           <button key={i} type="button" class="opt" onClick={() => q.choose(i)}>
-            <span class="n">{i + 1}</span>{o.text}{q.intentShown(p.options, o) && <span class="dim"> ({o.intent})</span>}
+            <span class="n">{i + 1}</span>{readingsFor(o)}{q.intentShown(p.options, o) && <span class="dim"> ({o.intent})</span>}
           </button>
         ))}
         {p.confused && (

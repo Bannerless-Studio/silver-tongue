@@ -1,6 +1,6 @@
 import { useState } from "preact/hooks";
 import type { CatalogEntry } from "@silver-tongue/core";
-import { nextSpeed, notebookEntries, settingsRows, type SettingsScreen } from "@silver-tongue/view";
+import { hasLetters, lettersView, nextRuby, nextSpeed, notebookEntries, paperGlosses, paperParts, papers, settingsRows, type Paper, type SettingsScreen } from "@silver-tongue/view";
 import type { Vn, VnView } from "../vn";
 import type { Page } from "./App";
 import { Line } from "./Line";
@@ -18,33 +18,100 @@ function Overlay({ title, onClose, children, close }: { title: string; onClose: 
   );
 }
 
-export function Notebook({ vn, onClose }: { vn: Vn; onClose: () => void }) {
-  const nb = notebookEntries(vn.course, vn.core.state, vn.t, Date.now());
+type BookTab = "letters" | "words" | "papers" | "notes";
+
+/** A paper's line: known words as they are, the rest blanks, or their reading when there is one. */
+function PaperLine({ paper }: { paper: Paper }) {
   return (
-    <Overlay title={vn.t("vn-notebook")} onClose={onClose} close={vn.t("web-close")}>
-      <div class="paper">
-        {nb.progress.map((p) => <p key={p} class="progress">{p}</p>)}
-        {nb.empty && <p class="muted">{vn.t("notebook-empty")}</p>}
-        {nb.groups.map((g) => (
-          <section key={g.title}>
-            <h3>{g.title}</h3>
-            {g.words.map((w) => (
-              <div key={w.id} class="nb-word">
-                <span class="nb-mark">{MARK[w.state]}</span>
-                <b>{w.text}</b> <span class="nb-reading">{w.readings.join(" ")}</span> — {w.short}
-                {w.clips.length > 0 && <button type="button" aria-label={vn.t("vn-play-word")} onClick={() => vn.play(w.clips)}>▶</button>}
-                {w.first && <div class="nb-first">{w.first}</div>}
-              </div>
-            ))}
-          </section>
+    <span class="line">
+      {paperParts(paper).map((part, i) =>
+        !("word" in part) ? <span key={i}>{part.text}</span>
+          : part.blank.known ? <b key={i}>{part.text}</b>
+          : <span key={i} class="blank">{part.blank.reading ?? "____"}</span>,
+      )}
+    </span>
+  );
+}
+
+/** The Book: its letter chart (for a language with one), the words heard, the papers kept, and notes. */
+export function Notebook({ vn, onClose }: { vn: Vn; onClose: () => void }) {
+  const [tab, setTab] = useState<BookTab>("words");
+  const [open, setOpen] = useState<number | null>(null);
+  const { t, course } = vn;
+  const now = Date.now();
+  const tabs: BookTab[] = [...(hasLetters(course) ? ["letters" as const] : []), "words", "papers", "notes"];
+  const nb = notebookEntries(course, vn.core.state, t, now);
+  const kept = tab === "papers" ? papers(course, vn.core.state, t, now) : [];
+  return (
+    <Overlay title={t("vn-notebook")} onClose={onClose} close={t("web-close")}>
+      <nav class="tabs" role="tablist">
+        {tabs.map((id) => (
+          <button key={id} type="button" role="tab" aria-selected={id === tab} class={id === tab ? "on" : ""} onClick={() => (setTab(id), setOpen(null))}>{t(`notebook-${id}`)}</button>
         ))}
-        {nb.notes.length > 0 && (
-          <section>
-            <h3>{vn.t("notebook-notes")}</h3>
-            {nb.notes.map((n) => <div key={n.title} class="nb-note"><b>{n.title}</b><p>{n.text}</p></div>)}
-          </section>
-        )}
-      </div>
+      </nav>
+      {tab === "letters" && (
+        <div class="paper">
+          {lettersView(course, t).map((g) => (
+            <section key={g.id}>
+              <h3>{g.label}</h3>
+              <div class="letters">
+                {g.letters.map((l, i) => (
+                  <button key={i} type="button" class="letter" aria-label={[l.ch, l.name, l.reading].filter(Boolean).join(" ")} onClick={() => vn.play(l.audio ?? [])}>
+                    <b>{l.ch}</b><span>{l.reading ?? ""}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
+      )}
+      {tab === "words" && (
+        <div class="paper">
+          {nb.progress.map((p) => <p key={p} class="progress">{p}</p>)}
+          {nb.empty && <p class="muted">{t("notebook-empty")}</p>}
+          {nb.groups.map((g) => (
+            <section key={g.title}>
+              <h3>{g.title}</h3>
+              {g.words.map((w) => (
+                <div key={w.id} class="nb-word">
+                  <span class="nb-mark">{MARK[w.state]}</span>
+                  <b>{w.text}</b> <span class="nb-reading">{w.readings.join(" ")}</span> — {w.short}
+                  {w.clips.length > 0 && <button type="button" aria-label={t("vn-play-word")} onClick={() => vn.play(w.clips)}>▶</button>}
+                  {w.first && <div class="nb-first">{w.first}</div>}
+                </div>
+              ))}
+            </section>
+          ))}
+        </div>
+      )}
+      {tab === "papers" && (
+        <div class="paper">
+          {!kept.length && <p class="muted">{t("notebook-papers-empty")}</p>}
+          {kept.map((p, i) => (
+            <div key={`${p.scene}/${p.exchange}`} class="nb-paper">
+              <button type="button" class="nb-paper-head" aria-expanded={open === i} onClick={() => setOpen(open === i ? null : i)}>
+                <b>{t("notebook-paper-from", { npc: p.npcName, place: p.placeName })}</b>
+                <span class="muted">{t("notebook-paper-progress", { known: p.known, total: p.total })}</span>
+              </button>
+              {open === i && (
+                <div class="nb-paper-body">
+                  <p>
+                    <PaperLine paper={p} />
+                    {p.audio.length > 0 && <button type="button" aria-label={t("vn-play-word")} onClick={() => vn.play(p.audio)}>▶</button>}
+                  </p>
+                  {paperGlosses(course, p).map((g) => <div key={g.word} class="nb-word"><b>{g.text}</b> — {g.gloss}</div>)}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+      {tab === "notes" && (
+        <div class="paper">
+          {!nb.notes.length && <p class="muted">{t("notebook-notes-empty")}</p>}
+          {nb.notes.map((n) => <div key={n.title} class="nb-note"><b>{n.title}</b><p>{n.text}</p></div>)}
+        </div>
+      )}
     </Overlay>
   );
 }
@@ -69,7 +136,7 @@ export function Menu({ vn, page, onClose, onGames }: { vn: Vn; page: Page; onClo
   // Settings shows its own copy, so a press repaints the row; it is seeded from the page, which is
   // live, and this screen is unmounted with the overlay and seeded again each time it is opened.
   const [prefs, setPrefs] = useState(page.prefs);
-  const rows = settingsRows(screen, { course: vn.course, catalog: page.catalog as CatalogEntry[], state: vn.core.state, t: vn.t, audioAvailable: page.audioAvailable });
+  const rows = settingsRows(screen, { course: vn.course, catalog: page.catalog as CatalogEntry[], state: vn.core.state, t: vn.t, audioAvailable: page.audioAvailable, ruby: prefs.ruby });
   const title = screen === "main" ? vn.t("vn-settings") : screen === "course" ? vn.t("settings-pick-course") : vn.t("settings-pick-reading");
   return (
     <Overlay title={title} onClose={onClose} close={vn.t("web-close")}>
@@ -79,7 +146,11 @@ export function Menu({ vn, page, onClose, onGames }: { vn: Vn; page: Page; onClo
           if (a.kind === "open") setScreen(a.screen);
           else if (a.kind === "back") setScreen("main");
           else if (a.kind === "switch") page.switchTo(a.course, a.learner);
-          else vn.toggleSound();
+          else if (a.kind === "ruby") {
+            const ruby = nextRuby(prefs.ruby);
+            setPrefs({ ...prefs, ruby });
+            page.setPref({ ruby });
+          } else vn.toggleSound();
         }}>{r.label}</button>
       ))}
       {screen === "main" && <button type="button" class="row" onClick={() => {

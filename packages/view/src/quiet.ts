@@ -1,6 +1,7 @@
-import { wordState, type Course, type GameState, type WordId, type WordState } from "@silver-tongue/core";
+import { wordState, type Course, type GameState, type RenderedLine, type WordId, type WordState } from "@silver-tongue/core";
 import { displayGloss } from "./help";
 import { dayPart, type DayPart } from "./hud";
+import { rubyRow, type RubySetting, type RubySpan } from "./ruby";
 import type { Text } from "./text";
 
 /**
@@ -113,4 +114,14 @@ export function reviewTell(course: Course, sceneId: string, state?: GameState): 
   if (state && !(state.scenesDone[sceneId] ?? 0)) return { repeat: false };
   const pays = scene.exchanges.reduce((sum, ex) => sum + ex.pay, 0);
   return pays > 0 ? { repeat: true, pays } : { repeat: true };
+}
+
+/**
+ * The readings written under a line on the quiet page. Ruby is not a gloss: a word whose gloss row
+ * already gives its reading under this line (`glossed`, a first-time word) gets none, so nothing is said twice.
+ */
+export function quietRuby(course: Course, line: RenderedLine, words: GameState["words"], now: number, ruby: RubySetting, glossed: Iterable<WordId> = []): RubySpan[] {
+  const skip = new Set(glossed);
+  const at = new Map(line.tokens.map((tk) => [tk.start, tk.word]));
+  return rubyRow(course, line, words, now, ruby).filter((r) => !skip.has(at.get(r.start)!));
 }

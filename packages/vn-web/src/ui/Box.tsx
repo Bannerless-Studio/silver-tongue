@@ -1,11 +1,14 @@
 import { useState } from "preact/hooks";
-import type { WordId } from "@silver-tongue/core";
+import type { RenderedLine, WordId } from "@silver-tongue/core";
+import { rubyRow, type RubySetting } from "@silver-tongue/view";
 import type { Vn, VnView } from "../vn";
 import { Line } from "./Line";
 
 /** The dialogue box: whoever speaks, what is said, and the tools to hear or understand it. */
-export function Box({ vn, view, onWord, onMeaning }: { vn: Vn; view: VnView; onWord: (w: WordId) => void; onMeaning: () => void }) {
+export function Box({ vn, view, ruby, onWord, onMeaning }: { vn: Vn; view: VnView; ruby: RubySetting; onWord: (w: WordId) => void; onMeaning: () => void }) {
   const [name, setName] = useState("");
+  // Worked out on each paint, so a reading fades as soon as its word is known.
+  const readings = (line: RenderedLine) => rubyRow(vn.course, line, vn.core.state.words, Date.now(), ruby);
   const p = view.phase;
   const who = (speaker?: string) => (speaker === "player" ? vn.core.state.player ?? vn.t("you") : speaker ? vn.t(`npc-${speaker}`) : undefined);
   const tools = (line?: { audio?: string[]; meaning?: string }) => (
@@ -30,7 +33,7 @@ export function Box({ vn, view, onWord, onMeaning }: { vn: Vn; view: VnView; onW
     return (
       <div class={`box tone-${b.tone ?? "plain"}${b.speaker ? "" : " narration"}`} onClick={() => vn.advance()} role="button" aria-label={vn.t("vn-tap")}>
         {(b.title || who(b.speaker)) && <div class="nameplate">{b.title ?? who(b.speaker)}</div>}
-        <div class="box-text">{b.line ? <Line line={b.line} fresh={b.fresh} onWord={b.speaker === "player" ? undefined : onWord} /> : b.text}</div>
+        <div class="box-text">{b.line ? <Line line={b.line} fresh={b.fresh} ruby={b.speaker && b.speaker !== "player" ? readings(b.line) : undefined} onWord={b.speaker === "player" ? undefined : onWord} /> : b.text}</div>
         {tools(b.line)}
         <span class="next" aria-hidden="true">▼</span>
       </div>
@@ -49,7 +52,7 @@ export function Box({ vn, view, onWord, onMeaning }: { vn: Vn; view: VnView; onW
   return (
     <div class="box">
       {view.npc && <div class="nameplate">{who(view.npc)}</div>}
-      <div class="box-text">{view.lastLine && <Line line={view.lastLine} onWord={onWord} />}</div>
+      <div class="box-text">{view.lastLine && <Line line={view.lastLine} ruby={readings(view.lastLine)} onWord={onWord} />}</div>
       {p.kind === "tiles" && <div class="answer">{vn.t("tiles-answer")} <b>{answer}</b></div>}
       {tools(view.lastLine)}
     </div>

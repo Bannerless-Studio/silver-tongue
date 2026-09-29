@@ -1,6 +1,6 @@
-import { personalize, wordState, type Course, type GameState, type Token } from "@silver-tongue/core";
+import { personalize, wordState, type Course, type GameState, type Token, type WordId } from "@silver-tongue/core";
 import { extra } from "./course-extra";
-import { readingsOf } from "./help";
+import { displayGloss, readingsOf } from "./help";
 import type { Text } from "./text";
 
 /** One word on a paper: known words are shown, the rest are blanks with their reading. */
@@ -22,6 +22,8 @@ export interface Paper {
   /** the line, with the player's name in it */
   text: string;
   tokens: Token[];
+  /** the line's clips */
+  audio: string[];
   /** how many of its words are known */
   known: number;
   total: number;
@@ -51,6 +53,7 @@ export function papers(course: Course, state: GameState, t: Text, now: number): 
         ...paperLabel(t, { npc: scene.npc, place: scene.place }),
         text: line.text,
         tokens: line.tokens,
+        audio: line.audio ?? [],
         known: blanks.filter((b) => b.known).length,
         total: blanks.length,
         blanks,
@@ -63,4 +66,30 @@ export function papers(course: Course, state: GameState, t: Text, now: number): 
 /** Who handed the paper over, and where. */
 export function paperLabel(t: Text, paper: { npc: string; place: string }): { npcName: string; placeName: string } {
   return { npcName: t(`npc-${paper.npc}`), placeName: t(`place-${paper.place}`) };
+}
+
+/** A piece of a paper's line: the text between words, or a word, known or a blank. */
+export type PaperPart = { text: string } | { text: string; word: WordId; blank: PaperBlank };
+
+/** The paper's line cut into the text between words and the words themselves, each with its blank. */
+export function paperParts(p: Paper): PaperPart[] {
+  const out: PaperPart[] = [];
+  let at = 0;
+  p.tokens.forEach((tk, i) => {
+    if (tk.start > at) out.push({ text: p.text.slice(at, tk.start) });
+    out.push({ text: p.text.slice(tk.start, tk.end), word: tk.word, blank: p.blanks[i] });
+    at = tk.end;
+  });
+  if (at < p.text.length) out.push({ text: p.text.slice(at) });
+  return out;
+}
+
+/** The known words of a paper with their short glosses, each once, in line order. */
+export function paperGlosses(course: Course, p: Paper): { word: WordId; text: string; gloss: string }[] {
+  const seen = new Set<WordId>();
+  return paperParts(p).flatMap((part) => {
+    if (!("word" in part) || !part.blank.known || seen.has(part.word) || !course.words[part.word]) return [];
+    seen.add(part.word);
+    return [{ word: part.word, text: part.text, gloss: displayGloss(course.words[part.word]) }];
+  });
 }

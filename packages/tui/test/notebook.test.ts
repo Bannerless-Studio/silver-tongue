@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { newGame, PLAYER_MARK, type WordRecord } from "@silver-tongue/core";
-import { makeText, notebookEntries } from "@silver-tongue/view";
-import { notebookBody, notebookGroups, notebookHead, type NotebookView } from "../src/notebook";
+import { newGame, PLAYER_MARK, type Course, type WordRecord } from "@silver-tongue/core";
+import { extra, lettersView, makeText, notebookEntries, papers, type CourseExtra } from "@silver-tongue/view";
+import { moveLetter, notebookBody, notebookGroups, notebookHead, notebookTabs, type BookExtras, type NotebookView } from "../src/notebook";
 import { innerWidth } from "../src/panel";
 import { plain } from "../src/terminal";
-import { lineWidth } from "../src/width";
+import { lineWidth, strWidth } from "../src/width";
 import { fixtureWithText, spacedWithText } from "./fake-terminal";
 
 const T0 = 1_000_000;
@@ -42,7 +42,7 @@ describe("notebook", () => {
 
   it("heads the page with the tabs and progress", () => {
     const head = notebookHead(notebookEntries(course, state, t, LATER), t, "words").map(plain);
-    expect(head[0]).toMatch(/1\) Words +2\) Phrases +3\) People +4\) Places +5\) Notes/);
+    expect(head[0]).toMatch(/1\) Words +2\) Phrases +3\) Papers +4\) People +5\) Places +6\) Notes/);
     expect(head[1]).toBe("Stage 1: 1 of 12 words known");
   });
 
@@ -116,3 +116,81 @@ describe("notebook", () => {
     expect(notebookBody(nb, t, view(), 80, 5).lines.map(plain).join("\n")).toContain("mi mí mi");
   });
 });
+
+describe("the Book's Letters and Papers", () => {
+  /** The fixture with a small letter chart, and its first exchange (你好！) pinned as a paper. */
+  function bookCourse(): Course {
+    const c = structuredClone(fixtureWithText()) as unknown as CourseExtra;
+    c.letters = {
+      groups: [
+        { id: "consonants", letters: [{ ch: "ㄱ", reading: "g/k", audio: ["l1"] }, { ch: "ㄴ", reading: "n", audio: ["l2"] }, { ch: "ㄷ", reading: "d/t" }] },
+        { id: "vowels", letters: [{ ch: "ㅏ", reading: "a" }, { ch: "ㅓ", reading: "eo" }] },
+      ],
+    };
+    extra(c as unknown as Course).scenes[0].exchanges[0].pin = true;
+    return c as unknown as Course;
+  }
+  const course = bookCourse();
+  const t = makeText(course.learnerFtl, "en");
+  const state = newGame(course);
+  state.scenesDone = { intro: 1 };
+  state.words = { w_ni: rec({ streak: 3, right: 3 }) };
+  const ex: BookExtras = { course, letters: lettersView(course, t), papers: papers(course, state, t, LATER) };
+  const nb = notebookEntries(course, state, t, LATER);
+  const body = (v: Partial<NotebookView>, cols = 80, height = 12, extras: BookExtras = ex) => notebookBody(nb, t, view(v), cols, height, extras).lines.map(plain);
+
+  it("puts Letters first only for a language with a letter chart", () => {
+    expect(notebookTabs(false)).toEqual(["words", "phrases", "papers", "people", "places", "notes"]);
+    expect(notebookHead(nb, t, "letters", notebookTabs(true)).map(plain)[0]).toMatch(/^1\) Letters +2\) Words +3\) Phrases +4\) Papers/);
+  });
+
+  it("draws the letters in a grid by group, each over how it sounds, the chosen one lit", () => {
+    const lines = body({ tab: "letters", word: 1 });
+    const s = lines.join("\n");
+    expect(s).toContain("Consonants");
+    expect(s).toContain("Vowels");
+    const row = lines.findIndex((l) => l.includes("ㄱ"));
+    expect(lines[row + 1]).toContain("g/k");
+    // each reading starts under its letter
+    for (const [ch, r] of [["ㄴ", "n"], ["ㄷ", "d/t"]]) expect(strWidth(lines[row + 1].slice(0, lines[row + 1].indexOf(r)))).toBe(strWidth(lines[row].slice(0, lines[row].indexOf(ch))));
+    const styled = notebookBody(nb, t, view({ tab: "letters", word: 1 }), 80, 12, ex).lines.flat();
+    expect(styled.find((sp) => sp.text.includes("ㄴ"))).toMatchObject({ inverse: true });
+    expect(styled.find((sp) => sp.text.includes("ㄱ"))?.inverse).toBeUndefined();
+  });
+
+  it("moves the chosen letter along the chart, and up and down by rows", () => {
+    // 80 columns fit the whole group on a row: down goes to the vowels, keeping the column where it can
+    expect(moveLetter(ex.letters, 80, 0, "right")).toBe(1);
+    expect(moveLetter(ex.letters, 80, 0, "left")).toBe(0);
+    expect(moveLetter(ex.letters, 80, 2, "down")).toBe(4);
+    expect(moveLetter(ex.letters, 80, 3, "up")).toBe(0);
+    expect(moveLetter(ex.letters, 80, 4, "right")).toBe(4);
+    // at 16 columns two letters fit on a row
+    expect(moveLetter(ex.letters, 16, 0, "down")).toBe(2);
+  });
+
+  it("lists each paper with who handed it over, where, and how much of it is known", () => {
+    const s = body({ tab: "papers" }).join("\n");
+    expect(s).toMatch(/▸ Cook, at the Noodle shop +██░░ 1\/2/);
+    expect(s).not.toContain("你好");
+  });
+
+  it("opens a paper: known words as they are, the rest as their reading (dim) or a blank, then the known words' glosses", () => {
+    const lines = body({ tab: "papers", open: true });
+    const line = lines.find((l) => l.includes("你"))!;
+    expect(line).toMatch(/你hǎo！/);
+    expect(lines.join("\n")).toMatch(/你 +you/);
+    const styled = notebookBody(nb, t, view({ tab: "papers", open: true }), 80, 12, ex).lines.flat();
+    expect(styled.find((sp) => sp.text === "hǎo")).toMatchObject({ dim: true });
+    const noReading = structuredClone(course);
+    delete noReading.words.w_hao.readings;
+    const blank = papers(noReading, state, t, LATER);
+    expect(body({ tab: "papers", open: true }, 80, 12, { ...ex, course: noReading, papers: blank }).join("\n")).toMatch(/你____！/);
+  });
+
+  it("says so when no paper is kept yet", () => {
+    const s = body({ tab: "papers" }, 40, 6, { ...ex, papers: [] }).join(" ").replace(/\s+/g, " ");
+    expect(s).toContain("Nothing yet. Notices and papers you are handed are kept here.");
+  });
+});
+

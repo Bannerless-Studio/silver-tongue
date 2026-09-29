@@ -6,12 +6,14 @@ import {
   chooseStart,
   courseLabels,
   decodeSave,
+  DEFAULT_RUBY,
   encodeSave,
   learnerFor,
   makeText,
   sessionLines,
   startApp,
   type PlayerSettings,
+  type RubySetting,
   type SpeechSpeed,
 } from "@silver-tongue/tui";
 import { clipsDir, courseFile, coursesDir, readCatalog } from "./catalog";
@@ -48,6 +50,7 @@ const root = configDir();
 // How fast clips are said; unset means "slow". Changed live from the settings screen, and
 // remembered for the player's next game too.
 let speed: SpeechSpeed = loadSettings(root).speed ?? "slow";
+let ruby: RubySetting = loadSettings(root).ruby ?? DEFAULT_RUBY;
 
 /** A course to play: its file, its clips, and where it sits in the catalog (none for a course file given by path). */
 interface Chosen {
@@ -250,6 +253,13 @@ function play(session: Chosen, savePath: string, carried?: { state: GameState; r
     version: pkg.version,
     audio,
     speed: speedOption,
+    ruby: {
+      value: ruby,
+      onChange: (r: RubySetting) => {
+        ruby = r;
+        updateSettings(root, { ruby: r });
+      },
+    },
     save: readOnly ? undefined : (s) => writeSave(savePath, s),
     quit: () => bail(0),
     settings: dir

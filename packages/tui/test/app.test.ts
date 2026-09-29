@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { comboKey, createCore, mulberry32, newGame, PLAYER_MARK, type CatalogEntry, type Course, type GameState } from "@silver-tongue/core";
 import { addErrand, line } from "@silver-tongue/core/testing";
 import { startApp, type AppOptions } from "../src/app";
-import type { AudioOut, Speech, SpeechSpeed } from "@silver-tongue/view";
-import { lineWidth } from "../src/width";
+import type { AudioOut, CourseExtra, Speech, SpeechSpeed } from "@silver-tongue/view";
+import { lineWidth, strWidth } from "../src/width";
 import { FakeTerminal, fixtureWithText, spacedWithText } from "./fake-terminal";
 
 const T0 = 1_000_000;
@@ -790,7 +790,7 @@ describe("tui app", () => {
     term.resize(80, 24);
     term.press("1", "1", "n");
     const bottom = term.screen().at(-1)!;
-    for (const k of ["[esc]", "[1-5]", "[enter]", "[p]"]) expect(bottom).toContain(k);
+    for (const k of ["[esc]", "[1-6]", "[enter]", "[p]"]) expect(bottom).toContain(k);
   });
 
   it("opens the notebook with n: words by group, notes, and back where it was", () => {
@@ -809,7 +809,7 @@ describe("tui app", () => {
     expect(first).toBeDefined();
     term.press("down");
     expect(chosen()).not.toBe(first);
-    term.press("5");
+    term.press("6");
     expect(term.screen().join("\n")).toContain("No notes yet.");
     term.press("escape");
     s = term.screen();
@@ -1156,7 +1156,8 @@ describe("settings screen", () => {
     expect(screen(term)).toContain("2) Reading: English");
     expect(screen(term)).toContain("3) Sound: no audio (or [m])");
     expect(screen(term)).toContain("4) Speed: slow");
-    expect(screen(term)).toContain("[1-4] change");
+    expect(screen(term)).toContain("5) Readings over words: new words only");
+    expect(screen(term)).toContain("[1-5] change");
     for (const l of term.frames.at(-1)!) expect(lineWidth(l)).toBe(46);
     term.press("escape");
     expect(screen(term)).not.toContain("Settings");
@@ -1254,7 +1255,8 @@ describe("settings screen", () => {
     expect(screen(term)).toContain("3) Sound: no audio");
     expect(screen(term)).not.toContain("(or [m])");
     expect(screen(term)).not.toContain("Speed");
-    expect(screen(term)).toContain("[1-3] change");
+    expect(screen(term)).toContain("4) Readings over words: new words only");
+    expect(screen(term)).toContain("[1-4] change");
   });
 
   it("has no [o] without settings", () => {
@@ -1340,3 +1342,98 @@ describe("menu surprisal and place notices", () => {
     expect(s).not.toContain("Steam everywhere.");
   });
 });
+
+describe("readings under words", () => {
+  const known = { right: 3, wrong: 0, streak: 3, helps: 0, lapsed: false, firstSeen: T0, lastSeen: T0 };
+  function play(ruby?: AppOptions["ruby"], patch: (s: GameState) => void = () => {}) {
+    const course = fixtureWithText();
+    course.learnerFtl += "\nlanguage-zh = Chinese\n";
+    const state = newGame(course);
+    patch(state);
+    const core = createCore(course, state, { now: () => T0, rng: mulberry32(1) });
+    const term = new FakeTerminal();
+    term.resize(80, 24);
+    startApp({ course, core, term, now: () => T0, quit: () => {}, settings: { courses: [], switchTo: () => {} }, ruby });
+    return { term, core };
+  }
+  const screen = (term: FakeTerminal) => term.screen().join("\n");
+  /** The terminal column a piece of text starts at in a screen row, wide letters counted twice. */
+  const col = (row: string, text: string) => strWidth(row.slice(0, row.indexOf(text)));
+
+  it("writes each word's reading under that word, and none under a known word", () => {
+    const { term } = play(undefined, (s) => (s.words = { w_ni: { ...known } }));
+    term.press("1", "1");
+    const s = term.screen();
+    const i = s.findIndex((l) => l.includes("Cook: 你好！"));
+    expect(s[i + 1]).toContain("hǎo");
+    expect(s[i + 1]).not.toContain("nǐ");
+    expect(col(s[i + 1], "hǎo")).toBe(col(s[i], "好"));
+  });
+
+  it("on: under known words too", () => {
+    const { term } = play({ value: "on", onChange: () => {} }, (s) => (s.words = { w_ni: { ...known }, w_hao: { ...known } }));
+    term.press("1", "1");
+    const s = term.screen();
+    expect(s[s.findIndex((l) => l.includes("Cook: 你好！")) + 1]).toMatch(/nǐ hǎo/);
+  });
+
+  it("writes readings under the replies, and none anywhere with the setting off", () => {
+    const tone = /[āáǎàēéěèīíǐìōóǒòūúǔù]/;
+    const auto = play();
+    auto.term.press("1", "1");
+    let s = auto.term.screen();
+    const reply = s.findIndex((l) => /│ 1\) /.test(l));
+    expect(reply).toBeGreaterThan(0);
+    expect(s[reply + 1]).toMatch(tone);
+    const off = play({ value: "off", onChange: () => {} });
+    off.term.press("1", "1");
+    s = off.term.screen();
+    expect(s.join("\n")).not.toMatch(tone);
+  });
+
+  it("cycles the setting from the settings screen and remembers the choice", () => {
+    const changes: string[] = [];
+    const { term } = play({ value: "auto", onChange: (r) => changes.push(r) });
+    term.press("o");
+    expect(screen(term)).toContain("4) Readings over words: new words only");
+    term.press("4");
+    expect(screen(term)).toContain("4) Readings over words: always");
+    term.press("4", "4");
+    expect(screen(term)).toContain("4) Readings over words: new words only");
+    expect(changes).toEqual(["on", "off", "auto"]);
+  });
+});
+
+describe("the Book's tabs", () => {
+  it("numbers Letters first for a language with a letter chart; p plays a letter, and a paper's line", () => {
+    const played: Speech[][] = [];
+    const audio: AudioOut = { available: true, play: (q) => void played.push(q), stop: () => {} };
+    const { term } = setup(
+      (s) => (s.scenesDone = { intro: 1 }),
+      (c) => {
+        const x = c as unknown as CourseExtra;
+        x.letters = { groups: [{ id: "consonants", letters: [{ ch: "ㄱ", reading: "g/k", audio: ["l1"] }, { ch: "ㄴ", reading: "n", audio: ["l2"] }] }] };
+        const greet = x.scenes[0].exchanges[0];
+        greet.pin = true;
+        greet.variants[""].npc = { ...greet.variants[""].npc, audio: ["greet-npc"] };
+      },
+      fixtureWithText,
+      undefined,
+      audio,
+    );
+    term.resize(80, 24);
+    term.press("n");
+    const bottom = () => term.screen().at(-1)!;
+    expect(term.screen().join("\n")).toMatch(/1\) Letters +2\) Words +3\) Phrases +4\) Papers +5\) People +6\) Places +7\) Notes/);
+    expect(bottom()).toContain("[1-7] tab");
+    term.press("1", "right", "p");
+    expect(term.screen().join("\n")).toContain("Consonants");
+    expect(played.at(-1)).toEqual([{ clips: ["l2"] }]);
+    term.press("4");
+    expect(term.screen().join("\n")).toMatch(/▸ Cook, at the Noodle shop/);
+    term.press("return", "p");
+    expect(term.screen().join("\n")).toContain("nǐhǎo！");
+    expect(played.at(-1)).toEqual([{ clips: ["greet-npc"] }]);
+  });
+});
+

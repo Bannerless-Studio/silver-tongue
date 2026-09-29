@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "preact/hooks";
 import type { WordId } from "@silver-tongue/core";
-import { firstTimeWords, sentenceCard, type SentenceCard, type WordCard } from "@silver-tongue/view";
+import { firstTimeWords, quietRuby, sentenceCard, type RubySetting, type SentenceCard, type WordCard } from "@silver-tongue/view";
 import type { Beat, Quiet, QuietView } from "../quiet";
 import { Line } from "./Line";
 
@@ -27,8 +27,8 @@ function Card({ q, reveal }: { q: Quiet; reveal: Reveal }) {
   );
 }
 
-function Said({ q, b, reveal, onWord, onReveal }: {
-  q: Quiet; b: Beat; reveal?: Reveal; onWord: (b: Beat, w: WordId, surface: string) => void; onReveal: (b: Beat) => void;
+function Said({ q, b, ruby, reveal, onWord, onReveal }: {
+  q: Quiet; b: Beat; ruby: RubySetting; reveal?: Reveal; onWord: (b: Beat, w: WordId, surface: string) => void; onReveal: (b: Beat) => void;
 }) {
   const { t, course, core } = q;
   const now = Date.now();
@@ -42,6 +42,8 @@ function Said({ q, b, reveal, onWord, onReveal }: {
   // A rephrased line comes with everything; any other NPC line has a ? when it has a meaning to show
   // (the request's, when the line says it again).
   const rephrased = b.rephrase || !!r?.rephrase;
+  // Readings under the words, but not under one whose gloss row below already gives its reading.
+  const glossed = news.map((w) => w.word);
   const target = r?.line ?? b.line;
   const whole = target && !player ? sentenceCard(course, target) : undefined;
   const cls = `ln ${player ? "you" : "npc"}`;
@@ -52,13 +54,17 @@ function Said({ q, b, reveal, onWord, onReveal }: {
         <span class="sep">: </span>
         {b.title && <b>{b.title} </b>}
         {b.line ? (
-          <Line line={b.line} fresh={b.fresh} words={player ? undefined : core.state.words} now={now} onWord={player ? undefined : (w, s) => onWord(b, w, s)} />
+          <Line
+            line={b.line} fresh={b.fresh} words={player ? undefined : core.state.words} now={now}
+            ruby={player ? undefined : quietRuby(course, b.line, core.state.words, now, ruby, glossed)}
+            onWord={player ? undefined : (w, s) => onWord(b, w, s)}
+          />
         ) : (
           <span class="prose-in">{b.text}</span>
         )}
         {r && (
           <span class="restate">
-            <Line line={r.line} fresh={r.fresh ?? []} words={core.state.words} now={now} onWord={(w, s) => onWord(b, w, s)} />
+            <Line line={r.line} fresh={r.fresh ?? []} words={core.state.words} now={now} ruby={quietRuby(course, r.line, core.state.words, now, ruby, glossed)} onWord={(w, s) => onWord(b, w, s)} />
           </span>
         )}
         {whole && !rephrased && (
@@ -85,8 +91,8 @@ function Said({ q, b, reveal, onWord, onReveal }: {
 }
 
 /** Everything said so far, newest at the bottom. */
-export function Transcript({ q, view, reveal, onWord, onReveal, children }: {
-  q: Quiet; view: QuietView; reveal: Reveal | null; onWord: (b: Beat, w: WordId, surface: string) => void; onReveal: (b: Beat) => void;
+export function Transcript({ q, view, ruby, reveal, onWord, onReveal, children }: {
+  q: Quiet; view: QuietView; ruby: RubySetting; reveal: Reveal | null; onWord: (b: Beat, w: WordId, surface: string) => void; onReveal: (b: Beat) => void;
   children?: preact.ComponentChildren;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -100,7 +106,7 @@ export function Transcript({ q, view, reveal, onWord, onReveal, children }: {
       <div class="log" role="log" aria-live="polite">
         {view.backlog.map((b) => {
           const open = reveal?.beat === b.id ? reveal : undefined;
-          if (b.speaker) return <Said key={b.id} q={q} b={b} reveal={open} onWord={onWord} onReveal={onReveal} />;
+          if (b.speaker) return <Said key={b.id} q={q} b={b} ruby={ruby} reveal={open} onWord={onWord} onReveal={onReveal} />;
           return <p key={b.id} class={`prose${b.tone ? ` ${b.tone}` : ""}${b.day ? " day" : ""}`}>{b.title && <b>{b.title} </b>}{b.text}</p>;
         })}
       </div>

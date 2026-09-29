@@ -1,18 +1,29 @@
-import type { Notebook, NotebookLabel, NotebookPhrase, NotebookWord, Text } from "@silver-tongue/view";
+import type { Course } from "@silver-tongue/core";
+import { paperGlosses, paperParts, type LettersGroupView, type Notebook, type NotebookLabel, type NotebookPhrase, type NotebookWord, type Paper, type Text } from "@silver-tongue/view";
 import { innerWidth, NARROW } from "./panel";
 import type { Span, StyledLine } from "./terminal";
 import { fitLine, strWidth, wrapLine } from "./width";
 
-export const NOTEBOOK_TABS = ["words", "phrases", "people", "places", "notes"] as const;
+export const NOTEBOOK_TABS = ["letters", "words", "phrases", "papers", "people", "places", "notes"] as const;
 export type NotebookTab = (typeof NOTEBOOK_TABS)[number];
+
+/** The Book's tabs for a course, in order: Letters only when the language has a letter chart. */
+export const notebookTabs = (letters: boolean): NotebookTab[] => NOTEBOOK_TABS.filter((id) => letters || id !== "letters");
+
+/** What the Letters and Papers tabs show: the course's letter chart and the papers kept. */
+export interface BookExtras {
+  course: Course;
+  letters: LettersGroupView[];
+  papers: Paper[];
+}
 
 export interface NotebookView {
   tab: NotebookTab;
   /** Words and Phrases: the chosen group */
   group: number;
-  /** the chosen word or phrase in that group */
+  /** the chosen word or phrase in that group; Letters: the chosen letter, counted across groups; Papers: the chosen paper */
   word: number;
-  /** the chosen word shows the line it was first heard in */
+  /** the chosen word shows the line it was first heard in; the chosen paper shows its line */
   open: boolean;
   /** People, Places and Notes: the first line on screen */
   top: number;
@@ -47,8 +58,8 @@ export function phraseGroups(nb: Notebook): Group<NotebookPhrase>[] {
 }
 
 /** The tab line, then (on Words) progress on each stage's word list. */
-export function notebookHead(nb: Notebook, t: Text, tab: NotebookTab): StyledLine[] {
-  const tabs = NOTEBOOK_TABS.flatMap((id, i): Span[] => [
+export function notebookHead(nb: Notebook, t: Text, tab: NotebookTab, shown: readonly NotebookTab[] = notebookTabs(false)): StyledLine[] {
+  const tabs = shown.flatMap((id, i): Span[] => [
     ...(i ? [{ text: "  " }] : []),
     id === tab ? { text: `${i + 1}) ${t(`notebook-${id}`)}`, bold: true, color: "cyan" } : { text: `${i + 1}) ${t(`notebook-${id}`)}`, dim: true },
   ]);
@@ -160,14 +171,129 @@ function placeLines(nb: Notebook, t: Text, width: number): StyledLine[] {
   ]);
 }
 
+/** The widest a letter cell gets: letters and readings past it are cut. */
+const CELL_MAX = 12;
+
+/** How wide each letter cell is and how many fit on a row. */
+export function letterGrid(groups: LettersGroupView[], cols: number): { cell: number; perRow: number } {
+  const inner = innerWidth(cols);
+  const widest = Math.max(2, ...groups.flatMap((g) => g.letters.flatMap((l) => [strWidth(l.ch), strWidth(l.reading ?? "")])));
+  const cell = Math.min(CELL_MAX, inner, widest + 3);
+  return { cell, perRow: Math.max(1, Math.floor(inner / cell)) };
+}
+
+/** The letters' grid rows, group by group: each row the letters' indices counted across groups. */
+function letterRows(groups: LettersGroupView[], perRow: number): number[][] {
+  const rows: number[][] = [];
+  let at = 0;
+  for (const g of groups) {
+    for (let i = 0; i < g.letters.length; i += perRow) rows.push(Array.from({ length: Math.min(perRow, g.letters.length - i) }, (_, k) => at + i + k));
+    at += g.letters.length;
+  }
+  return rows;
+}
+
+/** The letter an arrow key moves to: along the chart, or to the same column of the row above or below. */
+export function moveLetter(groups: LettersGroupView[], cols: number, at: number, key: "up" | "down" | "left" | "right"): number {
+  const count = groups.reduce((n, g) => n + g.letters.length, 0);
+  if (!count) return 0;
+  const here = Math.max(0, Math.min(at, count - 1));
+  if (key === "left" || key === "right") return Math.max(0, Math.min(count - 1, here + (key === "right" ? 1 : -1)));
+  const rows = letterRows(groups, letterGrid(groups, cols).perRow);
+  const r = rows.findIndex((row) => row.includes(here));
+  const next = rows[r + (key === "down" ? 1 : -1)];
+  return next ? next[Math.min(rows[r].indexOf(here), next.length - 1)] : here;
+}
+
+/** Lines scrolled so the lines from `start` to `end` show, exactly `height` of them. */
+function scrolledTo(all: StyledLine[], start: number, end: number, height: number): StyledLine[] {
+  const top = Math.max(0, Math.min(start, end - height, all.length - height));
+  return pad(all.slice(top, top + height), height);
+}
+
+/** Letters: each group's name, then its letters in a grid, each over how it sounds; the chosen one lit. */
+function letterLines(groups: LettersGroupView[], v: NotebookView, cols: number, height: number): StyledLine[] {
+  const { cell, perRow } = letterGrid(groups, cols);
+  const count = groups.reduce((n, g) => n + g.letters.length, 0);
+  const chosen = Math.max(0, Math.min(v.word, count - 1));
+  const cellOf = (text: string, style: Omit<Span, "text">): Span[] => fitLine([{ text: " " }, ...(text ? [{ text, ...style }] : [])], cell);
+  const all: StyledLine[] = [];
+  let focus = 0;
+  let at = 0;
+  groups.forEach((g, gi) => {
+    if (gi) all.push([]);
+    all.push([{ text: g.label, bold: true, color: "green" }]);
+    for (let i = 0; i < g.letters.length; i += perRow) {
+      const row = g.letters.slice(i, i + perRow);
+      const first = at + i;
+      if (chosen >= first && chosen < first + row.length) focus = all.length;
+      all.push(row.flatMap((l, k) => cellOf(l.ch, first + k === chosen ? { bold: true, color: "cyan", inverse: true } : { bold: true })));
+      all.push(row.flatMap((l) => cellOf(l.reading ?? "", { color: "yellow", dim: true })));
+    }
+    at += g.letters.length;
+  });
+  return scrolledTo(all, Math.max(0, focus - 1), focus + 2, height);
+}
+
+const PAPER_BAR = 4;
+
+/** A paper's line: known words as they are, the rest as blanks, or their reading (dim) when there is one. */
+export function paperLine(p: Paper): StyledLine {
+  return paperParts(p).map((part): Span =>
+    !("word" in part)
+      ? { text: part.text }
+      : part.blank.known
+        ? { text: part.text, bold: true }
+        : part.blank.reading
+          ? { text: part.blank.reading, color: "yellow", dim: true }
+          : { text: "____", dim: true },
+  );
+}
+
+/** Papers: who handed each over and where, and how much of it is known; the chosen one opened shows its line and the known words' glosses. */
+function paperLines(ex: BookExtras, t: Text, v: NotebookView, width: number, height: number): StyledLine[] {
+  const chosen = Math.max(0, Math.min(v.word, ex.papers.length - 1));
+  const all: StyledLine[] = [];
+  let start = 0;
+  let end = 0;
+  ex.papers.forEach((p, i) => {
+    const filled = p.total ? Math.round((p.known / p.total) * PAPER_BAR) : 0;
+    if (i === chosen) start = all.length;
+    all.push(
+      fitLine(
+        [
+          { text: i === chosen ? "▸ " : "  ", bold: true },
+          { text: t("notebook-paper-from", { npc: p.npcName, place: p.placeName }), ...(i === chosen ? { bold: true, color: "cyan" as const } : {}) },
+          { text: "  " },
+          { text: "█".repeat(filled), color: "green" },
+          { text: "░".repeat(PAPER_BAR - filled), dim: true },
+          { text: ` ${p.known}/${p.total}`, dim: true },
+        ],
+        width,
+      ),
+    );
+    if (i === chosen && v.open) {
+      all.push(...wrapLine([{ text: "    " }, ...paperLine(p)], width));
+      for (const g of paperGlosses(ex.course, p)) all.push(...wrapLine([{ text: "    " }, { text: g.text, bold: true }, { text: `  ${g.gloss}`, dim: true }], width));
+    }
+    if (i === chosen) end = all.length;
+  });
+  return scrolledTo(all, start, end, height);
+}
+
 /**
  * The notebook below its head, exactly `height` lines. Words and Phrases: groups and items in two
- * columns (see columns). People, Places and Notes: a list from line `v.top` (clamped; the top used
- * is returned).
+ * columns (see columns). Letters and Papers (from `ex`): scrolled to the chosen letter or paper.
+ * People, Places and Notes: a list from line `v.top` (clamped; the top used is returned).
  */
-export function notebookBody(nb: Notebook, t: Text, v: NotebookView, cols: number, height: number): { lines: StyledLine[]; top: number } {
+export function notebookBody(nb: Notebook, t: Text, v: NotebookView, cols: number, height: number, ex?: BookExtras): { lines: StyledLine[]; top: number } {
   const inner = innerWidth(cols);
   const empty = (id: string) => ({ lines: pad(wrapLine([{ text: t(id), dim: true }], inner), height), top: 0 });
+  if (v.tab === "letters") return { lines: letterLines(ex?.letters ?? [], v, cols, height), top: 0 };
+  if (v.tab === "papers") {
+    if (!ex?.papers.length) return empty("notebook-papers-empty");
+    return { lines: paperLines(ex, t, v, inner, height), top: 0 };
+  }
   if (v.tab === "words") {
     if (nb.empty) return empty("notebook-empty");
     return { lines: columns(notebookGroups(nb, t), v, cols, height, (w, chosen, width) => wordRows(w, chosen, v.open && chosen, width, t)), top: 0 };

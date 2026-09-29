@@ -1,6 +1,6 @@
 import { useEffect, useState } from "preact/hooks";
 import type { CatalogEntry, WordId } from "@silver-tongue/core";
-import { wordExample, type SpeechSpeed } from "@silver-tongue/view";
+import { wordExample, type RubySetting, type SpeechSpeed } from "@silver-tongue/view";
 import { keyAction, type Overlay } from "../keys";
 import { latestNpcLine, type Beat, type Quiet } from "../quiet";
 import { Anchor } from "./Anchor";
@@ -17,6 +17,9 @@ export interface Page {
   /** how fast clips are said, kept in the player's settings */
   speed: SpeechSpeed;
   setSpeed(speed: SpeechSpeed): void;
+  /** when readings are written under words, kept in the player's settings */
+  ruby: RubySetting;
+  setRuby(ruby: RubySetting): void;
   switchTo(course: string, learner: string): void;
   games: {
     list(): { id: string; label: string }[];
@@ -91,9 +94,9 @@ export function App({ q, page }: { q: Quiet; page: Page }) {
   return (
     <div class="term app">
       <Anchor q={q} view={view} audioAvailable={page.audioAvailable} />
-      <Transcript q={q} view={view} reveal={reveal} onWord={onWord} onReveal={onReveal}>
+      <Transcript q={q} view={view} ruby={page.ruby} reveal={reveal} onWord={onWord} onReveal={onReveal}>
         <Toasts q={q} view={view} />
-        <Prompt q={q} view={view} />
+        <Prompt q={q} view={view} ruby={page.ruby} />
       </Transcript>
       <footer class="bar">
         <button type="button" class="dim" onClick={() => setOpen("notebook")}>{t("quiet-notebook").toLowerCase()}</button>

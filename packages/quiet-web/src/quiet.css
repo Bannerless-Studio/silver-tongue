@@ -124,6 +124,14 @@ p { margin: 0; }
 .nb-r { color: var(--muted); }
 .nb-place { color: var(--green); margin-top: 0.8rem; }
 .nb-note p { color: var(--muted); }
+.letters { display: grid; grid-template-columns: repeat(auto-fill, minmax(4.5rem, 1fr)); gap: 0.25rem 0.75rem; }
+.letter { display: flex; flex-direction: column; align-items: flex-start; padding: 0.2rem 0; }
+.letter .nb-w { font-size: 1.4em; } .letter:hover .nb-w { color: var(--cyan); }
+.nb-paper { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.25rem 1.5rem; width: 100%; padding: 0.2rem 0; text-align: left; }
+.nb-paper:hover span:first-child { color: var(--cyan); }
+.paper-body { padding: 0.2rem 0 0.6rem 1.5rem; } .paper-body p { margin: 0.1rem 0; }
+.blank { border-bottom: 1px dashed var(--muted); margin: 0 0.15em; }
+ruby { ruby-position: under; -webkit-ruby-position: after; } rt { font-size: 0.6em; color: var(--muted); }
 .links { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; margin-top: 1.2rem; }
 .link { color: var(--cyan); }
 .tabs { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; }

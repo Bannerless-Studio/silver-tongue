@@ -1,7 +1,7 @@
 // Forked from packages/vn-web/src/main.tsx: the same loading and saves, drawn as a quiet terminal.
 import { render } from "preact";
 import { createCore, mulberry32, type CatalogEntry, type Course, type GameState } from "@silver-tongue/core";
-import { chooseStart, courseLabels, decodeSave, DEFAULT_SPEED, encodeSave, learnerFor, makeText, playbackRate, sessionLines, type SpeechSpeed, type Text } from "@silver-tongue/view";
+import { chooseStart, courseLabels, decodeSave, DEFAULT_RUBY, DEFAULT_SPEED, encodeSave, learnerFor, makeText, playbackRate, sessionLines, type RubySetting, type SpeechSpeed, type Text } from "@silver-tongue/view";
 import {
   coursesBase, createWebAudio, fetchJson, fromLocalStorage, loadWebSettings, metaContent, migrateWebAliases, updateWebSettings, WebSessions,
   type KeyValue, type Opened,
@@ -38,6 +38,8 @@ let loaded: Loaded | undefined;
 let current: { id: string; readOnly: boolean; state: () => GameState } | undefined;
 /** How fast clips are said: the player's own setting, shared with the other pages. */
 let speed: SpeechSpeed = DEFAULT_SPEED;
+/** When readings are written under words: the player's own setting, shared with the other pages. */
+let ruby: RubySetting = DEFAULT_RUBY;
 
 /** Fetches a course file and its sound, and moves its old games. */
 async function load(entry: CatalogEntry, learner: string): Promise<Loaded> {
@@ -84,6 +86,11 @@ function play(opened: Opened) {
     setSpeed: (s) => {
       speed = s;
       updateWebSettings(kv, { speed: s });
+    },
+    get ruby() { return ruby; },
+    setRuby: (r) => {
+      ruby = r;
+      updateWebSettings(kv, { ruby: r });
     },
     switchTo: (id, learner) => void switchTo(id, learner),
     textUrl,
@@ -141,6 +148,7 @@ function title(courses?: { label: string; pick: () => void }[], error?: string) 
 async function boot() {
   const settings = loadWebSettings(kv);
   speed = settings.speed ?? DEFAULT_SPEED;
+  ruby = settings.ruby ?? DEFAULT_RUBY;
   try {
     catalog = await fetchJson<CatalogEntry[]>(`${base}index.json`);
     const picked = chooseStart(catalog, settings);

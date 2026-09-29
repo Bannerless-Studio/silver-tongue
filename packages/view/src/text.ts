@@ -104,13 +104,14 @@ export const UI_KEYS: Record<string, string[]> = {
   "notebook-papers": [],
   "notebook-papers-empty": [],
   "notebook-paper-progress": ["known", "total"],
+  "notebook-paper-from": ["npc", "place"],
   "menu-quit": [],
   "keys-explore": ["keys"],
   "keys-pick": ["keys"],
   "keys-tiles": ["keys"],
   "keys-help": ["keys"],
-  "keys-notebook": [],
-  "keys-notebook-scroll": [],
+  "keys-notebook": ["tabs"],
+  "keys-notebook-scroll": ["tabs"],
   "notebook-title": [],
   "notebook-words": [],
   "notebook-recent": [],
@@ -240,6 +241,7 @@ export const VN_UI_KEYS: Record<string, string[]> = {
   "notebook-papers": [],
   "notebook-papers-empty": [],
   "notebook-paper-progress": ["known", "total"],
+  "notebook-paper-from": ["npc", "place"],
 };
 
 /** Message ids the quiet terminal page uses, with their variables; checked like UI_KEYS. */
@@ -295,6 +297,7 @@ export const QUIET_UI_KEYS: Record<string, string[]> = {
   "notebook-papers": [],
   "notebook-papers-empty": [],
   "notebook-paper-progress": ["known", "total"],
+  "notebook-paper-from": ["npc", "place"],
 };
 
 /** Every UI message that is missing or can't be formatted with the variables the TUI passes. */

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "preact/hooks";
 import type { CatalogEntry, WordId } from "@silver-tongue/core";
-import type { SpeechSpeed } from "@silver-tongue/view";
+import type { RubySetting, SpeechSpeed } from "@silver-tongue/view";
 import type { Art } from "../art";
 import { keyAction } from "../keys";
 import type { Vn } from "../vn";
@@ -22,8 +22,8 @@ export interface Page {
   catalog: CatalogEntry[];
   /** the course has sound this browser can play */
   audioAvailable: boolean;
-  /** the player's speed and auto-advance choices, already resolved */
-  prefs: { speed: SpeechSpeed; autoAdvance: boolean };
+  /** the player's speed, auto-advance and readings-under-words choices, already resolved */
+  prefs: { speed: SpeechSpeed; autoAdvance: boolean; ruby: RubySetting };
   setPref(patch: Partial<Page["prefs"]>): void;
   switchTo(course: string, learner: string): void;
   games: {
@@ -90,10 +90,10 @@ export function App({ vn, art, page }: { vn: Vn; art: Art; page: Page }) {
       <Stage vn={vn} view={view} art={art} />
       <Hud vn={vn} view={view} onOpen={setOverlay} />
       <PlaceMenu vn={vn} view={view} />
-      <Replies vn={vn} view={view} onWord={onWord} />
+      <Replies vn={vn} view={view} ruby={page.prefs.ruby} onWord={onWord} />
       <Tiles vn={vn} view={view} />
       <TypeReply vn={vn} view={view} />
-      <Box vn={vn} view={view} onWord={onWord} onMeaning={onMeaning} />
+      <Box vn={vn} view={view} ruby={page.prefs.ruby} onWord={onWord} onMeaning={onMeaning} />
       <Toasts vn={vn} view={view} />
       <DayFade vn={vn} view={view} />
       {overlay === "notebook" && <Notebook vn={vn} onClose={() => setOverlay(null)} />}
