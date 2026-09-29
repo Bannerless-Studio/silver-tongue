@@ -1,6 +1,6 @@
 import { wordState, type Course, type GameState, type WordId, type WordState } from "@silver-tongue/core";
 import { displayGloss } from "./help";
-import { dayPart } from "./hud";
+import { dayPart, type DayPart } from "./hud";
 import type { Text } from "./text";
 
 /**
@@ -18,8 +18,8 @@ export interface RentAlert {
 export interface AnchorRow {
   place: string;
   day: number;
-  /** the part of the day, named ("afternoon") */
-  part: string;
+  /** the part of the day */
+  part: DayPart;
   /** only when rent is a risk worth reading; absent on an ordinary day */
   rent?: RentAlert;
 }
@@ -39,7 +39,7 @@ export const RENT_FOOD_DAYS = 3;
  */
 export function anchorRow(course: Course, state: GameState, t: Text): AnchorRow {
   const { foodPerDay, rentPerWeek } = course.world;
-  const row: AnchorRow = { place: t(`place-${state.place}`), day: state.day, part: dayPart(course, state, t) };
+  const row: AnchorRow = { place: t(`place-${state.place}`), day: state.day, part: dayPart(course, state) };
   const dueInDays = rentDueInDays(state.day);
   // endDay charges food before rent on the same sleep, so the due night's food counts too.
   const projected = state.wallet - foodPerDay * (dueInDays + 1);

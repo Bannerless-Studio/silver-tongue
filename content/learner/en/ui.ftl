@@ -3,7 +3,7 @@
 # The top border (right) and the HUD row under it.
 hud-top = Day { $day }
 day-part-morning = morning
-day-part-late-morning = late morning
+day-part-midday = midday
 day-part-afternoon = afternoon
 day-part-evening = evening
 day-part-night = night

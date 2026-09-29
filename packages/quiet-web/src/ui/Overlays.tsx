@@ -3,6 +3,7 @@ import type { CatalogEntry, WordState } from "@silver-tongue/core";
 import { dayPart, hudValues, nextSpeed, notebookDefault, notebookEntries, rentDueInDays, settingsRows, type SettingsScreen } from "@silver-tongue/view";
 import type { Quiet } from "../quiet";
 import type { Page } from "./App";
+import { partLabel } from "./Anchor";
 
 function Overlay({ q, title, head, onClose, children }: { q: Quiet; title: string; head?: preact.ComponentChildren; onClose: () => void; children: preact.ComponentChildren }) {
   return (
@@ -90,7 +91,7 @@ export function Status({ q, audioAvailable, onClose }: { q: Quiet; audioAvailabl
   const hud = hudValues(course, s, t, Date.now());
   const currency = course.world.currency;
   const rows = [
-    t("quiet-st-day", { day: s.day, part: dayPart(course, s, t) }),
+    t("quiet-st-day", { day: s.day, part: partLabel(t, dayPart(course, s)) }),
     t("quiet-st-wallet", { currency, wallet: s.wallet }),
     t("quiet-st-rent", { currency, rent: course.world.rentPerWeek, days: s.rentLate ? 0 : rentDueInDays(s.day) }) + (s.rentLate ? ` · ${t("quiet-rent-late")}` : ""),
     t("notebook-rank", { rank: hud.rankLabel }),

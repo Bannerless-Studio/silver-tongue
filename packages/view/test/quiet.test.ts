@@ -12,7 +12,7 @@ const rec = (patch: Partial<WordRecord>): WordRecord => ({ right: 0, wrong: 0, s
 describe("anchor row", () => {
   it("is place and part of the day only on an ordinary day", () => {
     const row = anchorRow(course, game({ day: 3, slot: 2, wallet: 500 }), t);
-    expect(row).toEqual({ place: "The street", day: 3, part: "🌤️ afternoon" });
+    expect(row).toEqual({ place: "The street", day: 3, part: "afternoon" });
   });
 
   it("rent is due on the sleep ending a day divisible by 7", () => {

@@ -5,7 +5,7 @@ Every release of Silver Tongue, newest first.
 ## 0.18.5 (2026-09-29)
 
 - In China City your room is back on Main Street, open from the first day, and it's the only place to sleep: no more sleeping rough by the road before you've met Mr Li.
-- The time of day is named, with an icon, instead of counted: "Day 1, 🌅 morning" on the quiet page, and "🌤️ afternoon" in place of the four dots in the visual novel. The day runs morning, late morning, afternoon and evening, then night.
+- The time of day is named instead of counted: morning, midday, afternoon and evening, then night. The quiet page marks it with a circle that fills as the day goes ("Day 1, ◔ midday"); the visual novel shows "☀️ midday" in place of its four dots.
 - Once it's time to sleep and you're not in your room, the quiet page and the visual novel say where to go: "Go to Your Room, off Main Street, to sleep."
 
 ## 0.18.4 (2026-09-29)

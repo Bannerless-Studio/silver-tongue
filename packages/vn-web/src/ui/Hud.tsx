@@ -1,4 +1,7 @@
-import { hudValues } from "@silver-tongue/view";
+import { hudValues, type DayPart } from "@silver-tongue/view";
+
+/** The part of the day, drawn in the scene's colours. */
+const PART_ICON: Record<DayPart, string> = { morning: "🌅", midday: "☀️", afternoon: "🌤️", evening: "🌇", night: "🌙" };
 import type { Vn, VnView } from "../vn";
 
 export function Hud({ vn, view, onOpen }: { vn: Vn; view: VnView; onOpen: (o: "notebook" | "backlog" | "menu") => void }) {
@@ -7,7 +10,7 @@ export function Hud({ vn, view, onOpen }: { vn: Vn; view: VnView; onOpen: (o: "n
   return (
     <div class="hud">
       <span class="hud-day">{vn.t("vn-day", { day: h.day })}</span>
-      <span class="hud-part">{h.part}</span>
+      <span class="hud-part">{PART_ICON[h.part]} {vn.t(`day-part-${h.part}`)}</span>
       <span class="hud-wallet">
         {h.currency}{h.wallet}
         {view.floats.map((f) => (

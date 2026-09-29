@@ -29,7 +29,7 @@ export const UI_KEYS: Record<string, string[]> = {
   "hud-goal": ["goal"],
   "hud-goal-sleep": [],
   "day-part-morning": [],
-  "day-part-late-morning": [],
+  "day-part-midday": [],
   "day-part-afternoon": [],
   "day-part-evening": [],
   "day-part-night": [],
