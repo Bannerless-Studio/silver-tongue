@@ -1400,11 +1400,11 @@ describe("readings under words", () => {
     const changes: string[] = [];
     const { term } = play({ value: "auto", onChange: (r) => changes.push(r) });
     term.press("o");
-    expect(screen(term)).toContain("4) Readings over words: new words only");
+    expect(screen(term)).toContain("4) Readings under words: new words only");
     term.press("4");
-    expect(screen(term)).toContain("4) Readings over words: always");
+    expect(screen(term)).toContain("4) Readings under words: always");
     term.press("4", "4");
-    expect(screen(term)).toContain("4) Readings over words: new words only");
+    expect(screen(term)).toContain("4) Readings under words: new words only");
     expect(changes).toEqual(["on", "off", "auto"]);
   });
 });
@@ -1436,7 +1436,7 @@ describe("the Book's tabs", () => {
     expect(term.screen().join("\n")).toContain("Consonants");
     expect(played.at(-1)).toEqual([{ clips: ["l2"] }]);
     term.press("4");
-    expect(term.screen().join("\n")).toMatch(/▸ Cook, at the Noodle shop/);
+    expect(term.screen().join("\n")).toMatch(/▸ Cook · Noodle shop/);
     term.press("return", "p");
     expect(term.screen().join("\n")).toContain("nǐhǎo！");
     expect(played.at(-1)).toEqual([{ clips: ["greet-npc"] }]);
@@ -1472,8 +1472,8 @@ describe("with and without the Book", () => {
       term.press("o");
       return term.screen().join("\n");
     };
-    expect(rows(() => {})).not.toContain("Readings over words");
-    expect(rows((c) => void ((c as unknown as CourseExtra).language.book = true))).toContain("Readings over words: new words only");
+    expect(rows(() => {})).not.toContain("Readings under words");
+    expect(rows((c) => void ((c as unknown as CourseExtra).language.book = true))).toContain("Readings under words: new words only");
   });
 });
 

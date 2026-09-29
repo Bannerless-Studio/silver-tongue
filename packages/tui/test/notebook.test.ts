@@ -171,7 +171,7 @@ describe("the Book's Letters and Papers", () => {
 
   it("lists each paper with who handed it over, where, and how much of it is known", () => {
     const s = body({ tab: "papers" }).join("\n");
-    expect(s).toMatch(/▸ Cook, at the Noodle shop +██░░ 1\/2/);
+    expect(s).toMatch(/▸ Cook · Noodle shop +██░░ 1\/2/);
     expect(s).not.toContain("你好");
   });
 

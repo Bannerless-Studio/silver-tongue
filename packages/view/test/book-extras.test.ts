@@ -148,7 +148,7 @@ describe("ruby setting", () => {
     extra(course).language.book = true;
     expect(settingsRows("main", base).some((r) => r.action.kind === "ruby")).toBe(false);
     const row = settingsRows("main", { ...base, ruby: "auto" }).at(-1)!;
-    expect(row).toEqual({ label: "Readings over words: new words only", action: { kind: "ruby" } });
+    expect(row).toEqual({ label: "Readings under words: new words only", action: { kind: "ruby" } });
   });
 
   it("without the Book, no readings whatever the setting", () => {
