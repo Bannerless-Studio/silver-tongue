@@ -2,6 +2,12 @@
 
 Every release of Silver Tongue, newest first.
 
+## 0.18.3 (2026-09-29)
+
+- On the quiet page, the notebook's views are tabs at the top, each with its count, and the open one is highlighted; the links at the bottom are gone.
+- On the quiet page, a conversation folds into its one line as soon as it ends, not when the next one starts; only its closing narration stays under it until you move on. The opening story leaves with the first one.
+- Asking your name, the quiet page and the visual novel tell the browser it's a name, so it suggests your name instead of a payment card.
+
 ## 0.18.2 (2026-09-29)
 
 - The story holds together better: Mrs Lin no longer says she lives with just her son (her family is six), washing up ends with you going out for the cups you said you'd buy, and the lunch rush ends after you've eaten, not before. The Chinese class opens with "a teacher at the school gate", which reads right on the quiet page too.

@@ -22,24 +22,25 @@ things stay one key away; absence is said plainly.
   gloss); shaky → dotted underline; met/known → bare. No pinyin or translation under NPC lines or on
   pick options.
 - **Notebook** (`notebookDefault`): opens on the shaky words with why: `missed ×n` (wrong ≥ helps),
-  `helped`, or `decayed`; shakiest first (most misses, then most recently seen). Header counts every
-  state. `known ▸ met ▸ all ▸` switch to the full grouped notebook. No bars, no badges.
+  `helped`, or `decayed`; shakiest first (most misses, then most recently seen). Tabs at the top,
+  `shaky n · met n · known n · all n`, switch views; the one open is highlighted. No bars, no badges.
 - **Review tell** (`reviewTell`): a repeatable scene already done once is a repeat shift; pay is the sum
   of its exchanges' full pay.
 
 ## Transcript
 
 A reply's cost rides on the player's echoed line (`wallet-change` text, two spaces after it): soft red
-for a miss (mix-up), dim for a price paid (shopping). Food is silent. Wages are the
-scene's closing prose (`scene-done`). Rent paid is one line. Trust is silent. News (a new rank, a
+for a miss (mix-up), dim for a price paid (shopping). Food is silent. Wages ride on the
+line a finished scene folds into. Rent paid is one line. Trust is silent. News (a new rank, a
 new scene, a mentor note, an errand) is a toast, held until the scene ends so it never lands between a
 line and its replies. A word glosses itself if it was heard for the first time in that line or has
 never been heard (reaction lines don't count as hearing). A game picked up mid-scene replays the
 current line and replies (core `describeRun`); between scenes it says where the player is.
 
-A finished conversation stays whole until the player's next accepted input, so its ending can be read;
-then it folds into one dim line, `✓ Scene · NPC · +¥X` (the NPC left out when the scene's name says it,
-the pay only when there was some). What came before and after it stays. The notebook's Phrases tab keeps
+A conversation folds the moment it ends into one dim line, `✓ Scene · NPC · +¥X` (the NPC left out when
+the scene's name says it, the pay only when there was some: it replaces the wages line). Its closing
+narration stays under it until the player's next accepted input. What came before and after it stays, except the opening story (or
+the line saying where a picked-up game is), which goes with the first fold. The notebook's Phrases tab keeps
 what was said.
 
 A miss is one beat of at most three rows, and every try stays in the transcript:

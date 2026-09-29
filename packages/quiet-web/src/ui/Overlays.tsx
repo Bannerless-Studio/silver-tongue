@@ -4,12 +4,12 @@ import { hudValues, nextSpeed, notebookDefault, notebookEntries, rentDueInDays, 
 import type { Quiet } from "../quiet";
 import type { Page } from "./App";
 
-function Overlay({ q, title, head, onClose, children }: { q: Quiet; title: string; head?: string; onClose: () => void; children: preact.ComponentChildren }) {
+function Overlay({ q, title, head, onClose, children }: { q: Quiet; title: string; head?: preact.ComponentChildren; onClose: () => void; children: preact.ComponentChildren }) {
   return (
     <div class="overlay" role="dialog" aria-label={title}>
       <header class="ov-head">
         <span class="ov-title">{title}</span>
-        {head && <span class="dim">{head}</span>}
+        {head && (typeof head === "string" ? <span class="dim">{head}</span> : head)}
         <button type="button" class="dim close" aria-label={q.t("web-close")} onClick={onClose}>{q.t("quiet-esc")}</button>
       </header>
       <div class="ov-body">{children}</div>
@@ -17,22 +17,31 @@ function Overlay({ q, title, head, onClose, children }: { q: Quiet; title: strin
   );
 }
 
-type NotebookView = "shaky" | "known" | "met" | "all";
-const VIEWS: NotebookView[] = ["shaky", "known", "met", "all"];
+type NotebookView = "shaky" | "met" | "known" | "all";
+const VIEWS: NotebookView[] = ["shaky", "met", "known", "all"];
 
-/** Opens on the words that need work and why; the rest are one tap away. No bars, no badges. */
+/** Opens on the words that need work and why; the rest are one tap away on the tabs up top, which
+ * count their words. No bars, no badges. */
 export function Notebook({ q, onClose }: { q: Quiet; onClose: () => void }) {
   const [tab, setTab] = useState<NotebookView>("shaky");
   const { t, course, core } = q;
   const now = Date.now();
   const nb = notebookDefault(course, core.state, now);
-  const head = t("quiet-counts", nb.counts);
   const whyText = (w: (typeof nb.shaky)[number]) =>
     w.why === "missed" ? t("quiet-why-missed", { count: w.count ?? 1 }) : t(`quiet-why-${w.why}`);
   const full = tab === "shaky" ? undefined : notebookEntries(course, core.state, t, now);
   const keep = (s: WordState) => tab === "all" || s === tab;
+  const tabs = (
+    <nav class="tabs" role="tablist">
+      {VIEWS.map((v) => (
+        <button key={v} type="button" role="tab" aria-selected={v === tab} class={v === tab ? "tab on" : "tab"} onClick={() => setTab(v)}>
+          {t(`quiet-tab-${v}`, v === "all" ? { count: nb.counts.shaky + nb.counts.met + nb.counts.known } : { count: nb.counts[v] })}
+        </button>
+      ))}
+    </nav>
+  );
   return (
-    <Overlay q={q} title={t("quiet-notebook")} head={head} onClose={onClose}>
+    <Overlay q={q} title={t("quiet-notebook")} head={tabs} onClose={onClose}>
       {tab === "shaky" && (nb.shaky.length ? (
         <div class="nb-grid">
           {nb.shaky.map((w) => (
@@ -70,9 +79,6 @@ export function Notebook({ q, onClose }: { q: Quiet; onClose: () => void }) {
           )}
         </>
       )}
-      <nav class="links">
-        {VIEWS.filter((v) => v !== tab).map((v) => <button key={v} type="button" class="link" onClick={() => setTab(v)}>{t(`quiet-nb-${v}`)}</button>)}
-      </nav>
     </Overlay>
   );
 }

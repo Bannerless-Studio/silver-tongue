@@ -99,32 +99,26 @@ describe("quiet terminal controller", () => {
     expect(q.view().backlog.some((b) => b.restate?.rephrase === "rephrase" && b.speaker === "cook")).toBe(true);
   });
 
-  it("finishing a scene: earnings once as prose, trust silent, the scene is over", () => {
-    const { q, core } = setup();
-    q.choose(0);
-    q.choose(0);
-    while (core.state.run) q.choose(rightIndex(core));
-    const all = texts(q).join("\n");
-    expect(all).toContain("Done.");
-    expect(all).not.toMatch(/trusts you/);
-    expect(q.view().scene).toBeUndefined();
-  });
-
-  it("a finished conversation stays until the player moves on, then folds into one line", () => {
+  it("finishing a scene: it folds into one line at once, its closing narration under it until the player moves on", () => {
     const { q, core, course } = setup();
+    const before = q.view().backlog.map((b) => b.id);
     q.choose(0);
     q.choose(0);
-    const before = q.view().backlog.filter((b) => !b.speaker).map((b) => b.id);
     while (core.state.run) q.choose(rightIndex(core));
-    // Just finished: how it ended is still there to read.
-    expect(q.view().backlog.some((b) => b.speaker === "player")).toBe(true);
+    expect(q.view().scene).toBeUndefined();
+    let log = q.view().backlog;
+    expect(log.filter((b) => b.tone === "done").map((b) => b.text)).toEqual([`✓ ${course.learnerFtl.match(/^scene-intro = (.+)$/m)![1]} · Cook`]);
+    expect(log.some((b) => b.speaker)).toBe(false);
+    expect(texts(q).join("\n")).not.toMatch(/Done\.|trusts you/);
+    expect(log.at(-1)!.text).toBe("She hands you an apron.");
+    // The opening story went with it: read, and acted on.
+    expect(before.length).toBeGreaterThan(0);
+    expect(log.some((b) => before.includes(b.id))).toBe(false);
     const menu = (q.view().phase as { menu: { kind: string; disabled?: string }[] }).menu;
     q.choose(menu.findIndex((m) => !m.disabled));
-    const log = q.view().backlog;
-    expect(log.filter((b) => b.tone === "done").map((b) => b.text)).toEqual([`✓ ${course.learnerFtl.match(/^scene-intro = (.+)$/m)![1]} · Cook`]);
-    expect(log.some((b) => b.speaker === "player")).toBe(false);
-    // What came before the conversation stays.
-    expect(log.map((b) => b.id)).toEqual(expect.arrayContaining(before.filter((id) => id < log.find((b) => b.tone === "done")!.id)));
+    log = q.view().backlog;
+    expect(log.some((b) => b.text === "She hands you an apron.")).toBe(false);
+    expect(log[0].tone).toBe("done");
   });
 
   it("sleeping: food is silent, the new day is a line", () => {
@@ -192,7 +186,7 @@ describe("quiet terminal controller", () => {
     while (q.view().phase.kind === "pick") q.choose(rightIndex(core));
     const end = q.view().backlog.find((b) => b.text === "She hands you an apron.")!;
     expect(end.tone).toBe("narr");
-    expect(q.view().backlog.at(-1)!.tone).toMatch(/good|plain/); // the scene's outcome line
+    expect(q.view().backlog.at(-2)!.tone).toBe("done"); // the scene, folded, with its outcome
     const resumed = setup((s) => (s.day = 3));
     expect(resumed.q.view().backlog.map((b) => b.tone)).toEqual(["narr"]); // where the player is
   });
@@ -389,7 +383,8 @@ describe("quiet terminal controller", () => {
     });
 
     it("a right reply is unchanged: the echo, what was done, then what comes next", () => {
-      const job = setup(shift);
+      // Two requests, so the first right reply doesn't end the shift and fold it.
+      const job = setup(shift, (c) => c.scenes[1].exchanges.push(structuredClone(c.scenes[1].exchanges[0])));
       job.q.choose(0);
       job.q.choose(0);
       const from = job.q.view().backlog.length;
@@ -399,7 +394,7 @@ describe("quiet terminal controller", () => {
       const social = setup();
       social.q.choose(0);
       social.q.choose(0);
-      social.q.choose(rightIndex(social.core));
+      // The first request: the last one ends the conversation, which folds it.
       const at = social.q.view().backlog.length;
       social.q.choose(rightIndex(social.core));
       const rows = social.q.view().backlog.slice(at);
@@ -451,7 +446,7 @@ describe("quiet terminal controller", () => {
     again.q.choose(0);
     const reply = again.course.scenes[1].exchanges[0].variants[comboKey(again.core.state.run!.combo)].reply.text;
     again.q.sendText(reply);
-    expect(again.q.view().backlog.some((b) => b.speaker === "player" && b.text === reply)).toBe(true);
     expect(again.core.state.run).toBeNull();
+    expect(again.q.view().backlog.some((b) => b.tone === "done")).toBe(true);
   });
 });

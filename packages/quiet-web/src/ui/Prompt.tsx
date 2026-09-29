@@ -13,7 +13,7 @@ export function Prompt({ q, view }: { q: Quiet; view: QuietView }) {
         <p class="prose">{t("name-prompt")}</p>
         <label class="cursor-line">
           <span class="cur">›</span>
-          <input autoFocus value={name} maxLength={24} aria-label={t("name-prompt")} onInput={(e) => setName((e.target as HTMLInputElement).value)} />
+          <input name="given-name" autoComplete="given-name" autoCapitalize="words" autoFocus value={name} maxLength={24} aria-label={t("name-prompt")} onInput={(e) => setName((e.target as HTMLInputElement).value)} />
           <button type="submit" class="dim">{t("vn-name-go")}</button>
         </label>
       </form>

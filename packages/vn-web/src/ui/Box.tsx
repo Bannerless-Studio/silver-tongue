@@ -20,7 +20,7 @@ export function Box({ vn, view, onWord, onMeaning }: { vn: Vn; view: VnView; onW
     return (
       <form class="box" onSubmit={(e) => (e.preventDefault(), vn.setName(name))}>
         <div class="nameplate">{vn.t("name-prompt")}</div>
-        <input class="name-input" autoFocus maxLength={20} value={name} onInput={(e) => setName((e.target as HTMLInputElement).value)} />
+        <input class="name-input" name="given-name" autoComplete="given-name" autoCapitalize="words" autoFocus maxLength={20} value={name} onInput={(e) => setName((e.target as HTMLInputElement).value)} />
         <button type="submit" class="primary">{vn.t("vn-name-go")}</button>
       </form>
     );
