@@ -148,12 +148,14 @@ export function createQuiet(opts: QuietOptions): Quiet {
   };
   const speech = (clips: string[] | undefined, slow = false): Speech | undefined =>
     clips?.length ? (slow ? { clips, slow } : { clips }) : undefined;
+  // News already on screen, or already held, is not said twice: it would push other news out.
   const toast = (text: string, tone: Toast["tone"]) => {
+    if (toasts.some((x) => x.text === text)) return;
     toasts = [...toasts, { id: nextId++, text, tone }].slice(-TOAST_LIMIT);
   };
   const news = (text: string, tone: Toast["tone"]) => {
-    if (scene) held.push({ text, tone });
-    else toast(text, tone);
+    if (!scene) toast(text, tone);
+    else if (!held.some((h) => h.text === text)) held.push({ text, tone });
   };
   const push = (b: Omit<Beat, "id">, s?: Speech): Beat => {
     const beat = { id: nextId++, ...b };
@@ -187,6 +189,8 @@ export function createQuiet(opts: QuietOptions): Quiet {
       return out;
     };
     let hinted = false;
+    /** places revealed by these events: one piece of news for all of them */
+    const revealed: string[] = [];
     /** reactions that restate the request; only kept when the replies come back after them */
     const reacted: Beat[] = [];
     for (const e of events) {
@@ -254,7 +258,7 @@ export function createQuiet(opts: QuietOptions): Quiet {
           news(t("unlocked", { scene: t(`scene-${e.scene}`) }), "good");
           break;
         case "placeRevealed":
-          news(t("place-revealed", { count: 1, places: t(`place-${e.place}`) }), "good");
+          revealed.push(t(`place-${e.place}`));
           break;
         case "errandStarted":
           news(t("errand-started"), "info");
@@ -289,6 +293,7 @@ export function createQuiet(opts: QuietOptions): Quiet {
           break;
       }
     }
+    if (revealed.length) news(t("place-revealed", { count: revealed.length, places: revealed.join(", ") }), "good");
     // No replies after the reaction (the scene ended): nothing to answer, so the request isn't said again.
     if (!events.some((e) => e.type === "replyOptions")) for (const r of reacted) if (!r.restate?.rephrase) delete r.restate;
   }

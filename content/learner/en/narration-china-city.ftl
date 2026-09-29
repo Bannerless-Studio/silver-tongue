@@ -46,7 +46,7 @@ scene-street-hello-end = Old Wang looks delighted, and repeats your name, gettin
 
 scene-street-hungry = Talk about food
 scene-street-hungry-start = Your stomach growls, and Old Wang raises an eyebrow.
-scene-street-hungry-end = Old Wang points down the street at a noodle shop, then holds up his fingers: first, numbers.
+scene-street-hungry-end = Old Wang points down the street at a noodle shop: his friend Xiao Zhang cooks there.
 
 scene-street-practice = Practise greetings
 scene-street-practice-start = Old Wang waves you back over: greet him, mind your manners, then say goodbye properly.
@@ -55,8 +55,11 @@ scene-street-practice-end = Old Wang beams, satisfied you've finally got your ma
 scene-street-numbers = Count with Old Wang
 scene-street-numbers-start = Old Wang holds up his fingers: time to learn to count.
 
+scene-noodle-bowl = Get a bowl of noodles
+scene-noodle-bowl-start = Steam rolls out of the door. The cook glances up from her pot and waves you to a stool.
+scene-noodle-bowl-end = She waves your money away: Old Wang's friends eat free, once. Then she's back at the pot, shouting orders she has nobody to count out.
 scene-noodle-intro = Ask about work
-scene-noodle-intro-start = The cook looks you up and down, wiping her hands.
+scene-noodle-intro-start = Xiao Zhang looks you up and down, wiping her hands: a customer, or a pair of hands?
 scene-noodle-intro-end = She throws you an apron: you have a job.
 
 scene-noodle-shift = Work a shift
@@ -126,13 +129,14 @@ asked-names = { $npc } gave a name, and asked for yours.
 asked-bye = { $npc } said goodbye.
 asked-farewell = Old Wang said goodbye.
 asked-answer = Old Wang said "{ $said }", wanting a reply.
-asked-hungry = Old Wang wanted to know if you're hungry.
-asked-noodles = Old Wang offered you noodles.
+asked-hungry = { $npc } wanted to know if you're hungry.
+asked-noodles = { $npc } offered you noodles.
 asked-like = { $npc } wanted to know if you like noodles.
 asked-count = { $npc } wanted you to count the cups.
 asked-there = Old Wang pointed down the street.
 asked-shop = Old Wang pointed out a restaurant.
 asked-friend = Old Wang said Xiao Zhang is his friend.
+asked-oldfriend = { $npc } asked if Old Wang is your friend.
 asked-job = { $npc } offered you work.
 asked-live = Mr Li said the room is yours.
 asked-numbers = { $npc } asked you to count along.

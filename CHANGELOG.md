@@ -2,6 +2,11 @@
 
 Every release of Silver Tongue, newest first.
 
+## 0.18.1 (2026-09-29)
+
+- The noodle shop opens as soon as Old Wang points you to it. Your first visit is a free bowl of noodles from his friend Xiao Zhang; asking her for work still waits until Old Wang has taught you to count.
+- On the quiet page, places you discover at once share one notice ("New places: Noodle Shop, Market Street, Your Room"), and a notice already on screen isn't repeated, so no news gets pushed out, such as the one saying you're carrying a parcel.
+
 ## 0.18.0 (2026-09-29)
 
 - A third way to play in the browser, the quiet terminal, at /quiet/. It shows only what changed: rent appears when you are about to fall short, a new word explains itself once, and a word you keep missing is underlined. Tap `?` on any line to see its reading and meaning, N for your notebook (it opens on the words that need work and why), S for your money, rent and standing.

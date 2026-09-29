@@ -1,0 +1,19 @@
+{
+  "id": "noodle-bowl",
+  "place": "noodle_shop",
+  "npc": "cook",
+  "stage": 1,
+  "after": [
+    "street-hungry"
+  ],
+  "requires": {},
+  "repeatable": false,
+  "trustGain": 1,
+  "exchanges": [
+    { "id": "hungry", "slots": {}, "expect": { "action": "hungry" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "oldfriend", "slots": {}, "expect": { "action": "oldfriend" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "noodles", "slots": {}, "expect": { "action": "noodles" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "like", "slots": {}, "expect": { "action": "like" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "bye", "slots": {}, "expect": { "action": "bye" }, "hinges": [], "pay": 0, "missCost": 0 }
+  ]
+}

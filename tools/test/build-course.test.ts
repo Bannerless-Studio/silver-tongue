@@ -59,7 +59,7 @@ describe("build-course (real content)", () => {
 
   it("builds zh-china with no errors", () => {
     expect(errors).toEqual([]);
-    expect(course!.scenes.map((s) => s.id)).toEqual(["class-break", "class-first", "class-read", "class-write", "delivery-hospital", "delivery-intro", "delivery-pickup", "delivery-school", "delivery-station", "hospital-checkup", "noodle-intro", "noodle-kitchen", "noodle-lunch", "noodle-shift", "room-hello", "room-phone", "room-rent", "shop-buy", "shop-intro", "stairs-family", "stairs-meet", "stairs-pets", "street-hello", "street-hungry", "street-numbers", "street-practice", "taxi-luggage", "taxi-visitor", "taxi-way", "tea-intro", "tea-shift", "tea-tv", "tea-weather", "warehouse-intro", "warehouse-shift"]);
+    expect(course!.scenes.map((s) => s.id)).toEqual(["class-break", "class-first", "class-read", "class-write", "delivery-hospital", "delivery-intro", "delivery-pickup", "delivery-school", "delivery-station", "hospital-checkup", "noodle-bowl", "noodle-intro", "noodle-kitchen", "noodle-lunch", "noodle-shift", "room-hello", "room-phone", "room-rent", "shop-buy", "shop-intro", "stairs-family", "stairs-meet", "stairs-pets", "street-hello", "street-hungry", "street-numbers", "street-practice", "taxi-luggage", "taxi-visitor", "taxi-way", "tea-intro", "tea-shift", "tea-tv", "tea-weather", "warehouse-intro", "warehouse-shift"]);
   });
 
   it("renders every slot combination and tags its words", () => {
@@ -224,6 +224,11 @@ describe("build-course (real content)", () => {
   it("the cook offers work only once Old Wang has taught you to count", () => {
     // Otherwise she hands you an apron and no shift appears, with nothing to say why.
     expect(course!.scenes.find((s) => s.id === "noodle-intro")!.after).toContain("street-numbers");
+  });
+
+  it("the noodle shop opens once Old Wang points you to it, for a bowl of noodles; work waits for counting", () => {
+    expect(course!.world.places.noodle_shop.after).toEqual(["street-hungry"]);
+    expect(course!.scenes.find((s) => s.id === "noodle-bowl")!.after).toEqual(["street-hungry"]);
   });
 
   it("a wrong number while counting with Old Wang gets a plain no, not the noodle shop's 几杯", () => {
