@@ -1,7 +1,7 @@
 import { useState } from "preact/hooks";
 import type { CatalogEntry, WordState } from "@silver-tongue/core";
 import {
-  bookOn, dayPart, guideView, hasLetters, hudValues, lettersView, nextRuby, nextSpeed, notebookDefault, notebookEntries, paperGlosses, paperParts, papers, peopleList, rentDueInDays, settingsRows,
+  bookOn, dayPart, guideView, hasLetters, hudValues, letterCount, lettersView, nextRuby, nextSpeed, notebookDefault, notebookEntries, paperGlosses, paperParts, papers, peopleList, rentDueInDays, settingsRows,
   type Paper, type SettingsScreen,
 } from "@silver-tongue/view";
 import type { Quiet } from "../quiet";
@@ -65,13 +65,21 @@ export function Notebook({ q, onClose, first }: { q: Quiet; onClose: () => void;
       {book && tabButton("papers", t("notebook-papers"))}
     </nav>
   );
+  // On a course whose papers are read at the desk, the Book knows only the letters met there.
+  const met = q.deskMet();
+  const guide = tab === "letters" ? guideView(course, t, met) : [];
+  const chart = tab === "letters" ? lettersView(course, t, met) : [];
+  const count = met ? letterCount(course, met) : undefined;
   return (
     <Overlay q={q} title={t(book ? "quiet-book" : "quiet-notebook")} head={tabs} onClose={onClose}>
-      {tab === "letters" && guideView(course, t).length > 0 && (
+      {tab === "letters" && count && (
+        <p class="dim">{count.n ? t("quiet-letters-count", { n: count.n, total: count.total }) : t("quiet-letters-none")}</p>
+      )}
+      {tab === "letters" && guide.length > 0 && (
         <section>
           <p class="nb-place">{t("quiet-letters-guide")}</p>
           <ol class="guide">
-            {guideView(course, t).map((g) => (
+            {guide.map((g) => (
               <li key={g.id}>
                 <p class="guide-text">{g.text}</p>
                 <div class="guide-ex" lang={course.language.code}>
@@ -86,7 +94,7 @@ export function Notebook({ q, onClose, first }: { q: Quiet; onClose: () => void;
           </ol>
         </section>
       )}
-      {tab === "letters" && lettersView(course, t).map((g) => (
+      {chart.map((g) => (
         <section key={g.id}>
           <p class="nb-place">{g.label}</p>
           <div class="letters">

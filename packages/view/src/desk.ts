@@ -32,7 +32,7 @@ export function deskOn(course: Course, state: GameState, read: ReadonlySet<strin
   return ps.some((p) => !read.has(p.id));
 }
 
-/** The paper that pulses on the desk: the first one not read yet. */
+/** The paper to read next on the desk: the first one not read yet. */
 export const firstUnread = (papers: DeskPaper[], read: ReadonlySet<string>): string | undefined => papers.find((p) => !read.has(p.id))?.id;
 
 /** Where the read set is kept in the browser. */
@@ -135,38 +135,4 @@ export function readsAs(typed: string, text: string): boolean {
   const got = foldRomanization(typed);
   if (!got) return false;
   return got === foldRomanization(romanize(text)) || got === foldRomanization(romanize(text, true));
-}
-
-export interface ReadingHint {
-  /** the line's syllables, each with its reading; a run of digits or punctuation is one token, spaces are left out */
-  syllables: { ch: string; reading: string }[];
-  /** the first syllable the typed reading gets wrong (or never reaches), -1 when it has none */
-  firstWrong: number;
-}
-
-/** Where a wrong reading goes off, so the help can point at the first syllable to look at again. */
-export function readingHint(typed: string, text: string): ReadingHint {
-  const chars = [...text];
-  const spelled = [romanizeParts(text, false), romanizeParts(text, true)];
-  // Tokens: a syllable, or a run of anything else that isn't a space.
-  const tokens: { ch: string; from: number; to: number }[] = [];
-  chars.forEach((c, k) => {
-    if (/\s/u.test(c)) return;
-    const last = tokens[tokens.length - 1];
-    if (!syllable(c) && last && last.to === k && !syllable(chars[k - 1])) last.ch += c, (last.to = k + 1);
-    else tokens.push({ ch: c, from: k, to: k + 1 });
-  });
-  const reading = (parts: string[], t: { from: number; to: number }) => parts.slice(t.from, t.to).join("");
-  const got = foldRomanization(typed);
-  const wrongAt = spelled.map((parts) => {
-    let sofar = "";
-    for (let i = 0; i < tokens.length; i++) {
-      sofar += reading(parts, tokens[i]);
-      if (!got.startsWith(foldRomanization(sofar))) return i;
-    }
-    return -1;
-  });
-  // The spelling that gets furthest is the one the player meant.
-  const firstWrong = wrongAt.includes(-1) ? -1 : Math.max(...wrongAt);
-  return { syllables: tokens.map((t) => ({ ch: t.ch, reading: reading(spelled[0], t) })), firstWrong };
 }

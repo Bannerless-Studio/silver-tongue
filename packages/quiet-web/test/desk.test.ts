@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createCore, mulberry32, newGame, type Course } from "@silver-tongue/core";
 import { fixtureWithText } from "@silver-tongue/view/testing";
-import { deskOn, placeName, type CourseExtra, type DeskPaper } from "@silver-tongue/view";
+import { deskOn, placeName, type CourseExtra, type DeskPaper, type DeskProgress } from "@silver-tongue/view";
 import { readFileSync } from "node:fs";
 import { createQuiet, type PaperStore } from "../src/quiet";
 
@@ -71,6 +71,34 @@ describe("the desk", () => {
     q.setName("Ana");
     expect(q.view().desk).toBeDefined();
     expect(papers.ids).toEqual([]);
+  });
+
+  it("keeps the syllables read and the letters met between visits; a new game resets both", () => {
+    const withChart = (c: Course) => {
+      withPapers(c);
+      (c as unknown as CourseExtra).letters = { groups: [{ id: "vowels", letters: [{ ch: "ㅣ" }, { ch: "ㅏ" }] }] } as CourseExtra["letters"];
+    };
+    let saved: DeskProgress = { at: { idcard: 2 }, met: ["vowels:ㅣ"] };
+    const store: PaperStore = { load: () => [], save: () => {}, loadProgress: () => saved, saveProgress: (p) => void (saved = p) };
+    const { q } = setup(withChart, store as PaperStore & { ids: string[] });
+    expect(q.setName("Ana")).toBe(true);
+    // naming resets both, then the desk is up
+    expect(saved).toEqual({ at: {}, met: [] });
+    expect(q.deskAt("idcard")).toBe(0);
+    expect(q.deskMet()?.size).toBe(0);
+    q.setDeskAt("idcard", 1);
+    q.meet(["vowels:ㅣ"]);
+    q.meet(["vowels:ㅣ", "vowels:ㅏ"]);
+    expect(saved).toEqual({ at: { idcard: 1 }, met: ["vowels:ㅣ", "vowels:ㅏ"] });
+    expect([...q.deskMet()!]).toEqual(["vowels:ㅣ", "vowels:ㅏ"]);
+    // a paper read counts all its syllables, and its letters are met
+    q.readPaper("idcard");
+    expect(q.deskAt("idcard")).toBe(3);
+  });
+
+  it("without papers or a chart the Book keeps its whole chart", () => {
+    const { q } = setup(() => {});
+    expect(q.deskMet()).toBeUndefined();
   });
 
   it("a game with a scene done never shows the desk", () => {

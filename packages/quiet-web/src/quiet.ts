@@ -5,9 +5,9 @@
 // be revealed.
 import { describeRun, normalizeTyped, wordState, type Core, type Course, type GameEvent, type GameState, type Input, type RenderedLine, type WordId } from "@silver-tongue/core";
 import {
-  bookOn, deskOn, deskPapers, freshMarks, heardCount, onboarding, placeName,
+  bookOn, deskOn, deskPapers, emptyProgress, freshMarks, heardCount, lettersFollowDesk, metLetters, onboarding, paperSyllables, placeName,
   actionNarration, bedHint, introLines, joinTilesForDisplay, makeText, placeMenu, sentenceCard, tileEcho, typePrompt, waitingForMoney, wordCard,
-  type AudioOut, type DeskPaper, type MenuItem, type SentenceCard, type Speech, type Text, type WordCard,
+  type AudioOut, type DeskPaper, type DeskProgress, type MenuItem, type SentenceCard, type Speech, type Text, type WordCard,
 } from "@silver-tongue/view";
 
 export interface Beat {
@@ -75,6 +75,9 @@ export interface QuietView {
 export interface PaperStore {
   load(): string[];
   save(ids: string[]): void;
+  /** syllables read per paper, and the letters met */
+  loadProgress?(): DeskProgress;
+  saveProgress?(p: DeskProgress): void;
 }
 export interface QuietOptions {
   course: Course;
@@ -111,6 +114,13 @@ export interface Quiet {
   readPapers(): ReadonlySet<string>;
   /** a paper on the desk has been read out, every line */
   readPaper(id: string): void;
+  /** syllables of a paper read so far (all of them once it is read) */
+  deskAt(id: string): number;
+  setDeskAt(id: string, n: number): void;
+  /** the letters met so far (`letterKey`s); undefined when the Book shows its whole chart */
+  deskMet(): ReadonlySet<string> | undefined;
+  /** the letters of the syllable now on the desk are met */
+  meet(keys: string[]): void;
   /** every paper read: the desk goes and the transcript starts, at the place, with someone at the door */
   leaveDesk(): void;
   /** a place's name as the quiet page shows it (the room gets its owner's name once the ID card is read) */
@@ -160,6 +170,8 @@ export function createQuiet(opts: QuietOptions): Quiet {
   let naming = course.needsName && !core.state.player;
   // A new game starts with the desk unread (the list is kept per course; it is saved again once named).
   const read = new Set(naming ? [] : (opts.papers?.load() ?? []));
+  let progress = naming ? emptyProgress() : (opts.papers?.loadProgress?.() ?? emptyProgress());
+  const saveProgress = () => opts.papers?.saveProgress?.(progress);
   /** the desk is up (after the name screen): a new book course with papers, not all of them read */
   let atDesk = deskOn(course, core.state, read);
   const placeLabel = (place = core.state.place) => placeName(course, core.state, read, t, place);
@@ -505,7 +517,10 @@ export function createQuiet(opts: QuietOptions): Quiet {
       }
       persist();
       naming = false;
-      if (atDesk) opts.papers?.save([...read]);
+      if (atDesk) {
+        opts.papers?.save([...read]);
+        opts.papers?.saveProgress?.(progress);
+      }
       // After the crawl the transcript opens on where the player is, not on the story just read; with the desk
       // up, once the desk is left.
       if (opening && !scene && !atDesk) {
@@ -517,6 +532,24 @@ export function createQuiet(opts: QuietOptions): Quiet {
       return true;
     },
     readPapers: () => read,
+    deskAt(id) {
+      const p = deskPapers(course).find((x) => x.id === id);
+      const all = p ? paperSyllables(p).length : 0;
+      return read.has(id) ? all : Math.min(progress.at[id] ?? 0, all);
+    },
+    setDeskAt(id, n) {
+      if (progress.at[id] === n) return;
+      progress = { ...progress, at: { ...progress.at, [id]: n } };
+      saveProgress();
+    },
+    deskMet: () => (lettersFollowDesk(course) ? metLetters(course, progress, read) : undefined),
+    meet(keys) {
+      const fresh = keys.filter((k) => !progress.met.includes(k));
+      if (!fresh.length) return;
+      progress = { ...progress, met: [...progress.met, ...fresh] };
+      saveProgress();
+      changed();
+    },
     readPaper(id) {
       if (read.has(id) || !deskPapers(course).some((p) => p.id === id)) return;
       read.add(id);
