@@ -1,5 +1,5 @@
-// The opening of a new game on a course with the Book: the story's paragraphs come in one at a time, then
-// one name screen.
+// The opening of a new game on a course with the Book: the story's paragraphs come up from the bottom edge
+// one at a time, then one name screen.
 import type { Course } from "@silver-tongue/core";
 import { bookOn } from "@silver-tongue/view";
 
@@ -15,16 +15,18 @@ export function openingStep(stage: OpeningStage, ev: OpeningEvent): OpeningStage
   return stage;
 }
 
-/** How long one paragraph takes to slide in and fade up. */
-export const ENTER_MS = 900;
-const MS_PER_CHAR = 55;
-const MIN_READ_MS = 1_500;
-const MAX_READ_MS = 4_000;
+/** Travel time for a paragraph coming up from the bottom edge: scaled by the distance so a short trip isn't
+ * slow, between MIN_TRAVEL_MS (no distance) and MAX_TRAVEL_MS (a full screen). */
+export const MIN_TRAVEL_MS = 1_200;
+export const MAX_TRAVEL_MS = 1_800;
+/** Pause after a paragraph settles before the next one starts. */
+export const PAUSE_MS = 350;
+/** Pause after the last paragraph settles before the prompt appears. */
+export const PROMPT_MS = 400;
 
-/** For each paragraph, how long after it starts coming in the next one starts: time to read it, by its
- * length. The last entry is how long the last paragraph would be read; nothing waits on it. */
-export function paragraphDelays(paragraphs: string[]): number[] {
-  return paragraphs.map((p) => Math.min(MAX_READ_MS, Math.max(MIN_READ_MS, [...p].length * MS_PER_CHAR)));
+export function travelMs(distance: number, viewport: number): number {
+  const f = viewport > 0 ? Math.min(1, Math.max(0, distance / viewport)) : 1;
+  return Math.round(MIN_TRAVEL_MS + (MAX_TRAVEL_MS - MIN_TRAVEL_MS) * f);
 }
 
 /** A book course with no saved game and a name to ask opens straight on the story, skipping the title

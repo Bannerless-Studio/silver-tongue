@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCore, mulberry32, newGame, type Course } from "@silver-tongue/core";
 import { fixtureWithText } from "@silver-tongue/view/testing";
 import type { CourseExtra } from "@silver-tongue/view";
-import { firstSentence, openingStep, opensOnStory, paragraphDelays, type OpeningStage } from "../src/opening";
+import { firstSentence, openingStep, opensOnStory, travelMs, type OpeningStage } from "../src/opening";
 import { createQuiet } from "../src/quiet";
 
 const T0 = 1_000_000;
@@ -83,11 +83,13 @@ describe("opening gate", () => {
     expect(firstSentence("You have ¥20.")).toEqual(["You have ¥20.", ""]);
   });
 
-  it("gives each paragraph reading time by its length, 55 ms a character, between 1.5 and 4 s", () => {
-    expect(paragraphDelays([])).toEqual([]);
-    expect(paragraphDelays(["Hi.", "x".repeat(40), "x".repeat(200)])).toEqual([1500, 2200, 4000]);
-    expect(paragraphDelays(["가".repeat(30)])).toEqual([1650]);
-    expect(paragraphDelays(STORY)).toEqual([...STORY].map((p) => Math.min(4000, Math.max(1500, [...p].length * 55))));
+  it("travel time scales with the distance to the bottom edge, 1.2 s to 1.8 s", () => {
+    expect(travelMs(0, 800)).toBe(1200);
+    expect(travelMs(400, 800)).toBe(1500);
+    expect(travelMs(800, 800)).toBe(1800);
+    expect(travelMs(2000, 800)).toBe(1800);
+    expect(travelMs(-10, 800)).toBe(1200);
+    expect(travelMs(100, 0)).toBe(1800);
   });
 
   it("only a book course with a name to ask and no save opens straight on the story", () => {

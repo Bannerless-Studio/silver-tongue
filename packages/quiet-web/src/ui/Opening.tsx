@@ -1,61 +1,52 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
-import { ENTER_MS, firstSentence, openingStep, paragraphDelays, type OpeningEvent, type OpeningStage } from "../opening";
+import { PAUSE_MS, PROMPT_MS, firstSentence, openingStep, travelMs, type OpeningEvent, type OpeningStage } from "../opening";
 import type { Quiet } from "../quiet";
 
 const matches = (q: string) => typeof matchMedia === "function" && matchMedia(q).matches;
+const EASE_OUT = "cubic-bezier(0.22, 0.61, 0.36, 1)";
 
-/** The block's vertical offset its transform adds now (mid-transition), so a new glide starts from where it is. */
-function shiftNow(el: HTMLElement): number {
-  const tf = getComputedStyle(el).transform;
-  if (!tf || tf === "none") return 0;
-  try {
-    return new DOMMatrixReadOnly(tf).m42;
-  } catch {
-    return 0;
-  }
-}
-
-/** A new game on a course with the Book: the story's paragraphs come in one at a time, each given time to
- * be read, then the one name question. One thing on screen at a time; only what can be acted on pulses. */
+/** A new game on a course with the Book: each of the story's paragraphs comes up from the bottom edge of the
+ * screen to its place, the next only once it has settled, then the one name question. The whole block is laid
+ * out from the start (paragraphs not yet in are hidden), so it stays centred and nothing jumps. */
 export function Opening({ q, story }: { q: Quiet; story: string[] }) {
   const t = q.t;
   const [stage, setStage] = useState<OpeningStage>("crawl");
-  const [shown, setShown] = useState(Math.min(1, story.length));
+  // How many paragraphs have started coming in; the last of them is the one moving.
+  const [shown, setShown] = useState(story.length ? 1 : 0);
   const step = (ev: OpeningEvent) => setStage((s) => openingStep(s, ev));
   const still = matches("(prefers-reduced-motion: reduce)");
   const touch = matches("(pointer: coarse)");
-  const delays = paragraphDelays(story);
+  const paras = useRef<(HTMLParagraphElement | null)[]>([]);
 
-  // The next paragraph once this one has been read; after the last, the prompt once it has settled. Its
-  // animationend settles it too; the timer covers a hidden tab (or reduced motion), where none comes.
-  useEffect(() => {
-    if (stage !== "crawl") return;
-    if (shown < story.length) {
-      const h = setTimeout(() => setShown((n) => n + 1), delays[shown - 1] ?? 0);
-      return () => clearTimeout(h);
-    }
-    const h = setTimeout(() => step("settled"), still ? ENTER_MS : ENTER_MS + 500);
-    return () => clearTimeout(h);
-  }, [stage, shown]);
-
-  // The block stays centred as it grows: each new paragraph moves it up by half its height, and it glides
-  // there from where it was instead of jumping (FLIP on the block's layout offset).
-  const block = useRef<HTMLDivElement>(null);
-  const lastTop = useRef<number | null>(null);
+  // Paragraph shown-1 travels from below the bottom edge to its place. When it arrives (animation finish, or
+  // the timer when none comes: hidden tab), after a pause the next starts; after the last, the prompt.
   useLayoutEffect(() => {
-    const el = block.current;
-    if (!el) return;
-    const top = el.offsetTop;
-    const was = lastTop.current;
-    lastTop.current = top;
-    if (still || was === null || was === top) return;
-    const from = was - top + shiftNow(el);
-    el.style.transition = "none";
-    el.style.transform = `translateY(${from}px)`;
-    void el.offsetHeight; // commit the start before the glide
-    el.style.transition = `transform ${ENTER_MS}ms cubic-bezier(0.22, 0.61, 0.36, 1)`;
-    el.style.transform = "translateY(0)";
-  }, [shown]);
+    if (stage !== "crawl") return;
+    if (shown === 0) return void step("settled");
+    const el = paras.current[shown - 1];
+    const vh = innerHeight || document.documentElement.clientHeight;
+    const distance = el ? Math.max(0, vh - el.getBoundingClientRect().top) : vh;
+    const ms = travelMs(distance, vh);
+    let done = false;
+    let after: ReturnType<typeof setTimeout> | undefined;
+    const arrive = () => {
+      if (done) return;
+      done = true;
+      after = setTimeout(() => (shown < story.length ? setShown(shown + 1) : step("settled")), shown < story.length ? PAUSE_MS : PROMPT_MS);
+    };
+    let anim: Animation | undefined;
+    if (!still && el && typeof el.animate === "function") {
+      anim = el.animate([{ transform: `translateY(${distance}px)` }, { transform: "translateY(0)" }], { duration: ms, easing: EASE_OUT, fill: "backwards" });
+      anim.onfinish = arrive;
+    }
+    const fallback = setTimeout(arrive, still ? ms : ms + 300);
+    return () => {
+      done = true;
+      clearTimeout(fallback);
+      clearTimeout(after);
+      anim?.cancel();
+    };
+  }, [stage, shown]);
 
   useEffect(() => {
     if (stage === "name") return;
@@ -71,13 +62,11 @@ export function Opening({ q, story }: { q: Quiet; story: string[] }) {
   if (stage === "name") return <NameScreen q={q} />;
   return (
     <div class="opening crawl-screen" onClick={() => step("next")}>
-      <div ref={block} class={`crawl${still ? "" : " moving"}`}>
-        {story.slice(0, shown).map((p, i) => {
+      <div class="crawl">
+        {story.map((p, i) => {
           const [head, rest] = firstSentence(p);
-          const last = i === story.length - 1;
           return (
-            <p key={i} style={{ animationDuration: `${ENTER_MS}ms` }}
-              onAnimationEnd={last ? (e) => e.target === e.currentTarget && step("settled") : undefined}>
+            <p key={i} ref={(el) => void (paras.current[i] = el)} class={i < shown ? undefined : "waiting"} aria-hidden={i < shown ? undefined : true}>
               <b>{head}</b>{rest}
             </p>
           );
