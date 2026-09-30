@@ -229,11 +229,29 @@ textarea { width: 100%; background: var(--bg); border: 1px solid var(--line); bo
   display: flex; flex-direction: column; align-items: center; gap: 0.3rem; padding: 0.5rem;
   background: var(--panel); border: 1px solid var(--line); text-align: center;
 }
-.desk-art { margin: 0; font: inherit; font-size: 13px; line-height: 1.15; white-space: pre; text-align: left; color: var(--muted); width: 20ch; }
-.desk-art .art-row { display: flex; }
-.desk-art .art-edge { flex: none; }
-.desk-art .art-mid { flex: 1; min-width: 0; overflow: hidden; white-space: pre; }
-.desk-art .art-title { display: block; text-align: center; white-space: nowrap; overflow: hidden; }
+.desk-art { box-sizing: border-box; width: 160px; font-size: 13px; line-height: 1.2; color: var(--muted); display: flex; flex-direction: column; gap: 6px; padding: 6px; }
+.desk-art i { display: block; flex: none; }
+.desk-art .art-title { text-align: center; white-space: nowrap; overflow: hidden; padding: 2px 0; }
+.desk-art .art-rule { height: 0; border-top: 1px solid currentColor; }
+.desk-art .art-dots { height: 0; border-top: 2px dotted currentColor; }
+.desk-art .art-bar { height: 6px; background: currentColor; opacity: 0.7; }
+.desk-art .art-hatch { height: 10px; background: repeating-linear-gradient(45deg, currentColor 0 1px, transparent 1px 3px); opacity: 0.7; }
+.desk-art.art-card { height: 135px; border: 1px solid currentColor; border-radius: 8px; padding: 0 6px 6px; gap: 0; }
+.desk-art.art-card .art-title { border-bottom: 1px solid currentColor; margin: 0 -6px; padding: 5px 0; }
+.desk-art.art-card .art-card-body { flex: 1; display: flex; gap: 10px; padding-top: 10px; min-height: 0; }
+.desk-art.art-card .art-photo { width: 56px; height: 62px; border: 1px solid currentColor; box-sizing: border-box; overflow: hidden; }
+.desk-art.art-card .art-fields { flex: 1; display: flex; flex-direction: column; gap: 22px; padding-top: 8px; min-width: 0; }
+.desk-art.art-masthead { height: 165px; border: 3px solid currentColor; gap: 4px; padding: 0 6px 6px; }
+.desk-art.art-masthead .art-title { border-bottom: 2px solid currentColor; margin: 0 -6px; padding: 4px 0; }
+.desk-art.art-masthead .art-double { height: 3px; border-top: 1px solid currentColor; border-bottom: 1px solid currentColor; }
+.desk-art.art-masthead .art-cols { display: flex; gap: 6px; flex: 1; }
+.desk-art.art-masthead .art-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; justify-content: space-evenly; }
+.desk-art.art-masthead .art-col + .art-col { border-left: 1px dashed currentColor; padding-left: 6px; }
+.desk-art.art-masthead .art-crease { height: 0; border-top: 1px dashed currentColor; margin: 0 -6px; }
+.desk-art.art-bill { height: 120px; border-top: 2px dashed currentColor; border-bottom: 2px dashed currentColor; gap: 8px; padding: 8px 6px; }
+.desk-art.art-bill .art-labels { display: flex; flex-direction: column; gap: 8px; }
+.desk-art.art-bill .art-amount { flex: 1; border: 1px solid currentColor; display: flex; align-items: center; justify-content: center; }
+.desk-art.art-bill .art-amount .art-dots { width: 40%; }
 .desk-art.art-bill .art-title { background: var(--line); color: var(--bg); }
 .desk-card-state { font-size: 0.85em; color: var(--muted); }
 .desk-card.read { border-color: var(--muted); opacity: 0.6; }

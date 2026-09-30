@@ -1,73 +1,64 @@
-import type { ComponentChildren } from "preact";
+/** Desk card drawings: each paper kind is a small picture of the object built from CSS boxes (borders, fills, flex),
+ * never from characters, so nothing depends on a font's glyph widths. Only the paper's title is text. The lines use
+ * the drawing's colour (`currentColor`), so the card states (pulse / unread / read) tint the whole picture. */
+function Title({ title, lang }: { title: string; lang: string }) {
+  return <div class="art-title" lang={lang}>{title}</div>;
+}
 
-/** Desk card drawings: each paper kind is a small monospace picture of the object, 20 columns wide, with the
- * paper's title set into its own line (the frame rows never depend on the title's width: Hangul is double-width). */
-const T = "@"; // the row that carries the title
-const ART: Record<string, string[]> = {
-  // ID card: photo box with a head-and-shoulders portrait, field rules beside it.
-  card: [
-    "╭──────────────────╮",
-    `│${T}│`,
-    "├──────────────────┤",
-    "│ ┌──────┐         │",
-    "│ │  ▄▄  │ ─────── │",
-    "│ │ ▐██▌ │         │",
-    "│ │▗████▖│ ─────   │",
-    "│ └──────┘ ░░░░░░  │",
-    "╰──────────────────╯",
-  ],
-  // Folded newspaper: big masthead band, double rule, columns of print, a fold crease.
-  masthead: [
-    "┏━━━━━━━━━━━━━━━━━━┓",
-    `┃${T}┃`,
-    "┣━━━━━━━━━━━━━━━━━━┫",
-    "┃══════════════════┃",
-    "┃ ▄▄▄▄▄▄▄ ┆ ·······┃",
-    "┃ ─────── ┆ ───────┃",
-    "┃ ─────── ┆ ─────  ┃",
-    "┠┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┨",
-    "┃ ───     ┆ ───────┃",
-    "┃ ─────── ┆ ──     ┃",
-    "┗━━━━━━━━━━━━━━━━━━┛",
-  ],
-  // Rent bill: torn top and bottom, header stripe, label rules, a boxed amount left blank.
-  bill: [
-    " ╌ ╌ ╌ ╌ ╌ ╌ ╌ ╌ ╌ ╌",
-    `│${T}│`,
-    "│ ───────  ─────   │",
-    "│ ────             │",
-    "│ ┌──────────────┐ │",
-    "│ │    ······    │ │",
-    "│ └──────────────┘ │",
-    " ╌ ╌ ╌ ╌ ╌ ╌ ╌ ╌ ╌ ╌",
-  ],
-};
-
-/** The drawing for a paper kind; unknown kinds get the plain bill slip. Box-drawing glyphs come from fallback fonts
- * whose advance differs from the mono cell, so a row is not laid out by character count: its two edge glyphs are
- * pinned to the sides of a fixed-width row and the middle fills the space between (rules are made long and
- * clipped; content stays left-anchored). The right edges then line up whatever the glyph widths are. */
-export function DeskArt({ kind, title, lang }: { kind: string; title: string; lang: string }) {
-  const rows = ART[kind] ?? ART.bill!;
+/** Faceless head-and-shoulders silhouette. */
+function Portrait() {
   return (
-    <pre class={`desk-art art-${kind}`} aria-hidden="true">
-      {rows.map((row, i) => {
-        const left = row[0]!;
-        const right = row[row.length - 1]!;
-        const mid = row.slice(1, -1);
-        let inner: ComponentChildren;
-        if (mid === T) inner = <span class="art-title" lang={lang}>{title}</span>;
-        // A rule (or a torn edge) starts right after the edge glyph: repeat it well past the row and let it clip.
-        else if (mid[0] !== " ") inner = mid.repeat(4);
-        else inner = mid;
-        return (
-          <span key={i} class="art-row">
-            <span class="art-edge">{left}</span>
-            <span class="art-mid">{inner}</span>
-            <span class="art-edge">{right}</span>
-          </span>
-        );
-      })}
-    </pre>
+    <svg viewBox="0 0 40 40" width="100%" height="100%" aria-hidden="true">
+      <circle cx="20" cy="15" r="7" fill="currentColor" />
+      <path d="M5 40 C5 27 12 24 20 24 C28 24 35 27 35 40 Z" fill="currentColor" />
+    </svg>
   );
+}
+
+const Rule = ({ w = 100 }: { w?: number }) => <i class="art-rule" style={{ width: `${w}%` }} />;
+
+/** The drawing for a paper kind; unknown kinds get the plain bill slip. */
+export function DeskArt({ kind, title, lang }: { kind: string; title: string; lang: string }) {
+  const k = kind === "card" || kind === "masthead" ? kind : "bill";
+  let body;
+  if (k === "card") {
+    body = (
+      <>
+        <Title title={title} lang={lang} />
+        <div class="art-card-body">
+          <div class="art-photo"><Portrait /></div>
+          <div class="art-fields">
+            <Rule />
+            <Rule w={70} />
+            <i class="art-hatch" />
+          </div>
+        </div>
+      </>
+    );
+  } else if (k === "masthead") {
+    body = (
+      <>
+        <Title title={title} lang={lang} />
+        <i class="art-double" />
+        <div class="art-cols">
+          <div class="art-col"><i class="art-bar" /><Rule /><Rule /></div>
+          <div class="art-col"><i class="art-dots" /><Rule /><Rule w={70} /></div>
+        </div>
+        <i class="art-crease" />
+        <div class="art-cols">
+          <div class="art-col"><Rule w={40} /><Rule /></div>
+          <div class="art-col"><Rule /><Rule w={30} /></div>
+        </div>
+      </>
+    );
+  } else {
+    body = (
+      <>
+        <Title title={title} lang={lang} />
+        <div class="art-labels"><Rule w={55} /><Rule w={35} /></div>
+        <div class="art-amount"><i class="art-dots" /></div>
+      </>
+    );
+  }
+  return <div class={`desk-art art-${k}`} aria-hidden="true">{body}</div>;
 }
