@@ -1,7 +1,7 @@
 import { useState } from "preact/hooks";
 import type { CatalogEntry, WordState } from "@silver-tongue/core";
 import {
-  bookOn, dayPart, hasLetters, hudValues, lettersView, nextRuby, nextSpeed, notebookDefault, notebookEntries, paperGlosses, paperParts, papers, peopleList, rentDueInDays, settingsRows,
+  bookOn, dayPart, guideView, hasLetters, hudValues, lettersView, nextRuby, nextSpeed, notebookDefault, notebookEntries, paperGlosses, paperParts, papers, peopleList, rentDueInDays, settingsRows,
   type Paper, type SettingsScreen,
 } from "@silver-tongue/view";
 import type { Quiet } from "../quiet";
@@ -67,6 +67,25 @@ export function Notebook({ q, onClose, first }: { q: Quiet; onClose: () => void;
   );
   return (
     <Overlay q={q} title={t(book ? "quiet-book" : "quiet-notebook")} head={tabs} onClose={onClose}>
+      {tab === "letters" && guideView(course, t).length > 0 && (
+        <section>
+          <p class="nb-place">{t("quiet-letters-guide")}</p>
+          <ol class="guide">
+            {guideView(course, t).map((g) => (
+              <li key={g.id}>
+                <p class="guide-text">{g.text}</p>
+                <div class="guide-ex" lang={course.language.code}>
+                  {g.examples.map((e, i) => (
+                    <button key={i} type="button" class="letter" aria-label={`${e.text} ${e.reading}`} onClick={() => q.play(e.audio)}>
+                      <span class="nb-w">{e.text}</span><span class="nb-r" lang={`${course.language.code}-Latn`}>{e.reading}</span>
+                    </button>
+                  ))}
+                </div>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
       {tab === "letters" && lettersView(course, t).map((g) => (
         <section key={g.id}>
           <p class="nb-place">{g.label}</p>

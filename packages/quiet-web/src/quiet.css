@@ -299,6 +299,12 @@ textarea { width: 100%; background: var(--bg); border: 1px solid var(--line); bo
   padding: 0.1em 0; color: var(--ink); caret-color: #1e6f80; outline: none;
 }
 .read-row .go { color: #1e6f80; white-space: nowrap; font-size: 0.85em; }
+.read-help { display: flex; flex-direction: column; gap: 0.25rem; margin-top: 0.3rem; }
+.rh-note { color: #7a7263; font-size: 0.8em; margin: 0; }
+.rh-blocks { display: flex; flex-wrap: wrap; gap: 0.1rem 0.5rem; margin: 0; }
+.rh-block { font-size: 1.25em; color: var(--ink); border-bottom: 2px solid transparent; }
+.rh-block.wrong { color: #1e6f80; font-weight: 700; border-bottom-color: #1e6f80; }
+.rh-full { margin: 0; color: var(--ink); font-weight: 700; }
 .read-row.shake { animation: shake 0.4s ease-in-out; }
 @keyframes shake { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
 
@@ -310,3 +316,10 @@ textarea { width: 100%; background: var(--bg); border: 1px solid var(--line); bo
   .read-row.shake { animation: none; outline: 1px solid var(--red); }
   .desk-knock .knock, .desk-knock .go { animation: none; }
 }
+
+/* The Book's how-to-read guide: numbered steps, each with tappable examples that look like the chart's letters. */
+.guide { margin: 0; padding-left: 1.4rem; display: flex; flex-direction: column; gap: 0.6rem; }
+.guide li::marker { color: var(--muted); }
+.guide-text { margin: 0 0 0.2rem; }
+.guide-ex { display: flex; flex-wrap: wrap; gap: 0.25rem 1.2rem; }
+.guide-ex .letter .nb-r { font-size: 0.85em; }

@@ -352,6 +352,7 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
         readFileSync(join(learnerDir, "ui.ftl"), "utf8"),
         readFileSync(join(learnerDir, `narration-${cfg.setting}.ftl`), "utf8"),
         readOptional(join(learnerDir, `mentor-${cfg.language}.ftl`)),
+        readOptional(join(learnerDir, `letters-${cfg.language}.ftl`)),
       ].join("\n"),
     ) ?? "";
 
@@ -419,7 +420,7 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
   );
   const learnerIds = attempt("learner text", () => new Set(messageIds(learnerFtl, "learner files"))) ?? new Set<string>();
   for (const id of ["learner-name", `language-${cfg.language}`, ...(course.letters ? letterMessageIds(course.letters) : []), ...(course.papers ? paperMessageIds(course.papers) : [])]) {
-    if (!learnerIds.has(id)) errors.push(`learner/${learner}/ui.ftl: missing "${id}"`);
+    if (!learnerIds.has(id)) errors.push(`learner/${learner}/${id.startsWith("letters-guide-") ? `letters-${cfg.language}` : "ui"}.ftl: missing "${id}"`);
   }
   errors.push(...checkCourse({ course, stages: meta.stages, checks: cfg.checks, learnerIds, requiredUi: [], audioFiles, newWordsOverride }));
   errors.push(...uiTextProblems(learnerFtl, learner));

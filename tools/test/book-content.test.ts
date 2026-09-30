@@ -62,6 +62,26 @@ describe("letters.json", () => {
     expect(errors).toContain('learner/en/ui.ftl: missing "letters-group-tones"');
   });
 
+  it("checks the how-to-read guide: a learner message per step, examples in the script", () => {
+    const chart = (guide: unknown) => (d: string) =>
+      writeFileSync(join(d, "languages/zh/letters.json"), JSON.stringify({ guide, groups: [{ id: "consonants", letters: [{ ch: "ㄱ", reading: "g" }] }] }));
+    const missing = buildChanged(chart([{ id: "blocks", examples: ["김"] }]));
+    expect(missing.errors).toContain('learner/en/letters-zh.ftl: missing "letters-guide-blocks"');
+    const bad = buildChanged(chart([{ id: "blocks", examples: ["kim", "", 3] }, { id: "blocks" }, { id: "x y" }]));
+    expect(bad.errors).toEqual(
+      expect.arrayContaining([
+        'letters.json: guide step "blocks": example "kim" must be Hangul (digits allowed)',
+        'letters.json: guide step "blocks": example "" must be Hangul (digits allowed)',
+        'letters.json: guide step "blocks": example 3 must be Hangul (digits allowed)',
+        'letters.json: guide step "blocks": id is used twice',
+      ]),
+    );
+    expect(bad.errors.some((e) => e.includes('guide step "x y": id must be'))).toBe(true);
+    expect(extra(bad.course!).letters).toBeUndefined();
+    expect(letterProblems({ guide: [{ id: "a", examples: ["2000년", "등록"] }], groups: [{ id: "g", letters: [{ ch: "ㄱ" }] }] })).toEqual([]);
+    expect(letterProblems({ guide: [{ id: "a", examples: ["2000"] }], groups: [{ id: "g", letters: [{ ch: "ㄱ" }] }] })).toHaveLength(1);
+  });
+
   it("reports a broken chart and ships none", () => {
     const { course, errors } = buildChanged((d) => writeFileSync(join(d, "languages/zh/letters.json"), JSON.stringify({ groups: [] })));
     expect(errors).toContain('letters.json: "groups" must be a non-empty list');

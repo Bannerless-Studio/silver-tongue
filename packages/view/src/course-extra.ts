@@ -21,8 +21,17 @@ export interface LetterGroup {
   id: string;
   letters: Letter[];
 }
+/** One step of the "how to read" guide: its wording is the learner's message `letters-guide-<id>`. */
+export interface GuideStep {
+  id: string;
+  /** words to read as examples of the step (from the desk's papers) */
+  examples?: string[];
+  /** each example's clip ids, in the words voice (added by the build) */
+  audio?: string[][];
+}
 /** content/languages/<lang>/letters.json, as the course carries it. */
 export interface LetterChart {
+  guide?: GuideStep[];
   groups: LetterGroup[];
 }
 

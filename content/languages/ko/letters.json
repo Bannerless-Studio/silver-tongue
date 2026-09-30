@@ -1,4 +1,42 @@
 {
+ "guide": [
+  {
+   "id": "blocks",
+   "examples": [
+    "김",
+    "민",
+    "준"
+   ]
+  },
+  {
+   "id": "silent",
+   "examples": [
+    "이",
+    "월",
+    "울"
+   ]
+  },
+  {
+   "id": "join",
+   "examples": [
+    "서울",
+    "신문",
+    "월세"
+   ]
+  },
+  {
+   "id": "type",
+   "examples": [
+    "2000년"
+   ]
+  },
+  {
+   "id": "linking",
+   "examples": [
+    "등록"
+   ]
+  }
+ ],
  "groups": [
   {
    "id": "consonants",

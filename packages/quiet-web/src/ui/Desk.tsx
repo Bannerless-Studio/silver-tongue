@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "preact/hooks";
-import { firstUnread, readsAs, romanize, type DeskPaper } from "@silver-tongue/view";
+import { firstUnread, readingHint, readsAs, romanize, type DeskPaper } from "@silver-tongue/view";
 import type { Quiet } from "../quiet";
 import { DeskArt } from "./desk-art";
 
@@ -72,12 +72,36 @@ export function Desk({ q, papers, bookOpen, onBook }: { q: Quiet; papers: DeskPa
   );
 }
 
+/** Help that grows with each wrong reading of a line: 1 points at the Book, 2 shows the blocks with the first wrong one
+ * marked (readings hidden), 3 spells the reading out. Plain text, so it reads the same with reduced motion. */
+function ReadHelp({ q, text, wrong }: { q: Quiet; text: string; wrong: { count: number; typed: string } }) {
+  const t = q.t;
+  if (wrong.count === 0) return null;
+  const hint = wrong.count >= 2 ? readingHint(wrong.typed, text) : undefined;
+  return (
+    <div class="read-help" role="status">
+      <p class="rh-note">{t("quiet-read-help-book")}</p>
+      {hint && (
+        <>
+          <p class="rh-note">{t("quiet-read-help-marked")}</p>
+          <p class="rh-blocks" lang={q.course.language.code}>
+            {hint.syllables.map((s, k) => <span key={k} class={k === hint.firstWrong ? "rh-block wrong" : "rh-block"}>{s.ch}</span>)}
+          </p>
+        </>
+      )}
+      {wrong.count >= 3 && <p class="rh-full">{t("quiet-read-help-full", { reading: romanize(text) })}</p>}
+    </div>
+  );
+}
+
 /** One paper, laid out like the document; the current line is read out in the field under it. */
 function PaperView({ q, paper, done, onBook, onBack }: { q: Quiet; paper: DeskPaper; done: boolean; onBook: () => void; onBack: () => void }) {
   const t = q.t;
   const [at, setAt] = useState(done ? paper.lines.length : 0);
   const [typed, setTyped] = useState("");
   const [shake, setShake] = useState(false);
+  // Wrong readings of the current line, and the last one: graded help (the Book, the marked block, the full reading).
+  const [wrong, setWrong] = useState({ count: 0, typed: "" });
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => input.current?.focus(), [at]);
   const finished = at >= paper.lines.length;
@@ -98,8 +122,10 @@ function PaperView({ q, paper, done, onBook, onBack }: { q: Quiet; paper: DeskPa
     if (readsAs(typed, line.text)) {
       q.play(line.audio ?? []);
       setTyped("");
+      setWrong({ count: 0, typed: "" });
       setAt(at + 1);
     } else {
+      setWrong({ count: wrong.count + 1, typed });
       setShake(true);
       setTimeout(() => setShake(false), SHAKE_MS);
       input.current?.focus();
@@ -121,12 +147,13 @@ function PaperView({ q, paper, done, onBook, onBack }: { q: Quiet; paper: DeskPa
                 <button type="submit" class="go pulse">↵ {t("quiet-enter")}</button>
               </form>
             )}
+            {i === at && <ReadHelp q={q} text={l.text} wrong={wrong} />}
           </div>
         ))}
       </div>
       <footer class="bar">
         <button type="button" class="dim" onClick={onBack}>{t("quiet-esc")}</button>
-        <button type="button" class="dim" onClick={onBook}>{t("quiet-book").toLowerCase()}</button>
+        <button type="button" class={wrong.count === 1 ? "dim pulse" : "dim"} onClick={onBook}>{t("quiet-book").toLowerCase()}</button>
       </footer>
     </div>
   );

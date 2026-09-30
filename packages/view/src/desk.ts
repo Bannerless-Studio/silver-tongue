@@ -73,13 +73,18 @@ const syllable = (ch: string): Syllable | undefined => {
  * Anything that isn't Hangul (digits, spaces, punctuation) is kept as it is.
  */
 export function romanize(text: string, plain = false): string {
+  return romanizeParts(text, plain).join("");
+}
+
+/** `romanize`, one piece per character (a syllable's reading with the sound changes its neighbours give it). */
+function romanizeParts(text: string, plain: boolean): string[] {
   const chars = [...text];
   const syls = chars.map(syllable);
-  let out = "";
+  const out: string[] = [];
   for (let k = 0; k < chars.length; k++) {
     const s = syls[k];
     if (!s) {
-      out += chars[k];
+      out.push(chars[k]);
       continue;
     }
     const prev = plain ? undefined : syls[k - 1];
@@ -102,7 +107,7 @@ export function romanize(text: string, plain = false): string {
       else if ((next.i === I.N || next.i === I.M || next.i === I.R) && final === "t") final = "n";
       else if ((next.i === I.N || next.i === I.M || next.i === I.R) && final === "p") final = "m";
     }
-    out += initial + MEDIALS[s.m] + final;
+    out.push(initial + MEDIALS[s.m] + final);
   }
   return out;
 }
@@ -130,4 +135,38 @@ export function readsAs(typed: string, text: string): boolean {
   const got = foldRomanization(typed);
   if (!got) return false;
   return got === foldRomanization(romanize(text)) || got === foldRomanization(romanize(text, true));
+}
+
+export interface ReadingHint {
+  /** the line's syllables, each with its reading; a run of digits or punctuation is one token, spaces are left out */
+  syllables: { ch: string; reading: string }[];
+  /** the first syllable the typed reading gets wrong (or never reaches), -1 when it has none */
+  firstWrong: number;
+}
+
+/** Where a wrong reading goes off, so the help can point at the first syllable to look at again. */
+export function readingHint(typed: string, text: string): ReadingHint {
+  const chars = [...text];
+  const spelled = [romanizeParts(text, false), romanizeParts(text, true)];
+  // Tokens: a syllable, or a run of anything else that isn't a space.
+  const tokens: { ch: string; from: number; to: number }[] = [];
+  chars.forEach((c, k) => {
+    if (/\s/u.test(c)) return;
+    const last = tokens[tokens.length - 1];
+    if (!syllable(c) && last && last.to === k && !syllable(chars[k - 1])) last.ch += c, (last.to = k + 1);
+    else tokens.push({ ch: c, from: k, to: k + 1 });
+  });
+  const reading = (parts: string[], t: { from: number; to: number }) => parts.slice(t.from, t.to).join("");
+  const got = foldRomanization(typed);
+  const wrongAt = spelled.map((parts) => {
+    let sofar = "";
+    for (let i = 0; i < tokens.length; i++) {
+      sofar += reading(parts, tokens[i]);
+      if (!got.startsWith(foldRomanization(sofar))) return i;
+    }
+    return -1;
+  });
+  // The spelling that gets furthest is the one the player meant.
+  const firstWrong = wrongAt.includes(-1) ? -1 : Math.max(...wrongAt);
+  return { syllables: tokens.map((t) => ({ ch: t.ch, reading: reading(spelled[0], t) })), firstWrong };
 }
