@@ -21,8 +21,6 @@ export const MIN_TRAVEL_MS = 4_000;
 export const MAX_TRAVEL_MS = 6_500;
 /** With reduced motion: pause after a paragraph appears before the next one. */
 export const PAUSE_MS = 600;
-/** How long before a paragraph settles the next one starts climbing. */
-export const LEAD_MS = 1_500;
 /** Pause after the last paragraph settles before the prompt appears. */
 export const PROMPT_MS = 400;
 

@@ -1,14 +1,14 @@
 # The story. intro-1, intro-2, … open a new game ($currency, $wallet, $rent are available).
-intro-1 = You fell asleep over a Korean textbook. You wake on a stranger's bed in a rented room in Seoul, in the year 2000.
-intro-2 = On the desk: an ID card for Kim Min-jun and a stack of unpaid bills. Your own things are gone; only the Korean textbook is still in your hand. There is no phone in your pocket and nobody here speaks your language: whatever you have to say, you will say it in Korean.
-intro-3 = You have { $currency }{ $wallet } in a wallet that isn't yours. The rent, { $currency }{ $rent }, falls due at the end of each week, and food costs money every day.
-intro-4 = Someone is knocking. The textbook opens with [n].
+intro-1 = You fell asleep over a Korean textbook. You wake on a bed that isn't yours, in a room you have never seen, and the noise from the street is nothing like home.
+intro-2 = On the desk: someone's ID card, a stack of unopened bills, a wallet with { $currency }{ $wallet } in it. Your own things are gone. Your pockets are empty. The textbook is still in your hand.
+intro-3 = Voices pass under the window. You can't understand a word.
+intro-4 = Someone is knocking.
 
 # Where and when, on the top bar.
 setting-where = Seoul, 2000
 
-place-room = Min-jun's Room
-place-room-desc = A narrow rented room: a mattress, a desk of physics books, and bills nobody has paid.
+place-room = The Room
+place-room-desc = A narrow rented room: a mattress, a desk of heavy books, and bills nobody has opened.
 place-street = The Alley
 place-street-desc = A steep alley of shops and hanging wires, and an old man on a bench.
 place-stall = Snack Stall

@@ -97,3 +97,9 @@ The quiet page's rules (2026-09-28 spec) break in the first-run regime: with eve
 - **Anchor row** unchanged: the one orientation element. Money and rent surface by pace only.
 - **Misses** unchanged: cost on the echo, one italic line of what was asked, the request restated.
 - Not translated automatically: the game's idea is that a line is understood later, not now. The onboarding window is the only concession.
+
+## 9. Opening rules (2026-09-30)
+
+- **The intro says only what the player can observe on waking.** No year, no rent, no names, no UI hints. Inferences (whose room, what year, what the bills are) arrive through play. The room is "The Room" until the story names it.
+- **The story climbs as one block** from the bottom edge, slowly (4–6.5 s), settles, then a pulsing Press Enter; Enter is ignored while it moves. Then the name screen alone. The transcript never repeats the intro.
+- Experiments deploy to the `lab` branch and show at /lab/; the main site is untouched until a screen is agreed.

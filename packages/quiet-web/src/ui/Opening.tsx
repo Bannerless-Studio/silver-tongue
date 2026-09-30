@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
-import { LEAD_MS, PAUSE_MS, PROMPT_MS, firstSentence, openingStep, travelMs, type OpeningEvent, type OpeningStage } from "../opening";
+import { PAUSE_MS, PROMPT_MS, firstSentence, openingStep, travelMs, type OpeningEvent, type OpeningStage } from "../opening";
 import type { Quiet } from "../quiet";
 
 const matches = (q: string) => typeof matchMedia === "function" && matchMedia(q).matches;
@@ -31,8 +31,7 @@ export function Opening({ q, story }: { q: Quiet; story: string[] }) {
     const ms = travelMs(distance, vh);
     let done = false;
     let after: ReturnType<typeof setTimeout> | undefined;
-    // The next paragraph starts LEAD_MS before this one settles, so they overlap like a crawl; only
-    // the last one waits until it has settled before the prompt.
+    // Every paragraph starts at once, so the story climbs as one block; the last one settling brings the prompt.
     const last = shown >= story.length;
     const arrive = () => {
       if (done) return;
@@ -44,7 +43,7 @@ export function Opening({ q, story }: { q: Quiet; story: string[] }) {
       anim = el.animate([{ transform: `translateY(${distance}px)` }, { transform: "translateY(0)" }], { duration: ms, easing: EASE_OUT, fill: "backwards" });
       if (last) anim.onfinish = arrive;
     }
-    const next = last ? undefined : setTimeout(() => setShown(shown + 1), still ? PAUSE_MS : Math.max(0, ms - LEAD_MS));
+    const next = last ? undefined : setTimeout(() => setShown(shown + 1), still ? PAUSE_MS : 0);
     const fallback = last ? setTimeout(arrive, still ? ms : ms + 300) : undefined;
     return () => {
       done = true;
