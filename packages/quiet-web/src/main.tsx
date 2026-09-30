@@ -9,6 +9,7 @@ import {
 import { App, type Page } from "./ui/App";
 import { Title } from "./ui/Title";
 import { createQuiet } from "./quiet";
+import { opensOnStory } from "./opening";
 
 /** The game's version (packages/tui-node/package.json), put in by the build. */
 declare const __VERSION__: string;
@@ -135,6 +136,8 @@ async function switchTo(id: string, learner: string) {
 
 function title(courses?: { label: string; pick: () => void }[], error?: string) {
   const l = loaded;
+  // A book course's first game starts on its story as the page loads: "New game" would be the only choice.
+  if (l && !courses && !error && opensOnStory(l.course, l.sessions.list().length > 0)) return play(l.sessions.startNew());
   const t = l?.t ?? Object.assign((id: string) => id, { has: () => false });
   render(
     <Title

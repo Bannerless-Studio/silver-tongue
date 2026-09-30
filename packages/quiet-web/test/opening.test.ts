@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createCore, mulberry32, newGame, type Course } from "@silver-tongue/core";
 import { fixtureWithText } from "@silver-tongue/view/testing";
 import type { CourseExtra } from "@silver-tongue/view";
-import { firstSentence, openingStep, type OpeningStage } from "../src/opening";
+import { firstSentence, openingStep, opensOnStory, paragraphDelays, type OpeningStage } from "../src/opening";
 import { createQuiet } from "../src/quiet";
 
 const T0 = 1_000_000;
@@ -81,5 +81,20 @@ describe("opening gate", () => {
     expect(firstSentence("The rent, ₩50,000, falls due. Food costs.")).toEqual(["The rent, ₩50,000, falls due.", " Food costs."]);
     expect(firstSentence("On the desk: bills")).toEqual(["On the desk: bills", ""]);
     expect(firstSentence("You have ¥20.")).toEqual(["You have ¥20.", ""]);
+  });
+
+  it("gives each paragraph reading time by its length, 55 ms a character, between 1.5 and 4 s", () => {
+    expect(paragraphDelays([])).toEqual([]);
+    expect(paragraphDelays(["Hi.", "x".repeat(40), "x".repeat(200)])).toEqual([1500, 2200, 4000]);
+    expect(paragraphDelays(["가".repeat(30)])).toEqual([1650]);
+    expect(paragraphDelays(STORY)).toEqual([...STORY].map((p) => Math.min(4000, Math.max(1500, [...p].length * 55))));
+  });
+
+  it("only a book course with a name to ask and no save opens straight on the story", () => {
+    const c = (change: (c: Course) => void) => setup(change).course;
+    expect(opensOnStory(c((x) => (named(x), book(x))), false)).toBe(true);
+    expect(opensOnStory(c((x) => (named(x), book(x))), true)).toBe(false);
+    expect(opensOnStory(c(named), false)).toBe(false);
+    expect(opensOnStory(c(book), false)).toBe(false);
   });
 });
