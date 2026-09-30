@@ -229,8 +229,11 @@ textarea { width: 100%; background: var(--bg); border: 1px solid var(--line); bo
   display: flex; flex-direction: column; align-items: center; gap: 0.3rem; padding: 0.5rem;
   background: var(--panel); border: 1px solid var(--line); text-align: center;
 }
-.desk-art { margin: 0; font: inherit; font-size: 13px; line-height: 1.15; white-space: pre; text-align: left; color: var(--muted); }
-.desk-art .art-title { display: inline-block; width: 18ch; text-align: center; white-space: nowrap; overflow: hidden; vertical-align: top; }
+.desk-art { margin: 0; font: inherit; font-size: 13px; line-height: 1.15; white-space: pre; text-align: left; color: var(--muted); width: 20ch; }
+.desk-art .art-row { display: flex; }
+.desk-art .art-edge { flex: none; }
+.desk-art .art-mid { flex: 1; min-width: 0; overflow: hidden; white-space: pre; }
+.desk-art .art-title { display: block; text-align: center; white-space: nowrap; overflow: hidden; }
 .desk-art.art-bill .art-title { background: var(--line); color: var(--bg); }
 .desk-card-state { font-size: 0.85em; color: var(--muted); }
 .desk-card.read { border-color: var(--muted); opacity: 0.6; }

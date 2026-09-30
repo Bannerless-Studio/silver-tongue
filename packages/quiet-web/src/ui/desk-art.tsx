@@ -43,14 +43,31 @@ const ART: Record<string, string[]> = {
   ],
 };
 
-/** The drawing for a paper kind; unknown kinds get the plain bill slip. */
+/** The drawing for a paper kind; unknown kinds get the plain bill slip. Box-drawing glyphs come from fallback fonts
+ * whose advance differs from the mono cell, so a row is not laid out by character count: its two edge glyphs are
+ * pinned to the sides of a fixed-width row and the middle fills the space between (rules are made long and
+ * clipped; content stays left-anchored). The right edges then line up whatever the glyph widths are. */
 export function DeskArt({ kind, title, lang }: { kind: string; title: string; lang: string }) {
   const rows = ART[kind] ?? ART.bill!;
-  const out: ComponentChildren[] = [];
-  rows.forEach((row, i) => {
-    const at = row.indexOf(T);
-    if (at < 0) return out.push(row + "\n");
-    out.push(row[0]!, <span key={i} class="art-title" lang={lang}>{title}</span>, row[row.length - 1]!, "\n");
-  });
-  return <pre class={`desk-art art-${kind}`} aria-hidden="true">{out}</pre>;
+  return (
+    <pre class={`desk-art art-${kind}`} aria-hidden="true">
+      {rows.map((row, i) => {
+        const left = row[0]!;
+        const right = row[row.length - 1]!;
+        const mid = row.slice(1, -1);
+        let inner: ComponentChildren;
+        if (mid === T) inner = <span class="art-title" lang={lang}>{title}</span>;
+        // A rule (or a torn edge) starts right after the edge glyph: repeat it well past the row and let it clip.
+        else if (mid[0] !== " ") inner = mid.repeat(4);
+        else inner = mid;
+        return (
+          <span key={i} class="art-row">
+            <span class="art-edge">{left}</span>
+            <span class="art-mid">{inner}</span>
+            <span class="art-edge">{right}</span>
+          </span>
+        );
+      })}
+    </pre>
+  );
 }
