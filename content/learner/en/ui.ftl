@@ -315,7 +315,8 @@ quiet-enter = Enter
 quiet-name-title = What should they call you?
 # The desk after the name screen (book courses with papers): read each paper out by typing it in Latin letters.
 quiet-desk-title = The desk
-quiet-desk-unread = unread
+quiet-desk-read = read it
+quiet-desk-done = ✓ already read
 quiet-read-aloud = Read it out
 quiet-new = (new)
 quiet-rephrase = rephrase

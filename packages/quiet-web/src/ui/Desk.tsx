@@ -60,7 +60,7 @@ export function Desk({ q, papers, bookOpen, onBook }: { q: Quiet; papers: DeskPa
           return (
             <button key={p.id} type="button" class={`desk-card ${done ? "read" : "unread"}${p.id === pulse ? " pulse" : ""}`} aria-label={p.lines[0]?.text} onClick={() => setPaper(p.id)}>
               <DeskArt kind={p.kind} title={p.lines[0]?.text ?? ""} lang={q.course.language.code} />
-              <span class="desk-card-state">{done ? "✓" : t("quiet-desk-unread")}</span>
+              <span class="desk-card-state">{done ? t("quiet-desk-done") : t("quiet-desk-read")}</span>
             </button>
           );
         })}

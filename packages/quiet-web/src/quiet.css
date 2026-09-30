@@ -236,6 +236,7 @@ textarea { width: 100%; background: var(--bg); border: 1px solid var(--line); bo
 .desk-card.read { border-color: var(--muted); opacity: 0.6; }
 .desk-card.read .desk-card-state { color: var(--green); }
 .desk-card.pulse { border-color: var(--cyan); }
+.desk-card.pulse .desk-card-state { color: var(--cyan); font-weight: bold; }
 .desk-card.pulse .desk-art { color: var(--text); }
 .desk-card.unread .art-title { color: var(--muted); }
 .desk-card.pulse .art-title { color: var(--text); font-weight: bold; }
