@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
-import { PAUSE_MS, PROMPT_MS, firstSentence, openingStep, travelMs, type OpeningEvent, type OpeningStage } from "../opening";
+import { LEAD_MS, PAUSE_MS, PROMPT_MS, firstSentence, openingStep, travelMs, type OpeningEvent, type OpeningStage } from "../opening";
 import type { Quiet } from "../quiet";
 
 const matches = (q: string) => typeof matchMedia === "function" && matchMedia(q).matches;
@@ -17,6 +17,8 @@ export function Opening({ q, story }: { q: Quiet; story: string[] }) {
   const still = matches("(prefers-reduced-motion: reduce)");
   const touch = matches("(pointer: coarse)");
   const paras = useRef<(HTMLParagraphElement | null)[]>([]);
+  const stageRef = useRef(stage);
+  stageRef.current = stage;
 
   // Paragraph shown-1 travels from below the bottom edge to its place. When it arrives (animation finish, or
   // the timer when none comes: hidden tab), after a pause the next starts; after the last, the prompt.
@@ -29,22 +31,27 @@ export function Opening({ q, story }: { q: Quiet; story: string[] }) {
     const ms = travelMs(distance, vh);
     let done = false;
     let after: ReturnType<typeof setTimeout> | undefined;
+    // The next paragraph starts LEAD_MS before this one settles, so they overlap like a crawl; only
+    // the last one waits until it has settled before the prompt.
+    const last = shown >= story.length;
     const arrive = () => {
       if (done) return;
       done = true;
-      after = setTimeout(() => (shown < story.length ? setShown(shown + 1) : step("settled")), shown < story.length ? PAUSE_MS : PROMPT_MS);
+      after = setTimeout(() => step("settled"), PROMPT_MS);
     };
     let anim: Animation | undefined;
     if (!still && el && typeof el.animate === "function") {
       anim = el.animate([{ transform: `translateY(${distance}px)` }, { transform: "translateY(0)" }], { duration: ms, easing: EASE_OUT, fill: "backwards" });
-      anim.onfinish = arrive;
+      if (last) anim.onfinish = arrive;
     }
-    const fallback = setTimeout(arrive, still ? ms : ms + 300);
+    const next = last ? undefined : setTimeout(() => setShown(shown + 1), still ? PAUSE_MS : Math.max(0, ms - LEAD_MS));
+    const fallback = last ? setTimeout(arrive, still ? ms : ms + 300) : undefined;
     return () => {
       done = true;
       clearTimeout(fallback);
+      clearTimeout(next);
       clearTimeout(after);
-      anim?.cancel();
+      if (stageRef.current !== "crawl") anim?.cancel();
     };
   }, [stage, shown]);
 
