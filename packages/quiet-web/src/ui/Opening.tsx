@@ -3,7 +3,7 @@ import { PAUSE_MS, PROMPT_MS, firstSentence, openingStep, travelMs, type Opening
 import type { Quiet } from "../quiet";
 
 const matches = (q: string) => typeof matchMedia === "function" && matchMedia(q).matches;
-const EASE_OUT = "cubic-bezier(0.22, 0.61, 0.36, 1)";
+const EASE_OUT = "cubic-bezier(0.15, 0.55, 0.45, 1)"; // near-constant climb, gentle settle
 
 /** A new game on a course with the Book: each of the story's paragraphs comes up from the bottom edge of the
  * screen to its place, the next only once it has settled, then the one name question. The whole block is laid

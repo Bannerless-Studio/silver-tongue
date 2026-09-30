@@ -17,10 +17,10 @@ export function openingStep(stage: OpeningStage, ev: OpeningEvent): OpeningStage
 
 /** Travel time for a paragraph coming up from the bottom edge: scaled by the distance so a short trip isn't
  * slow, between MIN_TRAVEL_MS (no distance) and MAX_TRAVEL_MS (a full screen). */
-export const MIN_TRAVEL_MS = 1_200;
-export const MAX_TRAVEL_MS = 1_800;
+export const MIN_TRAVEL_MS = 4_000;
+export const MAX_TRAVEL_MS = 6_500;
 /** Pause after a paragraph settles before the next one starts. */
-export const PAUSE_MS = 350;
+export const PAUSE_MS = 600;
 /** Pause after the last paragraph settles before the prompt appears. */
 export const PROMPT_MS = 400;
 

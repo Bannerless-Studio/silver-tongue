@@ -84,12 +84,12 @@ describe("opening gate", () => {
   });
 
   it("travel time scales with the distance to the bottom edge, 1.2 s to 1.8 s", () => {
-    expect(travelMs(0, 800)).toBe(1200);
-    expect(travelMs(400, 800)).toBe(1500);
-    expect(travelMs(800, 800)).toBe(1800);
-    expect(travelMs(2000, 800)).toBe(1800);
-    expect(travelMs(-10, 800)).toBe(1200);
-    expect(travelMs(100, 0)).toBe(1800);
+    expect(travelMs(0, 800)).toBe(4000);
+    expect(travelMs(400, 800)).toBe(5250);
+    expect(travelMs(800, 800)).toBe(6500);
+    expect(travelMs(2000, 800)).toBe(6500);
+    expect(travelMs(-10, 800)).toBe(4000);
+    expect(travelMs(100, 0)).toBe(6500);
   });
 
   it("only a book course with a name to ask and no save opens straight on the story", () => {
