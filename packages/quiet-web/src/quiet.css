@@ -224,17 +224,23 @@ textarea { width: 100%; background: var(--bg); border: 1px solid var(--line); bo
 .desk-screen.leaving { opacity: 0; }
 .desk-screen .bar { display: flex; gap: 1.5rem; }
 .desk-title { color: var(--muted); letter-spacing: 0.08em; }
-.desk { display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem; max-width: 40rem; }
+.desk { display: flex; align-items: flex-start; flex-wrap: wrap; justify-content: center; gap: 1rem; max-width: 40rem; }
 .desk-card {
-  display: flex; flex-direction: column; align-items: center; gap: 0.4rem; min-width: 10rem; padding: 1rem 1.25rem;
+  display: flex; flex-direction: column; align-items: center; gap: 0.3rem; padding: 0.5rem;
   background: var(--panel); border: 1px solid var(--line); text-align: center;
 }
-.desk-card-title { font-size: 1.3em; }
+.desk-art { margin: 0; font: inherit; font-size: 13px; line-height: 1.15; white-space: pre; text-align: left; color: var(--muted); }
+.desk-art .art-title { display: inline-block; width: 18ch; text-align: center; white-space: nowrap; overflow: hidden; vertical-align: top; }
+.desk-art.art-bill .art-title { background: var(--line); color: var(--bg); }
 .desk-card-state { font-size: 0.85em; color: var(--muted); }
-.desk-card.read { border-color: var(--muted); }
+.desk-card.read { border-color: var(--muted); opacity: 0.6; }
 .desk-card.read .desk-card-state { color: var(--green); }
-.desk-card.unread .desk-card-title { color: var(--muted); }
-.desk-card.pulse .desk-card-title { color: var(--text); }
+.desk-card.pulse { border-color: var(--cyan); }
+.desk-card.pulse .desk-art { color: var(--text); }
+.desk-card.unread .art-title { color: var(--muted); }
+.desk-card.pulse .art-title { color: var(--text); font-weight: bold; }
+.desk-card .desk-art.art-bill .art-title { color: var(--bg); }
+.desk-card.unread:not(.pulse) .desk-art.art-bill .art-title { background: var(--muted); }
 
 /* A paper: a paper-coloured panel laid out like the document. */
 .paper {

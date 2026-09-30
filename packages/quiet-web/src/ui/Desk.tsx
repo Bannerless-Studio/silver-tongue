@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import { firstUnread, readsAs, romanize, type DeskPaper } from "@silver-tongue/view";
 import type { Quiet } from "../quiet";
+import { DeskArt } from "./desk-art";
 
 const matches = (q: string) => typeof matchMedia === "function" && matchMedia(q).matches;
 /** After a paper's last line: how long it stays up, read, before the desk comes back. */
@@ -57,8 +58,8 @@ export function Desk({ q, papers, bookOpen, onBook }: { q: Quiet; papers: DeskPa
         {papers.map((p) => {
           const done = read.has(p.id);
           return (
-            <button key={p.id} type="button" class={`desk-card ${done ? "read" : "unread"}${p.id === pulse ? " pulse" : ""}`} onClick={() => setPaper(p.id)}>
-              <span class="desk-card-title" lang={q.course.language.code}>{p.lines[0]?.text}</span>
+            <button key={p.id} type="button" class={`desk-card ${done ? "read" : "unread"}${p.id === pulse ? " pulse" : ""}`} aria-label={p.lines[0]?.text} onClick={() => setPaper(p.id)}>
+              <DeskArt kind={p.kind} title={p.lines[0]?.text ?? ""} lang={q.course.language.code} />
               <span class="desk-card-state">{done ? "✓" : t("quiet-desk-unread")}</span>
             </button>
           );
