@@ -55,6 +55,8 @@ npm run bots        # scripted players through the course
 
 The browser pages fetch their course files, so it needs a web server; opening `index.html` straight from disk no longer works.
 
+On GitHub Pages, `/lab/` is the experiment build from the `lab` branch (rebuilt on every push to `main` or `lab`).
+
 ## License
 
 MIT. See `LICENSE`.
