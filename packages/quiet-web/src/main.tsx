@@ -1,14 +1,14 @@
 // Forked from packages/vn-web/src/main.tsx: the same loading and saves, drawn as a quiet terminal.
 import { render } from "preact";
 import { createCore, mulberry32, type CatalogEntry, type Course, type GameState } from "@silver-tongue/core";
-import { courseLabels, decodeSave, DEFAULT_RUBY, DEFAULT_SPEED, encodeSave, learnerFor, makeText, playbackRate, sessionLines, type RubySetting, type SpeechSpeed, type Text } from "@silver-tongue/view";
+import { courseLabels, decodeSave, DEFAULT_RUBY, DEFAULT_SPEED, encodeSave, learnerFor, makeText, papersKey, playbackRate, sessionLines, type RubySetting, type SpeechSpeed, type Text } from "@silver-tongue/view";
 import {
   coursesBase, createWebAudio, fetchJson, fromLocalStorage, hasAnySession, loadWebSettings, metaContent, migrateWebAliases, pageStart, updateWebSettings, WebSessions,
   type KeyValue, type Opened,
 } from "@silver-tongue/web-common";
 import { App, type Page } from "./ui/App";
 import { Title } from "./ui/Title";
-import { createQuiet } from "./quiet";
+import { createQuiet, type PaperStore } from "./quiet";
 import { opensOnStory } from "./opening";
 
 /** The game's version (packages/tui-node/package.json), put in by the build. */
@@ -70,6 +70,28 @@ function use(l: Loaded, remember: boolean) {
   if (remember) updateWebSettings(kv, { course: l.course.id, learner: l.course.learner });
 }
 
+/** The desk's read papers, one list per course; storage that throws just forgets them. */
+function paperStore(kv: KeyValue, course: string): PaperStore {
+  const key = papersKey(course);
+  return {
+    load() {
+      try {
+        const v: unknown = JSON.parse(kv.getItem(key) ?? "[]");
+        return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
+      } catch {
+        return [];
+      }
+    },
+    save(ids) {
+      try {
+        kv.setItem(key, JSON.stringify(ids));
+      } catch {
+        // private window: the desk is read again next time
+      }
+    },
+  };
+}
+
 function play(opened: Opened) {
   const l = loaded!;
   l.audio.stop();
@@ -78,6 +100,7 @@ function play(opened: Opened) {
   const quiet = createQuiet({
     course: l.course, core, now: Date.now, audio: l.audio, notice: opened.notice,
     save: opened.readOnly ? undefined : (s) => store.save(opened.id, s),
+    papers: paperStore(kv, l.course.id),
   });
   current = { id: opened.id, readOnly: opened.readOnly, state: () => core.state };
   const page: Page = {

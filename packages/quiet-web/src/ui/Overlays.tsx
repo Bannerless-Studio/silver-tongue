@@ -41,8 +41,8 @@ function PaperLine({ paper }: { paper: Paper }) {
 
 /** Opens on the words that need work and why; the rest are one tap away on the tabs up top, which
  * count their words. No bars, no badges. Letters (for a language with a chart) come first, papers last. */
-export function Notebook({ q, onClose }: { q: Quiet; onClose: () => void }) {
-  const [tab, setTab] = useState<NotebookView>("shaky");
+export function Notebook({ q, onClose, first }: { q: Quiet; onClose: () => void; first?: "letters" }) {
+  const [tab, setTab] = useState<NotebookView>(first && hasLetters(q.course) ? first : "shaky");
   const [open, setOpen] = useState<number | null>(null);
   const { t, course, core } = q;
   const now = Date.now();

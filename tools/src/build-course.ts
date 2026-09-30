@@ -16,11 +16,12 @@ import {
   type World,
 } from "@silver-tongue/core";
 import { heuristicGloss, narrationProblems, uiTextProblems } from "@silver-tongue/tui";
-import type { CourseExtra, LetterChart, WordExtra } from "@silver-tongue/view";
+import type { CourseExtra, DeskPaper, LetterChart, WordExtra } from "@silver-tongue/view";
 import { checkCourse, usedWords } from "./check";
 import { bindSlots, messageIds, parseFtl, Renderer, termNames, type FtlSource } from "./fluent";
 import type { PackMeta, PackWord } from "./pack";
 import { assignLetterAudio, letterMessageIds, letterProblems } from "./letters";
+import { assignPaperAudio, paperMessageIds, paperProblems } from "./papers";
 import { buildLexicon, segment, type Lexicon } from "./segment";
 import { taggingLines, taggingPath } from "./tagging";
 import { assignAudio, voiceProblems, type Clip, type Voices } from "./voices";
@@ -386,7 +387,15 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
     errors.push(...problems);
     if (!problems.length) course.letters = letters as LetterChart;
   }
-  // Clips: every line in its speaker's voice, each word the course uses, and each letter.
+  // papers.json: the papers on the desk when a book course's story opens, each line with its clip.
+  const papersPath = join(settingDir, "papers.json");
+  const papers = existsSync(papersPath) ? attempt("papers.json", () => readJson<{ papers: DeskPaper[] }>(papersPath)) : undefined;
+  if (papers !== undefined) {
+    const problems = paperProblems(papers, Object.keys(world.places)).map((e) => `settings/${cfg.setting}/${e}`);
+    errors.push(...problems);
+    if (!problems.length) course.papers = papers.papers;
+  }
+  // Clips: every line in its speaker's voice, each word the course uses, each letter and each paper line.
   const voicesPath = join(langDir, "voices.json");
   const voices = existsSync(voicesPath) ? attempt("voices.json", () => readJson<Voices>(voicesPath)) : undefined;
   if (!existsSync(voicesPath) && cfg.checks.audio) errors.push("voices.json: missing (checks.audio is on)");
@@ -399,12 +408,17 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
     clips.push(...assignLetterAudio(course.letters, voices).filter((c) => !have.has(c.id) && have.add(c.id)));
     clips.sort((a, b) => a.id.localeCompare(b.id));
   }
+  if (voices && course.papers) {
+    const have = new Set(clips.map((c) => c.id));
+    clips.push(...assignPaperAudio(course.papers, voices).filter((c) => !have.has(c.id) && have.add(c.id)));
+    clips.sort((a, b) => a.id.localeCompare(b.id));
+  }
   const audioDir = join(root, "audio", cfg.language);
   const audioFiles = new Set(
     existsSync(audioDir) ? readdirSync(audioDir).filter((f) => f.endsWith(".mp3")).map((f) => f.slice(0, -".mp3".length)) : [],
   );
   const learnerIds = attempt("learner text", () => new Set(messageIds(learnerFtl, "learner files"))) ?? new Set<string>();
-  for (const id of ["learner-name", `language-${cfg.language}`, ...(course.letters ? letterMessageIds(course.letters) : [])]) {
+  for (const id of ["learner-name", `language-${cfg.language}`, ...(course.letters ? letterMessageIds(course.letters) : []), ...(course.papers ? paperMessageIds(course.papers) : [])]) {
     if (!learnerIds.has(id)) errors.push(`learner/${learner}/ui.ftl: missing "${id}"`);
   }
   errors.push(...checkCourse({ course, stages: meta.stages, checks: cfg.checks, learnerIds, requiredUi: [], audioFiles, newWordsOverride }));

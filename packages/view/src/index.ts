@@ -18,3 +18,4 @@ export * from "./tiles";
 export * from "./ruby";
 export * from "./letters";
 export * from "./papers";
+export * from "./desk";

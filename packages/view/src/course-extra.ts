@@ -1,4 +1,5 @@
 import type { Course, Exchange, LanguageProfile, Scene, Word, WordId } from "@silver-tongue/core";
+import type { DeskPaper } from "./desk";
 
 /*
  * Fields the build adds to a course that core doesn't know about. Core keeps extra JSON fields as
@@ -45,6 +46,8 @@ export type CourseExtra = Omit<Course, "words" | "language" | "scenes"> & {
   language: LanguageExtra;
   scenes: SceneExtra[];
   letters?: LetterChart;
+  /** content/settings/<setting>/papers.json: the papers on the desk when the story opens (book courses) */
+  papers?: DeskPaper[];
 };
 
 /** A course seen with the fields the build adds. */

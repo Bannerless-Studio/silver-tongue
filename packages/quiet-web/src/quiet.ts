@@ -5,9 +5,9 @@
 // be revealed.
 import { describeRun, normalizeTyped, wordState, type Core, type Course, type GameEvent, type GameState, type Input, type RenderedLine, type WordId } from "@silver-tongue/core";
 import {
-  bookOn, freshMarks, heardCount, onboarding,
+  bookOn, deskOn, deskPapers, freshMarks, heardCount, onboarding, placeName,
   actionNarration, bedHint, introLines, joinTilesForDisplay, makeText, placeMenu, sentenceCard, tileEcho, typePrompt, waitingForMoney, wordCard,
-  type AudioOut, type MenuItem, type SentenceCard, type Speech, type Text, type WordCard,
+  type AudioOut, type DeskPaper, type MenuItem, type SentenceCard, type Speech, type Text, type WordCard,
 } from "@silver-tongue/view";
 
 export interface Beat {
@@ -68,6 +68,13 @@ export interface QuietView {
   /** a new game on a course with the Book, before the player is named: the opening story, shown as the
    * crawl before the name screen instead of in the transcript */
   opening?: string[];
+  /** a book course with papers, named but before any scene: the papers on the desk, read before the transcript */
+  desk?: DeskPaper[];
+}
+/** Where the desk's read papers are kept (the browser's storage on the page). */
+export interface PaperStore {
+  load(): string[];
+  save(ids: string[]): void;
 }
 export interface QuietOptions {
   course: Course;
@@ -78,6 +85,8 @@ export interface QuietOptions {
   audio?: AudioOut;
   /** a message id shown once at start, e.g. "notice-bad-save" */
   notice?: string;
+  /** the desk's read papers; left out, they are forgotten on reload */
+  papers?: PaperStore;
 }
 export interface Quiet {
   readonly t: Text;
@@ -98,6 +107,14 @@ export interface Quiet {
   replay(slow?: boolean): void;
   play(clips: string[]): void;
   setName(name: string): boolean;
+  /** the desk's papers read so far */
+  readPapers(): ReadonlySet<string>;
+  /** a paper on the desk has been read out, every line */
+  readPaper(id: string): void;
+  /** every paper read: the desk goes and the transcript starts, at the place, with someone at the door */
+  leaveDesk(): void;
+  /** a place's name as the quiet page shows it (the room gets its owner's name once the ID card is read) */
+  placeLabel(place?: string): string;
   /** whether an option's intent is shown under it */
   intentShown(options: RenderedLine[], o: RenderedLine): boolean;
   toggleSound(): void;
@@ -141,6 +158,11 @@ export function createQuiet(opts: QuietOptions): Quiet {
   let backlog: Beat[] = [];
   let toasts: Toast[] = [];
   let naming = course.needsName && !core.state.player;
+  // A new game starts with the desk unread (the list is kept per course; it is saved again once named).
+  const read = new Set(naming ? [] : (opts.papers?.load() ?? []));
+  /** the desk is up (after the name screen): a new book course with papers, not all of them read */
+  let atDesk = deskOn(course, core.state, read);
+  const placeLabel = (place = core.state.place) => placeName(course, core.state, read, t, place);
   let resuming = false;
   let nextId = 1;
   /** news that arrived mid-scene, held until the scene is over so it never lands between a line and its replies */
@@ -313,7 +335,7 @@ export function createQuiet(opts: QuietOptions): Quiet {
           news(t("unlocked", { scene: t(`scene-${e.scene}`) }), "good");
           break;
         case "placeRevealed":
-          revealed.push(t(`place-${e.place}`));
+          revealed.push(placeLabel(e.place));
           break;
         case "errandStarted":
           news(t("errand-started"), "info");
@@ -398,7 +420,7 @@ export function createQuiet(opts: QuietOptions): Quiet {
   apply(describeRun(course, core.state)); // a save made mid-scene resumes in the scene: its line, then its replies
   resuming = false;
   // A game picked up between scenes: say where the player is, so the screen is never blank.
-  if (!intro.length && !scene) push({ text: t("quiet-resume", { place: t(`place-${core.state.place}`) }), tone: "narr" });
+  if (!intro.length && !scene && !atDesk) push({ text: t("quiet-resume", { place: placeLabel() }), tone: "narr" });
   if (!scene) preludeTo = nextId;
   flush(true);
 
@@ -406,7 +428,11 @@ export function createQuiet(opts: QuietOptions): Quiet {
     t,
     course,
     core,
-    view: () => ({ scene, phase: phase(), lastLine, backlog, toasts, ...(opening && naming ? { opening } : {}) }),
+    view: () => ({
+      scene, phase: phase(), lastLine, backlog, toasts,
+      ...(opening && naming ? { opening } : {}),
+      ...(atDesk && !naming ? { desk: deskPapers(course) } : {}),
+    }),
     subscribe(fn) {
       listeners.add(fn);
       return () => listeners.delete(fn);
@@ -479,15 +505,36 @@ export function createQuiet(opts: QuietOptions): Quiet {
       }
       persist();
       naming = false;
-      // After the crawl the transcript opens on where the player is, not on the story just read.
-      if (opening && !scene) {
-        push({ text: t("quiet-resume", { place: t(`place-${core.state.place}`) }), tone: "narr" });
+      if (atDesk) opts.papers?.save([...read]);
+      // After the crawl the transcript opens on where the player is, not on the story just read; with the desk
+      // up, once the desk is left.
+      if (opening && !scene && !atDesk) {
+        push({ text: t("quiet-resume", { place: placeLabel() }), tone: "narr" });
         preludeTo = nextId;
         flush(true);
       }
       changed();
       return true;
     },
+    readPapers: () => read,
+    readPaper(id) {
+      if (read.has(id) || !deskPapers(course).some((p) => p.id === id)) return;
+      read.add(id);
+      opts.papers?.save([...read]);
+      changed();
+    },
+    leaveDesk() {
+      if (!atDesk || naming || deskPapers(course).some((p) => !read.has(p.id))) return;
+      atDesk = false;
+      if (!scene) {
+        push({ text: t("quiet-resume", { place: placeLabel() }), tone: "narr" });
+        if (t.has("desk-done")) push({ text: t("desk-done"), tone: "narr" });
+        preludeTo = nextId;
+        flush(true);
+      }
+      changed();
+    },
+    placeLabel,
     toggleSound() {
       if (!opts.audio?.available) return;
       const on = core.state.sound === false;

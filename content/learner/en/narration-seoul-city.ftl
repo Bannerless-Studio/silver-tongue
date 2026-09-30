@@ -2,12 +2,16 @@
 intro-1 = You fell asleep over a Korean textbook. You wake on a bed that isn't yours, in a room you have never seen, and the noise from the street is nothing like home.
 intro-2 = On the desk: someone's ID card, a stack of unopened bills, a wallet with { $currency }{ $wallet } in it. Your own things are gone. Your pockets are empty. The textbook is still in your hand.
 intro-3 = Voices pass under the window. You can't understand a word.
-intro-4 = Someone is knocking.
+
+# After the last paper on the desk is read (the quiet page's desk).
+desk-done = Someone is knocking.
 
 # Where and when, on the top bar.
 setting-where = Seoul, 2000
 
 place-room = The Room
+# The room's name once the ID card on the desk has been read (the quiet page's desk).
+place-room-known = Min-jun's Room
 place-room-desc = A narrow rented room: a mattress, a desk of heavy books, and bills nobody has opened.
 place-street = The Alley
 place-street-desc = A steep alley of shops and hanging wires, and an old man on a bench.

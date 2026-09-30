@@ -5,6 +5,7 @@ import { keyAction, type Overlay } from "../keys";
 import { latestNpcLine, type Beat, type Quiet } from "../quiet";
 import { Anchor } from "./Anchor";
 import { Games, Menu, Notebook, Status } from "./Overlays";
+import { Desk } from "./Desk";
 import { Opening } from "./Opening";
 import { Prompt } from "./Prompt";
 import { Toasts } from "./Toasts";
@@ -80,6 +81,12 @@ export function App({ q, page }: { q: Quiet; page: Page }) {
       const target = e.target as HTMLElement | null;
       const typing = !!target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
       if (e.ctrlKey || e.altKey || e.metaKey) return;
+      // The desk: only the Book opens ([n]) and closes (Escape); the rest is the desk's own.
+      if (q.view().desk) {
+        if (e.key === "Escape" && open) (e.preventDefault(), setOpen(null));
+        else if (!typing && !open && e.key === "n") (e.preventDefault(), setOpen("notebook"));
+        return;
+      }
       // In a text field (a name, a save line) keys are for typing; Escape still closes the overlay.
       if (typing) {
         if (e.key === "Escape" && open) (e.preventDefault(), setOpen(null));
@@ -94,6 +101,15 @@ export function App({ q, page }: { q: Quiet; page: Page }) {
   const close = () => setOpen(null);
   // A new game on a course with the Book: the crawl and the name screen, nothing else on screen.
   if (view.opening) return <Opening q={q} story={view.opening} />;
+  // Then, on a course with papers, the desk: the papers read out before the game starts. The Book opens over it.
+  if (view.desk) {
+    return (
+      <>
+        <Desk q={q} papers={view.desk} bookOpen={open === "notebook"} onBook={() => setOpen("notebook")} />
+        {open === "notebook" && <Notebook q={q} first="letters" onClose={close} />}
+      </>
+    );
+  }
   return (
     <div class="term app">
       <Anchor q={q} view={view} audioAvailable={page.audioAvailable} />

@@ -77,7 +77,7 @@ describe("opening gate", () => {
   });
 
   it("splits a paragraph after its first sentence", () => {
-    expect(firstSentence("Someone is knocking. The textbook opens with [n].")).toEqual(["Someone is knocking.", " The textbook opens with [n]."]);
+    expect(firstSentence("Voices pass under the window. You can't understand a word.")).toEqual(["Voices pass under the window.", " You can't understand a word."]);
     expect(firstSentence("The rent, ₩50,000, falls due. Food costs.")).toEqual(["The rent, ₩50,000, falls due.", " Food costs."]);
     expect(firstSentence("On the desk: bills")).toEqual(["On the desk: bills", ""]);
     expect(firstSentence("You have ¥20.")).toEqual(["You have ¥20.", ""]);

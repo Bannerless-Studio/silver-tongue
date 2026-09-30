@@ -213,3 +213,73 @@ textarea { width: 100%; background: var(--bg); border: 1px solid var(--line); bo
   .crawl .go { animation: none; }
   .pulse { animation: none; }
 }
+
+/* The desk (book courses with papers): the papers on the desk, read out before the game starts. All in the
+ * language; the reading appears, muted, once a line is read. */
+.desk-screen {
+  position: fixed; inset: 0; z-index: 5; background: var(--bg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.5rem;
+  padding: calc(env(safe-area-inset-top) + 1rem) 16px calc(env(safe-area-inset-bottom) + 1rem);
+  transition: opacity 0.9s ease-out;
+}
+.desk-screen.leaving { opacity: 0; }
+.desk-screen .bar { display: flex; gap: 1.5rem; }
+.desk-title { color: var(--muted); letter-spacing: 0.08em; }
+.desk { display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem; max-width: 40rem; }
+.desk-card {
+  display: flex; flex-direction: column; align-items: center; gap: 0.4rem; min-width: 10rem; padding: 1rem 1.25rem;
+  background: var(--panel); border: 1px solid var(--line); text-align: center;
+}
+.desk-card-title { font-size: 1.3em; }
+.desk-card-state { font-size: 0.85em; color: var(--muted); }
+.desk-card.read { border-color: var(--muted); }
+.desk-card.read .desk-card-state { color: var(--green); }
+.desk-card.unread .desk-card-title { color: var(--muted); }
+.desk-card.pulse .desk-card-title { color: var(--text); }
+
+/* A paper: a paper-coloured panel laid out like the document. */
+.paper {
+  --ink: #2a2620;
+  width: min(100%, 28rem); padding: 1.25rem 1.5rem; background: #e8e1cf; color: var(--ink);
+  font-family: var(--mono); display: flex; flex-direction: column; gap: 0.6rem; box-shadow: 0 0 0 1px #0006, 0 8px 24px #0008;
+}
+.pl { display: flex; flex-direction: column; gap: 0.2rem; padding: 0.15rem 0.4rem; border-left: 3px solid transparent; }
+.pl.cur { border-left-color: #1e6f80; background: #d7ecef; }
+.pl-text { color: var(--ink); }
+.pl-text:disabled { opacity: 1; cursor: default; }
+.pl-rr { color: #7a7263; font-size: 0.8em; }
+/* An ID card: small, a photo box on the right, the title across the top. */
+.paper-card { width: min(100%, 22rem); min-height: 13rem; border-radius: 10px; position: relative; padding-right: 7rem; justify-content: center; }
+.paper-card::after { content: ""; position: absolute; right: 1.25rem; top: 50%; transform: translateY(-50%); width: 4.5rem; height: 5.6rem; border: 1px solid #0003; background: #d6cfbd; }
+.paper-card .pl-title .pl-text { font-weight: 700; letter-spacing: 0.15em; }
+.paper-card .pl-name .pl-text { font-size: 1.25em; }
+/* A newspaper's masthead: the name large and centred over a rule, the date under it. */
+.paper-masthead { align-items: stretch; text-align: center; }
+.paper-masthead .pl { align-items: center; }
+.paper-masthead .pl-title { border-bottom: 3px double var(--ink); padding-bottom: 0.4rem; }
+.paper-masthead .pl-title .pl-text { font-size: 2em; font-weight: 700; letter-spacing: 0.1em; }
+.paper-masthead .pl-date .pl-text { font-size: 0.9em; }
+/* A bill: a heading, then the amount due, right-aligned and boxed. */
+.paper-bill { border-top: 6px solid #9b3b32; }
+.paper-bill .pl-title .pl-text { font-size: 1.2em; font-weight: 700; }
+.paper-bill .pl-amount { align-items: flex-end; }
+.paper-bill .pl-amount .pl-text { font-size: 1.4em; border: 1px solid var(--ink); padding: 0.1em 0.5em; }
+
+.read-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.3rem 0.8rem; margin-top: 0.3rem; }
+.read-label { color: #5b5447; font-size: 0.8em; width: 100%; }
+.read-row input {
+  flex: 1; min-width: 8rem; font-size: 1.05em; background: none; border: 0; border-bottom: 2px solid #1e6f80;
+  padding: 0.1em 0; color: var(--ink); caret-color: #1e6f80; outline: none;
+}
+.read-row .go { color: #1e6f80; white-space: nowrap; font-size: 0.85em; }
+.read-row.shake { animation: shake 0.4s ease-in-out; }
+@keyframes shake { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
+
+.desk-knock { cursor: default; }
+.desk-knock .knock { font-size: clamp(18px, 5vw, 26px); animation: fade-in 0.8s ease-out both; }
+.desk-knock .go { color: var(--cyan); animation: fade-in 0.6s 0.6s ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .desk-screen { transition: none; }
+  .read-row.shake { animation: none; outline: 1px solid var(--red); }
+  .desk-knock .knock, .desk-knock .go { animation: none; }
+}
