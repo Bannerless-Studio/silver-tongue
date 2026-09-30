@@ -152,6 +152,8 @@ export function startApp(opts: AppOptions): App {
   let onboardNow = false;
   /** Whether this course uses the Book: readings under each word, the Letters and Papers tabs. */
   const hasBook = bookOn(course);
+  /** the key that opens (and closes) the notebook: b for the Book, n for the notebook */
+  const bookKey = hasBook ? "b" : "n";
   /**
    * An NPC's line, then its readings. With the Book: each word's reading under it, by the ruby
    * setting (by default, the words not known yet); the row keeps the readings it had when said: the
@@ -961,7 +963,7 @@ export function startApp(opts: AppOptions): App {
       const words = groups[g]?.items ?? [];
       const tab = /^[1-9]$/.test(key.name) ? bookTabs()[Number(key.name) - 1] : undefined;
       const arrow = key.name === "up" || key.name === "down" || key.name === "left" || key.name === "right" ? key.name : undefined;
-      if (key.name === "escape" || key.name === "n") mode = notebookFrom;
+      if (key.name === "escape" || key.name === bookKey) mode = notebookFrom;
       else if (tab) nbView = { tab, group: 0, word: 0, open: false, top: 0 };
       else if (v.tab === "letters") {
         const letters = bookExtras().letters;
@@ -1007,7 +1009,7 @@ export function startApp(opts: AppOptions): App {
       mode = "settings";
       return render();
     }
-    if (key.name === "n" && mode !== "help") {
+    if (key.name === bookKey && mode !== "help") {
       notebookFrom = mode;
       nbView = { tab: "words", group: 0, word: 0, open: false, top: 0 };
       mode = "notebook";

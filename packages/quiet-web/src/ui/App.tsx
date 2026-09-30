@@ -1,7 +1,7 @@
 import { useEffect, useState } from "preact/hooks";
 import type { CatalogEntry, WordId } from "@silver-tongue/core";
 import { bookOn, wordExample, type RubySetting, type SpeechSpeed } from "@silver-tongue/view";
-import { keyAction, type Overlay } from "../keys";
+import { bookKey, keyAction, type Overlay } from "../keys";
 import { latestNpcLine, type Beat, type Quiet } from "../quiet";
 import { Anchor } from "./Anchor";
 import { Games, Menu, Notebook, Status } from "./Overlays";
@@ -36,8 +36,8 @@ export interface Page {
 
 type Open = Overlay | "games" | null;
 /** Keys a touch screen has no keyboard for (like the text page's key bar). */
-const KEYBAR: { label: string; key: string }[] = [
-  { label: "?", key: "?" }, { label: "N", key: "n" }, { label: "S", key: "s" }, { label: "⌫", key: "Backspace" }, { label: "↵", key: "Enter" },
+const keybar = (book: boolean): { label: string; key: string }[] => [
+  { label: "?", key: "?" }, { label: bookKey(book).toUpperCase(), key: bookKey(book) }, { label: "S", key: "s" }, { label: "⌫", key: "Backspace" }, { label: "↵", key: "Enter" },
 ];
 
 export function App({ q, page }: { q: Quiet; page: Page }) {
@@ -60,7 +60,7 @@ export function App({ q, page }: { q: Quiet; page: Page }) {
   };
 
   const press = (key: string) => {
-    const a = keyAction(key, { overlay: !!open, phase: q.view().phase.kind, typing: false, modifier: false });
+    const a = keyAction(key, { overlay: !!open, phase: q.view().phase.kind, typing: false, modifier: false, book: bookOn(q.course) });
     if (!a) return false;
     const p = q.view().phase;
     if (a.kind === "close") setOpen(null);
@@ -84,7 +84,7 @@ export function App({ q, page }: { q: Quiet; page: Page }) {
       // The desk: only the Book opens ([n]) and closes (Escape); the rest is the desk's own.
       if (q.view().desk) {
         if (e.key === "Escape" && open) (e.preventDefault(), setOpen(null));
-        else if (!typing && !open && e.key === "n") (e.preventDefault(), setOpen("notebook"));
+        else if (!typing && !open && e.key.toLowerCase() === bookKey(true)) (e.preventDefault(), setOpen("notebook"));
         return;
       }
       // In a text field (a name, a save line) keys are for typing; Escape still closes the overlay.
@@ -123,7 +123,7 @@ export function App({ q, page }: { q: Quiet; page: Page }) {
         <button type="button" class="dim" onClick={() => setOpen("settings")}>{t("vn-settings").toLowerCase()}</button>
       </footer>
       <div class="keybar">
-        {KEYBAR.map((k) => <button key={k.key} type="button" onClick={() => press(k.key)}>{k.label}</button>)}
+        {keybar(bookOn(q.course)).map((k) => <button key={k.key} type="button" onClick={() => press(k.key)}>{k.label}</button>)}
       </div>
       {open === "notebook" && <Notebook q={q} onClose={close} />}
       {open === "status" && <Status q={q} audioAvailable={page.audioAvailable} onClose={close} />}

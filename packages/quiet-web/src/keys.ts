@@ -19,9 +19,13 @@ export interface KeyContext {
   typing: boolean;
   /** ctrl, alt or meta is held: the key is the browser's */
   modifier: boolean;
+  /** the course uses the Book: it opens with b; n opens the notebook of a course without it */
+  book?: boolean;
 }
 
-const OPEN: Record<string, Overlay> = { n: "notebook", s: "status", o: "settings" };
+const OPEN: Record<string, Overlay> = { s: "status", o: "settings" };
+/** The key that opens the notebook, or the Book. */
+export const bookKey = (book: boolean | undefined): string => (book ? "b" : "n");
 
 /** What a key (KeyboardEvent.key) does here, or null to leave it to the browser. */
 export function keyAction(key: string, ctx: KeyContext): QuietAction | null {
@@ -34,6 +38,7 @@ export function keyAction(key: string, ctx: KeyContext): QuietAction | null {
   const lower = k.toLowerCase();
   // w is the text game's look-up key, and the shared opening prose names it.
   if (k === "?" || lower === "w") return { kind: "reveal" };
+  if (lower === bookKey(ctx.book)) return { kind: "open", overlay: "notebook" };
   if (OPEN[lower]) return { kind: "open", overlay: OPEN[lower] };
   if (lower === "m") return { kind: "sound" };
   if (lower === "r") return { kind: "replay" };

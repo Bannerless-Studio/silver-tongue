@@ -1470,7 +1470,7 @@ describe("the Book's tabs", () => {
       audio,
     );
     term.resize(80, 24);
-    term.press("n");
+    term.press("b");
     const bottom = () => term.screen().at(-1)!;
     expect(term.screen().join("\n")).toMatch(/1\) Letters +2\) Words +3\) Phrases +4\) Papers +5\) People +6\) Places +7\) Notes/);
     expect(bottom()).toContain("[1-7] tab");
@@ -1498,8 +1498,8 @@ describe("with and without the Book", () => {
     const book = setup(() => {}, (c) => void ((c as unknown as CourseExtra).language.book = true));
     book.term.resize(120, 24);
     book.term.press("1", "1");
-    expect(book.term.screen().at(-1)).toContain("[n] book");
-    book.term.press("n");
+    expect(book.term.screen().at(-1)).toContain("[b] book");
+    book.term.press("b");
     s = book.term.screen().join("\n");
     expect(book.term.screen()[0]).toMatch(/┌ Book ─/);
     expect(s).toMatch(/1\) Words +2\) Phrases +3\) Papers +4\) People +5\) Places +6\) Notes/);

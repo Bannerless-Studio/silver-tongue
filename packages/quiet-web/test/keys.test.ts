@@ -40,4 +40,13 @@ describe("quiet terminal keys", () => {
     expect(keyAction("n", ctx({ phase: "name" }))).toBeNull();
     expect(keyAction("n", ctx({ modifier: true }))).toBeNull();
   });
+
+  it("the Book opens with b on a book course; n opens the notebook only without it", () => {
+    expect(keyAction("b", ctx({ book: true }))).toEqual({ kind: "open", overlay: "notebook" });
+    expect(keyAction("B", ctx({ book: true }))).toEqual({ kind: "open", overlay: "notebook" });
+    expect(keyAction("n", ctx({ book: true }))).toBeNull();
+    expect(keyAction("n", ctx({ book: false }))).toEqual({ kind: "open", overlay: "notebook" });
+    expect(keyAction("b", ctx({ book: false }))).toBeNull();
+    expect(keyAction("b", ctx({ book: true, overlay: true }))).toBeNull();
+  });
 });
