@@ -17,8 +17,10 @@ export function coursesBase(doc: MetaSource): string {
   return metaContent(doc, "st-courses") || "courses/";
 }
 
+/** The catalog and course files are fetched with revalidation: a page just deployed must never pair with a course
+ * file the browser cached from the deploy before (the site serves them with a 10-minute max-age and an ETag). */
 export async function fetchJson<T>(path: string): Promise<T> {
-  const res = await fetch(path);
+  const res = await fetch(path, { cache: "no-cache" });
   if (!res.ok) throw new Error(`${path}: ${res.status}`);
   return (await res.json()) as T;
 }
