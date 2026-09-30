@@ -194,7 +194,6 @@ textarea { width: 100%; background: var(--bg); border: 1px solid var(--line); bo
 .crawl b { color: var(--cyan); font-weight: 700; }
 /* Each paragraph comes up from the bottom edge to its place (Opening.tsx animates it); until its turn it
  * keeps its place in the layout, unseen, so the centred block never moves. */
-.crawl p.waiting { visibility: hidden; }
 .crawl .go { position: absolute; top: 100%; left: 0; right: 0; margin: 0.5em 0 0; text-align: center; color: var(--cyan); animation: fade-in 0.6s ease-out both; }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 .pulse { animation: pulse 1.6s ease-in-out infinite; }

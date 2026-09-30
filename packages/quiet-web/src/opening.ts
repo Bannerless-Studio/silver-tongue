@@ -20,7 +20,6 @@ export function openingStep(stage: OpeningStage, ev: OpeningEvent): OpeningStage
 export const MIN_TRAVEL_MS = 4_000;
 export const MAX_TRAVEL_MS = 6_500;
 /** With reduced motion: pause after a paragraph appears before the next one. */
-export const PAUSE_MS = 600;
 /** Pause after the last paragraph settles before the prompt appears. */
 export const PROMPT_MS = 400;
 
