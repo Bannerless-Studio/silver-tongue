@@ -103,3 +103,30 @@ The quiet page's rules (2026-09-28 spec) break in the first-run regime: with eve
 - **The intro says only what the player can observe on waking.** No year, no rent, no names, no UI hints. Inferences (whose room, what year, what the bills are) arrive through play. The room is "The Room" until the story names it.
 - **The story climbs as one block** from the bottom edge, slowly (4–6.5 s), settles, then a pulsing Press Enter; Enter is ignored while it moves. Then the name screen alone. The transcript never repeats the intro.
 - Experiments deploy to the `lab` branch and show at /lab/; the main site is untouched until a screen is agreed.
+
+## 10. Guidance and the stage-1 screen plan (2026-10-02)
+
+Rules (user, 2026-10-02):
+
+- **Minimal UI.** Guidance text only where the next action's what, why or how is truly unclear, and only the unclear part. Where more reduces confusion, add; where less does, remove. An instruction once acted on never repeats.
+- **Natural introduction.** A need appears in the story before the lesson that answers it. Example: the clerk short-changes you, so you learn to count before it happens again.
+- The Book's hotkey is `b`; while a field has focus, Tab.
+
+Screens, in order (✓ agreed, → building, · planned):
+
+| # | Screen | What it adds | Guidance it needs |
+|---|---|---|---|
+| 1 ✓ | Crawl, then name | waking, observables only | Press Enter |
+| 2 → | Desk | three drawn papers; one bright card labelled "read" | why: "The papers on the desk might tell you where you are." |
+| 3 → | Reading a paper | one block at a time; the block's letters as a sum `ㅈ j + ㅜ u = [field]`; letters met before show `?` until tapped | what: "Sound it out, one block at a time." (first paper only); how: the sum, plus a worked example on the first block only |
+| 4 → | After each paper | what you can now tell: a name, the year 2000, a 50,000 won bill; Enter | none |
+| 5 · | The knock, landlady's first line | 민준 is bold: the player decoded it on the ID card | how to look a word up, once |
+| 6 · | First reply | 네 / 아니요 with reading and meaning this once | none |
+| 7 · | Rest of room-wake | no top lines; meanings fade as words are heard | none |
+| 8 · | Alone, hungry, ₩20,000 | one exit: go outside | why only: hunger |
+| 9 · | Shop before numbers | hold out a note, hear a price you can't parse, get change you can't check | none: the confusion is the point |
+| 10 · | Grandpa Park on the bench | he saw it; counts the coins in your hand; numbers lesson | the story is the why |
+| 11 · | Shop again | count your change right; the clerk's trust | none |
+| 12 · | Hungry → the stall | Ji-woo, work, the photo | as before |
+
+Scene order this implies (content change, not yet made): room-wake → shop-prices → street-hello → street-numbers → shop-buy → street-hungry → stall-intro. Today street-numbers precedes shop-prices, so the numbers arrive with no reason.
