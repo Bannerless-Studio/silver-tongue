@@ -22,7 +22,7 @@ describe("papers.json", () => {
     [{ papers: [{ ...ok.papers[0], lines: [{ id: "x", text: "민준", say: "min" }] }] }, "say must be Hangul"],
   ])("rejects %j", (json, problem) => expect(paperProblems(json, ["room"]).join("\n")).toContain(problem));
 
-  it("needs the knock and the renamed place", () => expect(paperMessageIds(ok.papers as never)).toEqual(["desk-done", "place-room-known"]));
+  it("needs the knock, what each paper tells, and the renamed place", () => expect(paperMessageIds(ok.papers as never)).toEqual(["desk-done", "paper-idcard-learned", "place-room-known"]));
 });
 
 describe("ko-seoul's desk", () => {

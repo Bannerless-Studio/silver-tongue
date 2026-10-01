@@ -44,9 +44,10 @@ export function paperProblems(json: unknown, places: string[]): string[] {
   return errors;
 }
 
-/** Messages the desk needs: the line after the last paper, and each named place's new name. */
+/** Messages the desk needs: the line after the last paper, what each paper tells once read, and each named place's new name. */
 export const paperMessageIds = (papers: DeskPaper[]): string[] => [
   "desk-done",
+  ...papers.map((p) => `paper-${p.id}-learned`),
   ...[...new Set(papers.flatMap((p) => (p.names ? [`place-${p.names}-known`] : [])))],
 ];
 

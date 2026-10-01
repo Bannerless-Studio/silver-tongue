@@ -3,8 +3,8 @@ import type { Course } from "@silver-tongue/core";
 import { readFileSync } from "node:fs";
 import { fixtureWithText } from "../src/testing";
 import {
-  emptyProgress, guideView, letterChart, letterCount, letterKey, lettersFollowDesk, lettersView, lineRead, metLetters, panelView, paperSyllables,
-  parseProgress, readsSyllable, syllableLetters, textLetterKeys, type CourseExtra, type DeskPaper, type LetterGroup,
+  emptyProgress, guideView, letterChart, letterCount, letterKey, lettersFollowDesk, lettersView, lineRead, metLetters, paperSyllables,
+  parseProgress, readsSyllable, sumTiles, syllableLetters, textLetterKeys, type CourseExtra, type DeskPaper, type LetterGroup,
 } from "../src/index";
 
 const letters = JSON.parse(readFileSync(new URL("../../../content/languages/ko/letters.json", import.meta.url), "utf8")) as { groups: LetterGroup[]; guide: { id: string; examples?: string[] }[] };
@@ -74,35 +74,22 @@ describe("reading a paper", () => {
   });
 });
 
-describe("panelView", () => {
-  const need = (s: string) => syllableLetters(chart, s);
-  it("first syllable: only its own letters, none marked", () => {
-    const p = panelView(chart, need("김"), new Set());
-    expect(p.tiles.map((x) => x.letter.ch)).toEqual(["ㄱ", "ㅣ", "ㅁ"]); // chart order
-    expect(p.collapsed).toBe(false);
-    expect(p.order.map((x) => x.letter.ch)).toEqual(["ㄱ", "ㅣ", "ㅁ"]);
+describe("sumTiles", () => {
+  it("a block's own letters in reading order, each with its sound there", () => {
+    const t = sumTiles(chart, "김", new Set());
+    expect(t.map((x) => [x.letter.ch, x.sound, x.fresh, x.final])).toEqual([["ㄱ", "g", true, false], ["ㅣ", "i", true, false], ["ㅁ", "m", true, true]]);
   });
-  it("later: everything met plus the new letters, new ones marked", () => {
+  it("a letter with two sounds shows the one the block reads with, by where it stands", () => {
+    expect(sumTiles(chart, "각", new Set()).map((x) => x.sound)).toEqual(["g", "a", "k"]);
+    expect(sumTiles(chart, "갈", new Set()).map((x) => x.sound)).toEqual(["g", "a", "l"]);
+  });
+  it("letters met before are not fresh; a letter met only as a final is new as an initial", () => {
     const before = new Set(textLetterKeys(chart, "김"));
-    const p = panelView(chart, need("민"), before);
-    const fresh = p.tiles.filter((x) => x.fresh).map((x) => x.letter.ch);
-    expect(fresh).toEqual(["ㅁ", "ㄴ"]); // ㅁ initial and ㄴ final are new: ㅣ was met, ㅁ met only as a final
-    expect(p.tiles.map((x) => x.key)).toContain(letterKey("vowels", "ㅣ"));
-    expect(p.tiles.find((x) => x.key === letterKey("vowels", "ㅣ"))!.fresh).toBe(false);
+    expect(sumTiles(chart, "민", before).map((x) => [x.letter.ch, x.fresh])).toEqual([["ㅁ", true], ["ㅣ", false], ["ㄴ", true]]);
   });
-  it("over eight tiles: only the new letters, and none at all when nothing is new", () => {
+  it("never hides a letter, however many were met", () => {
     const before = new Set(textLetterKeys(chart, "주민등록증서울신문"));
-    expect(before.size).toBeGreaterThan(8);
-    const same = panelView(chart, need("주"), before);
-    expect(same.collapsed).toBe(true);
-    expect(same.tiles).toEqual([]);
-    const newer = panelView(chart, need("월"), before);
-    expect(newer.collapsed).toBe(true);
-    expect(newer.tiles.map((x) => x.letter.ch)).toEqual(["ㅝ"]);
-    expect(newer.order).toHaveLength(3);
-  });
-  it("marks a final's tile", () => {
-    expect(panelView(chart, need("김"), new Set()).tiles.find((x) => x.letter.ch === "ㅁ")!.final).toBe(true);
+    expect(sumTiles(chart, "월", before)).toHaveLength(3);
   });
 });
 

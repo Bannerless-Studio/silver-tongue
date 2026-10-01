@@ -1,11 +1,12 @@
+import { Fragment } from "preact";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "preact/hooks";
-import { firstUnread, letterChart, lineRead, panelView, paperSyllables, readsSyllable, romanize, syllableLetters, type DeskPaper, type PanelTile } from "@silver-tongue/view";
+import { firstUnread, letterChart, lineRead, paperSyllables, readsSyllable, romanize, sumTiles, type DeskPaper, type SumTile } from "@silver-tongue/view";
 import type { Quiet } from "../quiet";
 import { DeskArt } from "./desk-art";
 
 const matches = (q: string) => typeof matchMedia === "function" && matchMedia(q).matches;
-/** After a paper's last syllable: how long it stays up, read, before the desk comes back. */
-const PAPER_DONE_MS = 1_200;
+/** Enter right after the last syllable (held down, say) does not leave the finished paper at once. */
+const DONE_GUARD_MS = 300;
 /** The desk fading out once every paper is read. */
 const FADE_MS = 900;
 /** A wrong reading shakes the field this long. */
@@ -59,7 +60,7 @@ export function Desk({ q, papers, bookOpen, onBook }: { q: Quiet; papers: DeskPa
   const next = firstUnread(papers, read);
   return (
     <div class={leaving === "fade" ? "desk-screen leaving" : "desk-screen"}>
-      <p class="desk-title">{t("quiet-desk-title")}</p>
+      <p class="desk-title">{t("quiet-desk-why")}</p>
       <div class="desk">
         {papers.map((p) => {
           const done = read.has(p.id);
@@ -78,16 +79,15 @@ export function Desk({ q, papers, bookOpen, onBook }: { q: Quiet; papers: DeskPa
   );
 }
 
-/** One tile of the letter panel: the letter, its sound; tap it to hear it. */
-function Tile({ q, tile, showNew, order }: { q: Quiet; tile: PanelTile; showNew: boolean; order?: number }) {
+/** One tile of the sum: the letter and, under it, its sound; a letter met in an earlier block shows "?" until asked for. Tap to hear it. */
+function Tile({ q, tile, shown, onShow }: { q: Quiet; tile: SumTile; shown: boolean; onShow: () => void }) {
   const l = tile.letter;
-  const fresh = showNew && tile.fresh;
+  const hidden = !tile.fresh && !shown;
+  const sound = `${tile.sound}${tile.final ? ` (${q.t("quiet-letter-end")})` : ""}`;
   return (
-    <button type="button" class={`tile${fresh ? " fresh" : ""}${order ? " hint" : ""}`} aria-label={[l.ch, l.name, l.reading].filter(Boolean).join(" ")} onClick={() => q.play(l.audio ?? [])}>
+    <button type="button" class={`tile${hidden ? " unknown" : ""}`} aria-label={hidden ? l.ch : `${l.ch} ${sound}`} onClick={() => (hidden && onShow(), q.play(l.audio ?? []))}>
       <span class="tl-ch" lang={q.course.language.code}>{l.ch}</span>
-      <span class="tl-rd">{l.reading ?? ""}{tile.final ? ` (${q.t("quiet-letter-end")})` : ""}</span>
-      {fresh && <span class="tl-new">{q.t("quiet-letter-new")}</span>}
-      {order ? <span class="tl-n">{order}</span> : null}
+      <span class="tl-rd">{hidden ? "?" : sound}</span>
     </button>
   );
 }
@@ -101,9 +101,10 @@ function PaperView({ q, paper, done, bookOpen, onBook, onBack }: { q: Quiet; pap
   const [at, setAtState] = useState(() => (done ? syls.length : q.deskAt(paper.id)));
   const [typed, setTyped] = useState("");
   const [shake, setShake] = useState(false);
-  // Per syllable: wrong tries, and how much help was asked for (0 none, 1 the letters marked, 2 the reading).
+  // Per block: wrong tries; the "?" tiles asked for; whether the reading was asked for.
   const [wrong, setWrong] = useState(0);
-  const [help, setHelp] = useState(0);
+  const [shown, setShown] = useState<ReadonlySet<string>>(new Set());
+  const [reading, setReading] = useState(false);
   const [geo, setGeo] = useState<string>("");
   const input = useRef<HTMLInputElement>(null);
   const stage = useRef<HTMLDivElement>(null);
@@ -112,20 +113,20 @@ function PaperView({ q, paper, done, bookOpen, onBook, onBack }: { q: Quiet; pap
   const finished = at >= syls.length;
   const cur = syls[at];
   const key = `${paper.id}:${at}`;
-  const needed = cur ? syllableLetters(chart, cur.ch) : [];
   // The letters met before this syllable, taken once as it comes up (it then meets its own).
   const snap = useRef<{ key: string; before: ReadonlySet<string> }>();
   if (snap.current?.key !== key) snap.current = { key, before: new Set(q.deskMet() ?? []) };
   const before = snap.current.before;
-  const panel = panelView(chart, needed, before);
+  const tiles = cur ? sumTiles(chart, cur.ch, before) : [];
   const first = before.size === 0;
+  const hidden = tiles.filter((x) => !x.fresh && !shown.has(x.key));
 
   const setAt = (n: number) => {
     setAtState(n);
     q.setDeskAt(paper.id, n);
   };
   useEffect(() => {
-    if (cur) q.meet(needed.map((r) => r.key));
+    if (cur) q.meet(tiles.map((r) => r.key));
   }, [key]);
   useEffect(() => input.current?.focus(), [key, bookOpen]);
 
@@ -153,16 +154,28 @@ function PaperView({ q, paper, done, bookOpen, onBook, onBack }: { q: Quiet; pap
     return () => removeEventListener("resize", measure);
   }, [key]);
 
-  // The last syllable read: the paper stays a moment, then the desk.
+  // The last syllable read: the paper is read; it stays up, with what it tells, until the player goes back (Enter).
+  const doneAt = useRef(0);
   useEffect(() => {
-    if (!finished || done) return;
-    q.readPaper(paper.id);
-    const id = setTimeout(onBack, PAPER_DONE_MS);
-    return () => clearTimeout(id);
+    if (!finished) return;
+    doneAt.current = Date.now();
+    if (!done) q.readPaper(paper.id);
   }, [finished]);
+  useEffect(() => {
+    if (!finished || bookOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Enter" || e.ctrlKey || e.altKey || e.metaKey || Date.now() - doneAt.current < DONE_GUARD_MS) return;
+      e.preventDefault();
+      onBack();
+    };
+    addEventListener("keydown", onKey);
+    return () => removeEventListener("keydown", onKey);
+  }, [finished, bookOpen]);
 
+  // First press: the "?" tiles of this block; then (or at once when none are) what the block reads.
   const askHelp = () => {
-    setHelp((h) => Math.min(2, h + 1));
+    if (hidden.length) setShown(new Set([...shown, ...hidden.map((x) => x.key)]));
+    else setReading(true);
     input.current?.focus();
   };
   const submit = (e: Event) => {
@@ -173,7 +186,8 @@ function PaperView({ q, paper, done, bookOpen, onBook, onBack }: { q: Quiet; pap
     if (readsSyllable(v, cur.ch)) {
       setTyped("");
       setWrong(0);
-      setHelp(0);
+      setShown(new Set());
+      setReading(false);
       if (lineRead(syls, cur.line, at + 1)) q.play(paper.lines[cur.line].audio ?? []);
       setAt(at + 1);
     } else {
@@ -196,11 +210,11 @@ function PaperView({ q, paper, done, bookOpen, onBook, onBack }: { q: Quiet; pap
 
   const at2 = new Map(syls.map((s, i) => [`${s.line}:${s.index}`, i] as const));
   const touch = matches("(pointer: coarse)");
-  const order = new Map(panel.order.map((tl, i) => [tl.key, i + 1] as const));
+  const learned = `paper-${paper.id}-learned`;
   return (
     <div class="desk-screen reading">
       <div class="stage" ref={stage}>
-        {cur && first && <p class="intro">{t("quiet-read-intro")}</p>}
+        {cur && q.readPapers().size === 0 && <p class="intro">{t("quiet-read-intro")}</p>}
         <div class={`paper paper-${paper.kind} compact`} lang={q.course.language.code} ref={card}>
           {paper.lines.map((l, li) => {
             const lineDone = lineRead(syls, li, at);
@@ -224,35 +238,32 @@ function PaperView({ q, paper, done, bookOpen, onBook, onBack }: { q: Quiet; pap
             );
           })}
         </div>
+        {finished && (
+          <>
+            {t.has(learned) && <p class="learned">{t(learned)}</p>}
+            <button type="button" class="go next-btn" onClick={onBack}>{`↵ ${t("quiet-enter")}`}</button>
+          </>
+        )}
         {cur && geo && (
           <svg class="link" aria-hidden="true"><path d={geo} /></svg>
         )}
         {cur && (
           <div class="take">
             <div class="big" ref={big} lang={q.course.language.code}>{cur.ch}</div>
-            <div class="panel">
-              {panel.tiles.length > 0 && (
-                <div class="tiles">
-                  {panel.tiles.map((tl) => <Tile key={tl.key} q={q} tile={tl} showNew={!first} order={help >= 1 && !panel.collapsed && tl.needed ? order.get(tl.key) : undefined} />)}
-                </div>
-              )}
-              {panel.collapsed && (
-                <p class="other">
-                  {t("quiet-read-other-letters")} <button type="button" class="link-btn" onClick={onBook}>{t("quiet-book").toLowerCase()}</button>
-                </p>
-              )}
-              {help >= 1 && panel.collapsed && (
-                <p class="hint-list" lang={q.course.language.code}>
-                  {panel.order.map((tl, i) => <span key={tl.key}>{i > 0 ? " + " : ""}<b>{tl.letter.ch}</b> <span class="tl-rd">{tl.letter.reading}</span></span>)}
-                </p>
-              )}
-            </div>
-            {help >= 2 && <p class="rh-full">{t("quiet-read-help-full", { reading: romanize(cur.ch) })}</p>}
-            <form class={shake ? "read-row shake" : "read-row"} onSubmit={submit} lang={q.course.learner}>
+            <form class={shake ? "sum shake" : "sum"} onSubmit={submit} lang={q.course.learner}>
+              {tiles.map((tl, i) => (
+                <Fragment key={tl.key}>
+                  {i > 0 && <span class="op">+</span>}
+                  <Tile q={q} tile={tl} shown={shown.has(tl.key)} onShow={() => setShown(new Set([...shown, tl.key]))} />
+                </Fragment>
+              ))}
+              <span class="op">=</span>
               <input ref={input} value={typed} placeholder={t("quiet-read-placeholder")} aria-label={t("quiet-read-placeholder")} autoComplete="off" autoCapitalize="off" autoCorrect="off" spellcheck={false}
                 enterkeyhint="go" onInput={onInput} onKeyDown={onKeyDown} />
-              <button type="submit" class="go">↵ {t("quiet-enter")}</button>
+              <button type="submit" class="go" aria-label={t("quiet-enter")}>↵</button>
             </form>
+            {first && <p class="example">{t("quiet-read-example", { parts: tiles.map((x) => x.sound).join(" + "), reading: romanize(cur.ch) })}</p>}
+            {reading && <p class="rh-full">{t("quiet-read-help-full", { reading: romanize(cur.ch) })}</p>}
             <div class="read-tools">
               <button type="button" class={wrong >= HELP_AFTER ? "help hot" : "help"} onClick={askHelp}>{`? ${t("quiet-read-help")}`}</button>
               {!touch && <span class="dim">{t("quiet-read-tab-book")}</span>}

@@ -1,9 +1,9 @@
-// Reading a paper one syllable at a time: the letters each syllable is made of, the panel of letters to pick from,
+// Reading a paper one syllable at a time: the letters each syllable is made of, the sum they make,
 // the answer check, and the progress kept between visits. Pure: the desk page only draws it.
 // Syllables are taken apart with Unicode maths (the Hangul Syllables block, then the compatibility jamo), so this
 // knows one script by design, like `romanize`.
 import type { Course } from "@silver-tongue/core";
-import { deskPapers, readsAs, type DeskPaper } from "./desk";
+import { deskPapers, readsAs, romanize, type DeskPaper } from "./desk";
 import { extra, type Letter, type LetterGroup } from "./course-extra";
 
 /** Where the reading progress is kept in the browser. */
@@ -122,36 +122,29 @@ export function letterCount(course: Course, met: ReadonlySet<string>): { n: numb
   return { n: keys.filter((k) => met.has(k)).length, total: keys.length };
 }
 
-export interface PanelTile extends LetterRef {
-  /** met for the first time in this syllable */
+export interface SumTile extends LetterRef {
+  /** met for the first time in this block */
   fresh: boolean;
-  /** one of this syllable's letters */
-  needed: boolean;
   /** the letter as it sounds at the end of a block */
   final: boolean;
+  /** how it sounds in this block: the alternative of a letter with two sounds that the block's reading uses */
+  sound: string;
 }
-export interface PanelView {
-  tiles: PanelTile[];
-  /** too many letters to show them all: only the new ones are, and the rest are in the Book */
-  collapsed: boolean;
-  /** this syllable's letters in reading order, for the help */
-  order: PanelTile[];
-}
-/** The most tiles the panel shows before it collapses. */
-export const PANEL_MAX = 8;
 
-/** The panel under a syllable: every letter met before plus this syllable's, new ones marked. Over `max` tiles, only the
- * new ones (none at all when nothing is new) are shown and `collapsed` is set. */
-export function panelView(chart: LetterGroup[], needed: LetterRef[], before: ReadonlySet<string>, max = PANEL_MAX): PanelView {
-  const need = new Set(needed.map((r) => r.key));
-  const tiles: PanelTile[] = [];
-  for (const g of chart) {
-    for (const letter of g.letters) {
-      const key = letterKey(g.id, letter.ch);
-      if (before.has(key) || need.has(key)) tiles.push({ key, group: g.id, letter, fresh: !before.has(key), needed: need.has(key), final: g.id === G.final });
-    }
-  }
-  const order = needed.map((r) => tiles.find((x) => x.key === r.key)!).filter(Boolean);
-  const collapsed = tiles.length > max;
-  return { tiles: collapsed ? tiles.filter((x) => x.fresh) : tiles, collapsed, order };
+/** The sound of a letter in a block whose reading is `reading`: of "g/k" the one the reading uses there (`role`: where in the block). */
+export function soundIn(letter: Letter, role: keyof typeof G, reading: string): string {
+  const alts = (letter.reading ?? "").split(/\s*\/\s*/).filter(Boolean);
+  const used = alts.find((a) => (role === "initial" ? reading.startsWith(a) : role === "final" ? reading.endsWith(a) : reading.includes(a)));
+  return used ?? alts[0] ?? "";
+}
+
+/** The sum under a syllable: its own letters in reading order, each with its sound there; those not met before this block are `fresh`. */
+export function sumTiles(chart: LetterGroup[], ch: string, before: ReadonlySet<string>): SumTile[] {
+  const reading = romanize(ch);
+  return syllableLetters(chart, ch).map((r) => ({
+    ...r,
+    fresh: !before.has(r.key),
+    final: r.group === G.final,
+    sound: soundIn(r.letter, r.group === G.final ? "final" : r.group === G.initial ? "initial" : "medial", reading),
+  }));
 }

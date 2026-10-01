@@ -5,6 +5,10 @@ intro-3 = Voices pass under the window. You can't understand a word.
 
 # After the last paper on the desk is read (the quiet page's desk).
 desk-done = Someone is knocking.
+# What each paper lets the player tell once it is read (the quiet page's desk): `paper-<id>-learned`.
+paper-idcard-learned = A name: Kim Min-jun. Not yours. This must be his room.
+paper-newspaper-learned = A newspaper from Seoul. The date on it: the year 2000.
+paper-bill-learned = A bill. 50,000 won, unpaid.
 
 # Where and when, on the top bar.
 setting-where = Seoul, 2000
