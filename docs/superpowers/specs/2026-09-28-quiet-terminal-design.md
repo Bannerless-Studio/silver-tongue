@@ -64,6 +64,9 @@ is unchanged: the echo, the action narration if any, the next line.
 An option's intent (dim, in brackets) shows only when the options' intents differ and that option
 holds a word not yet known (met, shaky or unseen). One intent shared by all options tells nothing, and
 once the player knows an option's words its intent would only translate it, so it goes.
+With the Book, after onboarding (10 words heard), the labels fade sooner: they show only while one of the
+options brings in a word never met, and then on every option at once, so a label never marks the right
+reply. Replies made of words already heard are read in the language, not matched to English.
 Fonts are local (`ui-monospace` stack): the site makes no third-party requests.
 
 ## Escape hatches

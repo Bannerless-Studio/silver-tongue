@@ -482,6 +482,22 @@ describe("quiet terminal controller", () => {
     expect(q.intentShown(loneKnown, loneKnown[0])).toBe(false);
   });
 
+  it("with the Book, once onboarding is over, the options' intents show only while one of them brings in a word never met", () => {
+    const heard = { right: 0, wrong: 0, streak: 0, helps: 0, lapsed: false, firstSeen: T0, lastSeen: T0 };
+    const book = (c: Course) => void ((c as unknown as CourseExtra).language.book = true);
+    const tk = (word: string) => ({ word, start: 0, end: 1 });
+    const line = (text: string, words: string[], intent: string) => ({ text, tokens: words.map(tk), intent }) as unknown as RenderedLine;
+    const options = [line("你好", ["w_ni", "w_hao"], "Greet"), line("好", ["w_hao"], "Agree")];
+    // Ten words heard (none known): onboarding is over.
+    const after = (more: string[]) =>
+      setup((s) => { for (const w of [...Array.from({ length: 10 }, (_, i) => `x${i}`), ...more]) s.words[w] = { ...heard }; }, book).q;
+    expect(options.map((o) => after(["w_hao"]).intentShown(options, o))).toEqual([true, true]); // 你 never met: both labels, no tell
+    expect(options.map((o) => after(["w_hao", "w_ni"]).intentShown(options, o))).toEqual([false, false]); // all heard: read the Korean
+    // While onboarding, a word not known yet keeps its label, as without the Book.
+    const onboard = setup((s) => (s.words.w_hao = { ...heard }), book).q;
+    expect(options.map((o) => onboard.intentShown(options, o))).toEqual([true, true]);
+  });
+
   it("a reply known word for word is typed, without hints; dots look confused", () => {
     const shift = ["w_cha", "w_shui", "w_san", "w_si", "w_hao", "x_bei"];
     const known = { right: 3, wrong: 0, streak: 3, helps: 0, lapsed: false, firstSeen: T0, lastSeen: T0 };

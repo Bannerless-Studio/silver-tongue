@@ -388,11 +388,19 @@ export function createQuiet(opts: QuietOptions): Quiet {
 
   /** Whether an option's intent is shown under it: only while the options' intents differ (one shared by
    * several tells nothing) or it is the only option, and the option holds a word not known yet. Once its
-   * words are known the intent would only translate it, so it goes. */
+   * words are known the intent would only translate it, so it goes.
+   * With the Book, the labels fade sooner: once onboarding is over, the options show their intents only
+   * while one of them brings in a word never met, and then all of them do, so a label never points at
+   * the right reply. Words already heard are to be read, not matched to English (the hint still says
+   * what the reply does). */
   function intentShown(options: RenderedLine[], o: RenderedLine): boolean {
     if (!o.intent || (options.length > 1 && options.every((x) => x.intent === options[0].intent))) return false;
     const at = opts.now();
-    return o.tokens.some((tk) => wordState(core.state.words[tk.word], at) !== "known");
+    const state = (w: string) => wordState(core.state.words[w], at);
+    if (bookOn(course) && !onboarding(course, heardCount(core.state.words, at))) {
+      return options.some((x) => x.tokens.some((tk) => state(tk.word) === "unseen"));
+    }
+    return o.tokens.some((tk) => state(tk.word) !== "known");
   }
 
   function persist() {
