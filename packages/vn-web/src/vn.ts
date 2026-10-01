@@ -239,7 +239,7 @@ export function createVn(opts: VnOptions): Vn {
           break;
         case "npcReacted":
           // Word help keeps offering the request the player got wrong, not the reaction.
-          queue.push({ speaker: e.npc, line: e.line, fresh: freshIn(e.line), speech: speech(course.reactionAudio?.[e.reaction]?.[e.npc]), cue: "puzzled" });
+          queue.push({ speaker: e.npc, line: e.line, fresh: freshIn(e.line), speech: speech(course.reactionAudio?.[e.reaction]?.[e.npc] ?? e.line.audio), cue: "puzzled" });
           break;
         case "walletChanged":
           floats = [...floats, { id: nextId++, delta: e.delta }].slice(-TOAST_LIMIT);

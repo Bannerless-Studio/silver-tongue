@@ -99,12 +99,17 @@ function reaches(places: Course["world"]["places"], from: string, to: string, op
 
 const lineWords = (l: RenderedLine | undefined): WordId[] => (l ? l.tokens.map((t) => t.word) : []);
 
-/** Every scene line: the NPC's, the rephrase, the reply and the written wrong replies. */
+/** The NPC's own answers to written wrong replies, by the reply's position in `alts`. */
+const altAnswers = (v: Variant): [number, RenderedLine][] =>
+  Object.entries(v.altOutcomes ?? {}).flatMap(([i, o]): [number, RenderedLine][] => (o.reaction ? [[Number(i), o.reaction]] : []));
+
+/** Every scene line: the NPC's, the rephrase, the reply, the written wrong replies and the NPC's answers to them. */
 const variantLines = (v: Variant): [string, RenderedLine | undefined][] => [
   ["npc", v.npc],
   ["rephrase", v.rephrase],
   ["reply", v.reply],
   ...(v.alts ?? []).map((a, i): [string, RenderedLine] => [`alt${i + 1}`, a]),
+  ...altAnswers(v).map(([i, a]): [string, RenderedLine] => [`alt${i + 1}-answer`, a]),
 ];
 
 /** The words a course uses: in its lines, its reactions and its concepts. */
@@ -380,6 +385,17 @@ export function checkCourse(input: CheckInput): string[] {
           }
           const altTiles = tilePieces(alt).length;
           if (altTiles > MAX_REPLY_WORDS) errors.push(`${where}: the wrong reply "${alt.text}" has ${altTiles} words; at most ${MAX_REPLY_WORDS}`);
+        }
+        // The NPC's answer to a wrong reply is heard only by a player who said it: like the wrong
+        // replies, it may use only words met by now, so it never brings in a word of its own.
+        for (const [, answer] of altAnswers(v)) {
+          const answerWords = lineWords(answer);
+          checkLevels(where, answerWords, s.stage);
+          const unmet = [...new Set(answerWords)].filter((w) => !seen.has(w) && !words.includes(w));
+          if (unmet.length) {
+            errors.push(`${where}: the answer "${answer.text}" uses words not met yet: ${unmet.map((w) => course.words[w]?.w ?? w).join(" ")}`);
+          }
+          if (answer.tokens.length > MAX_LINE_WORDS) errors.push(`${where}: the answer "${answer.text}" has ${answer.tokens.length} words; at most ${MAX_LINE_WORDS}`);
         }
         // Each word is a tile, and so is the player's name.
         const replyTiles = tilePieces(v.reply).length;
