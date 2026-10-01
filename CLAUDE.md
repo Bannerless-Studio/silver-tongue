@@ -39,6 +39,7 @@ export GITHUB_PACKAGES_TOKEN=$(gh auth token)   # before npm install/ci: reads t
 npm test                 # vitest, all packages
 npm run typecheck        # tsc
 npm run build:course     # content -> dist/courses/<course>/<learner>.json + index.json (fails on any checker error); one course: npm run build:course -- zh-china
+npm run learning -- ko-seoul 14 learner   # learning simulator: a bot plays N game days; per-word uses, line familiarity, exchanges with >2 new words
 npm run play             # play from source in this terminal
 npm run import:zh        # re-import the zh pack from vendor/vocab-engine
 npm run audio            # every course (or one: -- zh-china): make missing clips with edge-tts (pipx install edge-tts) + ffmpeg trim, delete unused ones
