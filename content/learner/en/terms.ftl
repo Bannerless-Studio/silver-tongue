@@ -153,3 +153,69 @@
     [cap] Milk
    *[base] milk
 }
+
+# Korean small talk between jobs (ko-seoul): base is what is said, reply the answer.
+-chat-sit = { $form ->
+    [reply] Thank you.
+   *[base] Sit down here.
+}
+-chat-korean = { $form ->
+    [reply] No, I don't.
+   *[base] Do you know Korean?
+}
+-chat-hungry = { $form ->
+    [reply] Yes, I'm hungry.
+   *[base] Hungry?
+}
+-chat-money = { $form ->
+    [reply] No, I don't.
+   *[base] Do you have money?
+}
+-chat-work = { $form ->
+    [reply] Yes, I'll work!
+   *[base] Working tomorrow?
+}
+-chat-ok = { $form ->
+    [reply] Yes, I'm fine!
+   *[base] All right?
+}
+-chat-friend = { $form ->
+    [reply] No.
+   *[base] Are you Min-jun's friend?
+}
+-chat-got = { $form ->
+    [reply] Yes, I've got it.
+   *[base] Got it?
+}
+-chat-come = { $form ->
+    [reply] Yes, I'm coming.
+   *[base] Coming tomorrow?
+}
+-chat-milk = { $form ->
+    [reply] Yes, I know.
+   *[base] Milk is a thousand won.
+}
+-chat-bread = { $form ->
+    [reply] Bread's a thousand?
+   *[base] Bread is a thousand won.
+}
+-chat-cash = { $form ->
+    [reply] Yes, I do.
+   *[base] Do you have money?
+}
+-chat-three = { $form ->
+    [reply] No, a thousand.
+   *[base] Is it three thousand won?
+}
+-chat-name = { $form ->
+    [reply] He's Grandpa Park.
+   *[base] What's the old man's name?
+}
+-chat-who = { $form ->
+    [reply] It's the old man.
+   *[base] Who's that over there?
+}
+-chat-there = { $form ->
+    [reply] Yes, he's over there.
+   *[base] Is Grandpa over there?
+}
