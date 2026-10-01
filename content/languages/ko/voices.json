@@ -19,6 +19,21 @@
   "clerk": {
    "voice": "ko-KR-HyunsuMultilingualNeural",
    "pitch": "+8Hz"
+  },
+  "labmate": {
+   "voice": "ko-KR-SunHiNeural",
+   "pitch": "+3Hz",
+   "rate": "+5%"
+  },
+  "copyman": {
+   "voice": "ko-KR-InJoonNeural",
+   "pitch": "-10Hz",
+   "rate": "-5%"
+  },
+  "creditor": {
+   "voice": "ko-KR-HyunsuMultilingualNeural",
+   "pitch": "-4Hz",
+   "rate": "+5%"
   }
  }
 }

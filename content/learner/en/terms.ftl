@@ -153,3 +153,94 @@
     [cap] Milk
    *[base] milk
 }
+
+# Korean small talk at the copy shop (ko-seoul stage 2).
+-cc-photo = { $form ->
+    [reply] Yes, it's a photo.
+   *[base] Is this a photo?
+}
+-cc-brother = { $form ->
+    [reply] No, I don't.
+   *[base] Do you have a little brother or sister?
+}
+-cc-rent = { $form ->
+    [reply] Yes, I have.
+   *[base] Have you paid your rent?
+}
+-cc-week = { $form ->
+    [reply] Yes, fifty thousand a week.
+   *[base] Is the rent fifty thousand won a week?
+}
+-cc-now = { $form ->
+    [reply] No, I'm fine for now.
+   *[base] Are you hungry now?
+}
+-cc-letter = { $form ->
+    [reply] Whose letter is it?
+   *[base] Look at this. It's a letter.
+}
+-cc-student = { $form ->
+    [reply] Yes, a university student.
+   *[base] Is Min-jun a student?
+}
+-cc-school = { $form ->
+    [reply] No, I came from the snack stall.
+   *[base] Did you come from the university?
+}
+-cc-march = { $form ->
+    [reply] Yes, until March.
+   *[base] Are you working until March?
+}
+-cc-sujin = { $form ->
+    [reply] She's at the university.
+   *[base] Where is Su-jin?
+}
+-cc-sit = { $form ->
+    [reply] Thank you.
+   *[base] Sit here.
+}
+-cc-book = { $form ->
+    [reply] Yes, books too.
+   *[base] Do you copy books?
+}
+-cc-copy = { $form ->
+    [reply] No, I'm copying a photo.
+   *[base] Are you copying a letter?
+}
+-cc-room = { $form ->
+    [reply] I'm in Min-jun's room.
+   *[base] Have you got a room?
+}
+-cc-stall = { $form ->
+    [reply] Yes, it's Ji-woo's.
+   *[base] Do you know the snack stall?
+}
+-cc-since = { $form ->
+    [reply] No, not since March.
+   *[base] Min-jun hasn't come in since March?
+}
+-cc-took = { $form ->
+    [reply] Yes, Min-jun took them.
+   *[base] Did Min-jun take the books?
+}
+-cc-debt = { $form ->
+    [reply] Yes, a hundred thousand won.
+   *[base] Did Min-jun borrow money?
+}
+-cc-when = { $form ->
+    [reply] I'll come again next week.
+   *[base] When are you coming again?
+}
+-cc-notstudent = { $form ->
+    [reply] No, I'm not a student.
+   *[base] Are you a student?
+}
+
+-letter = { $form ->
+    [cap] Letter
+   *[base] letter
+}
+-photo = { $form ->
+    [cap] Photo
+   *[base] photo
+}

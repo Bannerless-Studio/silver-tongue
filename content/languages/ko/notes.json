@@ -22,5 +22,17 @@
   "trigger": {
    "word": "ko-i"
   }
+ },
+ {
+  "id": "past",
+  "trigger": {
+   "scene": "room-letter"
+  }
+ },
+ {
+  "id": "eseo-buteo",
+  "trigger": {
+   "word": "ko-buteo"
+  }
  }
 ]

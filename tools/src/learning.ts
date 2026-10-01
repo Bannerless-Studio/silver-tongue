@@ -173,7 +173,8 @@ export function learningReport(
         if (e.type === "lineSpoken" && words.length) {
           report.lines += 1;
           hit(e.line);
-          const familiar = words.filter((w) => used.has(w)).length / words.length;
+          // A name heard for the first time hides nothing ("I'm Su-jin"), so names count as met.
+          const familiar = words.filter((w) => used.has(w) || names.has(w)).length / words.length;
           const known = words.filter((w) => wordState(before.words[w], now) === "known").length / words.length;
           if (familiar >= FAMILIAR_SHARE) report.linesFamiliar += 1;
           if (known >= FAMILIAR_SHARE) report.linesKnown += 1;

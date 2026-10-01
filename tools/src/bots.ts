@@ -248,7 +248,8 @@ export function runBot(course: Course, bot: Bot, opts: RunOptions): BotReport {
 
     let input: Input = { type: "sleep" };
     const wanted = goals(course, s);
-    const best = wanted.filter((g) => g.rank === wanted[0]?.rank);
+    // The best rank, and within it what has been done least (`goals` sorts that way), walking there if need be.
+    const best = wanted.filter((g) => g.rank === wanted[0]?.rank && g.done === wanted[0]?.done);
     const here = best.find((g) => g.place === s.place);
     if (s.run) input = replyInput(course, s, bot.answerRight(s.run, rng), rng);
     else if (s.review) {
