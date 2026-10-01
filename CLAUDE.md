@@ -39,7 +39,7 @@ export GITHUB_PACKAGES_TOKEN=$(gh auth token)   # before npm install/ci: reads t
 npm test                 # vitest, all packages
 npm run typecheck        # tsc
 npm run build:course     # content -> dist/courses/<course>/<learner>.json + index.json (fails on any checker error); one course: npm run build:course -- zh-china
-npm run learning -- ko-seoul 14 learner   # learning simulator: a bot plays N game days; per-word uses, line familiarity, exchanges with >2 new words
+npm run learning -- ko-seoul 14 learner   # learning simulator: a bot plays N game days; per-word uses, line familiarity, exchanges with >2 new words (bot "diligent" also takes the daily quick review)
 npm run import:syllabus -- ko vendor/korean/pack   # graded word list (A1/A2/B1) -> content/languages/ko/syllabus.json, read by the learning report
 npm run play             # play from source in this terminal
 npm run import:zh        # re-import the zh pack from vendor/vocab-engine
