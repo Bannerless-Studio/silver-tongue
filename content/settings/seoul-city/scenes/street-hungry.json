@@ -31,6 +31,26 @@
    "missCost": 0
   },
   {
+   "id": "none",
+   "slots": {},
+   "expect": {
+    "action": "none"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "there",
+   "slots": {},
+   "expect": {
+    "action": "there"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
    "id": "stall",
    "slots": {},
    "expect": {

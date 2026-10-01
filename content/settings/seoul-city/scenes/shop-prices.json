@@ -4,7 +4,7 @@
  "npc": "clerk",
  "stage": 1,
  "after": [
-  "street-numbers"
+  "street-hungry"
  ],
  "requires": {},
  "repeatable": false,
@@ -15,6 +15,16 @@
    "slots": {},
    "expect": {
     "action": "welcome"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "want",
+   "slots": {},
+   "expect": {
+    "action": "want"
    },
    "hinges": [],
    "pay": 0,
@@ -41,14 +51,30 @@
    "missCost": 0
   },
   {
-   "id": "change",
+   "id": "prices",
    "slots": {},
    "expect": {
-    "action": "change"
+    "action": "prices"
    },
    "hinges": [],
    "pay": 0,
    "missCost": 0
+  },
+  {
+   "id": "total",
+   "slots": {},
+   "expect": {
+    "action": "total"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0,
+   "alts": {
+    "1": {
+     "accept": true,
+     "loss": 1000
+    }
+   }
   },
   {
    "id": "bye",

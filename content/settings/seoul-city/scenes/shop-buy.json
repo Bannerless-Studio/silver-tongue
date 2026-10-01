@@ -15,6 +15,16 @@
  "trustGain": 1,
  "exchanges": [
   {
+   "id": "welcome",
+   "slots": {},
+   "expect": {
+    "action": "welcome"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
    "id": "buy",
    "slots": {
     "item": "goods"

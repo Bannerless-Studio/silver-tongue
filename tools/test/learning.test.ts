@@ -130,5 +130,5 @@ describe("learning limits (real content)", () => {
       const { course } = buildCourse(CONTENT, id);
       for (const w of learningCheck(CONTENT, course!)) expect(typeof w).toBe("string");
     }
-  });
+  }, 30_000); // three builds and three two-week runs
 });

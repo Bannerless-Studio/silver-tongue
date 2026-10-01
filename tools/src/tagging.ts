@@ -31,6 +31,7 @@ export function taggingLines(course: Course): string[] {
         const at = `${s.id}/${ex.id}${key ? `[${key}]` : ""}`;
         const roles: [string, RenderedLine | undefined][] = [["npc", v.npc], ["reply", v.reply], ["rephrase", v.rephrase]];
         v.alts?.forEach((a, i) => roles.push([`alt${i + 1}`, a]));
+        for (const [i, o] of Object.entries(v.altOutcomes ?? {})) if (o.reaction) roles.push([`alt${Number(i) + 1}-answer`, o.reaction]);
         for (const [role, l] of roles) if (l) out.add(`${at}/${role}: ${split(l)}`);
       }
   for (const [id, l] of Object.entries(course.reactions)) out.add(`reaction/${id}: ${split(l)}`);

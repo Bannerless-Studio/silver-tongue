@@ -41,6 +41,16 @@
    "missCost": 0
   },
   {
+   "id": "ok",
+   "slots": {},
+   "expect": {
+    "action": "ok"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
    "id": "eat",
    "slots": {},
    "expect": {
@@ -55,6 +65,16 @@
    "slots": {},
    "expect": {
     "action": "gimbap"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "eomuk",
+   "slots": {},
+   "expect": {
+    "action": "eomuk"
    },
    "hinges": [],
    "pay": 0,
