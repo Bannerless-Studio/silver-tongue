@@ -5,7 +5,8 @@
   "lv": "T1",
   "readings": [
    "minjun"
-  ]
+  ],
+  "name": true
  },
  {
   "id": "ko-jiu",
@@ -13,7 +14,8 @@
   "lv": "T1",
   "readings": [
    "jiu"
-  ]
+  ],
+  "name": true
  },
  {
   "id": "ko-bak",
@@ -21,6 +23,7 @@
   "lv": "T1",
   "readings": [
    "bak"
-  ]
+  ],
+  "name": true
  }
 ]

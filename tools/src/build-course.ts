@@ -22,6 +22,7 @@ import { bindSlots, messageIds, parseFtl, Renderer, termNames, type FtlSource } 
 import type { PackMeta, PackWord } from "./pack";
 import { assignLetterAudio, letterMessageIds, letterProblems } from "./letters";
 import { buildLexicon, segment, type Lexicon } from "./segment";
+import { learningCheck } from "./learning";
 import { taggingLines, taggingPath } from "./tagging";
 import { assignAudio, voiceProblems, type Clip, type Voices } from "./voices";
 
@@ -471,6 +472,10 @@ export function buildAll(root: string, only?: string): BuiltCourses {
       const name = result.course && learnerName(result.course.learnerFtl, learner);
       if (name) learnerNames[learner] = name;
     }
+    // The learning simulator's limits (tools/src/learning.ts), on the first reading language only:
+    // the words and scenes are the same in every one. Warnings until both courses meet them.
+    const first = out.builds.find((b) => b.course === id && b.result.course);
+    if (first) out.warnings.push(...learningCheck(root, first.result.course!).map((w) => `${id}: learning: ${w}`));
     out.catalog.push({ id: cfg.id, language: cfg.language, setting: cfg.setting, learners: cfg.learners, learnerNames });
   }
   // The settings screen names every course in the catalog, in whichever language the game is read in.
