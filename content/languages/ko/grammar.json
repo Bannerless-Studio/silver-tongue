@@ -97,7 +97,7 @@
   { "id": "concede", "lv": "B1", "label": "-기는 하지만", "en": "it's true that ... but", "pattern": "기는 하" },
   { "id": "would-be", "lv": "B1", "label": "-(으)ㄹ 텐데", "en": "it would be ..., so", "pattern": "텐데" },
   { "id": "you-know", "lv": "B1", "label": "-잖아요", "en": "you know", "pattern": "잖아" },
-  { "id": "whether", "lv": "B1", "label": "-는지/(으)ㄴ지/(으)ㄹ지", "en": "whether, what, if", "pattern": "(는지|{ㄴ}지|{ㄹ}지)(?![가-힣])" },
+  { "id": "whether", "lv": "B1", "label": "-는지/(으)ㄴ지/(으)ㄹ지", "en": "whether, what, if", "pattern": "(는지|(?!편지|반지){ㄴ}지|{ㄹ}지)(?![가-힣])" },
   { "id": "causative-ge", "lv": "B1", "label": "-게 하다", "en": "make someone do", "pattern": "게 (하|했|해|만들)" },
   { "id": "pretend", "lv": "B1", "label": "-(으)ㄴ/는 척하다", "en": "pretend", "pattern": "척(하|했|해)" },
   { "id": "while-at-it", "lv": "B1", "label": "-는 김에", "en": "while you're at it", "pattern": "김에" },

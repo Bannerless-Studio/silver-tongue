@@ -1,0 +1,79 @@
+{
+ "id": "room-letter",
+ "place": "room",
+ "npc": "landlady",
+ "stage": 2,
+ "after": [
+  "stall-family",
+  "room-rent"
+ ],
+ "requires": {
+  "trust": {
+   "jiwoo": 3
+  }
+ },
+ "repeatable": false,
+ "trustGain": 1,
+ "exchanges": [
+  {
+   "id": "look",
+   "slots": {},
+   "expect": {
+    "action": "look"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "whose",
+   "slots": {},
+   "expect": {
+    "action": "whose"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "from",
+   "slots": {},
+   "expect": {
+    "action": "from"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "student",
+   "slots": {},
+   "expect": {
+    "action": "student"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "uni",
+   "slots": {},
+   "expect": {
+    "action": "uni"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "bye",
+   "slots": {},
+   "expect": {
+    "action": "bye"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  }
+ ]
+}

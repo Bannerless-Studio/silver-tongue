@@ -1,0 +1,79 @@
+{
+ "id": "copy-intro",
+ "place": "copyshop",
+ "npc": "copyman",
+ "stage": 2,
+ "after": [
+  "campus-labmate"
+ ],
+ "requires": {},
+ "repeatable": false,
+ "trustGain": 1,
+ "exchanges": [
+  {
+   "id": "areyou",
+   "slots": {},
+   "expect": {
+    "action": "areyou"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0,
+   "alts": {
+    "1": {
+     "accept": true
+    }
+   }
+  },
+  {
+   "id": "shop",
+   "slots": {},
+   "expect": {
+    "action": "shop"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "job",
+   "slots": {},
+   "expect": {
+    "action": "job"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "copy-it",
+   "slots": {},
+   "expect": {
+    "action": "copy-it"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "sheets",
+   "slots": {},
+   "expect": {
+    "action": "sheets"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "again",
+   "slots": {},
+   "expect": {
+    "action": "again"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  }
+ ]
+}

@@ -39,6 +39,33 @@
    "chat-bread",
    "chat-cash",
    "chat-three"
+  ],
+  "papers": [
+   "book",
+   "letter",
+   "photo"
+  ],
+  "chat_copy": [
+   "cc-photo",
+   "cc-brother",
+   "cc-rent",
+   "cc-week",
+   "cc-now",
+   "cc-letter",
+   "cc-student",
+   "cc-school",
+   "cc-march",
+   "cc-sujin",
+   "cc-sit",
+   "cc-book",
+   "cc-copy",
+   "cc-room",
+   "cc-stall",
+   "cc-since",
+   "cc-took",
+   "cc-debt",
+   "cc-when",
+   "cc-notstudent"
   ]
  },
  "numbers": {

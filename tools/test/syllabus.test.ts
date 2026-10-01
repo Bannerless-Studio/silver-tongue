@@ -61,19 +61,26 @@ describe("grammar detectors", () => {
     expect(has("여기 앉으세요.", "polite-present")).toBe(false);
   });
 
+  it("whether -(으)ㄴ지, but not a noun ending in 지 like 편지", () => {
+    expect(has("어디에 있는지 몰라요.", "whether")).toBe(true);
+    expect(has("뭐가 좋은지 몰라요.", "whether")).toBe(true);
+    expect(has("편지 두 장 복사해 주세요.", "whether")).toBe(false);
+  });
+
   it("a particle is found by its word id, not its spelling", () => {
     const line: RenderedLine = { text: "이름이 뭐예요?", tokens: [{ start: 0, end: 2, word: "ko-ireum" }, { start: 2, end: 3, word: "ko-i" }] };
     expect(detect(line)).toContain("subject");
     expect(detect(text("이 사과"))).not.toContain("subject");
   });
 
-  it("stage 1 lines use no A2 or B1 grammar", () => {
+  it("a stage's lines use no grammar above its level (A1 on stage 1, up to A2 on stage 2)", () => {
     const { course } = buildCourse(CONTENT, "ko-seoul");
     const levels = new Map(KO_GRAMMAR.points.map((g) => [g.id, g.lv]));
+    const allowed: Record<number, string[]> = { 1: ["A1"], 2: ["A1", "A2"] };
     for (const s of course!.scenes)
       for (const ex of s.exchanges)
         for (const v of Object.values(ex.variants))
-          for (const l of [v.npc, v.reply]) for (const id of detect(l)) expect(levels.get(id), `${s.id}#${ex.id}: ${l.text} -> ${id}`).toBe("A1");
+          for (const l of [v.npc, v.reply]) for (const id of detect(l)) expect(allowed[s.stage], `${s.id}#${ex.id}: ${l.text} -> ${id}`).toContain(levels.get(id));
   });
 });
 

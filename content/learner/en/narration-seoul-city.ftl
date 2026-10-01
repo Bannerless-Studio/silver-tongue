@@ -19,11 +19,18 @@ place-stall = Snack Stall
 place-stall-desc = A tent over a steaming pan of tteokbokki, a few plastic stools, and a young woman who talks while she cooks.
 place-shop = Corner Shop
 place-shop-desc = Shelves to the ceiling, a humming fridge, and a clerk who counts change fast.
+place-campus = University Gate
+place-campus-desc = Stone gate posts, a noticeboard thick with flyers, and students hurrying past with armfuls of books.
+place-copyshop = Copy Shop
+place-copyshop-desc = Two copiers roaring side by side, stacks of warm paper, and a man in a cardigan who never stops moving.
 
 npc-landlady = The landlady
 npc-oldman = Grandpa Park
 npc-jiwoo = Ji-woo
 npc-clerk = The clerk
+npc-labmate = Su-jin
+npc-copyman = The copy-shop man
+npc-creditor = A man in a suit
 
 # Scene names for the menu; scene-<id>-start and scene-<id>-end are optional narration.
 scene-room-wake = Answer the door
@@ -59,6 +66,22 @@ scene-shop-prices-end = A thousand won for the milk and a thousand for the bread
 scene-shop-buy = Buy something to eat
 scene-shop-buy-start = The clerk waits behind the counter: say what you want, then take your leave.
 scene-shop-buy-end = He bags it without looking up. You count your change this time.
+
+scene-room-letter = Take the letter
+scene-room-letter-start = The landlady is at the door again, an envelope held out between two fingers.
+scene-room-letter-end = The envelope has a university crest on it, and Min-jun's name. Inside: a single typed page you can't read yet.
+scene-campus-labmate = Talk to the student at the gate
+scene-campus-labmate-start = A young woman with a stack of folders is watching the gate. She looks twice at you, then walks over.
+scene-campus-labmate-end = Su-jin goes back through the gate without looking round.
+scene-room-creditor = Answer the knock
+scene-room-creditor-start = Three hard knocks. A man in a suit fills the doorway, looking past you into the room.
+scene-room-creditor-end = He writes something in a little notebook and goes down the stairs slowly, as if he has all the time in the world.
+scene-copy-intro = Look in at the copy shop
+scene-copy-intro-start = The man at the copiers waves you in over the noise.
+scene-copy-intro-end = He hands you a stack of paper still warm from the machine. You start tomorrow.
+scene-copy-shift = Work at the copy shop
+scene-copy-shift-start = Students come in with books, letters and photos: copy what they ask for, as many as they ask.
+scene-copy-shift-end = The copiers go quiet. The copy-shop man counts out your pay.
 
 # What a reply does (action-<name>), and on a mix-up what was asked (asked-<name>).
 # Concept values arrive as learner names: $item = "gimbap", $count = "three".
@@ -102,7 +125,6 @@ action-chat = You answered: "{ $topic }"
 asked-thanks = The customer thanked you on the way out.
 asked-gimbap = Ji-woo told you what else she sells.
 asked-work = Ji-woo asked if you'll work tomorrow.
-asked-look = Ji-woo wanted you to look at something.
 asked-photo = Ji-woo showed you a photo.
 asked-brother = Ji-woo told you about her brother.
 asked-paid = The landlady asked if you've paid the rent.
@@ -114,9 +136,32 @@ asked-bread = The clerk told you what bread costs.
 asked-want = The clerk asked what you want.
 asked-prices = The clerk told you what milk and bread cost.
 asked-total = The clerk asked for three thousand won.
+action-copy = You hand over { $count } copies of the { $item }.
+asked-copy = The student wanted { $count } copies of the { $item }.
+asked-look = { $npc } wanted you to look at something.
+asked-whose = The landlady said whose letter it is.
+asked-from = The landlady said where the letter came from.
+asked-student = The landlady said Min-jun is a university student.
+asked-uni = The landlady told you where the university is.
+asked-sujin = Su-jin told you who she is.
+asked-where = Su-jin asked where Min-jun is.
+asked-since = Su-jin told you since when Min-jun hasn't come.
+asked-took = Su-jin told you what Min-jun took.
+asked-again = { $npc } asked you to come again.
+asked-knock = The man asked if Min-jun is in.
+asked-borrowed = The man said what Min-jun did.
+asked-debt = The man said how much it is.
+asked-when = The man asked when Min-jun is coming.
+asked-nextweek = The man said when he'll be back.
+asked-areyou = The copy-shop man asked if you're a student.
+asked-shop = The copy-shop man told you what the shop is.
+asked-job = The copy-shop man offered you work.
+asked-copy-it = The copy-shop man asked you to copy something.
+asked-sheets = The copy-shop man asked for two copies.
 
 # Notebook topics: a word in one of these slot groups is filed under the topic, not the place.
 notebook-topic-food = Food
 notebook-topic-numbers_2_5 = Numbers
 notebook-topic-counts = Numbers
 notebook-topic-goods = Things
+notebook-topic-papers = Things

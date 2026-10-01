@@ -2,3 +2,4 @@
 ko-minjun = Min-jun (a given name)
 ko-jiu = Ji-woo (a given name)
 ko-bak = Park (a family name)
+ko-sujin = Su-jin (a given name)

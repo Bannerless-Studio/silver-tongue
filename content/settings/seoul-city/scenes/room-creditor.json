@@ -1,0 +1,85 @@
+{
+ "id": "room-creditor",
+ "place": "room",
+ "npc": "creditor",
+ "stage": 2,
+ "after": [
+  "campus-labmate"
+ ],
+ "requires": {},
+ "repeatable": false,
+ "trustGain": 1,
+ "exchanges": [
+  {
+   "id": "knock",
+   "slots": {},
+   "expect": {
+    "action": "knock"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "who",
+   "slots": {},
+   "expect": {
+    "action": "who"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0,
+   "alts": {
+    "1": {
+     "accept": true
+    }
+   }
+  },
+  {
+   "id": "borrowed",
+   "slots": {},
+   "expect": {
+    "action": "borrowed"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "debt",
+   "slots": {},
+   "expect": {
+    "action": "debt"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "when",
+   "slots": {},
+   "expect": {
+    "action": "when"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0,
+   "alts": {
+    "1": {
+     "accept": true
+    }
+   }
+  },
+  {
+   "id": "nextweek",
+   "slots": {},
+   "expect": {
+    "action": "nextweek"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0,
+   "pin": true
+  }
+ ]
+}

@@ -25,5 +25,14 @@
    "bak"
   ],
   "name": true
+ },
+ {
+  "id": "ko-sujin",
+  "w": "수진",
+  "lv": "T1",
+  "readings": [
+   "sujin"
+  ],
+  "name": true
  }
 ]
