@@ -256,6 +256,43 @@ describe("build-course (real content)", () => {
   });
 });
 
+describe("written wrong replies with their own answers", () => {
+  const SKELETON = "settings/china-city/scenes/noodle-intro.json";
+  const MEANINGS = "learner/en/lines-zh/noodle-intro.ftl";
+  const withAnswer = (alts: unknown, answer = "greet-alt2-answer = 你好！\n") =>
+    buildChanged((dir) => {
+      writeFileSync(join(dir, INTRO), readFileSync(join(dir, INTRO), "utf8") + `\n${answer}`);
+      writeFileSync(join(dir, MEANINGS), readFileSync(join(dir, MEANINGS), "utf8") + "\ngreet-alt2-answer = Hello!\n");
+      const sk = JSON.parse(readFileSync(join(dir, SKELETON), "utf8"));
+      sk.exchanges[0].alts = alts;
+      writeFileSync(join(dir, SKELETON), JSON.stringify(sk));
+    });
+
+  it("builds the answer, its meaning and what the reply does into the variant, and keeps the skeleton's alts out", () => {
+    const { course, errors } = withAnswer({ "2": { accept: true, pay: 1, loss: 2 } });
+    expect(errors).toEqual([]);
+    const ex = course!.scenes.find((s) => s.id === "noodle-intro")!.exchanges[0];
+    expect(ex.variants[""].altOutcomes).toEqual({
+      "1": { accept: true, pay: 1, loss: 2, reaction: expect.objectContaining({ text: "你好！", meaning: "Hello!" }) },
+    });
+    expect(ex).not.toHaveProperty("alts");
+  });
+
+  it("an answer alone is a miss answered in the NPC's words", () => {
+    const { course, errors } = withAnswer(undefined);
+    expect(errors).toEqual([]);
+    const v = course!.scenes.find((s) => s.id === "noodle-intro")!.exchanges[0].variants[""];
+    expect(v.altOutcomes!["1"]).toEqual({ reaction: expect.objectContaining({ text: "你好！" }) });
+  });
+
+  it("fails on alts that name no written reply, or pay without accept", () => {
+    const { errors } = withAnswer({ "3": { accept: true }, "1": { pay: 2 }, "x": {} });
+    expect(errors).toContain('noodle-intro/greet: alts "3" has no greet-alt3 line');
+    expect(errors).toContain('noodle-intro/greet: alts "1": pay and loss need accept');
+    expect(errors).toContain('noodle-intro/greet: alts "x" must be 1, 2 or 3 (the Fluent alt number)');
+  });
+});
+
 describe("build-course (broken content)", () => {
   it("with art off, ships no art at all, since nothing checked it", () => {
     const { errors, artDir } = buildChanged((dir) => {

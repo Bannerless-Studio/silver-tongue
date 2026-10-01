@@ -92,6 +92,7 @@ export function assignAudio(course: Course, voices: Voices, words: Iterable<Word
         set(v.rephrase, npc);
         set(v.reply, voices.player);
         v.alts?.forEach((a) => set(a, voices.player));
+        for (const o of Object.values(v.altOutcomes ?? {})) set(o.reaction, npc);
       }
     }
   }

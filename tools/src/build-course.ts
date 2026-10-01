@@ -4,6 +4,7 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   allCombos,
+  type AltOutcome,
   type CatalogEntry,
   comboKey,
   type Course,
@@ -22,6 +23,7 @@ import { bindSlots, messageIds, parseFtl, Renderer, termNames, type FtlSource } 
 import type { PackMeta, PackWord } from "./pack";
 import { assignLetterAudio, letterMessageIds, letterProblems } from "./letters";
 import { buildLexicon, segment, type Lexicon } from "./segment";
+import { learningCheck } from "./learning";
 import { taggingLines, taggingPath } from "./tagging";
 import { assignAudio, voiceProblems, type Clip, type Voices } from "./voices";
 
@@ -41,7 +43,12 @@ interface GroupsJson {
   numbers?: Record<string, number>;
 }
 
-type ExchangeSkeleton = Omit<Exchange, "variants">;
+/**
+ * `alts` marks written wrong replies (by their Fluent number: "1" is `<id>-alt1`) that get the
+ * player through the exchange, with what they pay and lose. Their NPC answers are Fluent lines
+ * (`<id>-alt<n>-answer`), so the skeleton only says what a reply does.
+ */
+type ExchangeSkeleton = Omit<Exchange, "variants"> & { alts?: Record<string, { accept?: boolean; pay?: number; loss?: number }> };
 /** `newWords` overrides the checker's ratio-based new-word limit for this scene; tools-only, stripped before the course is built. */
 type SceneSkeleton = Omit<Scene, "exchanges"> & { exchanges: ExchangeSkeleton[]; newWords?: number };
 
@@ -226,6 +233,7 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
     const exchanges: Exchange[] = [];
     for (const ex of sk.exchanges) {
       const variants: Record<string, Variant> = {};
+      const altNumbers = new Set<string>(); // the Fluent alt numbers some variant has
       const unknownGroups = Object.values(ex.slots).filter((g) => !groups[g]);
       if (unknownGroups.length) {
         errors.push(`${sk.id}/${ex.id}: unknown group ${unknownGroups.map((g) => `"${g}"`).join(", ")}`);
@@ -255,6 +263,15 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
           if (r.has(`${ex.id}-rephrase`)) variant.rephrase = toLine(r.render(`${ex.id}-rephrase`, args), where);
           const altIds = [1, 2, 3].map((n) => `${ex.id}-alt${n}`).filter((id) => r.has(id));
           if (altIds.length) variant.alts = altIds.map((id) => toLine(r.render(id, args), where));
+          // A written wrong reply's own answer, and whether it gets the player through.
+          const outcomes: NonNullable<Variant["altOutcomes"]> = {};
+          altIds.forEach((id, i) => {
+            altNumbers.add(id.slice(`${ex.id}-alt`.length));
+            const out: AltOutcome = { ...ex.alts?.[id.slice(`${ex.id}-alt`.length)] };
+            if (r.has(`${id}-answer`)) out.reaction = toLine(r.render(`${id}-answer`, args), where);
+            if (Object.keys(out).length) outcomes[String(i)] = out;
+          });
+          if (Object.keys(outcomes).length) variant.altOutcomes = outcomes;
           variants[comboKey(combo)] = variant;
           if (typeof ex.cost === "number") variant.cost = ex.cost;
           else if (typeof ex.cost === "string" && ex.cost.startsWith("$") && combo[ex.cost.slice(1)] in numbers) {
@@ -270,18 +287,30 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
             variant.npc.meaning = m.render(ex.id, args);
             variant.reply.meaning = m.render(`${ex.id}-reply`, args);
             if (variant.rephrase) variant.rephrase.meaning = m.render(`${ex.id}-rephrase`, args);
-            variant.alts?.forEach((l, i) => (l.meaning = m.render(`${ex.id}-alt${i + 1}`, args)));
+            variant.alts?.forEach((l, i) => (l.meaning = m.render(altIds[i], args)));
+            for (const [i, out] of Object.entries(variant.altOutcomes ?? {})) {
+              if (out.reaction) out.reaction.meaning = m.render(`${altIds[Number(i)]}-answer`, args);
+            }
             // What a reply does ("Ask the price"), shown with it in place of its meaning.
             const intent = (id: string, l: RenderedLine) => {
               if (m.has(`${id}-intent`)) l.intent = m.render(`${id}-intent`, args);
             };
             intent(`${ex.id}-reply`, variant.reply);
-            variant.alts?.forEach((l, i) => intent(`${ex.id}-alt${i + 1}`, l));
+            variant.alts?.forEach((l, i) => intent(altIds[i], l));
           });
         });
       }
       // The course carries each variant's resolved cost, never the skeleton's "$slot".
-      const { cost: _cost, ...rest } = ex;
+      for (const n of Object.keys(ex.alts ?? {})) {
+        const o = ex.alts![n];
+        const bad = (x: unknown) => x !== undefined && !(Number.isInteger(x) && (x as number) >= 0);
+        if (!/^[123]$/.test(n)) errors.push(`${sk.id}/${ex.id}: alts "${n}" must be 1, 2 or 3 (the Fluent alt number)`);
+        else if (!altNumbers.has(n))
+          errors.push(`${sk.id}/${ex.id}: alts "${n}" has no ${ex.id}-alt${n} line`);
+        if (!o.accept && (o.pay !== undefined || o.loss !== undefined)) errors.push(`${sk.id}/${ex.id}: alts "${n}": pay and loss need accept`);
+        if (bad(o.pay) || bad(o.loss)) errors.push(`${sk.id}/${ex.id}: alts "${n}": pay and loss must be whole numbers, 0 or more`);
+      }
+      const { cost: _cost, alts: _alts, ...rest } = ex;
       exchanges.push({ ...rest, variants });
     }
     // "newWords" is a checker-only override: the course never carries it.
@@ -471,6 +500,10 @@ export function buildAll(root: string, only?: string): BuiltCourses {
       const name = result.course && learnerName(result.course.learnerFtl, learner);
       if (name) learnerNames[learner] = name;
     }
+    // The learning simulator's limits (tools/src/learning.ts), on the first reading language only:
+    // the words and scenes are the same in every one. Warnings until both courses meet them.
+    const first = out.builds.find((b) => b.course === id && b.result.course);
+    if (first) out.warnings.push(...learningCheck(root, first.result.course!).map((w) => `${id}: learning: ${w}`));
     out.catalog.push({ id: cfg.id, language: cfg.language, setting: cfg.setting, learners: cfg.learners, learnerNames });
   }
   // The settings screen names every course in the catalog, in whichever language the game is read in.

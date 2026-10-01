@@ -11,6 +11,16 @@
  "trustGain": 1,
  "exchanges": [
   {
+   "id": "look",
+   "slots": {},
+   "expect": {
+    "action": "look"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
    "id": "photo",
    "slots": {},
    "expect": {
@@ -36,6 +46,16 @@
    "slots": {},
    "expect": {
     "action": "eat"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "tteok",
+   "slots": {},
+   "expect": {
+    "action": "tteok"
    },
    "hinges": [],
    "pay": 0,

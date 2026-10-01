@@ -31,14 +31,29 @@
    "missCost": 0
   },
   {
-   "id": "ask",
+   "id": "who",
    "slots": {},
    "expect": {
-    "action": "ask"
+    "action": "who"
    },
    "hinges": [],
    "pay": 0,
    "missCost": 0
+  },
+  {
+   "id": "friend",
+   "slots": {},
+   "expect": {
+    "action": "friend"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0,
+   "alts": {
+    "1": {
+     "accept": true
+    }
+   }
   },
   {
    "id": "sit",
@@ -51,10 +66,10 @@
    "missCost": 0
   },
   {
-   "id": "understand",
+   "id": "bye",
    "slots": {},
    "expect": {
-    "action": "understand"
+    "action": "bye"
    },
    "hinges": [],
    "pay": 0,

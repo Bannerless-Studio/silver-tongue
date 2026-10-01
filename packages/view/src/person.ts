@@ -156,11 +156,16 @@ export function personView(course: Course, state: GameState, t: Text, npc: strin
       const lines = scene.exchanges.flatMap((ex, i) => {
         const v = ex.variants[talk.keys[i]];
         if (!v) return [];
+        // A written wrong reply that got the player through is what they said, and the NPC answered it.
+        const alt = talk.alts?.[String(i)];
+        const said = alt === undefined ? undefined : v.alts?.[alt];
+        const answer = alt === undefined ? undefined : v.altOutcomes?.[String(alt)]?.reaction;
         const npcLine = personalize(v.npc, name);
-        const reply = personalize(v.reply, name);
+        const reply = personalize(said ?? v.reply, name);
         return [
           { who: "npc" as const, text: npcLine.text, meaning: npcLine.meaning ?? "" },
           { who: "player" as const, text: reply.text, meaning: reply.meaning ?? "" },
+          ...(answer ? [personalize(answer, name)].map((l) => ({ who: "npc" as const, text: l.text, meaning: l.meaning ?? "" })) : []),
         ];
       });
       return [{ title: t(`scene-${scene.id}`), day: talk.day, part: dayPart(course, { ...state, slot: talk.slot - 1, run: null }), earned: talk.earned, lines }];

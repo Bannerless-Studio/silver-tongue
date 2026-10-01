@@ -19,6 +19,26 @@
   "goods": [
    "milk",
    "bread"
+  ],
+  "chat_stall": [
+   "chat-sit",
+   "chat-korean",
+   "chat-hungry",
+   "chat-money",
+   "chat-work",
+   "chat-ok",
+   "chat-friend",
+   "chat-got",
+   "chat-come",
+   "chat-name",
+   "chat-who",
+   "chat-there"
+  ],
+  "chat_shop": [
+   "chat-milk",
+   "chat-bread",
+   "chat-cash",
+   "chat-three"
   ]
  },
  "numbers": {

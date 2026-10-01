@@ -38,6 +38,8 @@ export interface PackWord {
   bonus?: boolean;
   /** a particle or ending written glued to the word before it (display only) */
   attach?: boolean;
+  /** a person's name: counted as a word, never as new vocabulary (the learning report's new-word cap) */
+  name?: boolean;
 }
 
 /** The subset of a vocab-engine pack we read. */

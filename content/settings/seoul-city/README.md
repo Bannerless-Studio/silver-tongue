@@ -15,5 +15,5 @@ His older sister Ji-woo (지우) runs a snack stall and feeds you; the landlady 
 Clues are spoken in the stage's own words, never withheld by plot, only by comprehension. A buried clue is an exchange marked
 `"pin": true` (with `"slots": {}`): the player hears it on day one and understands it once they know the words.
 
-Stage 1 clues: the landlady asks 민준 씨 친구예요? (room-wake), says 민준 씨는 삼월까지 냈어요 (room-rent), and Ji-woo,
+Stage 1 clues: the landlady asks 민준 씨 친구예요? (room-wake; saying 네 is a lie that works), says 민준 씨는 삼월까지 냈어요 (room-rent), and Ji-woo,
 showing a photo, says 동생이에요. 지금 없어요 (stall-family).

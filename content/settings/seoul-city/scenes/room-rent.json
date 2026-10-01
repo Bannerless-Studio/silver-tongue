@@ -4,7 +4,7 @@
  "npc": "landlady",
  "stage": 1,
  "after": [
-  "street-numbers"
+  "shop-prices"
  ],
  "requires": {},
  "repeatable": false,
