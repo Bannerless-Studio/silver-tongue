@@ -6,3 +6,5 @@ site/
 .worktrees/
 .cache/
 tsconfig.tsbuildinfo
+.playwright-mcp/
+.claude/worktrees/
