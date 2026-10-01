@@ -41,6 +41,21 @@
    "cost": 1000
   },
   {
+   "id": "chat",
+   "slots": {
+    "topic": "chat_shop"
+   },
+   "expect": {
+    "action": "chat",
+    "topic": "$topic"
+   },
+   "hinges": [
+    "$topic"
+   ],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
    "id": "bye",
    "slots": {},
    "expect": {

@@ -40,6 +40,21 @@
    "missCost": 1000
   },
   {
+   "id": "chat-a",
+   "slots": {
+    "topic": "chat_stall"
+   },
+   "expect": {
+    "action": "chat",
+    "topic": "$topic"
+   },
+   "hinges": [
+    "$topic"
+   ],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
    "id": "order",
    "slots": {
     "item": "food",
@@ -58,12 +73,17 @@
    "missCost": 2000
   },
   {
-   "id": "ok",
-   "slots": {},
-   "expect": {
-    "action": "ok"
+   "id": "chat-b",
+   "slots": {
+    "topic": "chat_stall"
    },
-   "hinges": [],
+   "expect": {
+    "action": "chat",
+    "topic": "$topic"
+   },
+   "hinges": [
+    "$topic"
+   ],
    "pay": 0,
    "missCost": 0
   },

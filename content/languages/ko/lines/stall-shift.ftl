@@ -9,8 +9,12 @@ order = { -item } { -count(form: "count") } { -item(form: "counter") } 주세요
 order-reply = { -item } { -count(form: "count") } { -item(form: "counter") }, 여기 있어요.
 order-rephrase = { -item }. { -count(form: "count") } { -item(form: "counter") }.
 
-ok = 괜찮아요?
-ok-reply = 네, 괜찮아요!
+
+chat-a = { -topic }
+chat-a-reply = { -topic(form: "reply") }
+
+chat-b = { -topic }
+chat-b-reply = { -topic(form: "reply") }
 
 thanks = 감사합니다!
 thanks-reply = 감사합니다! 안녕히 가세요!
