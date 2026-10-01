@@ -13,6 +13,7 @@ import {
   learningReport,
   learningWarnings,
   nameWords,
+  grammarStage,
   stageGrammarGaps,
   thinWords,
   type LearningReport,
@@ -103,18 +104,20 @@ describe("learning limits", () => {
     expect(warnings.join("\n")).toContain(`fewer than ${TARGET_EXPOSURES} times`);
   });
 
-  it("grammar is due by the stage of its level", () => {
+  it("grammar is due by the stage of its level, or the stage it names", () => {
     const g: Grammar = {
       note: "",
       points: [
         { id: "one", lv: "A1", label: "one", en: "", pattern: "." },
         { id: "never", lv: "A1", label: "never", en: "", pattern: "NEVER-MATCHES" },
+        { id: "put-off", lv: "A1", label: "put off", en: "", pattern: "NEVER-MATCHES", stage: 2 },
         { id: "later", lv: "A2", label: "later", en: "", pattern: "NEVER-MATCHES" },
         { id: "undetectable", lv: "A1", label: "undetectable", en: "" },
       ],
     };
+    expect(g.points.map((p) => grammarStage(g, p))).toEqual([1, 1, 2, 2, 1]);
     const gaps = stageGrammarGaps(course, g);
-    expect(gaps.map((x) => x.level)).toEqual(["A1"]); // the fixture's scenes are all stage 1
+    expect(gaps.map((x) => x.stage)).toEqual([1]); // the fixture's scenes are all stage 1
     expect(gaps[0].missing.map((p) => p.id)).toEqual(["never"]);
   });
 });

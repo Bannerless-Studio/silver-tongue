@@ -43,6 +43,12 @@ export interface GrammarPoint {
    */
   words?: WordId[];
   pattern?: string;
+  /**
+   * The stage (act) whose lines must use it. Absent: the stage of its level (A1 on 1, A2 on 2, B1 on
+   * 3). A point the story needs later than its level says (past tense for the letters of act 2) names
+   * that stage.
+   */
+  stage?: number;
 }
 
 export interface Grammar {
