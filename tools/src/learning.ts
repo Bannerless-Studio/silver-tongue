@@ -3,6 +3,7 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { DAY_MS, comboKey, wordState, type CatalogEntry, type Course, type GameState, type RenderedLine, type WordId, type WordState } from "@silver-tongue/core";
 import { BOTS, runBot, type Bot } from "./bots";
+import { grammarCoverage, grammarDetector, loadSyllabus, syllabusCoverage, type Grammar, type GrammarCoverage, type Syllabus, type SyllabusCoverage } from "./syllabus";
 
 /**
  * The learning simulator: a bot plays the course through the core, and every line it hears or says
@@ -55,6 +56,10 @@ export interface LearningReport {
   heavyBeats: Beat[];
   /** stage words no line ever used */
   unusedStageWords: WordId[];
+  /** how much of the language's syllabus the run taught, when there is one */
+  syllabus?: SyllabusCoverage;
+  /** which of the language's grammar points the run's lines used, when it has a grammar list */
+  grammar?: GrammarCoverage;
 }
 
 /** The words of a line, once each. */
@@ -72,14 +77,24 @@ function sceneWords(course: Course): Set<WordId> {
   return out;
 }
 
-export function learningReport(course: Course, bot: Bot, opts: { days: number; seed: number; dayMs?: number }): LearningReport {
+export function learningReport(
+  course: Course,
+  bot: Bot,
+  opts: { days: number; seed: number; dayMs?: number; syllabus?: Syllabus; grammar?: Grammar },
+): LearningReport {
+  const { syllabus, grammar, ...run } = opts;
+  const detect = grammar ? grammarDetector(grammar) : undefined;
+  const grammarHits: Record<string, number> = {};
+  const hit = (line: RenderedLine) => {
+    for (const id of detect?.(line) ?? []) grammarHits[id] = (grammarHits[id] ?? 0) + 1;
+  };
   const uses = new Map<WordId, WordUse & { contextSet: Set<string>; lastUseDay: number }>();
   const used = new Set<WordId>();
   const beatsSeen = new Set<string>();
   const report: LearningReport = {
     course: course.id,
     days: opts.days,
-    courseWords: sceneWords(course).size,
+    courseWords: 0,
     words: {},
     lines: 0,
     linesFamiliar: 0,
@@ -109,13 +124,15 @@ export function learningReport(course: Course, bot: Bot, opts: { days: number; s
   let lastRun = "";
   let end: { state: GameState; now: number } | undefined;
   runBot(course, bot, {
-    ...opts,
+    ...run,
     observe: ({ events, before, after, now }) => {
       end = { state: after, now };
       // A right reply: the player said the words of the exchange they were in.
       if (before.run && events.some((e) => e.type === "actionPerformed" && e.matched)) {
         const context = `${before.run.scene}#${before.run.exchange}`;
-        for (const w of wordsOf(variantOf(before).reply)) use(w, before.day, context, "said");
+        const reply = variantOf(before).reply;
+        for (const w of wordsOf(reply)) use(w, before.day, context, "said");
+        hit(reply);
       }
       // Lines heard belong to the exchange the player is in after this input.
       const context = after.run ? `${after.run.scene}#${after.run.exchange}` : lastRun;
@@ -125,6 +142,7 @@ export function learningReport(course: Course, bot: Bot, opts: { days: number; s
         const words = wordsOf(e.line);
         if (e.type === "lineSpoken" && words.length) {
           report.lines += 1;
+          hit(e.line);
           const familiar = words.filter((w) => used.has(w)).length / words.length;
           const known = words.filter((w) => wordState(before.words[w], now) === "known").length / words.length;
           if (familiar >= FAMILIAR_SHARE) report.linesFamiliar += 1;
@@ -148,6 +166,13 @@ export function learningReport(course: Course, bot: Bot, opts: { days: number; s
     const { contextSet, lastUseDay: _, ...rest } = u;
     report.words[w] = { ...rest, contexts: contextSet.size, state: wordState(end?.state.words[w], end?.now ?? 0) };
   }
+  const courseWords = sceneWords(course);
+  report.courseWords = courseWords.size;
+  if (syllabus) {
+    const counts = Object.fromEntries(Object.entries(report.words).map(([w, u]) => [w, u.heard + u.said]));
+    report.syllabus = syllabusCoverage({ course, syllabus, courseWords, uses: counts, target: TARGET_EXPOSURES });
+  }
+  if (grammar) report.grammar = grammarCoverage(grammar, grammarHits);
   report.unusedStageWords = Object.values(course.stageWords)
     .flat()
     .filter((w) => !uses.has(w));
@@ -156,6 +181,32 @@ export function learningReport(course: Course, bot: Bot, opts: { days: number; s
 
 /** The share as a whole percent. */
 const pct = (n: number, of: number) => (of ? `${Math.round((100 * n) / of)}%` : "-");
+
+function syllabusLines(course: Course, r: LearningReport): string[] {
+  const label = (w: WordId) => course.words[w]?.w ?? w;
+  const out: string[] = [];
+  const s = r.syllabus;
+  if (s) {
+    out.push(
+      ``,
+      `Syllabus words (in the course · used · used ${TARGET_EXPOSURES}+ times, of the level's words):`,
+      ...s.levels.map((l) => `  ${l.level.padEnd(3)} ${l.inCourse} · ${l.used} · ${l.practised} of ${l.words} (${pct(l.practised, l.words)} practised)`),
+      `  course words off the syllabus: ${s.offSyllabus.length}${s.offSyllabus.length ? ` (${s.offSyllabus.map(label).join(" ")})` : ""}`,
+      `  most frequent ${s.missing[0]?.lv ?? ""} words the course never says: ${s.missing.slice(0, 20).map((m) => m.w).join(" ")}`,
+    );
+  }
+  const g = r.grammar;
+  if (g) {
+    out.push(
+      ``,
+      `Grammar points (used by some line, of the level's points; some can't be spotted by rule):`,
+      ...g.levels.map((l) => `  ${l.level.padEnd(3)} ${l.used} of ${l.points}${l.undetectable ? ` (${l.undetectable} not detectable)` : ""}`),
+      `  used: ${Object.entries(g.hits).sort((a, b) => b[1] - a[1]).map(([id, n]) => `${id} ${n}`).join(" · ") || "none"}`,
+      `  first unused: ${g.unused.slice(0, 12).map((p) => `${p.label} (${p.lv})`).join(" · ")}`,
+    );
+  }
+  return out;
+}
 
 export function formatReport(course: Course, r: LearningReport, botName: string): string {
   const entries = Object.entries(r.words);
@@ -176,6 +227,7 @@ export function formatReport(course: Course, r: LearningReport, botName: string)
     `Exchanges bringing in more than ${MAX_NEW_PER_EXCHANGE} new words: ${r.heavyBeats.length}`,
     ...r.heavyBeats.map((b) => `  ${b.scene}#${b.exchange}: ${b.newWords.map(label).join(" ")}`),
     `Stage words never used: ${r.unusedStageWords.length}${r.unusedStageWords.length ? ` (${r.unusedStageWords.map(label).join(" ")})` : ""}`,
+    ...syllabusLines(course, r),
     ``,
     `Thinnest words (uses · exchanges · longest gap in days):`,
     ...thin.slice(0, 25).map(([w, u]) => `  ${label(w).padEnd(8)} ${String(u.heard + u.said).padStart(3)} · ${u.contexts} · ${u.maxGapDays}`),
@@ -194,7 +246,8 @@ function main(): void {
   const learner = catalog.find((e) => e.id === courseId)?.learners[0];
   if (!learner) throw new Error(`no course "${courseId}" in dist/courses/index.json; run npm run build:course`);
   const course = JSON.parse(readFileSync(join(repo, "dist", "courses", courseId, `${learner}.json`), "utf8")) as Course;
-  console.log(formatReport(course, learningReport(course, bot, { days, seed: 7, dayMs: DAY_MS }), botName));
+  const { syllabus, grammar } = loadSyllabus(join(repo, "content"), course.language.code);
+  console.log(formatReport(course, learningReport(course, bot, { days, seed: 7, dayMs: DAY_MS, syllabus, grammar }), botName));
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) main();
