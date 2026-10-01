@@ -65,6 +65,8 @@ export interface LearningReport {
   days: number;
   /** words the course's scenes can use */
   courseWords: number;
+  /** quick reviews the bot took (a bot that reviews: see `Bot.reviewRight`) */
+  reviews: number;
   /** each word used, with its state to the core at the end of the run */
   words: Record<WordId, WordUse & { state: WordState }>;
   /** NPC lines heard (first time each exchange is played, and every replay) */
@@ -119,6 +121,7 @@ export function learningReport(
     course: course.id,
     days: opts.days,
     courseWords: 0,
+    reviews: 0,
     words: {},
     lines: 0,
     linesFamiliar: 0,
@@ -150,7 +153,7 @@ export function learningReport(
 
   let lastRun = "";
   let end: { state: GameState; now: number } | undefined;
-  runBot(course, bot, {
+  report.reviews = runBot(course, bot, {
     ...run,
     observe: ({ events, before, after, now }) => {
       end = { state: after, now };
@@ -188,10 +191,17 @@ export function learningReport(
         for (const w of words) use(w, after.day, context, "heard");
         for (const w of words) used.add(w);
       }
+      // A review question: the line's other words are heard; the word left out is said when picked right.
+      for (const e of events) {
+        if (e.type === "reviewAsked") {
+          for (const tk of e.line.tokens) if (tk.start !== e.blank.start) use(tk.word, after.day, "review", "heard");
+        }
+        if (e.type === "reviewAnswered" && e.right) use(e.word, after.day, "review", "said");
+      }
       // The reply's words count as used once the player has seen the options.
       if (after.run && events.some((e) => e.type === "replyOptions")) for (const w of wordsOf(variantOf(after).reply)) used.add(w);
     },
-  });
+  }).reviews;
 
   for (const [w, u] of uses) {
     const { contextSet, lastUseDay: _, ...rest } = u;
@@ -336,6 +346,7 @@ export function formatReport(course: Course, r: LearningReport, botName: string,
     `  never said by the player: ${entries.filter(([, u]) => u.said === 0).length}`,
     `  known at the end: ${entries.filter(([, u]) => u.state === "known").length}`,
     `Lines heard: ${r.lines} · ≥${FAMILIAR_SHARE * 100}% familiar: ${pct(r.linesFamiliar, r.lines)} (after onboarding: ${pct(r.familiarAfterOnboarding, r.linesAfterOnboarding)} of ${r.linesAfterOnboarding}) · ≥${FAMILIAR_SHARE * 100}% known: ${pct(r.linesKnown, r.lines)}`,
+    ...(r.reviews ? [`Quick reviews taken: ${r.reviews}`] : []),
     `Exchanges bringing in more than ${MAX_NEW_PER_EXCHANGE} new words (names don't count): ${r.heavyBeats.length}`,
     ...r.heavyBeats.map((b) => `  ${b.scene}#${b.exchange}: ${b.newWords.map(label).join(" ")}`),
     `Stage words never used: ${r.unusedStageWords.length}${r.unusedStageWords.length ? ` (${r.unusedStageWords.map(label).join(" ")})` : ""}`,

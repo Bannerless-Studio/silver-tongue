@@ -51,6 +51,11 @@ describe("course bots (real content)", () => {
     expect(reports.wrong.rentLateNights).toBeGreaterThanOrEqual(1);
   });
 
+  it("only the diligent player takes the quick review", () => {
+    expect(reports.diligent.reviews).toBeGreaterThan(0);
+    for (const [name, r] of Object.entries(reports)) if (name !== "diligent") expect(r.reviews, name).toBe(0);
+  });
+
   it("is repeatable with the same seed", () => {
     expect(runBot(course!, BOTS.learner, { days: 5, seed: 3 })).toEqual(runBot(course!, BOTS.learner, { days: 5, seed: 3 }));
   });
