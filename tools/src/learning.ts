@@ -222,27 +222,30 @@ export function thinWords(r: LearningReport, names: Set<WordId> = new Set()): [W
 
 export interface StageGrammarGap {
   stage: number;
-  level: string;
-  /** detectable points at this stage's level that no line of this stage or an earlier one uses */
+  /** detectable points due by this stage that no line of this stage or an earlier one uses */
   missing: GrammarPoint[];
 }
 
+/** The stage a grammar point is due by: its own `stage`, or its level's (the list's n-th level on stage n). */
+export function grammarStage(grammar: Grammar, point: GrammarPoint): number {
+  return point.stage ?? [...new Set(grammar.points.map((g) => g.lv))].indexOf(point.lv) + 1;
+}
+
 /**
- * Stage n teaches the grammar list's n-th level (A1, then A2, then B1). Checked on every line the
- * scenes can say, not on a run: a run may not reach a stage's last scenes.
+ * Each stage's grammar points (see `grammarStage`) must be used by some line of that stage or an
+ * earlier one. Checked on every line the scenes can say, not on a run: a run may not reach a stage's
+ * last scenes.
  */
 export function stageGrammarGaps(course: Course, grammar: Grammar): StageGrammarGap[] {
-  const levels = [...new Set(grammar.points.map((g) => g.lv))];
   const detect = grammarDetector(grammar);
   const stages = [...new Set(course.scenes.map((s) => s.stage))].sort((a, b) => a - b);
   return stages.flatMap((stage) => {
-    const level = levels.at(stage - 1);
-    if (!level) return [];
+    const due = grammar.points.filter((g) => grammarStage(grammar, g) === stage && (g.words?.length || g.pattern));
+    if (!due.length) return [];
     const used = new Set<string>();
     for (const s of course.scenes.filter((x) => x.stage <= stage))
       for (const ex of s.exchanges) for (const v of Object.values(ex.variants)) for (const l of [v.npc, v.reply]) detect(l).forEach((id) => used.add(id));
-    const missing = grammar.points.filter((g) => g.lv === level && (g.words?.length || g.pattern) && !used.has(g.id));
-    return [{ stage, level, missing }];
+    return [{ stage, missing: due.filter((g) => !used.has(g.id)) }];
   });
 }
 
@@ -261,7 +264,7 @@ export function learningWarnings(course: Course, r: LearningReport, opts: { name
     out.push(`${thin.length} word(s) used fewer than ${TARGET_EXPOSURES} times in the ${WINDOW_DAYS} days after first heard: ${some(thin.map(([w, u]) => `${label(w)} ${u.windowUses}`), 12)}`);
   if (r.unusedStageWords.length) out.push(`${r.unusedStageWords.length} stage word(s) no line uses: ${some(r.unusedStageWords.map(label))}`);
   for (const g of opts.grammarGaps ?? [])
-    if (g.missing.length) out.push(`stage ${g.stage}: ${g.missing.length} ${g.level} grammar point(s) no line uses: ${some(g.missing.map((p) => p.label))}`);
+    if (g.missing.length) out.push(`stage ${g.stage}: ${g.missing.length} grammar point(s) due by this stage that no line uses: ${some(g.missing.map((p) => `${p.label} (${p.lv})`))}`);
   return out;
 }
 

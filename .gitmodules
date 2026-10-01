@@ -1,3 +1,6 @@
 [submodule "vendor/vocab-engine"]
 	path = vendor/vocab-engine
 	url = https://github.com/ishmum123/vocab-engine
+[submodule "vendor/korean"]
+	path = vendor/korean
+	url = https://github.com/Bannerless-Studio/korean
