@@ -19,17 +19,6 @@
    "missCost": 0
   },
   {
-   "id": "friend",
-   "slots": {},
-   "expect": {
-    "action": "friend"
-   },
-   "hinges": [],
-   "pay": 0,
-   "missCost": 0,
-   "pin": true
-  },
-  {
    "id": "room",
    "slots": {},
    "expect": {
@@ -38,6 +27,32 @@
    "hinges": [],
    "pay": 0,
    "missCost": 0
+  },
+  {
+   "id": "here",
+   "slots": {},
+   "expect": {
+    "action": "here"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "friend",
+   "slots": {},
+   "expect": {
+    "action": "friend"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0,
+   "pin": true,
+   "alts": {
+    "1": {
+     "accept": true
+    }
+   }
   },
   {
    "id": "who",

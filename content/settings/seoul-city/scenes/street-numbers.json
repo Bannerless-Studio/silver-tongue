@@ -21,7 +21,7 @@
    "missCost": 0
   },
   {
-   "id": "three-four",
+   "id": "three",
    "slots": {},
    "expect": {
     "action": "numbers"
@@ -67,6 +67,36 @@
    "hinges": [
     "$number"
    ],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "got",
+   "slots": {},
+   "expect": {
+    "action": "got"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "korean",
+   "slots": {},
+   "expect": {
+    "action": "korean"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "bye",
+   "slots": {},
+   "expect": {
+    "action": "bye"
+   },
+   "hinges": [],
    "pay": 0,
    "missCost": 0
   }

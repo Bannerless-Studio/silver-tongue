@@ -1,5 +1,5 @@
 # Ji-woo feeds you for nothing, shows you what she sells, and offers you work.
-# Each <id>-alt<n> is a written wrong reply, using only words met by then.
+# Each <id>-alt<n> is a written wrong reply, using only words met by then; <id>-alt<n>-answer is the answer to it.
 
 welcome = 어서 오세요!
 welcome-reply = 안녕하세요.
@@ -16,15 +16,25 @@ hungry-reply = 네. 돈 없어요.
 hungry-alt1 = 아니요, 몰라요.
 hungry-alt2 = 하나, 둘.
 
-eat = 괜찮아요. 떡볶이 먹어요!
+ok = 괜찮아요.
+ok-reply = 괜찮아요?
+ok-alt1 = 안녕히 계세요.
+ok-alt2 = 돈 있어요?
+
+eat = 떡볶이 먹어요!
 eat-reply = 감사합니다!
 eat-alt1 = 안녕히 계세요.
 eat-alt2 = 돈 있어요?
 
-gimbap = 김밥도 있어요. 어묵도 있어요.
-gimbap-reply = 김밥도 먹어요?
+gimbap = 김밥도 있어요.
+gimbap-reply = 김밥도?
 gimbap-alt1 = 아니요, 없어요.
-gimbap-alt2 = 안녕히 가세요.
+gimbap-alt2 = 괜찮아요?
+
+eomuk = 어묵도 있어요. 먹어요!
+eomuk-reply = 네, 감사합니다!
+eomuk-alt1 = 김밥도?
+eomuk-alt2 = 안녕히 가세요.
 
 work = 내일 일해요?
 work-reply = 네, 일해요!

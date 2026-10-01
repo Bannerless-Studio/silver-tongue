@@ -2,9 +2,12 @@
 
 Every release of Silver Tongue, newest first.
 
-## Unreleased
+## 0.19.0 (2026-10-01)
 
-- A new course: Korean in Seoul, 2000. You fall asleep over a Korean textbook and wake in a stranger's rented room with his ID card on the desk. Ten conversations to start: the landlady at the door, Grandpa Park on his bench, Ji-woo's snack stall and the corner shop, about 65 words.
+- A new course: Korean in Seoul, 2000. You fall asleep over a Korean textbook and wake in a stranger's rented room with his ID card on the desk. Ten conversations to start: the landlady at the door, Grandpa Park on his bench, Ji-woo's snack stall and the corner shop, about 70 words.
+- The Korean conversations bring in at most two new words at a time, and come back to the words you've met, so most of what you hear is already familiar. Between orders at the stall, Ji-woo makes small talk, and the clerk chats while he rings you up: their questions come back to the words you're shakiest on.
+- Some wrong replies are part of the story now. Tell the landlady you're Min-jun's friend and she believes you; pay the clerk what he asks without a word and he's glad of the extra thousand won. People answer what you actually said, in their own words, instead of a puzzled "네?".
+- A person's history shows what you really said, and what they said back.
 
 ## 0.18.6 (2026-09-29)
 

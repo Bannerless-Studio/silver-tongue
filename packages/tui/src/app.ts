@@ -344,7 +344,7 @@ export function startApp(opts: AppOptions): App {
           break;
         case "npcReacted":
           // Word help keeps offering the request the player got wrong, not the reaction.
-          hear(course.reactionAudio?.[e.reaction]?.[e.npc]);
+          hear(course.reactionAudio?.[e.reaction]?.[e.npc] ?? e.line.audio);
           sayLine(e.npc, e.line, fresh);
           break;
         case "lineRephrased":

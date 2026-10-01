@@ -38,3 +38,69 @@
     [count] 다섯
    *[base] 다섯
 }
+
+# Small talk between jobs: what is said (base) and the answer wanted (reply).
+-chat-sit = { $form ->
+    [reply] 감사합니다.
+   *[base] 여기 앉으세요.
+}
+-chat-korean = { $form ->
+    [reply] 아니요, 몰라요.
+   *[base] 한국어 알아요?
+}
+-chat-hungry = { $form ->
+    [reply] 네, 배고파요.
+   *[base] 배고파요?
+}
+-chat-money = { $form ->
+    [reply] 아니요, 없어요.
+   *[base] 돈 있어요?
+}
+-chat-work = { $form ->
+    [reply] 네, 일해요!
+   *[base] 내일 일해요?
+}
+-chat-ok = { $form ->
+    [reply] 네, 괜찮아요!
+   *[base] 괜찮아요?
+}
+-chat-friend = { $form ->
+    [reply] 아니요.
+   *[base] 민준 씨 친구예요?
+}
+-chat-got = { $form ->
+    [reply] 네, 알아요.
+   *[base] 알아요?
+}
+-chat-come = { $form ->
+    [reply] 네, 와요.
+   *[base] 내일 와요?
+}
+-chat-milk = { $form ->
+    [reply] 네, 알아요.
+   *[base] 우유는 천 원이에요.
+}
+-chat-bread = { $form ->
+    [reply] 빵은 천 원?
+   *[base] 빵은 천 원이에요.
+}
+-chat-cash = { $form ->
+    [reply] 네, 있어요.
+   *[base] 돈 있어요?
+}
+-chat-three = { $form ->
+    [reply] 아니요, 천 원.
+   *[base] 삼천 원이에요?
+}
+-chat-name = { $form ->
+    [reply] 박 할아버지예요.
+   *[base] 할아버지 이름이 뭐예요?
+}
+-chat-who = { $form ->
+    [reply] 할아버지예요.
+   *[base] 저기, 누구예요?
+}
+-chat-there = { $form ->
+    [reply] 네, 저기 있어요.
+   *[base] 할아버지가 저기 있어요?
+}

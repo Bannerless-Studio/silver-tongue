@@ -9,8 +9,9 @@ hello-alt2-intent = Ask who she is
 paid = Have you paid the rent?
 paid-reply = No.
 paid-reply-intent = Admit you haven't
-paid-alt1 = Yes, thank you.
-paid-alt1-intent = Say yes and thank her
+paid-alt1 = Yes.
+paid-alt1-intent = Say you have
+paid-alt1-answer = You have? No, you haven't!
 paid-alt2 = One, two.
 paid-alt2-intent = Count
 
@@ -19,8 +20,8 @@ amount-reply = Fifty thousand won?
 amount-reply-intent = Check the amount
 amount-alt1 = Is it five?
 amount-alt1-intent = Check the number
-amount-alt2 = Hello.
-amount-alt2-intent = Say hello
+amount-alt2 = A thousand won?
+amount-alt2-intent = Check the amount
 
 week = Fifty thousand won a week.
 week-reply = Yes, I understand.

@@ -15,6 +15,16 @@
  "trustGain": 1,
  "exchanges": [
   {
+   "id": "welcome",
+   "slots": {},
+   "expect": {
+    "action": "welcome"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
    "id": "buy",
    "slots": {
     "item": "goods"
@@ -29,6 +39,21 @@
    "pay": 0,
    "missCost": 0,
    "cost": 1000
+  },
+  {
+   "id": "chat",
+   "slots": {
+    "topic": "chat_shop"
+   },
+   "expect": {
+    "action": "chat",
+    "topic": "$topic"
+   },
+   "hinges": [
+    "$topic"
+   ],
+   "pay": 0,
+   "missCost": 0
   },
   {
    "id": "bye",
