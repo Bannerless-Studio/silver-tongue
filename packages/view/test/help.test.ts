@@ -104,11 +104,18 @@ describe("other forms of a word", () => {
     expect(readingRow(c, newGame(c), lineWith(form), 0)).toBe(formReadings.at(-1));
   });
 
-  it("keeps the reading row for a known word written in a form, drops it for the word itself", () => {
+  it("with the Book, keeps the reading row for a known word written in a form, drops it for the word itself", () => {
+    const book = { ...c, language: { ...c.language, book: true } } as typeof c;
+    const state = newGame(book);
+    state.words = { [id]: { right: 3, wrong: 0, streak: 3, helps: 0, lapsed: false, firstSeen: 0, lastSeen: 0 } };
+    expect(readingRow(book, state, lineWith(form), 0)).toBe(formReadings.at(-1));
+    expect(readingRow(book, state, lineWith(word.w), 0)).toBeUndefined();
+  });
+
+  it("without the Book, a known word hides its reading in any form, as before", () => {
     const state = newGame(c);
     state.words = { [id]: { right: 3, wrong: 0, streak: 3, helps: 0, lapsed: false, firstSeen: 0, lastSeen: 0 } };
-    expect(readingRow(c, state, lineWith(form), 0)).toBe(formReadings.at(-1));
-    expect(readingRow(c, state, lineWith(word.w), 0)).toBeUndefined();
+    expect(readingRow(c, state, lineWith(form), 0)).toBeUndefined();
   });
 });
 

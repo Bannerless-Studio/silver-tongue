@@ -1,4 +1,5 @@
 import { PLAYER_MARK, wordState, type Course, type GameState, type RenderedLine, type Word, type WordId } from "@silver-tongue/core";
+import { bookOn } from "./course-extra";
 
 export interface WordCard {
   word: WordId;
@@ -120,9 +121,11 @@ export function readingsOf(w: Word | undefined, surface?: string): string[] {
 /**
  * Whether a token is written in one of its word's forms (du for dul): a spelling with readings of its own. The
  * game counts hearing the word, not each form, so a reading hidden once the word is known stays for a form.
- * An alt spelling has no readings, so it is not a form here.
+ * An alt spelling has no readings, so it is not a form here. Only a course with the Book has this rule; the
+ * others hide the reading once the word is known, as they always have.
  */
 export function inForm(course: Course, line: RenderedLine, tk: RenderedLine["tokens"][number]): boolean {
+  if (!bookOn(course)) return false;
   const w = course.words[tk.word];
   const surface = line.text.slice(tk.start, tk.end);
   return !!w && surface !== w.w && w.forms?.[surface] !== undefined;
