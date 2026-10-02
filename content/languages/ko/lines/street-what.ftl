@@ -14,13 +14,13 @@ quiz-alt2 = 몰라요.
 
 good = 좋아요!
 good-reply = 이거 뭐예요?
-good-alt1 = 책이에요.
+good-alt1 = 네, 알아요.
 good-alt2 = 안녕히 계세요.
 
 newspaper = 신문이에요.
 newspaper-reply = 신문이에요?
-newspaper-alt1 = 한국어 책?
-newspaper-alt2 = 이거 뭐예요?
+newspaper-alt1 = 좋아요!
+newspaper-alt2 = 감사합니다.
 
 that = 저거는 가게예요.
 that-reply = 저거는 가게, 이거는 책.

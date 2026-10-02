@@ -145,7 +145,7 @@ Rule (user): each scene exists because of something the learner wants to do next
 | 6 | shop-prices | buy by pointing: "this, please", "how much?" | bread and milk; the clerk rattles off prices; one note comes back from your five-thousand | 어서 오세요 welcome, 우유 milk, 도 too, 천 thousand, 원 won, 얼마 how much |
 | 7 | street-numbers | count | Grandpa Park waits outside the shop, holds up your one note, counts three on his fingers | 하나 둘 셋 넷 다섯 one–five, 삼 three (Sino) |
 | 8 | shop-count | say an amount, count change | back at the shop with the one note: you say 삼천 원; he counts two more into your hand and says sorry | 미안해요 sorry, 괜찮아요 it's all right |
-| 9 | stall-intro | names, "tasty", take a job | Ji-woo runs the stall alone with customers waiting; she feeds you, hands you an apron | 지우 Ji-woo, 떡볶이 tteokbokki, 먹어요 eat, 맛있어요 tasty, 내일 tomorrow, 일해요 work |
+| 9 | stall-intro | names, "tasty", take a job | Ji-woo runs the stall alone with customers waiting; she feeds you, hands you an apron | 지우 Ji-woo, 떡볶이 tteokbokki, 먹어요 eat, 맛있어요 tasty, 같이 together, 일해요 work |
 | 10 | stall-shift (repeatable) | numbers at work | she calls orders; you bring them; pay | 김밥 gimbap, 어묵 fish cake, 그릇 bowl, 줄 roll, 개 (counter) |
 | 11 | stall-family | family words | the photo; pinned "동생이에요. 지금 없어요." | 봐요 look, 사진 photo, 동생 younger sibling, 지금 now, 을 (object) |
 | 12 | room-rent | until, month, how often | the landlady with a ledger; pinned "민준 씨는 삼월까지 냈어요." | 방세 rent, 냈어요 paid, 오 five (Sino), 만 ten thousand, 일주일 week, 월 month, 까지 until |
@@ -158,6 +158,8 @@ Deviations from the brief's table, with reasons:
 - **Change sums use only 1, 3, 4, 5.** Sino 2 (이) is spelled like the subject marker 이 and the lexicon rejects two words with one spelling: no price says 이천. Bread and milk are ₩1,000 each, paid with ₩5,000; the clerk returns ₩1,000 instead of ₩3,000.
 - **No "when" (언제) in room-rent.** The scene already introduces seven words; "when" waits for stage 2.
 - **Mentor notes:** "이에요 and 예요" now triggers on street-what (책이에요 / 가게예요).
+- **Wrong replies always look wrong.** A miss repeats the line slower, so no written wrong reply may be a reply its scene takes as right, or a request to hear the line again (네? / 다시 / 천천히 말해 주세요): either gets what looks like an answer and can be picked forever. In street-again each right reply changes his line (어디 가요? → 어디 가요? 어디? → 네, 네. 어디 가요? → 어디…… 가요?), so progress differs from a miss. `tools/test/ko-chain.test.ts` pins both.
+- **No "tomorrow" at the stall.** The shift opens as soon as stall-intro ends, today or the next day depending on the slots left, so Ji-woo asks 같이 일해요? ("work together?") and the scene ends on the apron, with no goodbye.
 
 ## 12. The conversation stage (2026-10-02)
 

@@ -168,6 +168,27 @@ describe("ko-seoul's stage-1 chain", () => {
     expect(npcLabel(course!, fresh, t, "landlady")).toBe("The landlady");
   });
 
+  it("a wrong reply always looks wrong: never a reply the scene wants, never a request to hear it again", () => {
+    // A miss repeats the line, slower. A written wrong reply that the scene also takes as right, or
+    // that asks to hear the line again, gets what looks like an answer, and can be picked forever.
+    const repeatRequests = ["네?", "다시 말해 주세요.", "천천히 말해 주세요."];
+    for (const s of course!.scenes) {
+      const variants = s.exchanges.flatMap((ex) => Object.values(ex.variants));
+      const right = new Set(variants.map((v) => v.reply.text));
+      for (const ex of s.exchanges)
+        for (const v of Object.values(ex.variants))
+          for (const alt of v.alts ?? []) {
+            expect(right.has(alt.text), `${s.id}/${ex.id}: ${alt.text}`).toBe(false);
+            expect(repeatRequests, `${s.id}/${ex.id}`).not.toContain(alt.text);
+            expect(alt.meaning && alt.intent, `${s.id}/${ex.id}: ${alt.text}`).toBeTruthy();
+          }
+      for (const v of variants) expect(v.reply.meaning && v.reply.intent, `${s.id}: ${v.reply.text}`).toBeTruthy();
+      // A right reply moves the line on, so the player can tell it from a miss.
+      const single = s.exchanges.filter((ex) => Object.keys(ex.variants).length === 1).map((ex) => Object.values(ex.variants)[0].npc.text);
+      for (let i = 1; i < single.length; i++) expect(single[i], `${s.id}: line ${i}`).not.toBe(single[i - 1]);
+    }
+  });
+
   it("keeps the three pinned clue lines word for word", () => {
     const pinned = extra(course!).scenes.flatMap((s) => s.exchanges.filter((ex) => ex.pin).map((ex) => `${s.id}: ${Object.values(ex.variants)[0].npc.text}`));
     expect(pinned.sort()).toEqual([

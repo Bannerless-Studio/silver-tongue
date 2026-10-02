@@ -14,8 +14,8 @@ note-alt2 = 좋아요!
 
 count = 하나, 둘, 셋.
 count-reply = 하나, 둘, 셋.
-count-alt1 = 하나?
-count-alt2 = 천천히 말해 주세요.
+count-alt1 = 하나, 둘.
+count-alt2 = 네, 감사합니다.
 
 owed = 셋! 삼천 원이에요.
 owed-reply = 삼천 원?
@@ -24,7 +24,7 @@ owed-alt2 = 하나, 둘.
 
 five = 하나, 둘, 셋, 넷, 다섯!
 five-reply = 하나, 둘, 셋, 넷, 다섯!
-five-alt1 = 하나, 둘, 셋.
+five-alt1 = 하나, 둘, 셋, 넷.
 five-alt2 = 안녕하세요.
 
 next-a = { $number ->

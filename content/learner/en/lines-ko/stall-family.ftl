@@ -19,5 +19,5 @@ eat-reply = Thank you.
 eat-reply-intent = Thank her
 eat-alt1 = Goodbye.
 eat-alt1-intent = Say goodbye as you leave
-eat-alt2 = Is it a photo?
-eat-alt2-intent = Ask about the photo
+eat-alt2 = How much is the gimbap?
+eat-alt2-intent = Ask the price

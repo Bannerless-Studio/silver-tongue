@@ -38,18 +38,10 @@ tasty-alt1-intent = Say there's none
 tasty-alt2 = How much is it?
 tasty-alt2-intent = Ask the price
 
-work = Will you work tomorrow?
+work = Shall we work together?
 work-reply = Yes, I'll work!
 work-reply-intent = Take the job
-work-alt1 = Yes, it's delicious!
-work-alt1-intent = Praise the food
+work-alt1 = Yes, I'll eat!
+work-alt1-intent = Say you'll eat
 work-alt2 = No, there isn't.
 work-alt2-intent = Say there's none
-
-bye = Come tomorrow!
-bye-reply = Yes. Goodbye.
-bye-reply-intent = Agree and take your leave
-bye-alt1 = Goodbye (you go).
-bye-alt1-intent = See her off
-bye-alt2 = Eat some tteokbokki!
-bye-alt2-intent = Offer her food

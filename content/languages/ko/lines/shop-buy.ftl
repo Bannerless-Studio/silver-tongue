@@ -9,3 +9,5 @@ change-alt2 = 삼천 원?
 
 bye = 안녕히 가세요.
 bye-reply = 안녕히 계세요.
+bye-alt1 = 안녕히 가세요.
+bye-alt2 = 미안해요.

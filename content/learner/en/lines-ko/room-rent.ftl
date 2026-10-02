@@ -1,8 +1,8 @@
 hello = Hello, { $player }.
 hello-reply = Hello.
 hello-reply-intent = Say hello
-hello-alt1 = Goodbye.
-hello-alt1-intent = See her off
+hello-alt1 = Goodbye (I'm leaving).
+hello-alt1-intent = Say goodbye as you leave
 hello-alt2 = Who are you?
 hello-alt2-intent = Ask who she is
 
@@ -19,8 +19,8 @@ amount-reply = Fifty thousand won?
 amount-reply-intent = Check the amount
 amount-alt1 = Is it five?
 amount-alt1-intent = Check the number
-amount-alt2 = Hello.
-amount-alt2-intent = Say hello
+amount-alt2 = Is it five thousand won?
+amount-alt2-intent = Check the amount
 
 week = Fifty thousand won a week.
 week-reply = Yes, I understand.
@@ -35,7 +35,7 @@ march-reply = Up to March?
 march-reply-intent = Check the month
 march-alt1 = I'm { $player }.
 march-alt1-intent = Give your name
-march-alt2 = Fifty thousand won?
+march-alt2 = Is it three thousand won?
 march-alt2-intent = Check the amount
 
 bye = Goodbye.
@@ -43,5 +43,5 @@ bye-reply = Goodbye.
 bye-reply-intent = See her off
 bye-alt1 = Goodbye (I'm leaving).
 bye-alt1-intent = Say goodbye as you leave
-bye-alt2 = Yes, I understand.
-bye-alt2-intent = Say you've got it
+bye-alt2 = Sorry.
+bye-alt2-intent = Apologise

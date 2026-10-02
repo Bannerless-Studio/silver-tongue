@@ -1,8 +1,8 @@
 welcome = Welcome.
 welcome-reply = This, please.
 welcome-reply-intent = Point at the bread
-welcome-alt1 = Goodbye.
-welcome-alt1-intent = Say goodbye as you leave
+welcome-alt1 = Goodbye (you go).
+welcome-alt1-intent = See him off
 welcome-alt2 = Where's the shop?
 welcome-alt2-intent = Ask where the shop is
 
@@ -35,8 +35,8 @@ change-reply = OK, thank you.
 change-reply-intent = Take the change
 change-alt1 = Goodbye (you go).
 change-alt1-intent = See him off
-change-alt2 = Milk too, please.
-change-alt2-intent = Ask for milk
+change-alt2 = What's this?
+change-alt2-intent = Ask what the note is
 
 bye = Goodbye.
 bye-reply = Goodbye.

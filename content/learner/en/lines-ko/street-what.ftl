@@ -17,18 +17,18 @@ quiz-alt2-intent = Say you don't know
 good = Good!
 good-reply = What's this?
 good-reply-intent = Point at his paper and ask
-good-alt1 = It's a book.
-good-alt1-intent = Name the book
+good-alt1 = Yes, I know.
+good-alt1-intent = Say you know
 good-alt2 = Goodbye.
 good-alt2-intent = Say goodbye as you leave
 
 newspaper = It's a newspaper.
 newspaper-reply = A newspaper?
 newspaper-reply-intent = Repeat the new word
-newspaper-alt1 = A Korean book?
-newspaper-alt1-intent = Check what the book is
-newspaper-alt2 = What's this?
-newspaper-alt2-intent = Ask again
+newspaper-alt1 = Good!
+newspaper-alt1-intent = Say it's good
+newspaper-alt2 = Thank you.
+newspaper-alt2-intent = Thank him
 
 that = That's a shop.
 that-reply = That's a shop, this is a book.

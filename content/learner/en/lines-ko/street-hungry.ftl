@@ -3,8 +3,8 @@ hungry-reply = Yes, I'm hungry.
 hungry-reply-intent = Admit it
 hungry-alt1 = No, I don't know.
 hungry-alt1-intent = Say you don't know
-hungry-alt2 = Please say it slowly.
-hungry-alt2-intent = Ask him to slow down
+hungry-alt2 = Yes, I know.
+hungry-alt2-intent = Say you know
 
 food = Do you have any bread?
 food-reply = No, I don't.
@@ -17,18 +17,18 @@ food-alt2-intent = Ask about the newspaper
 shop = There's bread at the shop.
 shop-reply = Where's the shop?
 shop-reply-intent = Ask where it is
-shop-alt1 = No, there isn't.
-shop-alt1-intent = Say there's none
+shop-alt1 = Bread, please.
+shop-alt1-intent = Ask him for bread
 shop-alt2 = What's this?
 shop-alt2-intent = Ask what something is
 
 stall = The shop's here, the snack stall's over there.
 stall-reply = Thank you, Grandpa.
 stall-reply-intent = Thank him
-stall-alt1 = Please say it again.
-stall-alt1-intent = Ask him to repeat it
-stall-alt2 = Yes, I'm hungry.
-stall-alt2-intent = Say you're hungry
+stall-alt1 = No, I don't know.
+stall-alt1-intent = Say you don't know
+stall-alt2 = Bread, please.
+stall-alt2-intent = Ask him for bread
 
 go = Go on, go!
 go-reply = OK. Goodbye.

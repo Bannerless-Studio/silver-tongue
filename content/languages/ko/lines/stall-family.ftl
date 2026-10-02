@@ -14,4 +14,4 @@ brother-alt2 = 네, 배고파요.
 eat = 괜찮아요. 김밥을 먹어요.
 eat-reply = 감사합니다.
 eat-alt1 = 안녕히 계세요.
-eat-alt2 = 사진이에요?
+eat-alt2 = 김밥 얼마예요?

@@ -5,7 +5,7 @@
 
 welcome = 어서 오세요.
 welcome-reply = 이거 주세요.
-welcome-alt1 = 안녕히 계세요.
+welcome-alt1 = 안녕히 가세요.
 welcome-alt2 = 가게 어디예요?
 
 milk = 우유도 있어요.
@@ -26,7 +26,7 @@ again-alt2 = 안녕하세요.
 change = 여기 있어요.
 change-reply = 네, 감사합니다.
 change-alt1 = 안녕히 가세요.
-change-alt2 = 우유도 주세요.
+change-alt2 = 이거 뭐예요?
 
 bye = 안녕히 가세요.
 bye-reply = 안녕히 계세요.

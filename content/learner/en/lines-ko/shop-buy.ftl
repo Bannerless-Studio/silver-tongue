@@ -13,3 +13,7 @@ change-alt2-intent = Check the amount
 bye = Goodbye.
 bye-reply = Goodbye.
 bye-reply-intent = Take your leave
+bye-alt1 = Goodbye (you go).
+bye-alt1-intent = See him off
+bye-alt2 = Sorry.
+bye-alt2-intent = Apologise

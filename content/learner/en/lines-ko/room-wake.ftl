@@ -11,8 +11,8 @@ friend-alt1-intent = Say yes
 room = This is Min-jun's room.
 room-reply = Min-jun's room?
 room-reply-intent = Check whose room it is
-room-alt1 = No.
-room-alt1-intent = Say no
+room-alt1 = Yes, Min-jun.
+room-alt1-intent = Answer to his name
 room-alt2 = I'm Min-jun's friend.
 room-alt2-intent = Say you're his friend
 

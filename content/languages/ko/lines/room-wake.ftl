@@ -10,7 +10,7 @@ friend-alt1 = 네.
 
 room = 여기 민준 씨 방이에요.
 room-reply = 민준 씨 방?
-room-alt1 = 아니요.
+room-alt1 = 네, 민준 씨.
 room-alt2 = 민준 씨 친구예요.
 
 who = 누구예요?

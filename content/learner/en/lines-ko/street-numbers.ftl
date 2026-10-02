@@ -17,10 +17,10 @@ note-alt2-intent = Say it's fine
 count = One, two, three.
 count-reply = One, two, three.
 count-reply-intent = Count along
-count-alt1 = One?
-count-alt1-intent = Repeat the number
-count-alt2 = Please say it slowly.
-count-alt2-intent = Ask him to slow down
+count-alt1 = One, two.
+count-alt1-intent = Count along
+count-alt2 = Yes, thank you.
+count-alt2-intent = Say yes and thank him
 
 owed = Three! Three thousand won.
 owed-reply = Three thousand won?
@@ -33,8 +33,8 @@ owed-alt2-intent = Count
 five = One, two, three, four, five!
 five-reply = One, two, three, four, five!
 five-reply-intent = Count to five
-five-alt1 = One, two, three.
-five-alt1-intent = Count
+five-alt1 = One, two, three, four.
+five-alt1-intent = Count to five
 five-alt2 = Hello.
 five-alt2-intent = Say hello
 

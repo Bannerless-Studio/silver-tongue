@@ -26,12 +26,7 @@ tasty-reply = 네, 맛있어요!
 tasty-alt1 = 아니요, 없어요.
 tasty-alt2 = 얼마예요?
 
-work = 내일 일해요?
+work = 같이 일해요?
 work-reply = 네, 일해요!
-work-alt1 = 네, 맛있어요!
+work-alt1 = 네, 먹어요!
 work-alt2 = 아니요, 없어요.
-
-bye = 내일 와요!
-bye-reply = 네. 안녕히 계세요.
-bye-alt1 = 안녕히 가세요.
-bye-alt2 = 떡볶이 먹어요!
