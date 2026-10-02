@@ -117,9 +117,9 @@ Screens, in order (✓ agreed, → building, · planned):
 | # | Screen | What it adds | Guidance it needs |
 |---|---|---|---|
 | 1 ✓ | Crawl, then name | waking, observables only | Press Enter |
-| 2 → | Desk | three drawn papers; one bright card labelled "read" | why: "The papers on the desk might tell you where you are." |
-| 3 → | Reading a paper | one block at a time; the block's letters as a sum `ㅈ j + ㅜ u = [field]`; letters met before show `?` until tapped | what: "Sound it out, one block at a time." (first paper only); how: the sum, plus a worked example on the first block only |
-| 4 → | After each paper | what you can now tell: a name, the year 2000, a 50,000 won bill; Enter | none |
+| 2 ✓ | Desk | three drawn papers; one bright card labelled "read" | why: "The papers on the desk might tell you where you are." |
+| 3 ✓ | Reading a paper | one block at a time; the block's letters as a sum `ㅈ j + ㅜ u = [field]`; letters met before show `?` until tapped | what: "Sound it out, one block at a time." (first paper only); how: the sum, plus a worked example on the first block only |
+| 4 ✓ | After each paper | what you can now tell: a name, the year 2000, a 50,000 won bill; Enter | none |
 | 5 · | The knock, landlady's first line | 민준 is bold: the player decoded it on the ID card | how to look a word up, once |
 | 6 · | First reply | 네 / 아니요 with reading and meaning this once | none |
 | 7 · | Rest of room-wake | no top lines; meanings fade as words are heard | none |
