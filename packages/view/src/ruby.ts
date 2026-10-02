@@ -1,6 +1,6 @@
 import { wordState, type Course, type GameState, type RenderedLine } from "@silver-tongue/core";
 import { bookOn, extra } from "./course-extra";
-import { readingsOf } from "./help";
+import { inForm, readingsOf } from "./help";
 
 /** When a word's reading is written over it: while it isn't known yet ("auto"), always, or never. */
 export type RubySetting = "auto" | "on" | "off";
@@ -23,8 +23,9 @@ export interface RubySpan {
  * reading covering the whole group, their readings run together ("ireumi"). Each word is read by its
  * plainest reading as it is written in the line; a word with no reading, or whose reading is just its
  * own spelling, adds none, and a group none of whose words adds one gets none. "auto" gives a group its reading while any
- * word in it isn't known yet, "on" always, "off" never; a course without the Book (see bookOn) has
- * none whatever the setting.
+ * word in it isn't known yet, or while any word in it is written in a changed form (du for dul: the game counts
+ * hearing the word, not each form, so a form keeps its reading); "on" always, "off" never. A course without
+ * the Book (see bookOn) has none whatever the setting.
  */
 export function rubyRow(course: Course, line: RenderedLine, words: GameState["words"], now: number, ruby: RubySetting = DEFAULT_RUBY): RubySpan[] {
   if (ruby === "off" || !bookOn(course)) return [];
@@ -35,7 +36,7 @@ export function rubyRow(course: Course, line: RenderedLine, words: GameState["wo
     else groups.push([tk]);
   }
   return groups.flatMap((g) => {
-    if (ruby === "auto" && g.every((tk) => wordState(words[tk.word], now) === "known")) return [];
+    if (ruby === "auto" && g.every((tk) => wordState(words[tk.word], now) === "known" && !inForm(course, line, tk))) return [];
     const start = g[0].start;
     const end = g.at(-1)!.end;
     const text = g

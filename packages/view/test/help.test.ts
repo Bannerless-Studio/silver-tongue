@@ -103,6 +103,13 @@ describe("other forms of a word", () => {
   it("the reading row under a line reads the form that is in the line", () => {
     expect(readingRow(c, newGame(c), lineWith(form), 0)).toBe(formReadings.at(-1));
   });
+
+  it("keeps the reading row for a known word written in a form, drops it for the word itself", () => {
+    const state = newGame(c);
+    state.words = { [id]: { right: 3, wrong: 0, streak: 3, helps: 0, lapsed: false, firstSeen: 0, lastSeen: 0 } };
+    expect(readingRow(c, state, lineWith(form), 0)).toBe(formReadings.at(-1));
+    expect(readingRow(c, state, lineWith(word.w), 0)).toBeUndefined();
+  });
 });
 
 describe("reading row", () => {

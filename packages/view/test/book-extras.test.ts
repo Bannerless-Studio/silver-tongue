@@ -110,6 +110,15 @@ describe("rubyRow", () => {
     expect(rubyRow(c, line, {}, T0)).toHaveLength(2); // "auto" is the default
   });
 
+  it("auto: a known word written in a changed form (두 for 둘) keeps its reading; an alt spelling doesn't", () => {
+    const all = { k_jeo: known, k_neun: known, k_haksaeng: known, k_ieyo: known };
+    expect(rubyRow(c, line, all, T0, "auto")).toEqual([]);
+    const form = { text: "학생예요", tokens: [{ start: 0, end: 2, word: "k_haksaeng" }, { start: 2, end: 4, word: "k_ieyo" }] };
+    expect(rubyRow(c, form, all, T0, "auto")).toEqual([{ start: 0, end: 4, text: "haksaengyeyo" }]);
+    const alt = { text: "학생은", tokens: [{ start: 0, end: 2, word: "k_haksaeng" }, { start: 2, end: 3, word: "k_neun" }] };
+    expect(rubyRow(c, alt, all, T0, "auto")).toEqual([]);
+  });
+
   it("on: over every group; off: over none", () => {
     const all = { k_jeo: known, k_neun: known, k_haksaeng: known, k_ieyo: known };
     expect(rubyRow(c, line, all, T0, "on").map((r) => r.text)).toEqual(["jeoneun", "haksaengieyo"]);

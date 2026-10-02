@@ -117,6 +117,17 @@ export function readingsOf(w: Word | undefined, surface?: string): string[] {
   return w.forms?.[surface] ?? [];
 }
 
+/**
+ * Whether a token is written in one of its word's forms (du for dul): a spelling with readings of its own. The
+ * game counts hearing the word, not each form, so a reading hidden once the word is known stays for a form.
+ * An alt spelling has no readings, so it is not a form here.
+ */
+export function inForm(course: Course, line: RenderedLine, tk: RenderedLine["tokens"][number]): boolean {
+  const w = course.words[tk.word];
+  const surface = line.text.slice(tk.start, tk.end);
+  return !!w && surface !== w.w && w.forms?.[surface] !== undefined;
+}
+
 /** What looking up a word shows; `surface` is the word as written in the line, when known. */
 export function wordCard(course: Course, id: WordId, surface?: string): WordCard {
   const w = course.words[id];
@@ -162,11 +173,11 @@ export function sentenceCard(course: Course, line: RenderedLine): SentenceCard |
 }
 
 /**
- * The reading shown under a line an NPC says, while any word in it isn't known yet. Undefined once
+ * The reading shown under a line an NPC says, while any word in it isn't known yet (or is written in a form, see inForm). Undefined once
  * every word is known, when no word has a reading, or when the reading only repeats the words.
  */
 export function readingRow(course: Course, state: GameState, line: RenderedLine, now: number): string | undefined {
-  if (line.tokens.every((tk) => wordState(state.words[tk.word], now) === "known")) return undefined;
+  if (line.tokens.every((tk) => wordState(state.words[tk.word], now) === "known" && !inForm(course, line, tk))) return undefined;
   const reading = lineReading(course, line);
   const words = line.tokens.map((tk) => line.text.slice(tk.start, tk.end)).join(" ");
   return reading && reading !== words ? reading : undefined;
