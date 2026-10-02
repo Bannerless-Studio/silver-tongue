@@ -11,7 +11,14 @@
 - Start: zh/ja: button `New game` -> textbox (name) -> `That's me`. ko (/ko/): crawl (wait ~15s for `.crawl-screen .go`, Enter) -> `.name-screen` input (autofocused; type + Enter works) -> desk (Enter opens `.desk-card.next`) -> knock (Enter).
 - /quiet/ with cleared storage shows picker buttons `1 Japanese`, `2 Korean`, `3 Chinese`. /ko/ skips the picker.
 
-## Selectors / anchors (quiet)
+## Selectors / anchors (quiet, /ko/ book stage) — Stage.tsx, spec 2026-09-29 §12
+- Layout: `main.stage-wrap` > `.history` (one row per utterance: `.h-row.h-their` / `.h-row.h-mine` with `button.h-say`, notes `.h-note`), `section.stage-now` (`.direction-row .direction`, `.their.hue-N` > `.who` (name only on a scene's first line / change; `.tag` "again, slower" on a repeat) > `.say` > `.say-text` (Line with `ruby > button.w` + `rt`) + `button.q`; `.say-mean`; `.hint`), `.said-row .said` (your said line), `.their.reaction` (their reaction to a miss), `.word-paper` (word card), then `.replies`.
+- Replies: `.slips > button.slip` (`.slip-text`, `.slip-rd`, `.slip-mean`; `.slip-n` number only without touch; `.slip.tried` = missed, drawn last; number keys follow the drawn order). `button.say-nothing` = look confused. Tiles: `.pieces .tiles button.tile.piece` (+`.pieces .hint` once), built line `.said-row.building` with `.bt.undo` / `.bt.send`.
+- Between scenes: `section.stage-now.loose` (directions centred) and `.replies .prompt button.next-btn.only` (+`.also`).
+- Holds: after a right pick the said line stays ~1.1 s before their answer (slips hidden); a scene opening shows its direction alone ~1.2 s. Any key or tap on `main` skips a hold (and does nothing else). Wait ~1.4 s after a pick before reading slips.
+- Reload mid-game shows the title (`Continue`); a resumed game between scenes is a menu (no knock screen).
+
+## Selectors / anchors (quiet, /quiet/ zh/ja transcript)
 - Transcript: `[role=log]` children. NPC line `div.ln.npc` (`.who`, `.line` with `button.w` words), gloss rows `div.gl` ("┆ 민준 minjun · Min-jun (new)").
 - Options: `main button` whose innerText starts with a digit; `.prompt button.opt`. Strip `rt` before matching text (ruby text is inlined in innerText: "네ne?").
 - Readings are `<ruby><rt>`: count `main rt`. First-time glossed words get no ruby in the transcript (reading is in the gloss row); options always carry ruby in auto.
@@ -35,8 +42,9 @@
 - art.json 404s (ko-seoul, ja-japan) come from the VN page only; /ko/ and /quiet/ log none.
 - ko desk automation: papers `idcard`, `newspaper`, `bill`. Loop: `.desk-card.next` click; reading screen `.big` = current syllable, type its single-syllable romanization into `.sum input` + Enter; `.next-btn` after each paper; then `.desk-knock button` ("open the door") starts room-wake directly (no menu). Papers/progress can't be pre-seeded: naming resets them.
 - ko touch: new context `browser.newContext({viewport, hasTouch:true, isMobile:true})` makes `(pointer: coarse)` true (no numbers on onboarding replies, "Tap a word..." hint, no ↵ glyphs). Desktop context shows numbers, "Click a word...", `↵`.
-- ko transcript (book): first NPC line of a scene has `.hint` (look-up hint; gone after first word lookup or scene end, kept in `silver-tongue:lookup-hint:<course>`). Onboarding replies are `.opt.onb` (`.opt-ko`, `.opt-mean`); a lone menu action is `button.next-btn.only`. Bold recognised words: `.w.sounded`. Footer: Status hidden until day 2; no `.keybar` on book courses (detect tiles by `.prompt .tiles`). First tiles show a one-time `.hint` (`silver-tongue:tiles-hint:<course>`).
-- ko miss: the player's echo, then the NPC reaction (`네?` prefix) with the request and its meaning; the narration line is dropped while onboarding. Options unchanged.
+- ko stage (book): the scene's first NPC line has `.hint` (look-up hint; gone after first word lookup or scene end, kept in `silver-tongue:lookup-hint:<course>`). Bold recognised words: `.w.sounded`. Footer: Status hidden until day 2; no `.keybar` on book courses (detect tiles by `.pieces .tiles`). First tiles show a one-time `.pieces .hint` (`silver-tongue:tiles-hint:<course>`).
+- ko miss: one exchange stays on stage: `.said` = the wrong reply, `.their.reaction` = their reaction, `.tag` on the line, the clip replays slower; the tried slip gets `.tried` and goes last. A second miss replaces said/reaction and adds reading+meaning under the line. Nothing stacks; misses never enter history.
+- ko anchor: no rent row until room-rent is done (scene flag `rent: true`), even when short.
 - Cross-context screenshots: `page.screenshot({path})` via browser_run_code_unsafe; build chain after source edits: build-course (ui.ftl), quiet-web + vn-web build.mjs, site.ts; server on :4173 serves `site/` live.
 - ko menus (book): one `.next-btn.only` (story scene here > bed at night > way to next scene > job); the rest in a quiet `.also` row, no numbers on touch; disabled items hidden. Ways read from `place-<id>-go` ("Go outside", "Go down the alley to the stall"); at bedtime the way reads "Go back to Min-jun's Room to sleep". Playing the chain = press `.next-btn.only` between scenes. NPCs read "The old man"/"The young woman" until their first scene ends.
 - ko stage-1 chain and right replies (options shuffle; match with `rt` stripped and Hangul only):
