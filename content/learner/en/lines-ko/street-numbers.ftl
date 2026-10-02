@@ -1,24 +1,40 @@
-one-two = One, two.
-one-two-reply = One, two.
-one-two-reply-intent = Count on
-one-two-alt1 = Yes?
-one-two-alt1-intent = Look puzzled
-one-two-alt2 = No, I don't know.
-one-two-alt2-intent = Say you don't know
+cost = Bread, milk: how much?
+cost-reply = I don't know.
+cost-reply-intent = Answer honestly
+cost-alt1 = Yes, thank you.
+cost-alt1-intent = Say yes and thank him
+cost-alt2 = Where's the shop?
+cost-alt2-intent = Ask where the shop is
 
-three-four = One, two, three, four.
-three-four-reply = One, two, three, four.
-three-four-reply-intent = Count on
-three-four-alt1 = One, two.
-three-four-alt1-intent = Count on
-three-four-alt2 = Thank you.
-three-four-alt2-intent = Thank him
+note = This is a thousand won. One.
+note-reply = One?
+note-reply-intent = Repeat the number
+note-alt1 = Milk too, please.
+note-alt1-intent = Ask for milk
+note-alt2 = Good!
+note-alt2-intent = Say it's fine
+
+count = One, two, three.
+count-reply = One, two, three.
+count-reply-intent = Count along
+count-alt1 = One?
+count-alt1-intent = Repeat the number
+count-alt2 = Please say it slowly.
+count-alt2-intent = Ask him to slow down
+
+owed = Three! Three thousand won.
+owed-reply = Three thousand won?
+owed-reply-intent = Check the amount
+owed-alt1 = It's a thousand won.
+owed-alt1-intent = Give an amount
+owed-alt2 = One, two.
+owed-alt2-intent = Count
 
 five = One, two, three, four, five!
 five-reply = One, two, three, four, five!
 five-reply-intent = Count to five
-five-alt1 = One, two, three, four.
-five-alt1-intent = Count on
+five-alt1 = One, two, three.
+five-alt1-intent = Count
 five-alt2 = Hello.
 five-alt2-intent = Say hello
 

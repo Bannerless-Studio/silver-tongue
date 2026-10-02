@@ -4,7 +4,7 @@
  "npc": "clerk",
  "stage": 1,
  "after": [
-  "shop-prices"
+  "shop-count"
  ],
  "requires": {
   "trust": {
@@ -29,6 +29,16 @@
    "pay": 0,
    "missCost": 0,
    "cost": 1000
+  },
+  {
+   "id": "change",
+   "slots": {},
+   "expect": {
+    "action": "count"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
   },
   {
    "id": "bye",

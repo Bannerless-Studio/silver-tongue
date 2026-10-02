@@ -1,0 +1,54 @@
+{
+ "id": "street-again",
+ "place": "street",
+ "npc": "oldman",
+ "stage": 1,
+ "after": [
+  "street-hello"
+ ],
+ "requires": {},
+ "repeatable": false,
+ "trustGain": 1,
+ "exchanges": [
+  {
+   "id": "fast",
+   "slots": {},
+   "expect": {
+    "action": "where"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "again",
+   "slots": {},
+   "expect": {
+    "action": "where"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "slowly",
+   "slots": {},
+   "expect": {
+    "action": "where"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "slow",
+   "slots": {},
+   "expect": {
+    "action": "where"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  }
+ ]
+}

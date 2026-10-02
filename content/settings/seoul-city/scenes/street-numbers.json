@@ -4,14 +4,34 @@
  "npc": "oldman",
  "stage": 1,
  "after": [
-  "street-hello"
+  "shop-prices"
  ],
  "requires": {},
  "repeatable": false,
  "trustGain": 1,
  "exchanges": [
   {
-   "id": "one-two",
+   "id": "cost",
+   "slots": {},
+   "expect": {
+    "action": "cost"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "note",
+   "slots": {},
+   "expect": {
+    "action": "note"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "count",
    "slots": {},
    "expect": {
     "action": "numbers"
@@ -21,10 +41,10 @@
    "missCost": 0
   },
   {
-   "id": "three-four",
+   "id": "owed",
    "slots": {},
    "expect": {
-    "action": "numbers"
+    "action": "owed"
    },
    "hinges": [],
    "pay": 0,

@@ -1,0 +1,64 @@
+{
+ "id": "shop-count",
+ "place": "shop",
+ "npc": "clerk",
+ "stage": 1,
+ "after": [
+  "street-numbers"
+ ],
+ "requires": {},
+ "repeatable": false,
+ "trustGain": 1,
+ "exchanges": [
+  {
+   "id": "welcome",
+   "slots": {},
+   "expect": {
+    "action": "welcome"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "note",
+   "slots": {},
+   "expect": {
+    "action": "claim"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "count",
+   "slots": {},
+   "expect": {
+    "action": "refund"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "sorry",
+   "slots": {},
+   "expect": {
+    "action": "sorry"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "bye",
+   "slots": {},
+   "expect": {
+    "action": "bye"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  }
+ ]
+}

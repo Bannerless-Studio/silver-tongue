@@ -25,7 +25,7 @@
     "street"
    ],
    "after": [
-    "street-hungry"
+    "shop-count"
    ]
   },
   "shop": {
@@ -33,7 +33,7 @@
     "street"
    ],
    "after": [
-    "street-numbers"
+    "street-hungry"
    ]
   }
  },

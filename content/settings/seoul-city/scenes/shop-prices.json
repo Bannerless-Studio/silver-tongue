@@ -4,7 +4,7 @@
  "npc": "clerk",
  "stage": 1,
  "after": [
-  "street-numbers"
+  "street-hungry"
  ],
  "requires": {},
  "repeatable": false,
@@ -31,10 +31,20 @@
    "missCost": 0
   },
   {
-   "id": "bread",
+   "id": "price",
    "slots": {},
    "expect": {
-    "action": "bread"
+    "action": "price"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "again",
+   "slots": {},
+   "expect": {
+    "action": "again"
    },
    "hinges": [],
    "pay": 0,

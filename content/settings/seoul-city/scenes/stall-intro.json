@@ -4,7 +4,7 @@
  "npc": "jiwoo",
  "stage": 1,
  "after": [
-  "street-hungry"
+  "shop-count"
  ],
  "requires": {},
  "repeatable": false,
@@ -51,10 +51,10 @@
    "missCost": 0
   },
   {
-   "id": "gimbap",
+   "id": "tasty",
    "slots": {},
    "expect": {
-    "action": "gimbap"
+    "action": "tasty"
    },
    "hinges": [],
    "pay": 0,

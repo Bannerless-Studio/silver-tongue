@@ -619,5 +619,114 @@
    "eul"
   ],
   "attach": true
+ },
+ {
+  "id": "ko-eodi",
+  "w": "어디",
+  "lv": "T1",
+  "readings": [
+   "eodi"
+  ]
+ },
+ {
+  "id": "ko-dasi",
+  "w": "다시",
+  "lv": "T1",
+  "readings": [
+   "dasi"
+  ]
+ },
+ {
+  "id": "ko-malhaeyo",
+  "w": "말해요",
+  "lv": "T1",
+  "readings": [
+   "malhaeyo"
+  ],
+  "forms": {
+   "말해": [
+    "malhae"
+   ]
+  }
+ },
+ {
+  "id": "ko-cheoncheonhi",
+  "w": "천천히",
+  "lv": "T1",
+  "readings": [
+   "cheoncheonhi"
+  ]
+ },
+ {
+  "id": "ko-chaek",
+  "w": "책",
+  "lv": "T1",
+  "readings": [
+   "chaek"
+  ]
+ },
+ {
+  "id": "ko-joayo",
+  "w": "좋아요",
+  "lv": "T1",
+  "readings": [
+   "joayo"
+  ]
+ },
+ {
+  "id": "ko-sinmun",
+  "w": "신문",
+  "lv": "T1",
+  "readings": [
+   "sinmun"
+  ]
+ },
+ {
+  "id": "ko-jeogeo",
+  "w": "저거",
+  "lv": "T1",
+  "readings": [
+   "jeogeo"
+  ]
+ },
+ {
+  "id": "ko-gage",
+  "w": "가게",
+  "lv": "T1",
+  "readings": [
+   "gage"
+  ]
+ },
+ {
+  "id": "ko-eolma",
+  "w": "얼마",
+  "lv": "T1",
+  "readings": [
+   "eolma"
+  ]
+ },
+ {
+  "id": "ko-masisseoyo",
+  "w": "맛있어요",
+  "lv": "T1",
+  "readings": [
+   "masisseoyo"
+  ]
+ },
+ {
+  "id": "ko-sa",
+  "w": "사",
+  "lv": "T1",
+  "readings": [
+   "sa"
+  ]
+ },
+ {
+  "id": "ko-mianhaeyo",
+  "w": "미안해요",
+  "lv": "T1",
+  "readings": [
+   "mianhaeyo"
+  ]
  }
 ]

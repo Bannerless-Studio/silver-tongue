@@ -1,0 +1,64 @@
+{
+ "id": "street-what",
+ "place": "street",
+ "npc": "oldman",
+ "stage": 1,
+ "after": [
+  "street-again"
+ ],
+ "requires": {},
+ "repeatable": false,
+ "trustGain": 1,
+ "exchanges": [
+  {
+   "id": "book",
+   "slots": {},
+   "expect": {
+    "action": "book"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "quiz",
+   "slots": {},
+   "expect": {
+    "action": "quiz"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "good",
+   "slots": {},
+   "expect": {
+    "action": "good"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "newspaper",
+   "slots": {},
+   "expect": {
+    "action": "newspaper"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "that",
+   "slots": {},
+   "expect": {
+    "action": "that"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  }
+ ]
+}
