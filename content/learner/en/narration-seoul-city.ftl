@@ -79,7 +79,7 @@ scene-stall-family = Take a break with Ji-woo
 scene-stall-family-start = Between customers, Ji-woo takes a photo out of her apron pocket.
 scene-stall-family-end = She puts the photo away and doesn't take it out again. The face in it looked familiar.
 
-scene-room-rent = Talk about rent
+scene-room-rent = See what the landlady wants
 scene-room-rent-start = The landlady is waiting outside your door with a ledger.
 scene-room-rent-end = The landlady writes 50,000 on a slip of paper and tapes it to your door.
 

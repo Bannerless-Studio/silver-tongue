@@ -48,7 +48,8 @@ export type WordExtra = Word & { attach?: boolean; alt?: string[] };
 export type LanguageExtra = LanguageProfile & { tileGap?: string; book?: boolean };
 /** `pin`: the NPC's line is a paper (a notice, a form) kept in the Book once the scene is done. */
 export type ExchangeExtra = Exchange & { pin?: boolean };
-export type SceneExtra = Omit<Scene, "exchanges"> & { exchanges: ExchangeExtra[] };
+/** `rent`: the scene where rent is first raised; a course with the Book keeps rent off the anchor row until it is done. */
+export type SceneExtra = Omit<Scene, "exchanges"> & { exchanges: ExchangeExtra[]; rent?: boolean };
 
 export type CourseExtra = Omit<Course, "words" | "language" | "scenes"> & {
   words: Record<WordId, WordExtra>;

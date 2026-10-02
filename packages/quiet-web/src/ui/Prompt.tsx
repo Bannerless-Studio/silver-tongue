@@ -4,25 +4,9 @@ import { bookOn, quietRuby, type RubySetting } from "@silver-tongue/view";
 import { CONFUSED, type Quiet, type QuietView } from "../quiet";
 import { Line } from "./Line";
 import { ReplyLine } from "./ReplyLine";
+import { finishTilesHint, tilesHintDone } from "./Stage";
 
 const matches = (query: string) => typeof matchMedia === "function" && matchMedia(query).matches;
-
-/** The tiles' one-time how (kept per course, like the look-up hint): gone once a reply has been built. */
-const tilesHintKey = (course: string) => `silver-tongue:tiles-hint:${course}`;
-function tilesHintDone(course: string): boolean {
-  try {
-    return localStorage.getItem(tilesHintKey(course)) === "1";
-  } catch {
-    return false;
-  }
-}
-function finishTilesHint(course: string) {
-  try {
-    localStorage.setItem(tilesHintKey(course), "1");
-  } catch {
-    // private window: the hint shows again next time
-  }
-}
 
 /** What the player can do now: a name, a numbered reply, tiles, or the place's commands. */
 export function Prompt({ q, view, ruby }: { q: Quiet; view: QuietView; ruby: RubySetting }) {

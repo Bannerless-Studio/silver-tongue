@@ -9,6 +9,7 @@
  "requires": {},
  "repeatable": false,
  "trustGain": 1,
+ "rent": true,
  "exchanges": [
   {
    "id": "hello",

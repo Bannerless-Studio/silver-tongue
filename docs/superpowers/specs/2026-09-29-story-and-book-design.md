@@ -158,3 +158,39 @@ Deviations from the brief's table, with reasons:
 - **Change sums use only 1, 3, 4, 5.** Sino 2 (이) is spelled like the subject marker 이 and the lexicon rejects two words with one spelling: no price says 이천. Bread and milk are ₩1,000 each, paid with ₩5,000; the clerk returns ₩1,000 instead of ₩3,000.
 - **No "when" (언제) in room-rent.** The scene already introduces seven words; "when" waits for stage 2.
 - **Mentor notes:** "이에요 and 예요" now triggers on street-what (책이에요 / 가게예요).
+
+## 12. The conversation stage (2026-10-02)
+
+Book courses only (`bookOn`); zh/ja keep the transcript. The conversation is a stage, not a log: one utterance is on it at a time, everything earlier is small history above it, and what you can say comes from your book (paper slips) at the bottom.
+
+**Materials.** Their world is bright text on the dark page with a thin rule at the left in the speaker's colour. Everything of yours is paper, the desk cards' paper and ink: reply slips, your said line, tile pieces, the word card. Paper means *say*. The cyan outline means *do* (open the door, go outside, sleep). Nothing else is boxed.
+
+**Tokens** (`quiet.css`, `.book` scope):
+
+| token | value | use |
+|---|---|---|
+| `--paper` | `#e8e1cf` | slips, said line, tiles, word card |
+| `--ink` | `#2a2620` | text on paper |
+| `--ink-2` | `#6e6658` | readings and meanings on paper |
+| `--who-0..3` | `#8fb6d9` slate blue, `#d9a86c` ochre, `#9fc58d` sage, `#c9a0c8` heather | speaker rule and name, by the NPC's order in the setting's `world.npcs` (not by id) |
+| `--fs-xs / sm / md / lg / xl` | 12 / 13.5 / 15 / 21 / 30px (xl 28px under 560px) | tags, history+narration, meaning, slip Korean, the line on stage |
+| `--ko` | the system UI face (`system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif`) | all Korean; no web fonts (a serif face changes ㅈ/ㅊ/ㅎ) |
+
+Readings stay in the page mono; meanings and narration in the page font.
+
+**Layout** (top to bottom): anchor row; history (a band of fixed height that scrolls, newest at its foot; shrinks first when space is short); the stage (stage direction row of reserved height, speaker name row of reserved height, the line, your said line); the reply area pinned above the footer. The line's position depends only on the band above it, so it never jumps when lines change.
+
+**States.**
+- *Scene start*: the scene's opening narration alone on the stage (centred, upright, small, muted); after ~1.2 s the first line comes in.
+- *Their line*: speaker name (first line of a scene, or on change), the line large (semibold), readings under word groups (ruby rules unchanged), the meaning muted under it while onboarding, `?` beside it after; the one-time look-up hint under the first line.
+- *Replies*: slips right-aligned in one column of equal width; rows Korean / reading / meaning, every slip with the same rows (reading row when any slip has one, meaning row while onboarding or when any slip holds a word not heard yet: the meaning while onboarding, the intent after, the meaning where a reply has no intent). Number hints only with a keyboard, outside the slip. "… say nothing" is a quiet text control under the slips.
+- *Picked*: the slip becomes your said line (paper, compact, right, under their line), the other slips go; ~1.1 s later their answer replaces the stage and the pair moves to history. Any key or tap ends the wait early.
+- *Miss*: your slip is laid down as said; their reaction small under it; the request stays as the line, pulses once and carries the tag "again, slower" (or "again" when rephrased); the slip you tried goes back to the stack faded and last. A second miss replaces the said line and reaction; nothing stacks.
+- *Word look-up*: a small paper card anchored under the word: word, reading, meaning, play. Any tap elsewhere closes it.
+- *Tiles*: paper pieces at the bottom; the sentence being built sits where your said line goes, with ⌫ and ✓ beside it; the one-time hint sits over the tile row, aligned with it.
+- *Scene end*: speech clears; the end narration sits centred on the stage; one cyan control at the bottom, the rest on one quiet row (primaryItem unchanged).
+- *History*: one line per utterance: their lines left with the speaker's rule, yours right on paper, Korean only; narration and finished scenes small and dim. A tap opens a line's reading and meaning and plays it again. Missed replies don't enter history.
+
+**Motion.** ≤300 ms, transform and opacity only: the line rises in, the said line slides up from the slips, a repeat pulses once. None under `prefers-reduced-motion`.
+
+Also in this pass: the rent row stays off the anchor until the scene that raises rent (`rent: true` on the scene, room-rent) is done; the room-rent title says what is seen ("See what the landlady wants"); the Papers tab shows a clue line whole in Hangul with its reading row under it.

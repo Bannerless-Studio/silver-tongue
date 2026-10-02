@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { newGame, type GameState, type WordRecord } from "@silver-tongue/core";
-import { anchorRow, glossPolicy, makeText, notebookDefault, rentDueInDays, reviewTell, uiTextProblems } from "../src/index";
+import { newGame, type Course, type GameState, type RenderedLine, type WordRecord } from "@silver-tongue/core";
+import { anchorRow, glossPolicy, makeText, notebookDefault, rentDueInDays, replyMeanings, reviewTell, speakerHue, uiTextProblems, type CourseExtra } from "../src/index";
 import { fixtureWithText } from "../src/testing";
 
 const course = fixtureWithText();
@@ -105,5 +105,38 @@ describe("quiet text", () => {
     expect(uiTextProblems(withoutQuiet, "en")).toContain('learner text: missing "quiet-anchor"');
     expect(t("quiet-rent", { currency: "¥", rent: 200, days: 1, wallet: 140 })).toBe("rent ¥200 due tomorrow · you have ¥140");
     expect(t("quiet-why-missed", { count: 2 })).toBe("missed ×2");
+  });
+});
+
+describe("the conversation stage (a course with the Book)", () => {
+  const book = (scenes: (s: CourseExtra["scenes"][number]) => void = () => {}): Course => {
+    const c = structuredClone(course) as unknown as CourseExtra;
+    c.language.book = true;
+    c.scenes.forEach(scenes);
+    return c as unknown as Course;
+  };
+
+  it("keeps rent off the anchor row until the scene that raises it is done, even when short", () => {
+    const withRent = book((s) => void (s.id === course.scenes[0].id && (s.rent = true)));
+    const short = { day: 6, wallet: 0 };
+    expect(anchorRow(withRent, game(short), t).rent).toBeUndefined();
+    expect(anchorRow(withRent, game({ ...short, rentLate: true }), t).rent).toBeUndefined();
+    expect(anchorRow(withRent, game({ ...short, scenesDone: { [course.scenes[0].id]: 1 } }), t).rent).toMatchObject({ dueInDays: 1 });
+  });
+
+  it("gives each NPC a speaker colour by their order in the setting, wrapping after four", () => {
+    const npcs = Object.keys(course.world.npcs);
+    expect(npcs.map((n) => speakerHue(course, n))).toEqual(npcs.map((_, i) => i % 4));
+    expect(speakerHue(course, "nobody")).toBe(0);
+  });
+
+  it("gives every reply slip in a set the same meaning row, or none", () => {
+    const o = (text: string, word: string, extra: Partial<RenderedLine>): RenderedLine => ({ text, tokens: [{ start: 0, end: text.length, word }], ...extra });
+    const opts = [o("a", "w_a", { meaning: "A.", intent: "Say a" }), o("b", "w_b", { meaning: "B." })];
+    const heard = { w_a: rec({ right: 1, firstSeen: 1 }), w_b: rec({ right: 1, firstSeen: 1 }) };
+    expect(replyMeanings(opts, {}, NOW, true)).toEqual(["A.", "B."]);
+    // After onboarding: intents, the meaning where a reply has none, while a word in them is unheard.
+    expect(replyMeanings(opts, { w_a: heard.w_a }, NOW, false)).toEqual(["Say a", "B."]);
+    expect(replyMeanings(opts, heard, NOW, false)).toBeUndefined();
   });
 });

@@ -1,12 +1,13 @@
 import { useState } from "preact/hooks";
-import type { CatalogEntry, WordState } from "@silver-tongue/core";
+import type { CatalogEntry, RenderedLine, WordState } from "@silver-tongue/core";
 import {
-  bookOn, dayPart, guideView, hasLetters, hudValues, letterCount, lettersView, nextRuby, nextSpeed, notebookDefault, notebookEntries, paperGlosses, paperParts, papers, peopleList, rentDueInDays, settingsRows,
+  bookOn, dayPart, guideView, hasLetters, hudValues, letterCount, lettersView, nextRuby, nextSpeed, notebookDefault, notebookEntries, paperGlosses, papers, peopleList, quietRuby, rentDueInDays, settingsRows,
   type Paper, type SettingsScreen,
 } from "@silver-tongue/view";
 import type { Quiet } from "../quiet";
 import type { Page } from "./App";
 import { partLabel } from "./Anchor";
+import { Line } from "./Line";
 import { Person, trustBar } from "./Person";
 
 const touchScreen = () => typeof matchMedia === "function" && matchMedia("(pointer: coarse)").matches;
@@ -28,17 +29,10 @@ type WordsView = "shaky" | "met" | "known" | "all";
 type NotebookView = "letters" | WordsView | "papers";
 const VIEWS: WordsView[] = ["shaky", "met", "known", "all"];
 
-/** A paper's line: known words as they are, the rest blanks, or their reading (dim) when there is one. */
-function PaperLine({ paper }: { paper: Paper }) {
-  return (
-    <span class="line">
-      {paperParts(paper).map((part, i) =>
-        !("word" in part) ? <span key={i}>{part.text}</span>
-          : part.blank.known ? <span key={i} class="nb-w">{part.text}</span>
-          : <span key={i} class="dim blank">{part.blank.reading ?? "____"}</span>,
-      )}
-    </span>
-  );
+/** A paper's line (a course with the Book): the line whole, in its own script, readings under the word groups not known yet. */
+function PaperLine({ q, paper, now }: { q: Quiet; paper: Paper; now: number }) {
+  const line = { text: paper.text, tokens: paper.tokens } as RenderedLine;
+  return <span lang={q.course.language.locale}><Line line={line} now={now} book ruby={quietRuby(q.course, line, q.core.state.words, now, "auto")} /></span>;
 }
 
 /** Opens on the words that need work and why; the rest are one tap away on the tabs up top, which
@@ -123,7 +117,7 @@ export function Notebook({ q, onClose, first }: { q: Quiet; onClose: () => void;
           {open === i && (
             <div class="paper-body">
               <p>
-                <PaperLine paper={p} />
+                <PaperLine q={q} paper={p} now={now} />
                 {p.audio.length > 0 && <button type="button" class="play" aria-label={t("vn-play-word")} onClick={() => q.play(p.audio)}>▶</button>}
               </p>
               {paperGlosses(course, p).map((g) => <p key={g.word}><span class="nb-w">{g.text}</span> <span class="dim">{g.gloss}</span></p>)}

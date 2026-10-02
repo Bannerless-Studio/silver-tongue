@@ -7,9 +7,10 @@ import { glossPolicy, lineParts, type RubySpan } from "@silver-tongue/view";
  * the rest are bare. `ruby`: readings written small under their word groups (see the view's quietRuby and lineParts).
  * `sounded`: indexes of tokens the player already sounded out on the desk, drawn bold (see soundedTokens).
  * `book`: a course with the Book, where every word is bare and its reading is the one mark (see glossPolicy).
+ * `onWord` gets the word's element too, for a card anchored to it.
  */
 export function Line({ line, fresh = [], words, now, ruby = [], book = false, sounded, onWord }: {
-  line: RenderedLine; fresh?: WordId[]; words?: Record<WordId, WordRecord>; now: number; ruby?: RubySpan[]; book?: boolean; sounded?: ReadonlySet<number>; onWord?: (w: WordId, surface: string) => void;
+  line: RenderedLine; fresh?: WordId[]; words?: Record<WordId, WordRecord>; now: number; ruby?: RubySpan[]; book?: boolean; sounded?: ReadonlySet<number>; onWord?: (w: WordId, surface: string, el: HTMLElement) => void;
 }) {
   const drawWord = (i: number) => {
     const tk = line.tokens[i];
@@ -18,7 +19,7 @@ export function Line({ line, fresh = [], words, now, ruby = [], book = false, so
     const policy = fresh.includes(tk.word) ? "gloss" : words && glossPolicy(wordState(words[tk.word], now), book) === "mark" ? "mark" : "bare";
     const cls = `w${policy === "gloss" ? " new" : policy === "mark" ? " shaky" : ""}${sounded?.has(i) ? " sounded" : ""}`;
     const word = onWord ? (
-      <button key={i} type="button" class={cls} onClick={(e) => (e.stopPropagation(), onWord(tk.word, text))}>{text}</button>
+      <button key={i} type="button" class={cls} onClick={(e) => (e.stopPropagation(), onWord(tk.word, text, e.currentTarget))}>{text}</button>
     ) : (
       <span key={i} class={cls}>{text}</span>
     );

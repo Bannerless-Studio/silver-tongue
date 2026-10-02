@@ -357,3 +357,176 @@ textarea { width: 100%; background: var(--bg); border: 1px solid var(--line); bo
 .guide-text { margin: 0 0 0.2rem; }
 .guide-ex { display: flex; flex-wrap: wrap; gap: 0.25rem 1.2rem; }
 .guide-ex .letter .nb-r { font-size: 0.85em; }
+
+/* The conversation stage (a course with the Book; Stage.tsx, spec 2026-09-29 section 12). Their world is
+ * text on the dark page under a rule in the speaker's colour; everything of yours is paper (say); the cyan
+ * outline is the one "do" control. */
+.book {
+  --paper: #e8e1cf;
+  --ink: #2a2620;
+  --ink-2: #6e6658;
+  --who-0: #8fb6d9;
+  --who-1: #d9a86c;
+  --who-2: #9fc58d;
+  --who-3: #c9a0c8;
+  --fs-xs: 12px;
+  --fs-sm: 13.5px;
+  --fs-md: 15px;
+  --fs-lg: 21px;
+  --fs-xl: 30px;
+  /* The language learned in the system UI face, never a web font: a serif face changes the shapes of letters just learned. */
+  --l2-face: system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+  --hist-h: clamp(4.5rem, 19dvh, 11rem);
+  --gutter: 16px;
+}
+.book .hue-0 { --who: var(--who-0); } .book .hue-1 { --who: var(--who-1); }
+.book .hue-2 { --who: var(--who-2); } .book .hue-3 { --who: var(--who-3); }
+.book .stage-wrap [lang] { font-family: var(--l2-face); }
+.book rt { font-family: var(--mono); }
+
+.stage-wrap {
+  flex: 1; min-height: 0; display: flex; flex-direction: column;
+  overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; padding: 0 var(--gutter);
+}
+
+/* History: a band of fixed height above the stage, scrolled to its newest line. */
+.history {
+  flex: 0 1 var(--hist-h); min-height: 0; overflow-y: auto; overflow-x: hidden;
+  display: flex; flex-direction: column; gap: 0.3rem; padding: 0.75rem 0 0.5rem;
+  font-size: var(--fs-sm); line-height: 1.45;
+  mask-image: linear-gradient(to bottom, transparent 0, #000 1.5rem);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 1.5rem);
+}
+.history > :first-child { margin-top: auto; }
+.h-row { display: flex; flex-direction: column; max-width: 85%; animation: rise 0.2s ease-out both; }
+.h-their { align-self: flex-start; border-left: 2px solid var(--who); padding-left: 0.6rem; }
+.h-their .h-say { color: var(--text); opacity: 0.72; font-size: var(--fs-md); }
+.h-mine { align-self: flex-end; align-items: flex-end; }
+.h-mine .h-say { background: var(--paper); color: var(--ink); opacity: 0.6; font-size: var(--fs-sm); padding: 0.05rem 0.5rem; border-radius: 2px; }
+.h-say { text-align: inherit; overflow-wrap: anywhere; }
+.h-say:hover { opacity: 1 !important; }
+.h-open { color: var(--muted); font-size: var(--fs-xs); padding-top: 0.1rem; }
+.h-note { color: var(--muted); font-size: var(--fs-xs); text-align: center; opacity: 0.85; overflow-wrap: anywhere; }
+.h-note.done { opacity: 0.7; }
+.h-note.good { color: var(--green); }
+.h-note.day { margin-top: 0.4rem; letter-spacing: 0.04em; }
+
+/* The stage: a direction row, their line, your said line. Rows above the line keep their height so it never moves. */
+.stage-now { position: relative; flex: 1 0 auto; display: flex; flex-direction: column; padding: 0.25rem 0 1rem; }
+.stage-now.loose { justify-content: center; align-items: center; gap: 0.6rem; min-height: 6rem; }
+.direction-row { min-height: calc(2 * 1.45 * var(--fs-sm) + 0.6rem); display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 0.6rem; }
+.direction {
+  color: var(--muted); font-size: var(--fs-sm); line-height: 1.45; text-align: center;
+  max-width: 34rem; margin: 0 auto; overflow-wrap: anywhere; animation: fade-in 0.3s ease-out both;
+}
+.direction.good { color: var(--green); }
+.stage-now.loose .direction { font-size: var(--fs-md); line-height: 1.55; }
+
+.their { border-left: 2px solid var(--who); padding-left: 0.9rem; max-width: 40rem; }
+.their .who { display: flex; align-items: baseline; gap: 0.75rem; min-height: 1.45em; font-size: var(--fs-sm); color: var(--who); line-height: 1.45; }
+.their .tag { color: var(--muted); font-size: var(--fs-xs); border: 1px solid currentColor; border-radius: 2px; padding: 0 0.35rem; line-height: 1.5; animation: fade-in 0.3s ease-out both; }
+.say { display: flex; align-items: flex-start; gap: 0.5rem; padding-top: 0.15rem; }
+.say-text { font-size: var(--fs-xl); font-weight: 600; line-height: 1.5; color: #f2f5f7; overflow-wrap: anywhere; min-width: 0; }
+.say-text ruby { margin-right: 0.08em; }
+.say-text rt { font-size: var(--fs-xs); font-weight: 400; color: var(--muted); letter-spacing: 0.02em; line-height: 1.2; padding: 0 0.15em; }
+.book .say .w:hover { color: inherit; }
+@media (hover: hover) { .book .say .w:hover { color: var(--who); } }
+.book .say .w.sounded { font-weight: 800; color: #fff; }
+.say .q {
+  flex: none; width: 1.75rem; height: 1.75rem; margin-top: 0.55rem; border: 1px solid var(--line); border-radius: 50%;
+  color: var(--muted); font-size: var(--fs-sm); display: inline-flex; align-items: center; justify-content: center; text-align: center;
+}
+.say .q:hover, .say .q[aria-expanded="true"] { color: var(--cyan); border-color: var(--cyan); }
+.say-mean { color: var(--muted); font-size: var(--fs-md); line-height: 1.45; padding-top: 0.2rem; }
+.their .hint { margin: 0.5rem 0 0; font-size: var(--fs-sm); }
+.say.enter { animation: rise 0.25s ease-out both; }
+/* A repeat: the same line stays and pulses once; the rule brightens with it. */
+.say.again { animation: again 0.3s ease-out both; }
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes again { 0% { transform: scale(1); } 40% { transform: scale(1.025); opacity: 0.6; } 100% { transform: scale(1); opacity: 1; } }
+
+/* Their reaction to a miss: small, under your said line. */
+.their.reaction { margin-top: 0.5rem; padding-left: 0.6rem; border-left-width: 2px; }
+.their.reaction .say-text { font-size: var(--fs-lg); font-weight: 500; opacity: 0.85; }
+
+/* Your said line: paper, compact, your side. */
+.said-row { display: flex; justify-content: flex-end; align-items: center; gap: 0.5rem; margin-top: 0.9rem; }
+.said {
+  background: var(--paper); color: var(--ink); font-size: var(--fs-lg); line-height: 1.35; font-weight: 500;
+  padding: 0.35rem 0.8rem; border-radius: 2px; max-width: 85%; overflow-wrap: anywhere;
+  animation: lay 0.28s ease-out both;
+}
+.said .cost { display: block; font-family: var(--mono); font-size: var(--fs-xs); color: var(--ink-2); font-weight: 400; }
+.said .cost.mixup { color: #9b3b32; }
+@keyframes lay { from { opacity: 0; transform: translateY(2.5rem); } to { opacity: 1; transform: none; } }
+/* The sentence being built from tiles sits where your said line goes, ⌫ and ✓ beside it. */
+.building .said { animation: none; min-width: 6rem; min-height: 2.4rem; }
+.building .said.empty { background: transparent; border: 1px dashed var(--ink-2); }
+.building .bt {
+  flex: none; width: 2.6rem; height: 2.6rem; display: inline-flex; align-items: center; justify-content: center; text-align: center;
+  border-radius: 2px; font-size: 1.05rem;
+}
+.building .bt.undo { color: var(--muted); border: 1px solid var(--line); }
+.building .bt.send { background: var(--paper); color: var(--ink); font-weight: 700; }
+
+/* The word card: paper, anchored under the word. */
+.word-paper {
+  position: absolute; z-index: 4; width: max-content; max-width: min(16rem, 100%);
+  background: var(--paper); color: var(--ink); border-radius: 2px; padding: 0.55rem 2.6rem 0.55rem 0.8rem;
+  box-shadow: 0 0 0 1px #0006, 0 4px 14px #0007; animation: fade-in 0.15s ease-out both;
+}
+.word-paper .wp-word { font-size: var(--fs-lg); font-weight: 600; line-height: 1.3; }
+.word-paper .wp-reading { font-family: var(--mono); font-size: var(--fs-sm); color: var(--ink-2); }
+.word-paper .wp-mean { font-size: var(--fs-md); line-height: 1.4; }
+.word-paper .wp-play {
+  position: absolute; top: 0.5rem; right: 0.5rem; width: 1.8rem; height: 1.8rem; display: inline-flex; align-items: center; justify-content: center;
+  color: var(--ink); border: 1px solid var(--ink-2); border-radius: 50%; font-size: 0.7rem;
+}
+
+/* Replies: pinned above the footer, in thumb reach. */
+.replies { flex: none; display: flex; flex-direction: column; padding: 0.25rem 0 0.9rem; }
+.book .toasts { align-items: center; margin: 0 0 0.5rem; }
+.slips { display: flex; flex-direction: column; align-items: stretch; gap: 0.45rem; width: min(100%, 21rem); margin-left: auto; }
+.slip {
+  position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 0.05rem;
+  background: var(--paper); color: var(--ink); border-radius: 2px; padding: 0.45rem 0.85rem 0.5rem; text-align: left;
+  box-shadow: 0 1px 0 #0005; animation: rise 0.22s ease-out both;
+}
+@media (hover: hover) { .slip:hover { box-shadow: 0 0 0 2px var(--cyan); } }
+.slip:active { transform: translateY(1px); }
+.slip-text { font-size: var(--fs-lg); font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+.slip-rd { font-family: var(--mono); font-size: var(--fs-xs); color: var(--ink-2); line-height: 1.35; min-height: 1.35em; white-space: pre-wrap; }
+.slip-mean { font-size: var(--fs-sm); color: var(--ink-2); line-height: 1.35; }
+.slip.tried { opacity: 0.4; animation: none; }
+/* Number keys (keyboard only), outside the slip's text. */
+.slip .slip-n { position: absolute; right: calc(100% + 0.6rem); top: 0.55rem; color: var(--muted); font-family: var(--mono); font-size: var(--fs-xs); }
+.say-nothing { position: relative; align-self: flex-end; color: var(--muted); font-size: var(--fs-sm); padding: 0.35rem 0.1rem 0; }
+.say-nothing:hover { color: var(--text); }
+.say-nothing .slip-n { position: absolute; right: calc(100% + 0.6rem); color: var(--muted); font-family: var(--mono); font-size: var(--fs-xs); }
+
+/* Tile pieces: paper, on your side; the hint sits over them, aligned with the row. */
+.pieces { display: flex; flex-direction: column; align-items: flex-end; gap: 0.45rem; }
+.pieces .hint { margin: 0; font-size: var(--fs-sm); text-align: right; }
+.pieces .tiles { justify-content: flex-end; padding-left: 0; gap: 0.45rem; }
+.book .tile.piece {
+  position: relative; min-height: 2.9rem; min-width: 3rem; padding: 0.3rem 0.8rem;
+  background: var(--paper); color: var(--ink); border: 0; border-radius: 2px; font-size: var(--fs-lg); font-weight: 600;
+  box-shadow: 0 1px 0 #0005;
+}
+@media (hover: hover) { .book .tile.piece:hover:not(:disabled) { color: var(--ink); box-shadow: 0 0 0 2px var(--cyan); } }
+.book .tile.piece:disabled { opacity: 0.25; }
+.book .tile.piece .slip-n { position: absolute; top: 0.15rem; left: 0.3rem; font-family: var(--mono); font-size: 10px; font-weight: 400; color: var(--ink-2); }
+
+/* Between scenes: one cyan control, centred; the rest on one quiet row under it. */
+.book .replies .prompt { margin-top: 0; align-items: center; }
+.book .replies .next-btn.only { align-self: center; margin: 0; padding: 0.55rem 1.4rem; }
+.book .replies .also { justify-content: center; margin: 0.6rem 0 0; }
+.book .replies .prompt > .prose { text-align: center; font-size: var(--fs-sm); }
+.book .bar { padding-inline: var(--gutter); }
+
+@media (max-width: 560px) {
+  .book { --fs-xl: 28px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .h-row, .direction, .their .tag, .say.enter, .say.again, .said, .slip, .word-paper { animation: none; }
+}

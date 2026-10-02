@@ -325,6 +325,11 @@ quiet-lookup-click = Click a word to look it up.
 # The first time a reply is built from pieces (a course with the Book); gone once one is sent.
 quiet-tiles-tap = Tap the pieces in order, then ✓.
 quiet-tiles-click = Click the pieces in order, then ✓.
+# The conversation stage (a course with the Book): the tag on a request said again after a miss
+# (the same words slower, or other words), and the quiet reply that says nothing.
+quiet-again-slower = again, slower
+quiet-again = again, other words
+quiet-say-nothing = say nothing
 # The way to bed once the day is over (a course with the Book): $place is where the bed is.
 menu-go-sleep = Go back to { $place } to sleep
 quiet-read-intro = Sound it out, one block at a time.

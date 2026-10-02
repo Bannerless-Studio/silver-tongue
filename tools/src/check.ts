@@ -250,6 +250,8 @@ export function checkCourse(input: CheckInput): string[] {
       if (most < need) errors.push(`${s.id}: needs trust ${need} with "${npc}", but earlier scenes give at most ${most}`);
     }
     if (!isCount(s.trustGain)) errors.push(`${s.id}: trustGain must be a whole number of 0 or more`);
+    const { rent } = s as { rent?: unknown };
+    if (rent !== undefined && typeof rent !== "boolean") errors.push(`${s.id}: rent must be true or false`);
     for (const ex of s.exchanges) {
       for (const k of ["pay", "missCost"] as const) {
         if (!isCount(ex[k])) errors.push(`${s.id}/${ex.id}: ${k} must be a whole number of 0 or more`);

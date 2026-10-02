@@ -1,4 +1,4 @@
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import type { CatalogEntry, WordId } from "@silver-tongue/core";
 import { bookOn, wordExample, type RubySetting, type SpeechSpeed } from "@silver-tongue/view";
 import { bookKey, keyAction, type Overlay } from "../keys";
@@ -8,6 +8,7 @@ import { Games, Menu, Notebook, Status } from "./Overlays";
 import { Desk } from "./Desk";
 import { Opening } from "./Opening";
 import { Prompt, primaryAction } from "./Prompt";
+import { Building, finishTilesHint, History, Pieces, Slips, slipChoice, Stage, useStage } from "./Stage";
 import { Toasts } from "./Toasts";
 import { Transcript, type Reveal } from "./Transcript";
 import { useQuiet } from "./use-quiet";
@@ -42,6 +43,9 @@ const keybar = (book: boolean): { label: string; key: string }[] => [
 
 export function App({ q, page }: { q: Quiet; page: Page }) {
   const view = useQuiet(q);
+  const { shown, skip } = useStage(view);
+  const shownRef = useRef(shown);
+  shownRef.current = shown;
   const [open, setOpen] = useState<Open>(null);
   const [reveal, setReveal] = useState<Reveal | null>(null);
   const t = q.t;
@@ -52,6 +56,7 @@ export function App({ q, page }: { q: Quiet; page: Page }) {
     const example = wordExample(q.course, w, b.line?.text);
     setReveal({ beat: b.id, kind: "word", card: q.lookUp(w, surface), ...(example ? { example } : {}) });
   };
+  const closeReveal = () => setReveal(null);
   const onReveal = (b: Beat) => {
     if (reveal?.kind === "line" && reveal.beat === b.id) return setReveal(null);
     const line = b.restate?.line ?? b.line; // a reaction's ? opens the request it says again
@@ -60,13 +65,21 @@ export function App({ q, page }: { q: Quiet; page: Page }) {
   };
 
   const press = (key: string) => {
+    // A held moment on the stage (a reply just said, a scene opening): any key moves on, and does nothing else.
+    if (bookOn(q.course) && shownRef.current.hold && !open) {
+      skip();
+      return true;
+    }
     const a = keyAction(key, { overlay: !!open, phase: q.view().phase.kind, typing: false, modifier: false, book: bookOn(q.course), primary: primaryAction(bookOn(q.course), q.view().phase) });
     if (!a) return false;
     const p = q.view().phase;
     if (a.kind === "close") setOpen(null);
-    else if (a.kind === "choose") (p.kind === "tiles" ? q.placeTile(a.n) : q.choose(a.n));
+    else if (a.kind === "choose") (p.kind === "tiles" ? q.placeTile(a.n) : q.choose(bookOn(q.course) ? slipChoice(q.view(), shownRef.current.ex, a.n) : a.n));
     else if (a.kind === "undo") q.undoTile();
-    else if (a.kind === "send") q.sendTiles();
+    else if (a.kind === "send") {
+      if (bookOn(q.course)) finishTilesHint(q.course.id);
+      q.sendTiles();
+    }
     else if (a.kind === "reveal") {
       const last = latestNpcLine(q.view().backlog);
       if (last) onReveal(last);
@@ -113,13 +126,31 @@ export function App({ q, page }: { q: Quiet; page: Page }) {
       </>
     );
   }
+  const touch = typeof matchMedia === "function" && matchMedia("(pointer: coarse)").matches;
+  const p = view.phase;
   return (
-    <div class="term app">
+    <div class={book ? "term app book" : "term app"}>
       <Anchor q={q} view={view} audioAvailable={page.audioAvailable} />
-      <Transcript q={q} view={view} ruby={page.ruby} reveal={reveal} onWord={onWord} onReveal={onReveal}>
-        <Toasts q={q} view={view} />
-        <Prompt q={q} view={view} ruby={page.ruby} />
-      </Transcript>
+      {book ? (
+        // A course with the Book: the conversation is a stage (Stage.tsx); a tap on a held moment moves on.
+        <main class="stage-wrap" onClick={shown.hold ? skip : undefined}>
+          <History q={q} rows={shown.history} />
+          <Stage q={q} view={view} shown={shown} ruby={page.ruby} reveal={reveal} onWord={onWord} onReveal={onReveal} onClose={closeReveal}>
+            {!shown.hold && <Building q={q} view={view} touch={touch} />}
+          </Stage>
+          <div class="replies">
+            <Toasts q={q} view={view} />
+            {!shown.hold && (p.kind === "pick" ? <Slips q={q} view={view} ex={shown.ex} ruby={page.ruby} touch={touch} />
+              : p.kind === "tiles" ? <Pieces q={q} view={view} touch={touch} />
+              : <Prompt q={q} view={view} ruby={page.ruby} />)}
+          </div>
+        </main>
+      ) : (
+        <Transcript q={q} view={view} ruby={page.ruby} reveal={reveal} onWord={onWord} onReveal={onReveal}>
+          <Toasts q={q} view={view} />
+          <Prompt q={q} view={view} ruby={page.ruby} />
+        </Transcript>
+      )}
       <footer class="bar">
         <button type="button" class="dim" onClick={() => setOpen("notebook")}>{t(bookOn(q.course) ? "quiet-book" : "quiet-notebook").toLowerCase()}</button>
         {(!book || q.core.state.day > 1) && <button type="button" class="dim" onClick={() => setOpen("status")}>{t("quiet-status").toLowerCase()}</button>}

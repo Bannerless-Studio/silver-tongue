@@ -32,6 +32,8 @@ export interface Beat {
   cost?: { amount: number; reason: "mixup" | "shopping" };
   /** said again after two misses: shown with its reading and meaning */
   rephrase?: boolean;
+  /** a rephrase that is the same line said slower */
+  slow?: boolean;
   /** a reaction to a miss: the request, said again on the same line (no second clip). After a second
    * miss it is the rephrase (or the line said slower), shown with its reading and meaning. */
   restate?: Restate;
@@ -75,6 +77,8 @@ export interface QuietView {
   onboard: boolean;
   /** the NPC line the one-time look-up hint sits under (a book course, until the first look-up or the scene ends) */
   lookupHint?: number;
+  /** the first beat of the scene being played (a book course): where the stage starts (see stageView) */
+  stageFrom?: number;
 }
 /** Where the desk's read papers are kept (the browser's storage on the page). */
 export interface PaperStore {
@@ -310,7 +314,7 @@ export function createQuiet(opts: QuietOptions): Quiet {
           if (r && r.speaker === e.npc && queue.includes(r)) {
             r.restate = { line: e.line, fresh: e.slow ? [] : freshIn(e.line), rephrase: e.slow ? "slower" : "rephrase" };
             if (lastSpeech) speeches.push(lastSpeech);
-          } else push({ speaker: e.npc, line: e.line, fresh: freshIn(e.line), rephrase: true }, lastSpeech);
+          } else push({ speaker: e.npc, line: e.line, fresh: freshIn(e.line), rephrase: true, ...(e.slow ? { slow: true } : {}) }, lastSpeech);
           break;
         }
         case "replyOptions":
@@ -407,6 +411,11 @@ export function createQuiet(opts: QuietOptions): Quiet {
     if (revealed.length) news(t("place-revealed", { count: revealed.length, places: revealed.join(", ") }), "good");
     // No replies after the reaction (the scene ended): nothing to answer, so the request isn't said again.
     if (!events.some((e) => e.type === "replyOptions")) for (const r of reacted) if (!r.restate?.rephrase) delete r.restate;
+    // With the Book the request comes back on the stage as said again, slower: so it is, after the reaction.
+    if (book) for (const r of reacted) if (r.restate && !r.restate.rephrase) {
+      const s = speech(r.restate.line.audio, true);
+      if (s) speeches.push(s);
+    }
     // Onboarding: the reaction's own row already says what was asked (its meaning is open under it), so the
     // narration of the same request just before it would say it twice.
     if (onboard) queue = queue.filter((b, i) => !(b.tone === "react" && !b.speaker && (queue[i + 1]?.restate || queue[i + 1]?.rephrase)));
@@ -483,6 +492,7 @@ export function createQuiet(opts: QuietOptions): Quiet {
       scene, phase: phase(), lastLine, backlog, toasts,
       onboard: onboarding(course, heardCount(core.state.words, opts.now())),
       ...(book && !lookupDone && scene ? hintAt() : {}),
+      ...(book && scene ? { stageFrom: sceneFrom } : {}),
       ...(opening && naming ? { opening } : {}),
       ...(atDesk && !naming ? { desk: deskPapers(course) } : {}),
     }),

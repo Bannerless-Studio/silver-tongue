@@ -154,9 +154,14 @@ describe("ko-seoul's stage-1 chain", () => {
     expect(played).toEqual(CHAIN);
   });
 
-  it("rent stays off the top bar until paid work has been done; names wait for introductions", () => {
+  it("rent stays off the top bar until the landlady brings it up; names wait for introductions", () => {
     const { played, rentShown, state, t } = followBright(course!);
-    expect(rentShown.slice(0, played.indexOf("stall-shift") + 1).some(Boolean)).toBe(false);
+    expect(extra(course!).scenes.filter((s) => s.rent).map((s) => s.id)).toEqual(["room-rent"]);
+    expect(rentShown.slice(0, played.indexOf("room-rent") + 1).some(Boolean)).toBe(false);
+    // Short of rent and two days from it, but nobody has mentioned rent: nothing on the bar.
+    const short = { ...state, day: 6, wallet: 0, scenesDone: { ...state.scenesDone, "room-rent": 0 } };
+    expect(anchorRow(course!, short, t).rent).toBeUndefined();
+    expect(anchorRow(course!, { ...short, scenesDone: state.scenesDone }, t).rent).toBeDefined();
     expect(npcLabel(course!, state, t, "oldman")).toBe("Grandpa Park");
     const fresh = newGame(course!);
     expect(npcLabel(course!, fresh, t, "oldman")).toBe("The old man");

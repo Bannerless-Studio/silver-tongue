@@ -1,7 +1,7 @@
 import { wordState, type Course, type GameState, type RenderedLine, type WordId, type WordState } from "@silver-tongue/core";
 import { displayGloss } from "./help";
 import { dayPart, type DayPart } from "./hud";
-import { bookOn } from "./course-extra";
+import { bookOn, extra } from "./course-extra";
 import { rubyRow, type RubySetting, type RubySpan } from "./ruby";
 import type { Text } from "./text";
 
@@ -38,8 +38,8 @@ export const RENT_FOOD_DAYS = 3;
  * The one line always on screen: where and when. Rent joins it only when late, when the wallet
  * won't cover it at the pace food eats it (pace), or when, on the last day before it is due, paying
  * it would leave less than RENT_FOOD_DAYS of food (backstop). Day 1 never shows it: the opening prose says it.
- * A course with the Book shows it only once the player has done paid work: before there is a way to earn,
- * a deadline is a worry with nothing to do about it (Status still has it).
+ * A course with the Book shows it only once the scene that raises rent (`rent` on the scene) is done: before
+ * anyone has mentioned rent, a deadline names what hasn't been observed (Status still has it).
  */
 export function anchorRow(course: Course, state: GameState, t: Text): AnchorRow {
   const { foodPerDay, rentPerWeek } = course.world;
@@ -49,8 +49,8 @@ export function anchorRow(course: Course, state: GameState, t: Text): AnchorRow 
   const projected = state.wallet - foodPerDay * (dueInDays + 1);
   const pace = projected < rentPerWeek;
   const backstop = dueInDays <= 1 && state.wallet < rentPerWeek + foodPerDay * RENT_FOOD_DAYS;
-  const earning = !bookOn(course) || course.scenes.some((s) => state.scenesDone[s.id] && s.exchanges.some((ex) => ex.pay > 0));
-  const show = state.rentLate || (state.day > 1 && earning && (pace || backstop));
+  if (bookOn(course) && !extra(course).scenes.some((s) => s.rent && state.scenesDone[s.id])) return row;
+  const show = state.rentLate || (state.day > 1 && (pace || backstop));
   if (show) row.rent = { amount: rentPerWeek, dueInDays: state.rentLate ? 0 : dueInDays, wallet: state.wallet, late: state.rentLate };
   return row;
 }
@@ -156,4 +156,24 @@ export function speakerNamed(course: Course, lines: readonly Spoken[]): boolean[
     prev = l;
     return named;
   });
+}
+
+/** How many speaker colours a page has: NPCs past this share them in turn. */
+export const SPEAKER_HUES = 4;
+
+/** An NPC's speaker colour (0..SPEAKER_HUES-1): their order among the setting's people, so colours follow the data, not ids. */
+export function speakerHue(course: Course, npc: string): number {
+  const i = Object.keys(course.world.npcs).indexOf(npc);
+  return i < 0 ? 0 : i % SPEAKER_HUES;
+}
+
+/**
+ * The meaning row under each reply slip on a course with the Book, or undefined when the slips have none.
+ * Every slip in a set has the same rows: while onboarding each shows its meaning; after, while any reply
+ * holds a word not heard yet, each shows its intent (its meaning when it has no intent).
+ */
+export function replyMeanings(options: RenderedLine[], words: GameState["words"], now: number, onboard: boolean): string[] | undefined {
+  if (onboard) return options.map((o) => o.meaning ?? o.intent ?? "");
+  if (!options.some((o) => o.tokens.some((tk) => wordState(words[tk.word], now) === "unseen"))) return undefined;
+  return options.map((o) => o.intent ?? o.meaning ?? "");
 }
