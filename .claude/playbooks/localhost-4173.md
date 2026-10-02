@@ -6,9 +6,9 @@
 - Force a setting: edit JSON in `silver-tongue:settings` (e.g. `ruby: "auto"|"on"|"off"`) then reload.
 
 ## Quiet page (/quiet/, /ko/) hotkeys (packages/quiet-web/src/keys.ts)
-- `1`-`9` pick option; `?`/`w` reveal line; `n` Book/Notebook; `s` status; `o` settings; `m` sound; `r` replay; `Escape` closes overlay.
+- `1`-`9` pick option; `?`/`w` reveal line; `b` Book (ko) / `n` Notebook (zh, ja); Enter does the one bright action when a place has a single menu item (ko); `s` status; `o` settings; `m` sound; `r` replay; `Escape` closes overlay.
 - Overlay keys are ignored while an overlay is open: press `Escape`, wait ~300ms, then the next hotkey (Escape+`o` back-to-back drops the `o`).
-- Start: button `New game` -> textbox (name) -> button `That's me` (or Enter).
+- Start: zh/ja: button `New game` -> textbox (name) -> `That's me`. ko (/ko/): crawl (wait ~15s for `.crawl-screen .go`, Enter) -> `.name-screen` input + `button[type=submit]` (click it; Enter via page.keyboard is dropped) -> desk -> knock.
 - /quiet/ with cleared storage shows picker buttons `1 Japanese`, `2 Korean`, `3 Chinese`. /ko/ skips the picker.
 
 ## Selectors / anchors (quiet)
@@ -35,3 +35,8 @@
 - VN fresh underline (`.word.fresh`) exists only during the line's beat (box shows line, buttons `Say it again|Say it slowly`); once options appear the same line re-renders without `.fresh`. Check before tapping past.
 - art.json 404s (ko-seoul, ja-japan) come from the VN page only; /ko/ and /quiet/ log none.
 - ko street-hello right replies: 안녕하세요. / 박 할아버지, 안녕하세요. / 저는 <name>입니다. / 감사합니다. / 아니요, 몰라요. Match options by text with `rt` stripped (order shuffles).
+- ko desk automation: papers `idcard`, `newspaper`, `bill`. Loop: `.desk-card.next` click; reading screen `.big` = current syllable, type its single-syllable romanization into `.sum input` + Enter; `.next-btn` after each paper; then `.desk-knock button` ("open the door") starts room-wake directly (no menu). Papers/progress can't be pre-seeded: naming resets them.
+- ko touch: new context `browser.newContext({viewport, hasTouch:true, isMobile:true})` makes `(pointer: coarse)` true (no numbers on onboarding replies, "Tap a word..." hint, no ↵ glyphs). Desktop context shows numbers, "Click a word...", `↵`.
+- ko transcript (book): first NPC line of a scene has `.hint` (look-up hint; gone after first word lookup or scene end, kept in `silver-tongue:lookup-hint:<course>`). Onboarding replies are `.opt.onb` (`.opt-ko`, `.opt-mean`); a lone menu action is `button.next-btn.only`. Bold recognised words: `.w.sounded`. Footer: Status hidden until day 2; touch `.keybar` only in tiles phase.
+- ko miss: the player's echo, then the NPC reaction (`네?` prefix) with the request and its meaning; the narration line is dropped while onboarding. Options unchanged.
+- Cross-context screenshots: `page.screenshot({path})` via browser_run_code_unsafe; build chain after source edits: build-course (ui.ftl), quiet-web + vn-web build.mjs, site.ts; server on :4173 serves `site/` live.
