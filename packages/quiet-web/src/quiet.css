@@ -108,6 +108,10 @@ p { margin: 0; }
 .cmd { display: inline-flex; gap: 0.5rem; color: var(--muted); padding: 0.15rem 0; }
 .cmd:hover { color: var(--text); }
 .cmd.off { opacity: 0.55; }
+/* With the Book: everything but the one bright control, on one quiet row under it. */
+.also { display: flex; flex-wrap: wrap; gap: 0.2rem 1.4rem; margin: 0.7rem 0 0 0.75rem; }
+.also button { display: inline-flex; gap: 0.5rem; padding: 0.3rem 0; color: var(--muted); }
+.also button:hover { color: var(--text); }
 
 .toasts { display: flex; flex-direction: column; align-items: flex-start; margin-top: 0.75rem; }
 .toast { color: var(--muted); font-size: 0.9em; }

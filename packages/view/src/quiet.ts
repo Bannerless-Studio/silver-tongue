@@ -38,6 +38,8 @@ export const RENT_FOOD_DAYS = 3;
  * The one line always on screen: where and when. Rent joins it only when late, when the wallet
  * won't cover it at the pace food eats it (pace), or when, on the last day before it is due, paying
  * it would leave less than RENT_FOOD_DAYS of food (backstop). Day 1 never shows it: the opening prose says it.
+ * A course with the Book shows it only once the player has done paid work: before there is a way to earn,
+ * a deadline is a worry with nothing to do about it (Status still has it).
  */
 export function anchorRow(course: Course, state: GameState, t: Text): AnchorRow {
   const { foodPerDay, rentPerWeek } = course.world;
@@ -47,7 +49,8 @@ export function anchorRow(course: Course, state: GameState, t: Text): AnchorRow 
   const projected = state.wallet - foodPerDay * (dueInDays + 1);
   const pace = projected < rentPerWeek;
   const backstop = dueInDays <= 1 && state.wallet < rentPerWeek + foodPerDay * RENT_FOOD_DAYS;
-  const show = state.rentLate || (state.day > 1 && (pace || backstop));
+  const earning = !bookOn(course) || course.scenes.some((s) => state.scenesDone[s.id] && s.exchanges.some((ex) => ex.pay > 0));
+  const show = state.rentLate || (state.day > 1 && earning && (pace || backstop));
   if (show) row.rent = { amount: rentPerWeek, dueInDays: state.rentLate ? 0 : dueInDays, wallet: state.wallet, late: state.rentLate };
   return row;
 }

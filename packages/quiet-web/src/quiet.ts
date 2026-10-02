@@ -6,7 +6,7 @@
 import { describeRun, normalizeTyped, wordState, type Core, type Course, type GameEvent, type GameState, type Input, type RenderedLine, type WordId } from "@silver-tongue/core";
 import {
   bookOn, deskOn, deskPapers, emptyProgress, freshMarks, heardCount, lettersFollowDesk, metLetters, onboarding, paperSyllables, placeName,
-  actionNarration, bedHint, introLines, joinTilesForDisplay, makeText, placeMenu, sentenceCard, tileEcho, typePrompt, waitingForMoney, wordCard,
+  actionNarration, bedHint, bedPlace, introLines, isBedtime, npcLabel, primaryItem, joinTilesForDisplay, makeText, placeMenu, sentenceCard, tileEcho, typePrompt, waitingForMoney, wordCard,
   type AudioOut, type DeskPaper, type DeskProgress, type MenuItem, type SentenceCard, type Speech, type Text, type WordCard,
 } from "@silver-tongue/view";
 
@@ -55,7 +55,8 @@ export type Phase =
   | { kind: "tiles"; tiles: string[]; placed: number[]; answer: string }
   /** the reply is typed, in the language or its romanization; no hints here */
   | { kind: "type"; prompt: string; confused: boolean }
-  | { kind: "explore"; menu: MenuItem[]; waiting: string[] };
+  /** primary: with the Book, the one item drawn bright (Enter does it); the rest are quiet */
+  | { kind: "explore"; menu: MenuItem[]; waiting: string[]; primary?: number };
 export interface Toast { id: number; text: string; tone: "good" | "bad" | "info" }
 export interface QuietView {
   /** the scene being played, for the review tell */
@@ -161,7 +162,7 @@ export const CONFUSED = "...";
 export function createQuiet(opts: QuietOptions): Quiet {
   const { course, core } = opts;
   const t = makeText(course.learnerFtl, course.learner);
-  const npcName = (npc: string) => t(`npc-${npc}`);
+  const npcName = (npc: string) => npcLabel(course, core.state, t, npc);
   const money = (delta: number, reason: string) =>
     t("wallet-change", { sign: delta > 0 ? "+" : "-", amount: Math.abs(delta), currency: course.world.currency, reason: t(`reason-${reason}`) });
 
@@ -358,11 +359,13 @@ export function createQuiet(opts: QuietOptions): Quiet {
           if (t.has(`scene-${e.scene}-end`)) push({ text: t(`scene-${e.scene}-end`), tone: "narr" });
           closing = { from: finished.to, to: nextId };
           break;
+        // With the Book the story's own lines say where to go next and the one bright control goes there:
+        // news of a scene or place would name what the player hasn't met yet.
         case "unlocked":
-          news(t("unlocked", { scene: t(`scene-${e.scene}`) }), "good");
+          if (!book) news(t("unlocked", { scene: t(`scene-${e.scene}`) }), "good");
           break;
         case "placeRevealed":
-          revealed.push(placeLabel(e.place));
+          if (!book) revealed.push(placeLabel(e.place));
           break;
         case "errandStarted":
           news(t("errand-started"), "info");
@@ -381,7 +384,7 @@ export function createQuiet(opts: QuietOptions): Quiet {
           toast(t(`reject-${e.reason}`), "bad");
           break;
         case "noteReady":
-          if (course.world.mentor && !hinted) news(t("note-hint", { npc: npcName(course.world.mentor.npc) }), "info");
+          if (course.world.mentor && !hinted && !book) news(t("note-hint", { npc: npcName(course.world.mentor.npc) }), "info");
           hinted = true;
           break;
         case "mentorVisited":
@@ -389,6 +392,11 @@ export function createQuiet(opts: QuietOptions): Quiet {
           for (const id of e.notes) push({ speaker: e.npc, title: t(`note-${id}-title`), text: t(`note-${id}`) });
           break;
         case "placeEntered":
+          // With the Book, a place is described the first time the player stands in it (no scene there yet).
+          if (book && t.has(`place-${e.place}-desc`) && !course.scenes.some((x) => x.place === e.place && core.state.scenesDone[x.id])) {
+            push({ text: t(`place-${e.place}-desc`), tone: "narr" });
+          }
+          break;
         case "trustChanged":
         case "wordStateChanged":
         case "playerNamed":
@@ -438,7 +446,14 @@ export function createQuiet(opts: QuietOptions): Quiet {
     if (reply?.mode === "pick") return { kind: "pick", options: reply.options, confused: !!core.state.run && core.state.run.misses < 2 };
     if (reply?.mode === "tiles") return { kind: "tiles", tiles: reply.tiles, placed, answer: joinTilesForDisplay(course, placed.map((i) => (reply as { tiles: string[] }).tiles[i])) };
     if (reply?.mode === "type") return { kind: "type", prompt: typePrompt(t), confused: !!core.state.run && core.state.run.misses < 2 };
-    return { kind: "explore", menu: placeMenu(course, core.state, t), waiting: [...waitingForMoney(course, core.state, t), ...bedHint(course, core.state, t)] };
+    const menu = placeMenu(course, core.state, t, placeLabel);
+    if (!book) return { kind: "explore", menu, waiting: [...waitingForMoney(course, core.state, t), ...bedHint(course, core.state, t)] };
+    // With the Book: what can't be done now is not offered, and the way to bed says why it's the way.
+    const open = menu.filter((m) => !("disabled" in m && m.disabled));
+    const primary = primaryItem(course, core.state, open) ?? (open.length === 1 ? 0 : undefined);
+    const bed = primary !== undefined && open[primary].kind === "go" && isBedtime(course, core.state);
+    const shown = bed ? open.map((m, i) => (i === primary ? { ...m, label: t("menu-go-sleep", { place: placeLabel(bedPlace(course, core.state)) }) } : m)) : open;
+    return { kind: "explore", menu: shown, waiting: waitingForMoney(course, core.state, t), primary };
   }
 
   if (opts.notice) toast(t(opts.notice), "bad");

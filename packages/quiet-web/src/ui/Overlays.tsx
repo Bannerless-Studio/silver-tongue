@@ -9,13 +9,15 @@ import type { Page } from "./App";
 import { partLabel } from "./Anchor";
 import { Person, trustBar } from "./Person";
 
+const touchScreen = () => typeof matchMedia === "function" && matchMedia("(pointer: coarse)").matches;
+
 export function Overlay({ q, title, head, hideTitle, onClose, children }: { q: Quiet; title: string; head?: preact.ComponentChildren; hideTitle?: boolean; onClose: () => void; children: preact.ComponentChildren }) {
   return (
     <div class="overlay" role="dialog" aria-label={title}>
       <header class="ov-head">
         {!hideTitle && <span class="ov-title">{title}</span>}
         {head && (typeof head === "string" ? <span class="dim">{head}</span> : head)}
-        <button type="button" class="dim close" aria-label={q.t("web-close")} onClick={onClose}>{q.t("quiet-esc")}</button>
+        <button type="button" class="dim close" aria-label={q.t("web-close")} onClick={onClose}>{touchScreen() ? q.t("web-close").toLowerCase() : q.t("quiet-esc")}</button>
       </header>
       <div class="ov-body">{children}</div>
     </div>
@@ -42,7 +44,13 @@ function PaperLine({ paper }: { paper: Paper }) {
 /** Opens on the words that need work and why; the rest are one tap away on the tabs up top, which
  * count their words. No bars, no badges. Letters (for a language with a chart) come first, papers last. */
 export function Notebook({ q, onClose, first }: { q: Quiet; onClose: () => void; first?: "letters" }) {
-  const [tab, setTab] = useState<NotebookView>(first && hasLetters(q.course) ? first : "shaky");
+  // With the Book it opens on the first list with something in it, never on an empty one.
+  const [tab, setTab] = useState<NotebookView>(() => {
+    if (first && hasLetters(q.course)) return first;
+    if (!bookOn(q.course)) return "shaky";
+    const { counts } = notebookDefault(q.course, q.core.state, Date.now());
+    return VIEWS.find((v) => v !== "all" && counts[v] > 0) ?? "all";
+  });
   const [open, setOpen] = useState<number | null>(null);
   const { t, course, core } = q;
   const now = Date.now();
@@ -109,7 +117,7 @@ export function Notebook({ q, onClose, first }: { q: Quiet; onClose: () => void;
       {tab === "papers" && (kept.length ? kept.map((p, i) => (
         <section key={`${p.scene}/${p.exchange}`} class="paper-row">
           <button type="button" class="nb-paper" aria-expanded={open === i} onClick={() => setOpen(open === i ? null : i)}>
-            <span>{t("notebook-paper-from", { npc: p.npcName, place: p.placeName })}</span>
+            <span>{t("notebook-paper-from", { npc: p.npcName, place: q.placeLabel(p.place) })}</span>
             <span class="dim">{t("notebook-paper-progress", { known: p.known, total: p.total })}</span>
           </button>
           {open === i && (

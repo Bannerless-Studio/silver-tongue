@@ -7,7 +7,7 @@ import { Anchor } from "./Anchor";
 import { Games, Menu, Notebook, Status } from "./Overlays";
 import { Desk } from "./Desk";
 import { Opening } from "./Opening";
-import { Prompt, singleAction } from "./Prompt";
+import { Prompt, primaryAction } from "./Prompt";
 import { Toasts } from "./Toasts";
 import { Transcript, type Reveal } from "./Transcript";
 import { useQuiet } from "./use-quiet";
@@ -60,7 +60,7 @@ export function App({ q, page }: { q: Quiet; page: Page }) {
   };
 
   const press = (key: string) => {
-    const a = keyAction(key, { overlay: !!open, phase: q.view().phase.kind, typing: false, modifier: false, book: bookOn(q.course), single: !!singleAction(bookOn(q.course), q.view().phase) });
+    const a = keyAction(key, { overlay: !!open, phase: q.view().phase.kind, typing: false, modifier: false, book: bookOn(q.course), primary: primaryAction(bookOn(q.course), q.view().phase) });
     if (!a) return false;
     const p = q.view().phase;
     if (a.kind === "close") setOpen(null);
@@ -100,7 +100,7 @@ export function App({ q, page }: { q: Quiet; page: Page }) {
 
   const close = () => setOpen(null);
   // A course with the Book keeps controls away until they have a use: Status from day 2 (money matters then),
-  // the touch key bar only where keys are typed (tiles). Book and Settings stay.
+  // and no touch key bar: every control it would copy is on screen as itself. Book and Settings stay.
   const book = bookOn(q.course);
   // A new game on a course with the Book: the crawl and the name screen, nothing else on screen.
   if (view.opening) return <Opening q={q} story={view.opening} />;
@@ -125,7 +125,7 @@ export function App({ q, page }: { q: Quiet; page: Page }) {
         {(!book || q.core.state.day > 1) && <button type="button" class="dim" onClick={() => setOpen("status")}>{t("quiet-status").toLowerCase()}</button>}
         <button type="button" class="dim" onClick={() => setOpen("settings")}>{t("vn-settings").toLowerCase()}</button>
       </footer>
-      {(!book || view.phase.kind === "tiles") && (
+      {!book && (
         <div class="keybar">
           {keybar(book).map((k) => <button key={k.key} type="button" onClick={() => press(k.key)}>{k.label}</button>)}
         </div>

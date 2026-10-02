@@ -1,4 +1,5 @@
 import { availableSceneIds, canSleep, hasHome, mentorAvailable, moneyBlocked, placeKnown, sceneCost, type Course, type GameState, type Input } from "@silver-tongue/core";
+import { npcLabel } from "./person";
 import type { Text } from "./text";
 
 /** Scenes, exits and the mentor's visit before sleep; the content checker keeps places within it. */
@@ -25,9 +26,13 @@ function costSuffix(t: Text, cost: number, currency: string): string {
   return cost > 0 ? t("menu-cost-money", { currency, cost }) : "";
 }
 
-/** What the player can do here: talk, visit the mentor, go somewhere, and sleep (last, once it's time and there's a bed). */
-export function placeMenu(course: Course, state: GameState, t: Text): MenuItem[] {
-  const npcName = (npc: string) => t(`npc-${npc}`);
+/**
+ * What the player can do here: talk, visit the mentor, go somewhere, and sleep (last, once it's time and there's a bed).
+ * `placeName` names a place as the player knows it (default: its plain name). A way out reads `place-<id>-go`
+ * ("Go outside") when the course words it from what the player has seen, else "Go to <place>".
+ */
+export function placeMenu(course: Course, state: GameState, t: Text, placeName = (p: string) => t(`place-${p}`)): MenuItem[] {
+  const npcName = (npc: string) => npcLabel(course, state, t, npc);
   const items: MenuItem[] = [];
   // Every talk/mentor action costs a slot; with none left, offering them just invites the rejection.
   const noSlots = state.slot >= course.world.slotsPerDay;
@@ -57,7 +62,7 @@ export function placeMenu(course: Course, state: GameState, t: Text): MenuItem[]
   // A place stays off the menu until the scenes that reveal it are done.
   for (const p of course.world.places[state.place].links) {
     if (!placeKnown(course, state, p)) continue;
-    items.push({ kind: "go", label: t("menu-go", { place: t(`place-${p}`) }), input: { type: "goTo", place: p }, place: p });
+    items.push({ kind: "go", label: t.has(`place-${p}-go`) ? t(`place-${p}-go`) : t("menu-go", { place: placeName(p) }), input: { type: "goTo", place: p }, place: p });
   }
   // Sleep is offered only where the core allows it (home, or the start before there is a home), and
   // only once it's what's left to do.
@@ -65,6 +70,62 @@ export function placeMenu(course: Course, state: GameState, t: Text): MenuItem[]
     canSleep(course, state) && bedtime(course, state) ? [{ kind: "sleep", label: t("menu-sleep"), input: { type: "sleep" } }] : [];
   return [...items.slice(0, MAX_PLACE_ITEMS), ...sleep];
 }
+
+/**
+ * The one thing a course with the Book shows bright: what the story wants next. A story (one-off) scene
+ * here; at bedtime the bed, or the way to it; else the way to the next story scene; else a repeatable
+ * scene here. Undefined when none of these is on the menu; the rest stay quiet beside it.
+ */
+export function primaryItem(course: Course, state: GameState, menu: MenuItem[]): number | undefined {
+  const open = (m: MenuItem) => !("disabled" in m && m.disabled);
+  const talk = (oneOff: boolean) =>
+    menu.findIndex((m) => m.kind === "talk" && open(m) && !course.scenes.find((s) => s.id === m.scene)?.repeatable === oneOff);
+  const toward = (goal: string | undefined) => {
+    const step = goal ? firstStep(course, state, goal) : undefined;
+    return step ? menu.findIndex((m) => m.kind === "go" && m.place === step) : -1;
+  };
+  const story = talk(true);
+  if (story >= 0) return story;
+  if (bedtime(course, state)) {
+    const sleep = menu.findIndex((m) => m.kind === "sleep");
+    if (sleep >= 0) return sleep;
+    const bed = toward(bedPlace(course, state));
+    if (bed >= 0) return bed;
+  }
+  const next = availableSceneIds(course, state)
+    .map((id) => course.scenes.find((s) => s.id === id)!)
+    .find((s) => !s.repeatable && s.place !== state.place && !moneyBlocked(s, state));
+  const way = toward(next?.place);
+  if (way >= 0) return way;
+  const job = talk(false);
+  return job >= 0 ? job : undefined;
+}
+
+/** The first known place on the shortest walk from here to `goal`. */
+function firstStep(course: Course, state: GameState, goal: string): string | undefined {
+  const from = new Map<string, string>([[state.place, ""]]);
+  const queue = [state.place];
+  while (queue.length) {
+    const at = queue.shift()!;
+    if (at === goal) break;
+    for (const p of course.world.places[at].links) {
+      if (from.has(p) || !placeKnown(course, state, p)) continue;
+      from.set(p, at);
+      queue.push(p);
+    }
+  }
+  if (!from.has(goal) || goal === state.place) return undefined;
+  let step = goal;
+  while (from.get(step) !== state.place) step = from.get(step)!;
+  return step;
+}
+
+/** Where the player sleeps: their home once they have one, else where they started. */
+export const bedPlace = (course: Course, state: GameState): string =>
+  hasHome(course, state) && course.world.home ? course.world.home : course.world.start;
+
+/** Whether it's time to sleep (see bedtime): a front end words its way to the bed for it. */
+export const isBedtime = (course: Course, state: GameState): boolean => bedtime(course, state);
 
 /** Time to sleep: the day's time is gone, or no scene or visit is open anywhere. */
 function bedtime(course: Course, state: GameState): boolean {
@@ -78,7 +139,7 @@ function bedtime(course: Course, state: GameState): boolean {
  */
 export function bedHint(course: Course, state: GameState, t: Text): string[] {
   if (canSleep(course, state) || !bedtime(course, state)) return [];
-  const bed = hasHome(course, state) && course.world.home ? course.world.home : course.world.start;
+  const bed = bedPlace(course, state);
   const links = course.world.places[bed].links;
   const via = links.includes(state.place) ? undefined : links.find((p) => placeKnown(course, state, p));
   const place = t(`place-${bed}`);

@@ -41,6 +41,10 @@ export function Desk({ q, papers, bookOpen, onBook }: { q: Quiet; papers: DeskPa
       if (e.ctrlKey || e.altKey || e.metaKey || bookOpen) return;
       if (leaving === "knock" && e.key === "Enter") return void (e.preventDefault(), q.leaveDesk());
       if (e.key === "Escape" && paper) return void (e.preventDefault(), setPaper(null));
+      // On the desk, Enter reads the bright card, unless a focused button takes it.
+      const next = firstUnread(papers, read);
+      if (!paper && !leaving && next && e.key === "Enter" && !(document.activeElement instanceof HTMLButtonElement))
+        return void (e.preventDefault(), setPaper(next));
     };
     addEventListener("keydown", onKey);
     return () => removeEventListener("keydown", onKey);
@@ -241,7 +245,7 @@ function PaperView({ q, paper, done, bookOpen, onBook, onBack }: { q: Quiet; pap
         {finished && (
           <>
             {t.has(learned) && <p class="learned">{t(learned)}</p>}
-            <button type="button" class="go next-btn" onClick={onBack}>{`↵ ${t("quiet-enter")}`}</button>
+            <button type="button" class="go next-btn" onClick={onBack}>{touch ? t("vn-continue") : `↵ ${t("quiet-enter")}`}</button>
           </>
         )}
         {cur && geo && (
@@ -265,14 +269,14 @@ function PaperView({ q, paper, done, bookOpen, onBook, onBack }: { q: Quiet; pap
             {first && <p class="example">{t("quiet-read-example", { parts: tiles.map((x) => x.sound).join(" + "), reading: romanize(cur.ch) })}</p>}
             {reading && <p class="rh-full">{t("quiet-read-help-full", { reading: romanize(cur.ch) })}</p>}
             <div class="read-tools">
-              <button type="button" class={wrong >= HELP_AFTER ? "help hot" : "help"} onClick={askHelp}>{`? ${t("quiet-read-help")}`}</button>
+              <button type="button" class={wrong >= HELP_AFTER ? "help hot" : "help"} onClick={askHelp}>{touch ? t("quiet-read-help") : `? ${t("quiet-read-help")}`}</button>
               {!touch && <span class="dim">{t("quiet-read-tab-book")}</span>}
             </div>
           </div>
         )}
       </div>
       <footer class="bar">
-        <button type="button" class="dim" onClick={onBack}>{t("quiet-esc")}</button>
+        <button type="button" class="dim" onClick={onBack}>{touch ? t("web-close").toLowerCase() : t("quiet-esc")}</button>
         <button type="button" class="dim" onClick={onBook}>{t("quiet-book").toLowerCase()}</button>
       </footer>
     </div>

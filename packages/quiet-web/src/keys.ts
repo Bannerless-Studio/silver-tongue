@@ -21,8 +21,8 @@ export interface KeyContext {
   modifier: boolean;
   /** the course uses the Book: it opens with b; n opens the notebook of a course without it */
   book?: boolean;
-  /** the place offers exactly one thing to do (shown as one bright control): Enter does it */
-  single?: boolean;
+  /** the place's one bright control (a course with the Book): Enter does this menu item */
+  primary?: number;
 }
 
 const OPEN: Record<string, Overlay> = { s: "status", o: "settings" };
@@ -37,7 +37,7 @@ export function keyAction(key: string, ctx: KeyContext): QuietAction | null {
   if (/^[1-9]$/.test(k)) return { kind: "choose", n: Number(k) - 1 };
   if (ctx.phase === "tiles" && k === "Backspace") return { kind: "undo" };
   if (ctx.phase === "tiles" && k === "Enter") return { kind: "send" };
-  if (ctx.phase === "explore" && ctx.single && k === "Enter") return { kind: "choose", n: 0 };
+  if (ctx.phase === "explore" && ctx.primary !== undefined && k === "Enter") return { kind: "choose", n: ctx.primary };
   const lower = k.toLowerCase();
   // w is the text game's look-up key, and the shared opening prose names it.
   if (k === "?" || lower === "w") return { kind: "reveal" };

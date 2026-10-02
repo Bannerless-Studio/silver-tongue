@@ -1,12 +1,28 @@
 import { useState } from "preact/hooks";
 import type { RenderedLine } from "@silver-tongue/core";
 import { bookOn, quietRuby, type RubySetting } from "@silver-tongue/view";
-import type { MenuItem } from "@silver-tongue/view";
 import { CONFUSED, type Quiet, type QuietView } from "../quiet";
 import { Line } from "./Line";
 import { ReplyLine } from "./ReplyLine";
 
 const matches = (query: string) => typeof matchMedia === "function" && matchMedia(query).matches;
+
+/** The tiles' one-time how (kept per course, like the look-up hint): gone once a reply has been built. */
+const tilesHintKey = (course: string) => `silver-tongue:tiles-hint:${course}`;
+function tilesHintDone(course: string): boolean {
+  try {
+    return localStorage.getItem(tilesHintKey(course)) === "1";
+  } catch {
+    return false;
+  }
+}
+function finishTilesHint(course: string) {
+  try {
+    localStorage.setItem(tilesHintKey(course), "1");
+  } catch {
+    // private window: the hint shows again next time
+  }
+}
 
 /** What the player can do now: a name, a numbered reply, tiles, or the place's commands. */
 export function Prompt({ q, view, ruby }: { q: Quiet; view: QuietView; ruby: RubySetting }) {
@@ -50,18 +66,23 @@ export function Prompt({ q, view, ruby }: { q: Quiet; view: QuietView; ruby: Rub
         </div>
       );
     }
+    // With the Book a reply's intent sits under it, as the onboarding meaning did: beside it, a phone's
+    // width squeezes the reply into a column.
+    const opt = (key: number, body: preact.ComponentChildren, intent: string | undefined, onClick: () => void) =>
+      book ? (
+        <button key={key} type="button" class="opt" onClick={onClick}>
+          {!touch && <span class="n">{key + 1}</span>}
+          <span class="opt-body"><span>{body}</span>{intent && <span class="opt-mean">{intent}</span>}</span>
+        </button>
+      ) : (
+        <button key={key} type="button" class="opt" onClick={onClick}>
+          <span class="n">{key + 1}</span>{body}{intent && <span class="dim"> ({intent})</span>}
+        </button>
+      );
     return (
       <div class="prompt">
-        {p.options.map((o, i) => (
-          <button key={i} type="button" class="opt" onClick={() => q.choose(i)}>
-            <span class="n">{i + 1}</span>{readingsFor(o)}{q.intentShown(p.options, o) && <span class="dim"> ({o.intent})</span>}
-          </button>
-        ))}
-        {p.confused && (
-          <button type="button" class="opt" onClick={() => q.choose(p.options.length)}>
-            <span class="n">{p.options.length + 1}</span>{CONFUSED}<span class="dim"> ({t("reply-confused")})</span>
-          </button>
-        )}
+        {p.options.map((o, i) => opt(i, readingsFor(o), q.intentShown(p.options, o) ? o.intent : undefined, () => q.choose(i)))}
+        {p.confused && opt(p.options.length, CONFUSED, t("reply-confused"), () => q.choose(p.options.length))}
         {!book && <p class="cursor-line"><span class="cur">›</span> <span class="blink">▌</span></p>}
       </div>
     );
@@ -80,30 +101,45 @@ export function Prompt({ q, view, ruby }: { q: Quiet; view: QuietView; ruby: Rub
     );
   }
   if (p.kind === "tiles") {
+    const hint = book && !tilesHintDone(q.course.id);
+    const send = () => {
+      if (hint) finishTilesHint(q.course.id);
+      q.sendTiles();
+    };
     return (
       <div class="prompt">
+        {hint && <p class="hint">{t(touch ? "quiet-tiles-tap" : "quiet-tiles-click")}</p>}
         <div class="tiles">
           {p.tiles.map((tile, i) => (
             <button key={i} type="button" class="tile" disabled={p.placed.includes(i)} onClick={() => q.placeTile(i)}>{tile}</button>
           ))}
-          <button type="button" class="tile send" aria-label={t("vn-send")} title={t("vn-send")} disabled={!p.placed.length} onClick={() => q.sendTiles()}>✓</button>
+          <button type="button" class="tile send" aria-label={t("vn-send")} title={t("vn-send")} disabled={!p.placed.length} onClick={send}>✓</button>
         </div>
         <p class="cursor-line">
           <span class="cur">›</span> <span>{p.answer}</span><span class="blink">▌</span>
           <span class="spacer" />
           <button type="button" class="dim" aria-label={t("vn-undo")} disabled={!p.placed.length} onClick={() => q.undoTile()}>⌫</button>
-          <button type="button" class="dim" aria-label={t("vn-send")} disabled={!p.placed.length} onClick={() => q.sendTiles()}>↵</button>
+          {!(book && touch) && <button type="button" class="dim" aria-label={t("vn-send")} disabled={!p.placed.length} onClick={send}>↵</button>}
         </p>
       </div>
     );
   }
-  // One thing to do: it is the one bright control (Enter does it), nothing else beside it.
-  const only = singleAction(book, p);
-  if (only) {
+  // With the Book: what the story wants next is the one bright control (Enter does it); anything else
+  // stays on one quiet row under it.
+  if (book && p.primary !== undefined) {
+    const lead = p.menu[p.primary];
+    const rest = p.menu.map((m, i) => ({ m, i })).filter(({ i }) => i !== p.primary);
     return (
       <div class="prompt">
         {p.waiting.map((w) => <p key={w} class="prose dim">{w}</p>)}
-        <button type="button" class="next-btn only" onClick={() => q.choose(0)}>{touch ? "" : "↵ "}{only.label}</button>
+        <button type="button" class="next-btn only" onClick={() => q.choose(p.primary!)}>{touch ? "" : "↵ "}{lead.label}</button>
+        {rest.length > 0 && (
+          <div class="also">
+            {rest.map(({ m, i }) => (
+              <button key={i} type="button" class="dim" onClick={() => q.choose(i)}>{!touch && <span class="n">{i + 1}</span>}{m.label}</button>
+            ))}
+          </div>
+        )}
       </div>
     );
   }
@@ -125,7 +161,7 @@ export function Prompt({ q, view, ruby }: { q: Quiet; view: QuietView; ruby: Rub
   );
 }
 
-/** The place's menu when it holds exactly one thing to do, on a course with the Book: it is shown as one bright control. */
-export function singleAction(book: boolean, p: QuietView["phase"]): MenuItem | undefined {
-  return book && p.kind === "explore" && p.menu.length === 1 && !("disabled" in p.menu[0] && p.menu[0].disabled) ? p.menu[0] : undefined;
+/** The place's bright control on a course with the Book (see primaryItem): its index in the menu. */
+export function primaryAction(book: boolean, p: QuietView["phase"]): number | undefined {
+  return book && p.kind === "explore" ? p.primary : undefined;
 }

@@ -19,6 +19,15 @@ export interface PersonRow {
 /** A person is met once a conversation with them is done. */
 const met = (course: Course, state: GameState, npc: string) => course.scenes.some((s) => s.npc === npc && (state.scenesDone[s.id] ?? 0) > 0);
 
+/**
+ * What a person is called on screen: their name once met, and until then what the player can see of
+ * them (`npc-<id>-unmet`, e.g. "The old man") when the course gives one, so no label names someone
+ * before they have introduced themselves.
+ */
+export function npcLabel(course: Course, state: GameState, t: Text, npc: string): string {
+  return !met(course, state, npc) && t.has(`npc-${npc}-unmet`) ? t(`npc-${npc}-unmet`) : t(`npc-${npc}`);
+}
+
 /** How far into the story a scene is: the longest chain of scenes that must come before it. */
 function depths(course: Course): Map<string, number> {
   const out = new Map<string, number>();

@@ -182,6 +182,18 @@ describe("quiet terminal controller", () => {
     expect(log[0].tone).toBe("done");
   });
 
+  it("a course with the Book: a place is described on first entering; no news names what comes next; one bright control", () => {
+    const { q, core } = setup(() => {}, (c) => void ((c as unknown as CourseExtra).language.book = true));
+    const phase = () => q.view().phase as { kind: string; menu: { kind: string; disabled?: string }[]; primary?: number };
+    expect(phase().primary).toBeDefined();
+    q.choose(phase().primary!); // the way to the cook's scene
+    expect(texts(q)).toContain("Steam everywhere. The cook waves you over.");
+    q.choose(phase().primary!);
+    while (core.state.run) q.choose(rightIndex(core));
+    expect(q.view().toasts.map((x) => x.text).join("\n")).not.toMatch(/^New/m);
+    expect(phase().menu.some((m) => m.disabled)).toBe(false);
+  });
+
   it("sleeping: food is silent, the new day is a line", () => {
     const { q } = setup((s) => ((s.day = 2), (s.slot = 4))); // sleep appears once the day is used up
     const sleep = (q.view().phase as { menu: { kind: string }[] }).menu.findIndex((m) => m.kind === "sleep");

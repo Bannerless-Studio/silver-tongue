@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "preact/hooks";
 import type { RenderedLine, WordId } from "@silver-tongue/core";
-import { bookOn, firstTimeWords, quietRuby, sentenceCard, soundedTokens, speakerNamed, type RubySetting, type SentenceCard, type WordCard } from "@silver-tongue/view";
+import { bookOn, firstTimeWords, npcLabel, quietRuby, sentenceCard, soundedTokens, speakerNamed, type RubySetting, type SentenceCard, type WordCard } from "@silver-tongue/view";
 import { latestNpcLine, type Beat, type Quiet, type QuietView } from "../quiet";
 import { Line } from "./Line";
 
@@ -39,7 +39,7 @@ function Said({ q, b, ruby, named, latest, hint, reveal, onWord, onReveal }: {
   const { t, course, core } = q;
   const now = Date.now();
   const player = b.speaker === "player";
-  const who = player ? core.state.player ?? t("you") : t(`npc-${b.speaker}`);
+  const who = player ? core.state.player ?? t("you") : npcLabel(course, core.state, t, b.speaker!);
   const fresh = new Set(b.fresh ?? []);
   // Words sounded out on the desk are drawn bold in an NPC's line.
   const sounded = (l: RenderedLine) => (player ? undefined : soundedTokens(course, q.readPapers(), l));
@@ -53,12 +53,13 @@ function Said({ q, b, ruby, named, latest, hint, reveal, onWord, onReveal }: {
   const target = r?.line ?? b.line;
   const whole = target && !player ? sentenceCard(course, target) : undefined;
   const book = bookOn(course);
-  const ask = whole && !rephrased && (!book || latest);
-  const tap = whole && !rephrased && !ask ? () => onReveal(b) : undefined;
   // Said while onboarding (see onboarding): the row ? opens (the line's meaning; its reading too only when
-  // readings are off, since readings already sit under the words) starts open, and ? (or a tap) closes it.
+  // readings are off, since readings already sit under the words) starts open; a tap on the line closes it.
   const auto = !!whole && !rephrased && !!b.onboard;
   const shown = auto && reveal?.kind !== "line";
+  // No ? beside a meaning already open under the line: it would offer what is on screen.
+  const ask = whole && !rephrased && (!book || latest) && !shown;
+  const tap = whole && !rephrased && !ask ? () => onReveal(b) : undefined;
   // With the Book, the line wraps inside itself: its speaker label and ? stay on its first row.
   const cls = `ln ${player ? "you" : "npc"}${tap ? " tap" : ""}${book ? " book" : ""}`;
   return (

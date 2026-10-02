@@ -294,6 +294,8 @@ gesture-narration = { $npc } mimes it:
 
 # The quiet terminal page (packages/quiet-web).
 quiet-anchor = { $place } · Day { $day }, { $part }
+# The same before the day's number has a use (a course with the Book, until rent shows).
+quiet-anchor-time = { $place } · { $part }
 quiet-rent = rent { $currency }{ $rent } due { $days ->
     [0] tonight
     [1] tomorrow
@@ -320,6 +322,11 @@ quiet-desk-done = ✓ already read
 quiet-open-door = open the door
 quiet-lookup-tap = Tap a word to look it up.
 quiet-lookup-click = Click a word to look it up.
+# The first time a reply is built from pieces (a course with the Book); gone once one is sent.
+quiet-tiles-tap = Tap the pieces in order, then ✓.
+quiet-tiles-click = Click the pieces in order, then ✓.
+# The way to bed once the day is over (a course with the Book): $place is where the bed is.
+menu-go-sleep = Go back to { $place } to sleep
 quiet-read-intro = Sound it out, one block at a time.
 quiet-read-example = { $parts } makes { $reading }. Type it.
 quiet-read-placeholder = type the sound

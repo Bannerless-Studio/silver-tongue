@@ -13,7 +13,7 @@ import {
   type GameState,
   type Input,
 } from "@silver-tongue/core";
-import { extra } from "@silver-tongue/view";
+import { anchorRow, extra, makeText, npcLabel, placeMenu, primaryItem } from "@silver-tongue/view";
 import { stepToward } from "../src/bots";
 import { buildCourse } from "../src/build-course";
 
@@ -97,6 +97,37 @@ function playChain(c: Course, idleNights: number) {
   return { state: core.state, wallet };
 }
 
+/**
+ * Plays from a new game pressing only the one bright control (primaryItem) between scenes, with
+ * unavailable items left out as the quiet page leaves them out. Returns the scenes in the order played.
+ */
+function followBright(c: Course) {
+  let clock = 0;
+  const core = createCore(c, newGame(c), { now: () => clock, rng: mulberry32(1) });
+  const t = makeText(c.learnerFtl, c.learner);
+  const send = (input: Input) => {
+    clock += 3_600_000;
+    const ev = core.send(input);
+    expect(ev.filter((e) => e.type === "inputRejected"), JSON.stringify(input)).toEqual([]);
+    return ev;
+  };
+  if (c.needsName) send({ type: "setName", name: "Sam" });
+  const played: string[] = [];
+  const rentShown: boolean[] = [];
+  for (let n = 0; n < 200 && !core.state.scenesDone["room-rent"]; n++) {
+    const menu = placeMenu(c, core.state, t).filter((m) => !("disabled" in m && m.disabled));
+    const i = primaryItem(c, core.state, menu) ?? (menu.length === 1 ? 0 : undefined);
+    expect(i, `a bright control at ${core.state.place}, day ${core.state.day}`).toBeDefined();
+    const item = menu[i!];
+    send(item.input);
+    if (item.kind !== "talk") continue;
+    played.push(item.scene);
+    rentShown.push(!!anchorRow(c, core.state, t).rent);
+    for (let k = 0; core.state.run && k < 50; k++) send(rightReply(c, core.state));
+  }
+  return { played, rentShown, state: core.state, t };
+}
+
 describe("ko-seoul's stage-1 chain", () => {
   const { course, errors } = buildCourse(CONTENT, "ko-seoul");
 
@@ -116,6 +147,20 @@ describe("ko-seoul's stage-1 chain", () => {
     for (const id of CHAIN.slice(0, CHAIN.indexOf("stall-shift"))) expect(sceneCost(course!.scenes.find((s) => s.id === id)!), id).toBe(0);
     const { wallet } = playChain(course!, 6);
     expect(wallet).toContain(0);
+  });
+
+  it("the one bright control between scenes always leads to the next scene of the chain", () => {
+    const { played } = followBright(course!);
+    expect(played).toEqual(CHAIN);
+  });
+
+  it("rent stays off the top bar until paid work has been done; names wait for introductions", () => {
+    const { played, rentShown, state, t } = followBright(course!);
+    expect(rentShown.slice(0, played.indexOf("stall-shift") + 1).some(Boolean)).toBe(false);
+    expect(npcLabel(course!, state, t, "oldman")).toBe("Grandpa Park");
+    const fresh = newGame(course!);
+    expect(npcLabel(course!, fresh, t, "oldman")).toBe("The old man");
+    expect(npcLabel(course!, fresh, t, "landlady")).toBe("The landlady");
   });
 
   it("keeps the three pinned clue lines word for word", () => {
