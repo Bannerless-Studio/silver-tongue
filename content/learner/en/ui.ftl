@@ -330,6 +330,8 @@ quiet-tiles-click = Click the pieces in order, then ✓.
 quiet-again-slower = again, slower
 quiet-again = again, other words
 quiet-say-nothing = say nothing
+day-ended-food = Day { $day } is over. Food: { $currency }{ $amount }. You sleep.
+day-ended-rough-food = Day { $day } is over. Food: { $currency }{ $amount }. You sleep rough by the road.
 # The way to bed once the day is over (a course with the Book): $place is where the bed is.
 menu-go-sleep = Go back to { $place } to sleep
 quiet-read-intro = Sound it out, one block at a time.

@@ -251,6 +251,8 @@ export const QUIET_UI_KEYS: Record<string, string[]> = {
   "quiet-again-slower": [],
   "quiet-again": [],
   "quiet-say-nothing": [],
+  "day-ended-food": ["day", "currency", "amount"],
+  "day-ended-rough-food": ["day", "currency", "amount"],
   "menu-go-sleep": ["place"],
   "quiet-rent": ["currency", "rent", "days", "wallet"],
   "quiet-rent-late": [],

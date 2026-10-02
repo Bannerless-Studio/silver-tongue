@@ -203,6 +203,22 @@ describe("quiet terminal controller", () => {
     expect(texts(q).join("\n")).not.toMatch(/food/);
   });
 
+  it("with the Book the day's end says what food cost, and only when it cost something", () => {
+    const book = (c: Course) => {
+      (c as unknown as CourseExtra).language.book = true;
+      c.learnerFtl += "\nday-ended-food = Day { $day } is over. Food: { $currency }{ $amount }. You sleep.\n";
+    };
+    const sleepOn = (food: number) => {
+      const { q, course } = setup((s) => ((s.day = 2), (s.slot = 4), (s.wallet = 100)), (c) => (book(c), (c.world.foodPerDay = food)));
+      const phase = q.view().phase as { menu: { kind: string }[] };
+      q.choose(phase.menu.findIndex((m) => m.kind === "sleep"));
+      return { said: texts(q), currency: course.world.currency };
+    };
+    const fed = sleepOn(7);
+    expect(fed.said).toContain(`Day 2 is over. Food: ${fed.currency}7. You sleep.`);
+    expect(sleepOn(0).said).toContain("Day 2 is over. You sleep.");
+  });
+
   it("rent paid on the seventh night is said", () => {
     const { q } = setup((s) => ((s.day = 7), (s.wallet = 100), (s.slot = 4)));
     const sleep = (q.view().phase as { menu: { kind: string }[] }).menu.findIndex((m) => m.kind === "sleep");

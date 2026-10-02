@@ -293,6 +293,8 @@ export function createQuiet(opts: QuietOptions): Quiet {
     const revealed: string[] = [];
     /** reactions that restate the request; only kept when the replies come back after them */
     const reacted: Beat[] = [];
+    // With the Book the night's food is said with the day's end (and only when it cost something).
+    const food = events.reduce((sum, e) => sum + (e.type === "walletChanged" && e.reason === "food" ? e.delta : 0), 0);
     for (const e of events) {
       switch (e.type) {
         case "sceneStarted":
@@ -339,7 +341,8 @@ export function createQuiet(opts: QuietOptions): Quiet {
           break;
         }
         case "walletChanged": {
-          // Food is expected every night and wages ride on the finished scene's line: neither is news.
+          // Food is expected every night (with the Book it rides on the day's end, see dayEnded) and wages ride
+          // on the finished scene's line: neither is news of its own.
           if (e.reason === "food" || e.reason === "wages") break;
           const reason = e.reason === "mixup" || e.reason === "shopping" ? e.reason : undefined;
           const echo = e.delta < 0 && reason ? [...queue].reverse().find((b) => b.speaker === "player") : undefined;
@@ -382,7 +385,10 @@ export function createQuiet(opts: QuietOptions): Quiet {
           break;
         case "dayEnded":
           // core.state already holds the new day when events are applied
-          push({ text: t(e.rough ? "day-ended-rough" : "day-ended", { day: e.day }), tone: "narr", day: core.state.day });
+          if (book && food < 0) {
+            const vars = { day: e.day, currency: course.world.currency, amount: -food };
+            push({ text: t(e.rough ? "day-ended-rough-food" : "day-ended-food", vars), tone: "narr", day: core.state.day });
+          } else push({ text: t(e.rough ? "day-ended-rough" : "day-ended", { day: e.day }), tone: "narr", day: core.state.day });
           break;
         case "inputRejected":
           toast(t(`reject-${e.reason}`), "bad");
