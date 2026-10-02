@@ -206,6 +206,9 @@ export function Stage({ q, view, shown, ruby, reveal, onWord, onReveal, onClose,
   const wordOpen = reveal?.kind === "word" && reveal.beat === b.id && at ? reveal : undefined;
   const missed = !!ex.said && ex.missed.includes(ex.said);
   const tag = ex.again > 0 ? t(ex.repeat === "rephrase" ? "quiet-again" : "quiet-again-slower") : undefined;
+  const spans = quietRuby(course, ex.shown, core.state.words, now, ruby);
+  // The whole reading goes under the line only when the line carries none of its own: said twice it is noise.
+  const readAll = !spans.length;
   return (
     <section class="stage-now" ref={ref}>
       <div class="direction-row">{shown.hold !== "picked" && <Direction beats={ex.direction.slice(-1)} />}</div>
@@ -216,14 +219,14 @@ export function Stage({ q, view, shown, ruby, reveal, onWord, onReveal, onClose,
         </p>
         <div class={`say${ex.again ? " again" : " enter"}`} key={`${ex.line.id}:${ex.again}`} onClick={auto ? () => onReveal(b) : undefined}>
           <span class="say-text" lang={q.course.language.locale}>
-            <Line line={ex.shown} words={core.state.words} now={now} book sounded={sounded} ruby={quietRuby(course, ex.shown, core.state.words, now, ruby)} onWord={word} />
+            <Line line={ex.shown} words={core.state.words} now={now} book sounded={sounded} ruby={spans} onWord={word} />
           </span>
           {ask && (
             <button type="button" class="q" aria-label={t("quiet-reveal")} aria-expanded={lineOpen} onClick={(e) => (e.stopPropagation(), onReveal(b))}>?</button>
           )}
         </div>
         {(meaningShown || rephrased) && whole && (
-          <p class="say-mean">{[(rephrased || (lineOpen && ruby === "off") || (auto && ruby === "off")) ? whole.reading : "", whole.meaning].filter(Boolean).join(" · ")}</p>
+          <p class="say-mean">{[readAll ? whole.reading : "", whole.meaning].filter(Boolean).join(" · ")}</p>
         )}
         {view.lookupHint === ex.line.id && <p class="hint">{t(matches("(pointer: coarse)") ? "quiet-lookup-tap" : "quiet-lookup-click")}</p>}
       </div>

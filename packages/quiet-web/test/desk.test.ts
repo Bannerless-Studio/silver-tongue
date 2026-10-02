@@ -39,7 +39,7 @@ describe("the desk", () => {
     expect(texts(q)).toEqual([]);
   });
 
-  it("reading every paper lets the desk go: the place, renamed by the ID card, then the knock", () => {
+  it("reading every paper lets the desk go: the place, renamed by the ID card", () => {
     const { q, papers } = setup(withPapers);
     q.setName("Ana");
     q.readPaper("idcard");
@@ -50,7 +50,8 @@ describe("the desk", () => {
     expect(papers.ids).toEqual(["idcard", "bill"]);
     q.leaveDesk();
     expect(q.view().desk).toBeUndefined();
-    expect(texts(q)).toEqual(["Min-jun's Street.", "Someone is knocking."]);
+    // the knock had its own screen: the transcript never says it again
+    expect(texts(q)).toEqual(["Min-jun's Street."]);
   });
 
   it("a reload keeps the papers read; all read, the desk never comes back", () => {

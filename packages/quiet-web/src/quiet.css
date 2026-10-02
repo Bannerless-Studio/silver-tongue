@@ -468,6 +468,8 @@ textarea { width: 100%; background: var(--bg); border: 1px solid var(--line); bo
 }
 .building .bt.undo { color: var(--muted); border: 1px solid var(--line); }
 .building .bt.send { background: var(--paper); color: var(--ink); font-weight: 700; }
+/* Nothing laid yet: only the empty slot shows (the pieces are the next action); the row keeps its size. */
+.building .bt:disabled { visibility: hidden; }
 
 /* The word card: paper, anchored under the word. */
 .word-paper {
@@ -521,6 +523,10 @@ textarea { width: 100%; background: var(--bg); border: 1px solid var(--line); bo
 .book .replies .prompt { margin-top: 0; align-items: center; }
 .book .replies .next-btn.only { align-self: center; margin: 0; padding: 0.55rem 1.4rem; }
 .book .replies .also { justify-content: center; margin: 0.6rem 0 0; }
+/* Nothing bright: every thing to do is a cyan "do", stacked and centred like the one above. */
+.book .replies .dos { display: flex; flex-direction: column; align-items: stretch; gap: 0.6rem; width: max-content; max-width: 100%; }
+.book .replies .next-btn.do { position: relative; padding: 0.55rem 1.4rem; text-align: center; max-width: 100%; }
+.book .replies .next-btn.do .n { position: absolute; right: calc(100% + 0.6rem); color: var(--muted); font-family: var(--mono); font-size: var(--fs-xs); font-weight: 400; }
 .book .replies .prompt > .prose { text-align: center; font-size: var(--fs-sm); }
 .book .bar { padding-inline: var(--gutter); }
 

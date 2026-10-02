@@ -6,7 +6,7 @@
 import { describeRun, normalizeTyped, wordState, type Core, type Course, type GameEvent, type GameState, type Input, type RenderedLine, type WordId } from "@silver-tongue/core";
 import {
   bookOn, deskOn, deskPapers, emptyProgress, freshMarks, heardCount, lettersFollowDesk, metLetters, onboarding, paperSyllables, placeName,
-  actionNarration, bedHint, bedPlace, introLines, isBedtime, npcLabel, primaryItem, joinTilesForDisplay, makeText, placeMenu, sentenceCard, tileEcho, typePrompt, waitingForMoney, wordCard,
+  actionNarration, bedHint, bedPlace, introLines, isBedtime, likelyOrder, npcLabel, primaryItem, joinTilesForDisplay, makeText, placeMenu, sentenceCard, tileEcho, typePrompt, waitingForMoney, wordCard,
   type AudioOut, type DeskPaper, type DeskProgress, type MenuItem, type SentenceCard, type Speech, type Text, type WordCard,
 } from "@silver-tongue/view";
 
@@ -461,7 +461,11 @@ export function createQuiet(opts: QuietOptions): Quiet {
     const open = menu.filter((m) => !("disabled" in m && m.disabled));
     const primary = primaryItem(course, core.state, open) ?? (open.length === 1 ? 0 : undefined);
     const bed = primary !== undefined && open[primary].kind === "go" && isBedtime(course, core.state);
-    const shown = bed ? open.map((m, i) => (i === primary ? { ...m, label: t("menu-go-sleep", { place: placeLabel(bedPlace(course, core.state)) }) } : m)) : open;
+    // Nothing bright: every control is a "do", the likeliest first (and the number keys follow that order).
+    const shown =
+      primary === undefined ? likelyOrder(course, core.state, open)
+      : bed ? open.map((m, i) => (i === primary ? { ...m, label: t("menu-go-sleep", { place: placeLabel(bedPlace(course, core.state)) }) } : m))
+      : open;
     return { kind: "explore", menu: shown, waiting: waitingForMoney(course, core.state, t), primary };
   }
 
@@ -469,12 +473,15 @@ export function createQuiet(opts: QuietOptions): Quiet {
   const intro = introLines(course, core.state, t);
   // A course with the Book opens on the crawl and the name screen: the story is read there, not repeated here.
   const opening = book && naming && intro.length ? intro : undefined;
-  if (!opening) for (const text of intro) push({ text, tone: "narr" });
+  // What was shown on a screen of its own before the transcript (the crawl, the desk, the knock) is never
+  // said again in it: with the Book the story is the crawl's, even in a game picked up later.
+  const told = book ? [] : intro;
+  for (const text of told) push({ text, tone: "narr" });
   resuming = true;
   apply(describeRun(course, core.state)); // a save made mid-scene resumes in the scene: its line, then its replies
   resuming = false;
   // A game picked up between scenes: say where the player is, so the screen is never blank.
-  if (!intro.length && !scene && !atDesk) push({ text: t("quiet-resume", { place: placeLabel() }), tone: "narr" });
+  if (!told.length && !opening && !scene && !atDesk) push({ text: t("quiet-resume", { place: placeLabel() }), tone: "narr" });
   if (!scene) preludeTo = nextId;
   flush(true);
 
@@ -618,8 +625,8 @@ export function createQuiet(opts: QuietOptions): Quiet {
         preludeTo = nextId;
         if (door) send(door.input);
         else {
+          // desk-done was the knock screen's own line.
           push({ text: t("quiet-resume", { place: placeLabel() }), tone: "narr" });
-          if (t.has("desk-done")) push({ text: t("desk-done"), tone: "narr" });
           preludeTo = nextId;
           flush(true);
         }

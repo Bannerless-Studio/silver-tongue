@@ -127,6 +127,19 @@ export function Prompt({ q, view, ruby }: { q: Quiet; view: QuietView; ruby: Rub
       </div>
     );
   }
+  // With the Book and nothing bright: each thing to do is a "do" control, centred, the likeliest first.
+  if (book) {
+    return (
+      <div class="prompt">
+        {p.waiting.map((w) => <p key={w} class="prose dim">{w}</p>)}
+        <div class="dos">
+          {p.menu.map((m, i) => (
+            <button key={i} type="button" class="next-btn do" onClick={() => q.choose(i)}>{!touch && <span class="n">{i + 1}</span>}{m.label}</button>
+          ))}
+        </div>
+      </div>
+    );
+  }
   return (
     <div class="prompt">
       {p.waiting.map((w) => <p key={w} class="prose dim">{w}</p>)}

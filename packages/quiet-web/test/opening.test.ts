@@ -59,6 +59,15 @@ describe("opening of a book course", () => {
     const again = createQuiet({ course: q.course, core: q.core, now: () => T0 });
     expect(again.view().opening).toBeUndefined();
   });
+
+  it("a book game picked up later never puts the crawl's story in the transcript", () => {
+    const { q } = setup((c) => (named(c), book(c)));
+    q.setName("Ana");
+    const again = createQuiet({ course: q.course, core: q.core, now: () => T0 });
+    const said = again.view().backlog.map((b) => b.text ?? b.line?.text);
+    for (const p of STORY) expect(said).not.toContain(p);
+    expect(said.length).toBeGreaterThan(0);
+  });
 });
 
 describe("opening gate", () => {

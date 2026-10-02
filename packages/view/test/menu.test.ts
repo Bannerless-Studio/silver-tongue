@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { newGame } from "@silver-tongue/core";
 import { fixtureWithText } from "../src/testing";
-import { bedHint, makeText, placeMenu, waitingForMoney } from "../src/index";
+import { bedHint, likelyOrder, makeText, placeMenu, waitingForMoney, type MenuItem } from "../src/index";
 
 const setup = () => {
   const course = fixtureWithText();
@@ -155,5 +155,27 @@ describe("place menu", () => {
     state.scenesDone.intro = 1;
     state.trust.cook = 1;
     expect(waitingForMoney(course, state, t)).toEqual(["Cook: Serve drinks · needs ¥100"]);
+  });
+});
+
+describe("likely order (a Book course's menu with nothing bright)", () => {
+  it("puts a talk here first, then the way to a waiting scene, the mentor, the other ways, sleep last", () => {
+    const { course, state } = setup();
+    const go = (place: string): MenuItem => ({ kind: "go", label: place, input: { type: "goTo", place }, place });
+    const menu: MenuItem[] = [
+      { kind: "sleep", label: "sleep", input: { type: "sleep" } },
+      go("elsewhere"),
+      go("noodle_shop"), // "Say hello" waits there
+      { kind: "mentor", label: "mentor", input: { type: "visitMentor" }, npc: "m" },
+      { kind: "talk", label: "talk", input: { type: "startScene", scene: "intro" }, npc: "n", scene: "intro" },
+    ];
+    expect(likelyOrder(course, state, menu).map((m) => m.label)).toEqual(["talk", "noodle_shop", "mentor", "elsewhere", "sleep"]);
+  });
+
+  it("keeps the menu's order among equals", () => {
+    const { course, state } = setup();
+    state.scenesDone.intro = 1; // nothing waits anywhere
+    const go = (place: string): MenuItem => ({ kind: "go", label: place, input: { type: "goTo", place }, place });
+    expect(likelyOrder(course, state, [go("b"), go("a"), go("noodle_shop")]).map((m) => m.label)).toEqual(["b", "a", "noodle_shop"]);
   });
 });

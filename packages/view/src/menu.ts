@@ -101,6 +101,18 @@ export function primaryItem(course: Course, state: GameState, menu: MenuItem[]):
   return job >= 0 ? job : undefined;
 }
 
+/**
+ * The menu as a course with the Book draws it when nothing is bright (see primaryItem): the likeliest
+ * first. A talk here, then a way to somewhere a scene waits (on the shortest walk), then the mentor, then
+ * the other ways, then sleep; ties keep the menu's order.
+ */
+export function likelyOrder(course: Course, state: GameState, menu: MenuItem[]): MenuItem[] {
+  const waiting = new Set(availableSceneIds(course, state).map((id) => course.scenes.find((s) => s.id === id)!.place));
+  const toward = new Set([...waiting].map((p) => firstStep(course, state, p)).filter((p) => p !== undefined));
+  const rank = (m: MenuItem) => (m.kind === "talk" ? 0 : m.kind === "go" ? (toward.has(m.place) ? 1 : 3) : m.kind === "mentor" ? 2 : 4);
+  return menu.map((m, i) => ({ m, i })).sort((a, b) => rank(a.m) - rank(b.m) || a.i - b.i).map(({ m }) => m);
+}
+
 /** The first known place on the shortest walk from here to `goal`. */
 function firstStep(course: Course, state: GameState, goal: string): string | undefined {
   const from = new Map<string, string>([[state.place, ""]]);
