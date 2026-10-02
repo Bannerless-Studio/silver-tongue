@@ -170,10 +170,11 @@ export function speakerHue(course: Course, npc: string): number {
 /**
  * The meaning row under each reply slip on a course with the Book, or undefined when the slips have none.
  * Every slip in a set has the same rows: while onboarding each shows its meaning; after, while any reply
- * holds a word not heard yet, each shows its intent (its meaning when it has no intent).
+ * holds a word not known yet, each shows its intent (its meaning when it has no intent). Heard once is not
+ * enough: two goodbyes heard in the first scene can look alike until known.
  */
 export function replyMeanings(options: RenderedLine[], words: GameState["words"], now: number, onboard: boolean): string[] | undefined {
   if (onboard) return options.map((o) => o.meaning ?? o.intent ?? "");
-  if (!options.some((o) => o.tokens.some((tk) => wordState(words[tk.word], now) === "unseen"))) return undefined;
+  if (options.every((o) => o.tokens.every((tk) => wordState(words[tk.word], now) === "known"))) return undefined;
   return options.map((o) => o.intent ?? o.meaning ?? "");
 }
