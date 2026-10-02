@@ -333,7 +333,7 @@ export function createQuiet(opts: QuietOptions): Quiet {
         case "npcReacted": {
           // The reaction carries the request said again, so the next reply answers it, not the reaction.
           // Only its own clip plays; word help keeps offering the request the player got wrong.
-          const r = push({ speaker: e.npc, line: e.line, fresh: freshIn(e.line), tone: "react" }, speech(course.reactionAudio?.[e.reaction]?.[e.npc]));
+          const r = push({ speaker: e.npc, line: e.line, fresh: freshIn(e.line), tone: "react" }, speech(course.reactionAudio?.[e.reaction]?.[e.npc] ?? e.line.audio));
           if (lastLine) {
             r.restate = { line: lastLine };
             reacted.push(r);

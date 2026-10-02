@@ -15,6 +15,7 @@ import {
   wordState,
   type CatalogEntry,
   type Course,
+  type GameEvent,
   type GameState,
   type Input,
   type SceneRun,
@@ -186,7 +187,19 @@ export function goals(course: Course, state: GameState): Goal[] {
  * here, or walk toward the nearest place with it; sleep (at home, walking there first) when out
  * of slots or goals.
  */
-export function runBot(course: Course, bot: Bot, opts: { days: number; seed: number }): BotReport {
+export interface RunOptions {
+  days: number;
+  seed: number;
+  /**
+   * Real time per game day: when set, every night moves the clock to the start of the next day,
+   * as for a player who plays one game day per real day. Unset, the clock only ticks an hour a step.
+   */
+  dayMs?: number;
+  /** Called after every input with the state just before it (a copy) and the events it caused. */
+  observe?: (step: { input: Input; events: GameEvent[]; before: GameState; after: GameState; now: number }) => void;
+}
+
+export function runBot(course: Course, bot: Bot, opts: RunOptions): BotReport {
   let clock = 0;
   const rng = mulberry32(opts.seed);
   const core = createCore(course, newGame(course), { now: () => clock, rng: mulberry32(opts.seed + 1) });
@@ -240,7 +253,10 @@ export function runBot(course: Course, bot: Bot, opts: { days: number; seed: num
       if (step) input = { type: "goTo", place: step };
     }
     clock += HOUR;
+    const before = opts.observe ? structuredClone(core.state) : undefined;
     const events = core.send(input);
+    if (opts.dayMs && events.some((e) => e.type === "dayEnded")) clock = Math.max(clock, (core.state.day - 1) * opts.dayMs);
+    opts.observe?.({ input, events, before: before!, after: core.state, now: clock });
     if (events.some((e) => e.type === "inputRejected")) {
       // A bot repeats itself, so a refused input would be refused forever: stop and report it.
       report.rejected += 1;
