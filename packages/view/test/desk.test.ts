@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { foldRomanization, readsAs, romanize } from "../src/desk";
+import type { Course, RenderedLine } from "@silver-tongue/core";
+import { foldRomanization, readsAs, romanize, soundedTokens } from "../src/desk";
+import type { CourseExtra } from "../src/course-extra";
 
 describe("romanize", () => {
   it.each([
@@ -55,5 +57,21 @@ describe("readsAs", () => {
   it("folds spelling variants", () => {
     expect(foldRomanization("Seo-ul")).toBe(foldRomanization("soul"));
     expect(foldRomanization("kkachi")).toBe(foldRomanization("gaji"));
+  });
+});
+
+describe("soundedTokens", () => {
+  const course = { language: { book: true }, papers: [{ id: "idcard", kind: "card", lines: [{ id: "name", text: "김민준" }] }] } as unknown as Course & CourseExtra;
+  const line = { text: "민준 씨?", tokens: [{ word: "a", start: 0, end: 2 }, { word: "b", start: 3, end: 4 }] } as unknown as RenderedLine;
+
+  it("marks a word whose text is inside a line of a paper already read", () => {
+    expect([...soundedTokens(course, new Set(["idcard"]), line)]).toEqual([0]);
+  });
+  it("marks nothing before the paper is read", () => {
+    expect(soundedTokens(course, new Set(), line).size).toBe(0);
+  });
+  it("ignores one-syllable words, which turn up inside other words by chance", () => {
+    const one = { text: "준", tokens: [{ word: "c", start: 0, end: 1 }] } as unknown as RenderedLine;
+    expect(soundedTokens(course, new Set(["idcard"]), one).size).toBe(0);
   });
 });

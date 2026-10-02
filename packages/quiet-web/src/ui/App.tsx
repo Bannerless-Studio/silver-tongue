@@ -7,7 +7,7 @@ import { Anchor } from "./Anchor";
 import { Games, Menu, Notebook, Status } from "./Overlays";
 import { Desk } from "./Desk";
 import { Opening } from "./Opening";
-import { Prompt } from "./Prompt";
+import { Prompt, singleAction } from "./Prompt";
 import { Toasts } from "./Toasts";
 import { Transcript, type Reveal } from "./Transcript";
 import { useQuiet } from "./use-quiet";
@@ -60,7 +60,7 @@ export function App({ q, page }: { q: Quiet; page: Page }) {
   };
 
   const press = (key: string) => {
-    const a = keyAction(key, { overlay: !!open, phase: q.view().phase.kind, typing: false, modifier: false, book: bookOn(q.course) });
+    const a = keyAction(key, { overlay: !!open, phase: q.view().phase.kind, typing: false, modifier: false, book: bookOn(q.course), single: !!singleAction(bookOn(q.course), q.view().phase) });
     if (!a) return false;
     const p = q.view().phase;
     if (a.kind === "close") setOpen(null);
@@ -99,6 +99,9 @@ export function App({ q, page }: { q: Quiet; page: Page }) {
   });
 
   const close = () => setOpen(null);
+  // A course with the Book keeps controls away until they have a use: Status from day 2 (money matters then),
+  // the touch key bar only where keys are typed (tiles). Book and Settings stay.
+  const book = bookOn(q.course);
   // A new game on a course with the Book: the crawl and the name screen, nothing else on screen.
   if (view.opening) return <Opening q={q} story={view.opening} />;
   // Then, on a course with papers, the desk: the papers read out before the game starts. The Book opens over it.
@@ -119,12 +122,14 @@ export function App({ q, page }: { q: Quiet; page: Page }) {
       </Transcript>
       <footer class="bar">
         <button type="button" class="dim" onClick={() => setOpen("notebook")}>{t(bookOn(q.course) ? "quiet-book" : "quiet-notebook").toLowerCase()}</button>
-        <button type="button" class="dim" onClick={() => setOpen("status")}>{t("quiet-status").toLowerCase()}</button>
+        {(!book || q.core.state.day > 1) && <button type="button" class="dim" onClick={() => setOpen("status")}>{t("quiet-status").toLowerCase()}</button>}
         <button type="button" class="dim" onClick={() => setOpen("settings")}>{t("vn-settings").toLowerCase()}</button>
       </footer>
-      <div class="keybar">
-        {keybar(bookOn(q.course)).map((k) => <button key={k.key} type="button" onClick={() => press(k.key)}>{k.label}</button>)}
-      </div>
+      {(!book || view.phase.kind === "tiles") && (
+        <div class="keybar">
+          {keybar(book).map((k) => <button key={k.key} type="button" onClick={() => press(k.key)}>{k.label}</button>)}
+        </div>
+      )}
       {open === "notebook" && <Notebook q={q} onClose={close} />}
       {open === "status" && <Status q={q} audioAvailable={page.audioAvailable} onClose={close} />}
       {open === "settings" && <Menu q={q} page={page} onClose={close} onGames={() => setOpen("games")} />}

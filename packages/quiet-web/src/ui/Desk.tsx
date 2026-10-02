@@ -48,9 +48,9 @@ export function Desk({ q, papers, bookOpen, onBook }: { q: Quiet; papers: DeskPa
 
   if (leaving === "knock") {
     return (
-      <div class="desk-screen desk-knock" onClick={() => q.leaveDesk()}>
+      <div class="desk-screen desk-knock">
         <p class="knock">{t("desk-done")}</p>
-        <p class="go"><span class="pulse">{touch ? t("vn-tap") : t("quiet-press-enter")}</span></p>
+        <p class="go"><button type="button" class="next-btn pulse" onClick={() => q.leaveDesk()}>{touch ? "" : "↵ "}{t("quiet-open-door")}</button></p>
       </div>
     );
   }

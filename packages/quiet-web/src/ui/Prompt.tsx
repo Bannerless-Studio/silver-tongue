@@ -1,9 +1,12 @@
 import { useState } from "preact/hooks";
 import type { RenderedLine } from "@silver-tongue/core";
-import { quietRuby, type RubySetting } from "@silver-tongue/view";
+import { bookOn, quietRuby, type RubySetting } from "@silver-tongue/view";
+import type { MenuItem } from "@silver-tongue/view";
 import { CONFUSED, type Quiet, type QuietView } from "../quiet";
 import { Line } from "./Line";
 import { ReplyLine } from "./ReplyLine";
+
+const matches = (query: string) => typeof matchMedia === "function" && matchMedia(query).matches;
 
 /** What the player can do now: a name, a numbered reply, tiles, or the place's commands. */
 export function Prompt({ q, view, ruby }: { q: Quiet; view: QuietView; ruby: RubySetting }) {
@@ -11,6 +14,8 @@ export function Prompt({ q, view, ruby }: { q: Quiet; view: QuietView; ruby: Rub
   const t = q.t;
   const [name, setName] = useState("");
   const [text, setText] = useState("");
+  const touch = matches("(pointer: coarse)");
+  const book = bookOn(q.course);
   if (p.kind === "name") {
     return (
       <form class="prompt" onSubmit={(e) => (e.preventDefault(), q.setName(name))}>
@@ -26,10 +31,25 @@ export function Prompt({ q, view, ruby }: { q: Quiet; view: QuietView; ruby: Rub
   if (p.kind === "pick") {
     const now = Date.now();
     // A reply with readings to write under it is drawn as a line; the rest stay plain text.
+    // While onboarding every reply shows its reading, whatever the setting: the Korean, how it sounds, what it means.
     const readingsFor = (o: RenderedLine) => {
-      const spans = quietRuby(q.course, o, q.core.state.words, now, ruby);
+      const spans = quietRuby(q.course, o, q.core.state.words, now, view.onboard && ruby === "off" ? "on" : ruby);
       return spans.length ? <Line line={o} now={now} ruby={spans} /> : o.text;
     };
+    if (view.onboard) {
+      const row = (key: number, ko: preact.ComponentChildren, meaning: string | undefined, onClick: () => void) => (
+        <button key={key} type="button" class="opt onb" onClick={onClick}>
+          {!touch && <span class="n">{key + 1}</span>}
+          <span class="opt-body"><span class="opt-ko">{ko}</span>{meaning && <span class="opt-mean">{meaning}</span>}</span>
+        </button>
+      );
+      return (
+        <div class="prompt">
+          {p.options.map((o, i) => row(i, readingsFor(o), o.meaning ?? o.intent, () => q.choose(i)))}
+          {p.confused && row(p.options.length, CONFUSED, t("reply-confused"), () => q.choose(p.options.length))}
+        </div>
+      );
+    }
     return (
       <div class="prompt">
         {p.options.map((o, i) => (
@@ -42,7 +62,7 @@ export function Prompt({ q, view, ruby }: { q: Quiet; view: QuietView; ruby: Rub
             <span class="n">{p.options.length + 1}</span>{CONFUSED}<span class="dim"> ({t("reply-confused")})</span>
           </button>
         )}
-        <p class="cursor-line"><span class="cur">›</span> <span class="blink">▌</span></p>
+        {!book && <p class="cursor-line"><span class="cur">›</span> <span class="blink">▌</span></p>}
       </div>
     );
   }
@@ -77,6 +97,16 @@ export function Prompt({ q, view, ruby }: { q: Quiet; view: QuietView; ruby: Rub
       </div>
     );
   }
+  // One thing to do: it is the one bright control (Enter does it), nothing else beside it.
+  const only = singleAction(book, p);
+  if (only) {
+    return (
+      <div class="prompt">
+        {p.waiting.map((w) => <p key={w} class="prose dim">{w}</p>)}
+        <button type="button" class="next-btn only" onClick={() => q.choose(0)}>{touch ? "" : "↵ "}{only.label}</button>
+      </div>
+    );
+  }
   return (
     <div class="prompt">
       {p.waiting.map((w) => <p key={w} class="prose dim">{w}</p>)}
@@ -93,4 +123,9 @@ export function Prompt({ q, view, ruby }: { q: Quiet; view: QuietView; ruby: Rub
       </div>
     </div>
   );
+}
+
+/** The place's menu when it holds exactly one thing to do, on a course with the Book: it is shown as one bright control. */
+export function singleAction(book: boolean, p: QuietView["phase"]): MenuItem | undefined {
+  return book && p.kind === "explore" && p.menu.length === 1 && !("disabled" in p.menu[0] && p.menu[0].disabled) ? p.menu[0] : undefined;
 }

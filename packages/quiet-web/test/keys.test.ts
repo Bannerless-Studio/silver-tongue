@@ -49,4 +49,10 @@ describe("quiet terminal keys", () => {
     expect(keyAction("b", ctx({ book: false }))).toBeNull();
     expect(keyAction("b", ctx({ book: true, overlay: true }))).toBeNull();
   });
+
+  it("with one thing to do on screen, enter does it; otherwise enter is the browser's", () => {
+    expect(keyAction("Enter", ctx({ single: true }))).toEqual({ kind: "choose", n: 0 });
+    expect(keyAction("Enter", ctx())).toBeNull();
+    expect(keyAction("Enter", ctx({ phase: "pick", single: true }))).toBeNull();
+  });
 });

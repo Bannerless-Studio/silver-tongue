@@ -1,8 +1,10 @@
 import { useEffect, useRef } from "preact/hooks";
-import type { WordId } from "@silver-tongue/core";
-import { bookOn, firstTimeWords, quietRuby, sentenceCard, speakerNamed, type RubySetting, type SentenceCard, type WordCard } from "@silver-tongue/view";
+import type { RenderedLine, WordId } from "@silver-tongue/core";
+import { bookOn, firstTimeWords, quietRuby, sentenceCard, soundedTokens, speakerNamed, type RubySetting, type SentenceCard, type WordCard } from "@silver-tongue/view";
 import { latestNpcLine, type Beat, type Quiet, type QuietView } from "../quiet";
 import { Line } from "./Line";
+
+const matches = (query: string) => typeof matchMedia === "function" && matchMedia(query).matches;
 
 /** What is open under a line: its whole reading and meaning, or one word's card. */
 export type Reveal = { beat: number; kind: "line"; card: SentenceCard } | { beat: number; kind: "word"; card: WordCard; example?: SentenceCard };
@@ -31,14 +33,16 @@ function Card({ q, reveal }: { q: Quiet; reveal: Reveal }) {
  * One spoken line. `named`: its speaker label shows (see speakerNamed). `latest`: the newest NPC line,
  * the only one with a `?` on a course with the Book; an older line there opens the same on a tap.
  */
-function Said({ q, b, ruby, named, latest, reveal, onWord, onReveal }: {
-  q: Quiet; b: Beat; ruby: RubySetting; named: boolean; latest: boolean; reveal?: Reveal; onWord: (b: Beat, w: WordId, surface: string) => void; onReveal: (b: Beat) => void;
+function Said({ q, b, ruby, named, latest, hint, reveal, onWord, onReveal }: {
+  q: Quiet; b: Beat; ruby: RubySetting; named: boolean; latest: boolean; hint: boolean; reveal?: Reveal; onWord: (b: Beat, w: WordId, surface: string) => void; onReveal: (b: Beat) => void;
 }) {
   const { t, course, core } = q;
   const now = Date.now();
   const player = b.speaker === "player";
   const who = player ? core.state.player ?? t("you") : t(`npc-${b.speaker}`);
   const fresh = new Set(b.fresh ?? []);
+  // Words sounded out on the desk are drawn bold in an NPC's line.
+  const sounded = (l: RenderedLine) => (player ? undefined : soundedTokens(course, q.readPapers(), l));
   const r = b.restate;
   // The request said again after a reaction glosses nothing: its new words were glossed when first said.
   const again = r ? firstTimeWords(course, r.line, new Set(r.fresh ?? [])) : [];
@@ -65,7 +69,7 @@ function Said({ q, b, ruby, named, latest, reveal, onWord, onReveal }: {
         {b.title && <b>{b.title} </b>}
         {b.line ? (
           <Line
-            line={b.line} fresh={b.fresh} words={player ? undefined : core.state.words} now={now} book={book}
+            line={b.line} fresh={b.fresh} words={player ? undefined : core.state.words} now={now} book={book} sounded={sounded(b.line)}
             ruby={player ? undefined : quietRuby(course, b.line, core.state.words, now, ruby)}
             onWord={player ? undefined : (w, s) => onWord(b, w, s)}
           />
@@ -74,7 +78,7 @@ function Said({ q, b, ruby, named, latest, reveal, onWord, onReveal }: {
         )}
         {r && (
           <span class="restate">
-            <Line line={r.line} fresh={r.fresh ?? []} words={core.state.words} now={now} book={book} ruby={quietRuby(course, r.line, core.state.words, now, ruby)} onWord={(w, s) => onWord(b, w, s)} />
+            <Line line={r.line} fresh={r.fresh ?? []} words={core.state.words} now={now} book={book} sounded={sounded(r.line)} ruby={quietRuby(course, r.line, core.state.words, now, ruby)} onWord={(w, s) => onWord(b, w, s)} />
           </span>
         )}
         {ask && (
@@ -99,6 +103,7 @@ function Said({ q, b, ruby, named, latest, reveal, onWord, onReveal }: {
         <div class="gl dim"><span class="conn">┆</span> <span class="gloss">{[ruby === "off" ? whole.reading : "", whole.meaning].filter(Boolean).join(" · ")}</span></div>
       )}
       {reveal && !(auto && reveal.kind === "line") && <Card q={q} reveal={reveal} />}
+      {hint && <p class="hint">{t(matches("(pointer: coarse)") ? "quiet-lookup-tap" : "quiet-lookup-click")}</p>}
     </>
   );
 }
@@ -121,7 +126,7 @@ export function Transcript({ q, view, ruby, reveal, onWord, onReveal, children }
       <div class="log" role="log" aria-live="polite">
         {view.backlog.map((b, i) => {
           const open = reveal?.beat === b.id ? reveal : undefined;
-          if (b.speaker) return <Said key={b.id} q={q} b={b} ruby={ruby} named={named[i]} latest={b.id === latest} reveal={open} onWord={onWord} onReveal={onReveal} />;
+          if (b.speaker) return <Said key={b.id} q={q} b={b} ruby={ruby} named={named[i]} latest={b.id === latest} hint={b.id === view.lookupHint} reveal={open} onWord={onWord} onReveal={onReveal} />;
           return <p key={b.id} class={`prose${b.tone ? ` ${b.tone}` : ""}${b.day ? " day" : ""}`}>{b.title && <b>{b.title} </b>}{b.text}</p>;
         })}
       </div>

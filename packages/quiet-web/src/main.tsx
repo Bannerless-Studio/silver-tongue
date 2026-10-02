@@ -1,7 +1,7 @@
 // Forked from packages/vn-web/src/main.tsx: the same loading and saves, drawn as a quiet terminal.
 import { render } from "preact";
 import { createCore, mulberry32, type CatalogEntry, type Course, type GameState } from "@silver-tongue/core";
-import { courseLabels, decodeSave, DEFAULT_RUBY, DEFAULT_SPEED, encodeSave, learnerFor, deskKey, emptyProgress, makeText, papersKey, parseProgress, playbackRate, sessionLines, type RubySetting, type SpeechSpeed, type Text } from "@silver-tongue/view";
+import { courseLabels, decodeSave, DEFAULT_RUBY, DEFAULT_SPEED, encodeSave, learnerFor, deskKey, emptyProgress, lookupHintKey, makeText, papersKey, parseProgress, playbackRate, sessionLines, type RubySetting, type SpeechSpeed, type Text } from "@silver-tongue/view";
 import {
   coursesBase, createWebAudio, fetchJson, fromLocalStorage, hasAnySession, loadWebSettings, metaContent, migrateWebAliases, pageStart, updateWebSettings, WebSessions,
   type KeyValue, type Opened,
@@ -94,6 +94,20 @@ function paperStore(kv: KeyValue, course: string): PaperStore {
         return parseProgress(JSON.parse(kv.getItem(deskKey(course)) ?? "{}"));
       } catch {
         return emptyProgress();
+      }
+    },
+    loadLookupDone() {
+      try {
+        return kv.getItem(lookupHintKey(course)) === "1";
+      } catch {
+        return false;
+      }
+    },
+    saveLookupDone() {
+      try {
+        kv.setItem(lookupHintKey(course), "1");
+      } catch {
+        // private window: the hint shows again next time
       }
     },
     saveProgress(p) {

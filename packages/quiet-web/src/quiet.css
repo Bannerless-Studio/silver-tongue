@@ -70,15 +70,22 @@ p { margin: 0; }
 .w { border-radius: 2px; }
 .w:hover { color: var(--cyan); }
 .w.new { color: var(--cyan); border: 1px solid var(--line); padding: 0 3px; }
+.w.sounded { font-weight: 700; color: #fff; }
 .w.shaky { border-bottom: 1px dotted var(--muted); }
 .gl { padding-left: 2.5rem; overflow-wrap: anywhere; }
 .gl .conn { color: var(--line); }
 .gloss { color: var(--cyan); }
+.hint { margin: 0.35rem 0 0 2.5rem; color: var(--muted); font-size: 0.85em; }
 .gl .play { color: var(--muted); margin-left: 0.6rem; }
 
 /* Prompt */
 .prompt { margin-top: 1rem; display: flex; flex-direction: column; gap: 0.1rem; }
 .opt { display: flex; gap: 1rem; padding: 0.2rem 0 0.2rem 0.75rem; overflow-wrap: anywhere; }
+.opt.onb { align-items: flex-start; padding-top: 0.45rem; padding-bottom: 0.45rem; }
+.opt-body { display: flex; flex-direction: column; align-items: flex-start; gap: 0.1rem; text-align: left; }
+.opt-ko { font-size: 1.3em; color: #fff; }
+.opt-mean { color: var(--muted); font-size: 0.85em; }
+.next-btn.only { align-self: flex-start; margin: 0.25rem 0 0 0.75rem; }
 .opt .n, .cmd .n { color: var(--muted); }
 .opt:hover .n, .cmd:hover .n { color: var(--cyan); }
 .cursor-line { display: flex; align-items: baseline; gap: 0.5rem; margin-top: 0.4rem; }

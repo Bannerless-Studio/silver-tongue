@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createCore, mulberry32, newGame, type Course } from "@silver-tongue/core";
+import { comboKey, createCore, mulberry32, newGame, type Course } from "@silver-tongue/core";
 import { fixtureWithText } from "@silver-tongue/view/testing";
 import { deskOn, placeName, type CourseExtra, type DeskPaper, type DeskProgress } from "@silver-tongue/view";
 import { readFileSync } from "node:fs";
@@ -124,5 +124,57 @@ describe("the desk", () => {
     q.setName("Ana");
     expect(q.view().desk).toBeUndefined();
     expect(q.placeLabel()).toBe("The street");
+  });
+});
+
+describe("the knock and the first lines", () => {
+  const atDoor = (store: PaperStore = memory()) => {
+    const course = fixtureWithText();
+    withPapers(course);
+    const state = newGame(course);
+    state.player = "Ana";
+    state.place = "noodle_shop"; // where someone is waiting to talk
+    const core = createCore(course, state, { now: () => T0, rng: mulberry32(1) });
+    let clock = T0;
+    return createQuiet({ course, core, now: () => (clock += 1000), papers: store });
+  };
+  const opened = (store?: PaperStore) => {
+    const q = atDoor(store);
+    q.readPaper("idcard");
+    q.readPaper("bill");
+    q.leaveDesk();
+    return q;
+  };
+
+  it("opening the door starts the conversation: no menu, no second 'someone is knocking'", () => {
+    const q = opened();
+    expect(q.view().scene).toBeDefined();
+    expect(q.view().phase.kind).toBe("pick");
+    expect(texts(q)).not.toContain("Someone is knocking.");
+  });
+
+  it("the look-up hint sits under the scene's first NPC line until a word is looked up, and never comes back", () => {
+    let done = false;
+    const store: PaperStore = { load: () => [], save: () => {}, loadLookupDone: () => done, saveLookupDone: () => void (done = true) };
+    const q = opened(store);
+    const first = q.view().backlog.find((b) => b.line && b.speaker && b.speaker !== "player");
+    expect(first).toBeDefined();
+    expect(q.view().lookupHint).toBe(first!.id);
+    q.lookUp(first!.line!.tokens[0].word);
+    expect(q.view().lookupHint).toBeUndefined();
+    expect(done).toBe(true);
+  });
+
+  it("a scene that ends without a look-up also ends the hint", () => {
+    let done = false;
+    const store: PaperStore = { load: () => [], save: () => {}, loadLookupDone: () => done, saveLookupDone: () => void (done = true) };
+    const q = opened(store);
+    for (let i = 0; i < 40 && q.view().scene; i++) q.choose(q.view().phase.kind === "pick" ? (q.core.state.run!.options.indexOf(comboKey(q.core.state.run!.combo))) : 0);
+    expect(q.view().scene).toBeUndefined();
+    expect(done).toBe(true);
+  });
+
+  it("is onboarding until ten words are heard", () => {
+    expect(opened().view().onboard).toBe(true);
   });
 });

@@ -1,6 +1,6 @@
 // The desk: the papers on the desk when a book course's story opens (content/settings/<setting>/papers.json),
 // read aloud by typing their romanization. Front-end only: core has no notion of documents.
-import type { Course, GameState } from "@silver-tongue/core";
+import type { Course, GameState, RenderedLine } from "@silver-tongue/core";
 import { bookOn, extra } from "./course-extra";
 import type { Text } from "./text";
 
@@ -37,6 +37,26 @@ export const firstUnread = (papers: DeskPaper[], read: ReadonlySet<string>): str
 
 /** Where the read set is kept in the browser. */
 export const papersKey = (course: string): string => `silver-tongue:papers:${course}`;
+
+/** Where the page remembers that the player has looked a word up (the look-up hint is then gone for good). */
+export const lookupHintKey = (course: string): string => `silver-tongue:lookup-hint:${course}`;
+
+/** Shortest word that counts as recognised: one syllable turns up inside other words by chance. */
+const SOUNDED_MIN = 2;
+
+/**
+ * The words of a line the player has already sounded out on the desk: those whose written text appears
+ * inside a line of a paper they have read (the name on the ID card). Indexes into `line.tokens`.
+ */
+export function soundedTokens(course: Course, read: ReadonlySet<string>, line: RenderedLine): Set<number> {
+  const seen = deskPapers(course).filter((p) => read.has(p.id)).flatMap((p) => p.lines.map((l) => l.text));
+  const out = new Set<number>();
+  line.tokens.forEach((tk, i) => {
+    const text = line.text.slice(tk.start, tk.end);
+    if ([...text].length >= SOUNDED_MIN && seen.some((s) => s.includes(text))) out.add(i);
+  });
+  return out;
+}
 
 /** A place's name for the quiet page: once a paper that names it is read, `place-<id>-known`. */
 export function placeName(course: Course, state: GameState | { place: string }, read: ReadonlySet<string>, t: Text, place = state.place): string {

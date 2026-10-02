@@ -70,6 +70,10 @@ export interface QuietView {
   opening?: string[];
   /** a book course with papers, named but before any scene: the papers on the desk, read before the transcript */
   desk?: DeskPaper[];
+  /** a book course's player is still in the onboarding window (see onboarding): replies come with their meaning */
+  onboard: boolean;
+  /** the NPC line the one-time look-up hint sits under (a book course, until the first look-up or the scene ends) */
+  lookupHint?: number;
 }
 /** Where the desk's read papers are kept (the browser's storage on the page). */
 export interface PaperStore {
@@ -78,6 +82,9 @@ export interface PaperStore {
   /** syllables read per paper, and the letters met */
   loadProgress?(): DeskProgress;
   saveProgress?(p: DeskProgress): void;
+  /** whether the look-up hint is finished with: a word was looked up, or the first scene ended */
+  loadLookupDone?(): boolean;
+  saveLookupDone?(): void;
 }
 export interface QuietOptions {
   course: Course;
@@ -121,7 +128,7 @@ export interface Quiet {
   deskMet(): ReadonlySet<string> | undefined;
   /** the letters of the syllable now on the desk are met */
   meet(keys: string[]): void;
-  /** every paper read: the desk goes and the transcript starts, at the place, with someone at the door */
+  /** every paper read: the desk goes and the transcript starts; the door is answered when someone is there to answer it, else it opens on the place */
   leaveDesk(): void;
   /** a place's name as the quiet page shows it (the room gets its owner's name once the ID card is read) */
   placeLabel(place?: string): string;
@@ -174,6 +181,13 @@ export function createQuiet(opts: QuietOptions): Quiet {
   const saveProgress = () => opts.papers?.saveProgress?.(progress);
   /** the desk is up (after the name screen): a new book course with papers, not all of them read */
   let atDesk = deskOn(course, core.state, read);
+  /** the look-up hint is finished with (kept per course, so it is never shown twice) */
+  let lookupDone = opts.papers?.loadLookupDone?.() ?? false;
+  const finishLookup = () => {
+    if (lookupDone) return;
+    lookupDone = true;
+    opts.papers?.saveLookupDone?.();
+  };
   const placeLabel = (place = core.state.place) => placeName(course, core.state, read, t, place);
   let resuming = false;
   let nextId = 1;
@@ -329,6 +343,7 @@ export function createQuiet(opts: QuietOptions): Quiet {
           break;
         }
         case "sceneEnded":
+          finishLookup();
           scene = undefined;
           reply = undefined;
           lastLine = undefined;
@@ -384,6 +399,9 @@ export function createQuiet(opts: QuietOptions): Quiet {
     if (revealed.length) news(t("place-revealed", { count: revealed.length, places: revealed.join(", ") }), "good");
     // No replies after the reaction (the scene ended): nothing to answer, so the request isn't said again.
     if (!events.some((e) => e.type === "replyOptions")) for (const r of reacted) if (!r.restate?.rephrase) delete r.restate;
+    // Onboarding: the reaction's own row already says what was asked (its meaning is open under it), so the
+    // narration of the same request just before it would say it twice.
+    if (onboard) queue = queue.filter((b, i) => !(b.tone === "react" && !b.speaker && (queue[i + 1]?.restate || queue[i + 1]?.rephrase)));
   }
 
   /** Whether an option's intent is shown under it: only while the options' intents differ (one shared by
@@ -436,12 +454,20 @@ export function createQuiet(opts: QuietOptions): Quiet {
   if (!scene) preludeTo = nextId;
   flush(true);
 
+  /** The first NPC line of the scene being played: where the look-up hint goes. */
+  function hintAt(): { lookupHint?: number } {
+    const first = backlog.find((b) => b.id >= sceneFrom && b.line && b.speaker && b.speaker !== "player");
+    return first ? { lookupHint: first.id } : {};
+  }
+
   return {
     t,
     course,
     core,
     view: () => ({
       scene, phase: phase(), lastLine, backlog, toasts,
+      onboard: onboarding(course, heardCount(core.state.words, opts.now())),
+      ...(book && !lookupDone && scene ? hintAt() : {}),
       ...(opening && naming ? { opening } : {}),
       ...(atDesk && !naming ? { desk: deskPapers(course) } : {}),
     }),
@@ -485,6 +511,7 @@ export function createQuiet(opts: QuietOptions): Quiet {
       send({ type: "replyText", text }, { speaker: "player", text: text.trim() });
     },
     lookUp(word, surface) {
+      finishLookup();
       const card = wordCard(course, word, surface);
       const s = speech(card.clips);
       if (s) say([s]);
@@ -560,10 +587,17 @@ export function createQuiet(opts: QuietOptions): Quiet {
       if (!atDesk || naming || deskPapers(course).some((p) => !read.has(p.id))) return;
       atDesk = false;
       if (!scene) {
-        push({ text: t("quiet-resume", { place: placeLabel() }), tone: "narr" });
-        if (t.has("desk-done")) push({ text: t("desk-done"), tone: "narr" });
+        // The knock screen said someone is at the door: the transcript opens on the scene it starts, not on a
+        // menu that offers the door among other things.
+        const door = placeMenu(course, core.state, t).find((m) => m.kind === "talk" && !m.disabled);
         preludeTo = nextId;
-        flush(true);
+        if (door) send(door.input);
+        else {
+          push({ text: t("quiet-resume", { place: placeLabel() }), tone: "narr" });
+          if (t.has("desk-done")) push({ text: t("desk-done"), tone: "narr" });
+          preludeTo = nextId;
+          flush(true);
+        }
       }
       changed();
     },
