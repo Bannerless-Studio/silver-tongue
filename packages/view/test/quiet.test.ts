@@ -136,10 +136,14 @@ describe("the conversation stage (a course with the Book)", () => {
     const heard = { w_a: rec({ right: 1, firstSeen: 1 }), w_b: rec({ right: 1, firstSeen: 1 }) };
     const known = { w_a: rec({ right: 5, streak: 5, firstSeen: 1 }), w_b: rec({ right: 5, streak: 5, firstSeen: 1 }) };
     expect(replyMeanings(opts, {}, NOW, true)).toEqual(["A.", "B."]);
-    // After onboarding: intents, the meaning where a reply has none, while a word in them is not known yet.
+    // After onboarding the slips are bare while every word in them has been heard: the reply is recognised, not read.
+    expect(replyMeanings(opts, heard, NOW, false)).toBeUndefined();
+    // A word never heard brings the intents back (the meaning where a reply has none)...
     expect(replyMeanings(opts, { w_a: heard.w_a }, NOW, false)).toEqual(["Say a", "B."]);
-    expect(replyMeanings(opts, heard, NOW, false)).toEqual(["Say a", "B."]); // heard isn't known
-    expect(replyMeanings(opts, { w_a: known.w_a, w_b: heard.w_b }, NOW, false)).toEqual(["Say a", "B."]);
+    // ...and so does a miss in this exchange, while a word in them is not known yet.
+    expect(replyMeanings(opts, heard, NOW, false, true)).toEqual(["Say a", "B."]);
+    expect(replyMeanings(opts, { w_a: known.w_a, w_b: heard.w_b }, NOW, false, true)).toEqual(["Say a", "B."]);
+    expect(replyMeanings(opts, known, NOW, false, true)).toBeUndefined();
     expect(replyMeanings(opts, known, NOW, false)).toBeUndefined();
   });
 });

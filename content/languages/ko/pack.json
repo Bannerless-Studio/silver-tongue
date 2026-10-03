@@ -18,5 +18,14 @@
  "typing": null,
  "spaced": false,
  "tileGap": " ",
- "book": true
+ "book": true,
+ "liaison": {
+  "before": "aeiouwy",
+  "finals": {
+   "k": "g",
+   "p": "b",
+   "t": "s",
+   "l": "r"
+  }
+ }
 }

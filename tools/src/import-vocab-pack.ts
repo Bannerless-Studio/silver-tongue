@@ -41,7 +41,7 @@ export function packProblems(pack: VocabPackJson, words: VocabWordJson[], existi
 
 /**
  * Converts a vocab-engine pack. `existing` is our current pack.json and `existingWords` our current
- * words.json, whose hand-set fields (stages, tileGap and book; each word's attach) survive a re-import.
+ * words.json, whose hand-set fields (stages, tileGap, book and liaison; each word's attach) survive a re-import.
  * Throws on bad input, listing every problem.
  */
 export function convertPack(pack: VocabPackJson, words: VocabWordJson[], existing?: PackMeta, existingWords: PackWord[] = []): ImportResult {
@@ -60,6 +60,7 @@ export function convertPack(pack: VocabPackJson, words: VocabWordJson[], existin
     spaced: pack.spaced !== false,
     ...(existing?.tileGap !== undefined && { tileGap: existing.tileGap }),
     ...(existing?.book !== undefined && { book: existing.book }),
+    ...(existing?.liaison !== undefined && { liaison: existing.liaison }),
   };
   const attached = new Set(existingWords.filter((w) => w.attach === true).map((w) => w.id));
   const out: PackWord[] = words.map((v) => {

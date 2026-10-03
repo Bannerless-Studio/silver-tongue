@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bindSlots, messageIds, parseFtl, Renderer, termNames, type FtlSource } from "../src/fluent";
+import { bindSlots, duplicateIds, messageIds, parseFtl, Renderer, termNames, type FtlSource } from "../src/fluent";
 
 const zhTerms = `-tea = { $form ->
     [measure] 杯
@@ -73,5 +73,13 @@ describe("fluent", () => {
     expect(() => bindSlots(terms, { item: "tea" }, ok, "l")).not.toThrow();
     const bad = `order = { -item.word(form: "plural") ->\n   *[x] x\n}\n`;
     expect(() => bindSlots(terms, { item: "tea" }, bad, "l")).toThrow(/l: -item.word \(-tea\) has no form "plural"/);
+  });
+});
+
+describe("duplicate keys", () => {
+  it("names each message or term defined more than once, and nothing else", () => {
+    const src = "a = 1\nb = 2\na = 3\n-t = x\n-t = y\nt = z\n";
+    expect(duplicateIds(src, "x.ftl")).toEqual(["a", "-t"]);
+    expect(duplicateIds("a = 1\nb = 2\n", "x.ftl")).toEqual([]);
   });
 });

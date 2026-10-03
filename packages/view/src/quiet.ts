@@ -169,12 +169,15 @@ export function speakerHue(course: Course, npc: string): number {
 
 /**
  * The meaning row under each reply slip on a course with the Book, or undefined when the slips have none.
- * Every slip in a set has the same rows: while onboarding each shows its meaning; after, while any reply
- * holds a word not known yet, each shows its intent (its meaning when it has no intent). Heard once is not
- * enough: two goodbyes heard in the first scene can look alike until known.
+ * Every slip in a set has the same rows: while onboarding each shows its meaning. After, the slips are bare,
+ * so the reply has to be recognised, not read off its English: the rows (each reply's intent, its meaning
+ * when it has none) come back only while a reply holds a word never heard, or once the player has `missed`
+ * in this exchange, and never once every word in them is known.
  */
-export function replyMeanings(options: RenderedLine[], words: GameState["words"], now: number, onboard: boolean): string[] | undefined {
+export function replyMeanings(options: RenderedLine[], words: GameState["words"], now: number, onboard: boolean, missed = false): string[] | undefined {
   if (onboard) return options.map((o) => o.meaning ?? o.intent ?? "");
-  if (options.every((o) => o.tokens.every((tk) => wordState(words[tk.word], now) === "known"))) return undefined;
+  const states = options.flatMap((o) => o.tokens.map((tk) => wordState(words[tk.word], now)));
+  if (states.every((s) => s === "known")) return undefined;
+  if (!missed && !states.includes("unseen")) return undefined;
   return options.map((o) => o.intent ?? o.meaning ?? "");
 }

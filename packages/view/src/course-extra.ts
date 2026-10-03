@@ -45,7 +45,15 @@ export type WordExtra = Word & { attach?: boolean; alt?: string[] };
  * `book`: the course uses the Book (readings under words, the Letters and Papers tabs); unset, the
  * notebook stays as it was.
  */
-export type LanguageExtra = LanguageProfile & { tileGap?: string; book?: boolean };
+export type LanguageExtra = LanguageProfile & { tileGap?: string; book?: boolean; liaison?: Liaison };
+/**
+ * `liaison`: how readings run together inside one written word (see joinReadings): when the next reading
+ * starts with one of `before`, a reading ending in a key of `finals` ends in its value instead.
+ */
+export interface Liaison {
+  before: string;
+  finals: Record<string, string>;
+}
 /** `pin`: the NPC's line is a paper (a notice, a form) kept in the Book once the scene is done. */
 export type ExchangeExtra = Exchange & { pin?: boolean };
 /** `rent`: the scene where rent is first raised; a course with the Book keeps rent off the anchor row until it is done. */

@@ -125,11 +125,26 @@ describe("rubyRow", () => {
     expect(rubyRow(c, line, {}, T0, "off")).toEqual([]);
   });
 
-  it("groups only words written together: an attaching word after a space stands alone, a word that doesn't attach starts a group", () => {
+  it("groups only words written together: an attaching word after a space stands alone", () => {
     const l = { text: "저 는 학생", tokens: [{ start: 0, end: 1, word: "k_jeo" }, { start: 2, end: 3, word: "k_neun" }, { start: 4, end: 6, word: "k_haksaeng" }] };
     expect(rubyRow(c, l, {}, T0, "on").map((r) => r.text)).toEqual(["jeo", "neun", "haksaeng"]);
+  });
+
+  it("a language that writes spaces between words (a tileGap) groups any words written together; one without, only attaching ones", () => {
     const joined = { text: "저학생", tokens: [{ start: 0, end: 1, word: "k_jeo" }, { start: 1, end: 3, word: "k_haksaeng" }] };
-    expect(rubyRow(c, joined, {}, T0, "on").map((r) => r.text)).toEqual(["jeo", "haksaeng"]);
+    expect(rubyRow(c, joined, {}, T0, "on").map((r) => r.text)).toEqual(["jeohaksaeng"]);
+    expect(rubyRow(koLike(), joined, {}, T0, "on").map((r) => r.text)).toEqual(["jeo", "haksaeng"]);
+  });
+
+  it("runs a group's readings together by the language's liaison", () => {
+    const l = { text: "학생은", tokens: [{ start: 0, end: 2, word: "k_haksaeng" }, { start: 2, end: 3, word: "k_neun" }] };
+    const li = koLike(" ");
+    extra(li).language.liaison = { before: "aeiou", finals: { ng: "ng-" } };
+    const form = { text: "학생예요", tokens: [{ start: 0, end: 2, word: "k_haksaeng" }, { start: 2, end: 4, word: "k_ieyo" }] };
+    expect(rubyRow(li, form, {}, T0, "on").map((r) => r.text)).toEqual(["haksaengyeyo"]); // y is not in before
+    const plain = { text: "학생이에요", tokens: [{ start: 0, end: 2, word: "k_haksaeng" }, { start: 2, end: 5, word: "k_ieyo" }] };
+    expect(rubyRow(li, plain, {}, T0, "on").map((r) => r.text)).toEqual(["haksaeng-ieyo"]);
+    expect(rubyRow(li, l, {}, T0, "on").map((r) => r.text)).toEqual(["haksaeng"]);
   });
 
   it("reads a form as it is written, and a word with no reading adds none to its group", () => {
