@@ -10,11 +10,13 @@ import {
   newGame,
   personalize,
   placeKnown,
+  reviewDue,
   sceneCost,
   tilePieces,
   wordState,
   type CatalogEntry,
   type Course,
+  type GameEvent,
   type GameState,
   type Input,
   type SceneRun,
@@ -23,6 +25,8 @@ import {
 /** How a bot answers: given the run, whether to give the right reply this time. */
 export interface Bot {
   answerRight(run: SceneRun, rng: () => number): boolean;
+  /** Set: the bot takes a quick review once a day when one is due, and this says whether it answers a question right. */
+  reviewRight?(rng: () => number): boolean;
 }
 
 /** Give up being wrong after this many misses on one exchange, so no bot is stuck forever. */
@@ -34,6 +38,8 @@ export const BOTS: Record<string, Bot> = {
   wrong: { answerRight: (run) => run.misses >= 2 },
   random: { answerRight: (run, rng) => run.misses >= MAX_MISSES || rng() < 0.5 },
   learner: { answerRight: (run, rng) => run.misses >= MAX_MISSES || rng() < 0.7 },
+  /** the learner, who also takes the day's quick review */
+  diligent: { answerRight: (run, rng) => run.misses >= MAX_MISSES || rng() < 0.7, reviewRight: (rng) => rng() < 0.7 },
 };
 
 export interface BotReport {
@@ -63,9 +69,12 @@ export interface BotReport {
   shoppingSpent: number;
   /** the lowest wallet right after paying rent; Infinity if rent was never paid */
   minAfterRent: number;
+  /** quick reviews taken */
+  reviews: number;
 }
 
 const HOUR = 3_600_000;
+const MINUTE = 60_000;
 
 /** The right reply, or a wrong one when there is one. */
 function replyInput(course: Course, state: GameState, right: boolean, rng: () => number): Input {
@@ -186,7 +195,19 @@ export function goals(course: Course, state: GameState): Goal[] {
  * here, or walk toward the nearest place with it; sleep (at home, walking there first) when out
  * of slots or goals.
  */
-export function runBot(course: Course, bot: Bot, opts: { days: number; seed: number }): BotReport {
+export interface RunOptions {
+  days: number;
+  seed: number;
+  /**
+   * Real time per game day: when set, every night moves the clock to the start of the next day,
+   * as for a player who plays one game day per real day. Unset, the clock only ticks an hour a step.
+   */
+  dayMs?: number;
+  /** Called after every input with the state just before it (a copy) and the events it caused. */
+  observe?: (step: { input: Input; events: GameEvent[]; before: GameState; after: GameState; now: number }) => void;
+}
+
+export function runBot(course: Course, bot: Bot, opts: RunOptions): BotReport {
   let clock = 0;
   const rng = mulberry32(opts.seed);
   const core = createCore(course, newGame(course), { now: () => clock, rng: mulberry32(opts.seed + 1) });
@@ -207,12 +228,14 @@ export function runBot(course: Course, bot: Bot, opts: { days: number; seed: num
     earned: 0,
     shoppingSpent: 0,
     minAfterRent: Infinity,
+    reviews: 0,
   };
   const paying = (id: string) => {
     const s = course.scenes.find((x) => x.id === id)!;
     return s.repeatable && (s.startsErrand !== undefined || s.exchanges.some((ex) => ex.pay > 0));
   };
   let dayChecked = 0;
+  let reviewedDay = 0;
   if (course.needsName) core.send({ type: "setName", name: "Bot" });
 
   for (let steps = 0; core.state.day <= opts.days && steps < 100_000; steps++) {
@@ -228,7 +251,16 @@ export function runBot(course: Course, bot: Bot, opts: { days: number; seed: num
     const best = wanted.filter((g) => g.rank === wanted[0]?.rank);
     const here = best.find((g) => g.place === s.place);
     if (s.run) input = replyInput(course, s, bot.answerRight(s.run, rng), rng);
-    else if (s.slot < course.world.slotsPerDay && best.length) {
+    else if (s.review) {
+      const item = s.review.items[s.review.at];
+      const right = bot.reviewRight!(rng);
+      const wrong = item.options.map((_, i) => i).filter((i) => item.options[i] !== item.word);
+      input = { type: "reviewAnswer", choice: right ? item.options.indexOf(item.word) : wrong[Math.floor(rng() * wrong.length)] };
+    } else if (bot.reviewRight && reviewedDay !== s.day && reviewDue(course, s, clock).length) {
+      reviewedDay = s.day;
+      report.reviews += 1;
+      input = { type: "startReview" };
+    } else if (s.slot < course.world.slotsPerDay && best.length) {
       const step = here ? undefined : stepToward(course, s.place, new Set(best.map((g) => g.place)), s);
       if (here) input = here.input;
       else if (step) input = { type: "goTo", place: step };
@@ -239,8 +271,12 @@ export function runBot(course: Course, bot: Bot, opts: { days: number; seed: num
       const step = stepToward(course, s.place, new Set([bed]), s);
       if (step) input = { type: "goTo", place: step };
     }
-    clock += HOUR;
+    // A review uses no game time, and a question takes a real minute.
+    clock += input.type === "startReview" || input.type === "reviewAnswer" ? MINUTE : HOUR;
+    const before = opts.observe ? structuredClone(core.state) : undefined;
     const events = core.send(input);
+    if (opts.dayMs && events.some((e) => e.type === "dayEnded")) clock = Math.max(clock, (core.state.day - 1) * opts.dayMs);
+    opts.observe?.({ input, events, before: before!, after: core.state, now: clock });
     if (events.some((e) => e.type === "inputRejected")) {
       // A bot repeats itself, so a refused input would be refused forever: stop and report it.
       report.rejected += 1;

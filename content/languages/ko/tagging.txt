@@ -24,7 +24,7 @@ room-rent/week/alt1: 하나|,|둘|,|셋|.
 room-rent/week/alt2: 민준|씨|친구|예요|.
 room-rent/week/npc: 일주일|에|오|만|원|.
 room-rent/week/reply: 네|,|알아요|.
-room-wake/bye/alt1: 안녕히|계세요|.
+room-wake/bye/alt1: 민준|씨|?
 room-wake/bye/alt2: 누구|예요|?
 room-wake/bye/npc: 네|……|안녕히|계세요|.
 room-wake/bye/reply: 안녕히|가세요|.

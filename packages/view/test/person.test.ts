@@ -58,6 +58,22 @@ describe("a person's page", () => {
     expect(talks[1].lines).toHaveLength(4);
   });
 
+  it("shows the written wrong reply a player got through with, and the answer to it", () => {
+    const { course, state, t } = setup();
+    const greet = course.scenes[0].exchanges[0].variants[""];
+    const answer = { text: "好。", tokens: [], meaning: "Fine." };
+    greet.altOutcomes = { "0": { accept: true, reaction: answer } };
+    state.scenesDone.intro = 1;
+    state.talks = [{ scene: "intro", day: 1, slot: 1, keys: ["", "item=tea"], alts: { "0": 0 }, earned: 0 }];
+    const lines = personView(course, state, t, "cook", T0).talks[0].lines;
+    expect(lines.slice(0, 3)).toEqual([
+      { who: "npc", text: greet.npc.text, meaning: greet.npc.meaning ?? "" },
+      { who: "player", text: greet.alts![0].text, meaning: greet.alts![0].meaning ?? "" },
+      { who: "npc", text: "好。", meaning: "Fine." },
+    ]);
+    expect(lines).toHaveLength(5);
+  });
+
   it("splits their words into heard, marking the shaky ones, and not yet", () => {
     const { course, state, t } = setup();
     state.words = { w_ni: rec(3), w_hao: rec(0, true) };

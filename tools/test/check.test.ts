@@ -393,5 +393,11 @@ describe("checkCourse", () => {
     c.scenes[0].exchanges[0].variants[""].alts = [line(["茶", "w_cha"], ["！", null])];
     expect(checkCourse(input({ course: c }))).toContain('intro/greet: the wrong reply "茶！" uses words not met yet: 茶');
   });
+
+  it("lets the answer to a wrong reply use only words the player has met", () => {
+    const c = fixtureCourse();
+    c.scenes[0].exchanges[0].variants[""].altOutcomes = { "0": { reaction: line(["茶", "w_cha"], ["。", null]) } };
+    expect(checkCourse(input({ course: c }))).toContain('intro/greet: the answer "茶。" uses words not met yet: 茶');
+  });
 });
 

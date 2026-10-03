@@ -1,4 +1,4 @@
-fast = Where are you going?
+fast = Whereareyougoing?
 fast-reply = Sorry?
 fast-reply-intent = Show you didn't catch it
 fast-alt1 = Hello.
@@ -6,7 +6,7 @@ fast-alt1-intent = Say hello
 fast-alt2 = Thank you.
 fast-alt2-intent = Thank him
 
-again = Where are you going? Where?
+again = Whereareyougoing? Where?
 again-reply = Please say it again.
 again-reply-intent = Ask him to repeat it
 again-alt1 = No.
@@ -14,7 +14,7 @@ again-alt1-intent = Say no
 again-alt2 = Goodbye.
 again-alt2-intent = Say goodbye as you leave
 
-slowly = Yes, yes. Where are you going?
+slowly = Yesyes. Whereareyougoing?
 slowly-reply = Please say it slowly.
 slowly-reply-intent = Ask him to slow down
 slowly-alt1 = Yes, thank you.

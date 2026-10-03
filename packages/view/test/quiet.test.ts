@@ -134,9 +134,12 @@ describe("the conversation stage (a course with the Book)", () => {
     const o = (text: string, word: string, extra: Partial<RenderedLine>): RenderedLine => ({ text, tokens: [{ start: 0, end: text.length, word }], ...extra });
     const opts = [o("a", "w_a", { meaning: "A.", intent: "Say a" }), o("b", "w_b", { meaning: "B." })];
     const heard = { w_a: rec({ right: 1, firstSeen: 1 }), w_b: rec({ right: 1, firstSeen: 1 }) };
+    const known = { w_a: rec({ right: 5, streak: 5, firstSeen: 1 }), w_b: rec({ right: 5, streak: 5, firstSeen: 1 }) };
     expect(replyMeanings(opts, {}, NOW, true)).toEqual(["A.", "B."]);
-    // After onboarding: intents, the meaning where a reply has none, while a word in them is unheard.
+    // After onboarding: intents, the meaning where a reply has none, while a word in them is not known yet.
     expect(replyMeanings(opts, { w_a: heard.w_a }, NOW, false)).toEqual(["Say a", "B."]);
-    expect(replyMeanings(opts, heard, NOW, false)).toBeUndefined();
+    expect(replyMeanings(opts, heard, NOW, false)).toEqual(["Say a", "B."]); // heard isn't known
+    expect(replyMeanings(opts, { w_a: known.w_a, w_b: heard.w_b }, NOW, false)).toEqual(["Say a", "B."]);
+    expect(replyMeanings(opts, known, NOW, false)).toBeUndefined();
   });
 });

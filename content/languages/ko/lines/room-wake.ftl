@@ -20,5 +20,5 @@ who-alt2 = 여기 민준 씨 방이에요.
 
 bye = 네…… 안녕히 계세요.
 bye-reply = 안녕히 가세요.
-bye-alt1 = 안녕히 계세요.
+bye-alt1 = 민준 씨?
 bye-alt2 = 누구예요?
