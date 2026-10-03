@@ -21,16 +21,6 @@
    "missCost": 0
   },
   {
-   "id": "quiz",
-   "slots": {},
-   "expect": {
-    "action": "quiz"
-   },
-   "hinges": [],
-   "pay": 0,
-   "missCost": 0
-  },
-  {
    "id": "good",
    "slots": {},
    "expect": {

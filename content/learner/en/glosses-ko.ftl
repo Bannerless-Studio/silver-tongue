@@ -83,6 +83,7 @@ ko-eolma = how much
 ko-masisseoyo = tasty; delicious
 ko-sa = four (Sino-Korean, for prices and dates)
 ko-mianhaeyo = sorry
+ko-waeyo = why?; what is it?
 
 # Stage 2.
 ko-naeil = tomorrow

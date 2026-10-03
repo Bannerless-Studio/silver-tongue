@@ -70,7 +70,12 @@
   "lv": "T1",
   "readings": [
    "nugu"
-  ]
+  ],
+  "forms": {
+   "누구세요": [
+    "nuguseyo"
+   ]
+  }
  },
  {
   "id": "ko-jeo",
@@ -366,7 +371,12 @@
   "lv": "T1",
   "readings": [
    "meogeoyo"
-  ]
+  ],
+  "forms": {
+   "드세요": [
+    "deuseyo"
+   ]
+  }
  },
  {
   "id": "ko-tteokbokki",
@@ -733,6 +743,14 @@
   "lv": "T1",
   "readings": [
    "mianhaeyo"
+  ]
+ },
+ {
+  "id": "ko-waeyo",
+  "w": "왜요",
+  "lv": "T1",
+  "readings": [
+   "waeyo"
   ]
  },
  {

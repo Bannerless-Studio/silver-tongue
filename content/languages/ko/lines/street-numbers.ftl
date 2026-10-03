@@ -1,11 +1,11 @@
-# Grandpa Park saw the shop. He holds up the one note you got back, counts three on his fingers
+# Grandpa Park saw it all through the shop window. He holds up the one note you got back, counts three on his fingers
 # (the native numbers), says what it should have been (삼천 원), then counts on to five with you.
 # Each <id>-alt<n> is a written wrong reply, using only words met by then.
 
 cost = 빵, 우유, 얼마예요?
-cost-reply = 몰라요.
-cost-alt1 = 네, 감사합니다.
-cost-alt2 = 가게 어디예요?
+cost-reply = 천 원, 천 원.
+cost-alt1 = 몰라요.
+cost-alt2 = 네, 감사합니다.
 
 note = 이거 천 원. 하나.
 note-reply = 하나?
@@ -14,7 +14,7 @@ note-alt2 = 좋아요!
 
 count = 하나, 둘, 셋.
 count-reply = 하나, 둘, 셋.
-count-alt1 = 하나, 둘.
+count-alt1 = 셋, 둘, 하나.
 count-alt2 = 네, 감사합니다.
 
 owed = 셋! 삼천 원이에요.

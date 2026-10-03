@@ -27,17 +27,14 @@
    "hinges": [],
    "pay": 0,
    "missCost": 0,
-   "pin": true
-  },
-  {
-   "id": "room",
-   "slots": {},
-   "expect": {
-    "action": "room"
-   },
-   "hinges": [],
-   "pay": 0,
-   "missCost": 0
+   "pin": true,
+   "alts": {
+    "1": {
+     "accept": true,
+     "pay": 0,
+     "loss": 0
+    }
+   }
   },
   {
    "id": "who",
@@ -48,6 +45,16 @@
    "hinges": [],
    "pay": 0,
    "missCost": 0
+  },
+  {
+   "id": "missing",
+   "slots": {},
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0,
+   "expect": {
+    "action": "missing"
+   }
   },
   {
    "id": "bye",

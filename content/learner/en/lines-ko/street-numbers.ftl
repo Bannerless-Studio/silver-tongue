@@ -1,10 +1,10 @@
 cost = Bread, milk: how much?
-cost-reply = I don't know.
-cost-reply-intent = Answer honestly
-cost-alt1 = Yes, thank you.
-cost-alt1-intent = Say yes and thank him
-cost-alt2 = Where's the shop?
-cost-alt2-intent = Ask where the shop is
+cost-reply = A thousand won, a thousand won.
+cost-reply-intent = Tell him the prices
+cost-alt1 = I don't know.
+cost-alt1-intent = Say you don't know
+cost-alt2 = Yes, thank you.
+cost-alt2-intent = Say yes and thank him
 
 note = This is a thousand won. One.
 note-reply = One?
@@ -17,7 +17,7 @@ note-alt2-intent = Say it's fine
 count = One, two, three.
 count-reply = One, two, three.
 count-reply-intent = Count along
-count-alt1 = One, two.
+count-alt1 = Three, two, one.
 count-alt1-intent = Count along
 count-alt2 = Yes, thank you.
 count-alt2-intent = Say yes and thank him
