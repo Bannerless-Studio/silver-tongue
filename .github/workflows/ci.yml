@@ -17,6 +17,9 @@ jobs:
           GITHUB_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: npm run typecheck
       - run: npm run build:course
+      - name: goal 3 report (job summary; missed limits as warnings, never a failure)
+        run: npm run report:goal3
+        continue-on-error: true
       - run: npm test
       - run: npm run build:web
       - run: npm run build:vn
