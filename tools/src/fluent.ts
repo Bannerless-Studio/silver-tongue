@@ -28,6 +28,22 @@ export function termNames(src: string, name: string): string[] {
   return parseFtl(src, name).body.filter((e): e is Term => e instanceof Term).map((t) => t.id.name);
 }
 
+/**
+ * The message and term ids defined more than once in `src`. Fluent keeps one of them without a word,
+ * so a copied key silently drops the other's text (and can leave a whole file's lookups empty).
+ */
+export function duplicateIds(src: string, name: string): string[] {
+  const seen = new Set<string>();
+  const dup = new Set<string>();
+  for (const e of parseFtl(src, name).body) {
+    if (!(e instanceof Message || e instanceof Term)) continue;
+    const id = (e instanceof Term ? "-" : "") + e.id.name;
+    if (seen.has(id)) dup.add(id);
+    seen.add(id);
+  }
+  return [...dup];
+}
+
 export function messageIds(src: string, name: string): string[] {
   return parseFtl(src, name).body.filter((e): e is Message => e instanceof Message).map((m) => m.id.name);
 }

@@ -1,28 +1,30 @@
 call = Min-jun? Min-jun!
-call-reply = Yes?
-call-reply-intent = Answer the door
+call-reply = Who is it?
+call-reply-intent = Ask who she is
 
 friend = Are you Min-jun's friend?
 friend-reply = No.
-friend-reply-intent = Say no
-friend-alt1 = Yes.
-friend-alt1-intent = Say yes
-
-room = This is Min-jun's room.
-room-reply = Min-jun's room?
-room-reply-intent = Check whose room it is
-room-alt1 = Yes, Min-jun.
-room-alt1-intent = Answer to his name
-room-alt2 = I'm Min-jun's friend.
-room-alt2-intent = Say you're his friend
+friend-reply-intent = Tell the truth
+friend-alt1 = I'm his friend.
+friend-alt1-intent = Say you're his friend
+friend-alt1-answer = A friend…
 
 who = Who are you?
 who-reply = I'm { $player }.
 who-reply-intent = Give your name
-who-alt1 = I'm Min-jun's friend.
-who-alt1-intent = Say you're his friend
-who-alt2 = This is Min-jun's room.
-who-alt2-intent = Say whose room it is
+who-alt1 = I'm Min-jun.
+who-alt1-intent = Pretend to be him
+who-alt1-answer = Min-jun? No!
+who-alt2 = Are you Min-jun's friend?
+who-alt2-intent = Ask her the same
+
+missing = Where's Min-jun?
+missing-reply = I don't know.
+missing-reply-intent = Say you don't know
+missing-alt1 = I'm Min-jun's friend.
+missing-alt1-intent = Say you're his friend
+missing-alt2 = Who are you?
+missing-alt2-intent = Ask who she is
 
 bye = Well… goodbye.
 bye-reply = Goodbye.

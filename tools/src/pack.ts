@@ -20,6 +20,17 @@ export interface PackMeta {
   tileGap?: string;
   /** true: the course uses the Book (readings under words, Letters and Papers tabs); absent means the notebook as it was */
   book?: boolean;
+  /**
+   * How readings run together inside one written word (see the view's joinReadings): when the next
+   * reading starts with one of `before`, a reading ending in a key of `finals` ends in its value instead
+   * (a final consonant carried over to the next syllable). Absent: readings are joined as they are.
+   */
+  liaison?: Liaison;
+}
+
+export interface Liaison {
+  before: string;
+  finals: Record<string, string>;
 }
 
 export interface PackWord {

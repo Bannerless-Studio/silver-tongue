@@ -21,40 +21,40 @@
    "missCost": 0
   },
   {
-   "id": "jiwoo",
-   "slots": {},
-   "expect": {
-    "action": "jiwoo"
-   },
-   "hinges": [],
-   "pay": 0,
-   "missCost": 0
-  },
-  {
-   "id": "hungry",
-   "slots": {},
-   "expect": {
-    "action": "hungry"
-   },
-   "hinges": [],
-   "pay": 0,
-   "missCost": 0
-  },
-  {
    "id": "eat",
    "slots": {},
    "expect": {
-    "action": "eat"
+    "action": "dish"
    },
    "hinges": [],
    "pay": 0,
    "missCost": 0
+  },
+  {
+   "id": "fed",
+   "slots": {},
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0,
+   "expect": {
+    "action": "fed"
+   }
   },
   {
    "id": "tasty",
    "slots": {},
    "expect": {
     "action": "tasty"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "jiwoo",
+   "slots": {},
+   "expect": {
+    "action": "jiwoo"
    },
    "hinges": [],
    "pay": 0,

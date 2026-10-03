@@ -1,47 +1,47 @@
 welcome = Come in!
-welcome-reply = Hello.
-welcome-reply-intent = Say hello
+welcome-reply = Hello. What's that?
+welcome-reply-intent = Point at the pan
 welcome-alt1 = Goodbye.
 welcome-alt1-intent = Say goodbye as you leave
-welcome-alt2 = No, there isn't.
-welcome-alt2-intent = Say there's none
+welcome-alt2 = Goodbye.
+welcome-alt2-intent = See her off
+
+eat = It's tteokbokki. It's good!
+eat-reply = Tteokbokki, please!
+eat-reply-intent = Order it
+eat-alt1 = A newspaper, please!
+eat-alt1-intent = Ask for a newspaper
+eat-alt2 = No, I don't know.
+eat-alt2-intent = Say you don't know
+
+fed = Here, enjoy!
+fed-reply = Thank you!
+fed-reply-intent = Thank her
+fed-alt1 = It's tteokbokki.
+fed-alt1-intent = Say what it is
+fed-alt2 = Goodbye.
+fed-alt2-intent = Say goodbye as you leave
+
+tasty = Is it good?
+tasty-reply = Yes, it's good!
+tasty-reply-intent = Praise the food
+tasty-alt1 = Yes, I'm hungry.
+tasty-alt1-intent = Say you're hungry
+tasty-alt2 = No, I don't know.
+tasty-alt2-intent = Say you don't know
 
 jiwoo = I'm Ji-woo. What's your name?
 jiwoo-reply = I'm { $player }.
 jiwoo-reply-intent = Give your name
-jiwoo-alt1 = I'm Grandpa Park.
-jiwoo-alt1-intent = Give a name
-jiwoo-alt2 = That's a shop.
-jiwoo-alt2-intent = Point out the shop
+jiwoo-alt1 = I'm Ji-woo.
+jiwoo-alt1-intent = Say her name back
+jiwoo-alt2 = It's Grandpa Park.
+jiwoo-alt2-intent = Give a name
 
-hungry = Hungry?
-hungry-reply = Yes, I'm hungry.
-hungry-reply-intent = Admit it
-hungry-alt1 = No, I don't know.
-hungry-alt1-intent = Say you don't know
-hungry-alt2 = One, two.
-hungry-alt2-intent = Count
-
-eat = Eat some tteokbokki!
-eat-reply = Thank you!
-eat-reply-intent = Thank her
-eat-alt1 = Goodbye.
-eat-alt1-intent = Say goodbye as you leave
-eat-alt2 = Where's the shop?
-eat-alt2-intent = Ask where the shop is
-
-tasty = Is it good?
-tasty-reply = Yes, it's delicious!
-tasty-reply-intent = Praise the food
-tasty-alt1 = No, there isn't.
-tasty-alt1-intent = Say there's none
-tasty-alt2 = How much is it?
-tasty-alt2-intent = Ask the price
-
-work = Shall we work together?
-work-reply = Yes, I'll work!
+work = Let's work together!
+work-reply = Yes, great!
 work-reply-intent = Take the job
-work-alt1 = Yes, I'll eat!
-work-alt1-intent = Say you'll eat
-work-alt2 = No, there isn't.
-work-alt2-intent = Say there's none
+work-alt1 = Yes, I'm hungry.
+work-alt1-intent = Say you're hungry
+work-alt2 = Goodbye.
+work-alt2-intent = Say goodbye as you leave

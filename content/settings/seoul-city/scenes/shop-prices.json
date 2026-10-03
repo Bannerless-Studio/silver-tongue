@@ -51,6 +51,16 @@
    "missCost": 0
   },
   {
+   "id": "slow",
+   "slots": {},
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0,
+   "expect": {
+    "action": "slowly"
+   }
+  },
+  {
    "id": "change",
    "slots": {},
    "expect": {

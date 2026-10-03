@@ -31,16 +31,6 @@
    "missCost": 0
   },
   {
-   "id": "slowly",
-   "slots": {},
-   "expect": {
-    "action": "where"
-   },
-   "hinges": [],
-   "pay": 0,
-   "missCost": 0
-  },
-  {
    "id": "slow",
    "slots": {},
    "expect": {

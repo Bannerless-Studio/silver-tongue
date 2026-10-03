@@ -1,5 +1,6 @@
-# Grandpa Park asks where you're going, too fast to catch. You learn to ask him to say it again, slowly.
-# Each <id>-alt<n> is a written wrong reply, using only words met by then.
+# You get up to go; Grandpa Park asks where you're going, too fast to catch. You ask him to say it again,
+# and he says it slowly.
+# Each <id>-alt<n> is a written wrong reply, using only words met by then; <id>-alt<n>-answer is the answer to it.
 
 fast = 어디 가요?
 fast-reply = 네?
@@ -9,12 +10,7 @@ fast-alt2 = 감사합니다.
 again = 어디 가요? 어디?
 again-reply = 다시 말해 주세요.
 again-alt1 = 아니요.
-again-alt2 = 안녕히 계세요.
-
-slowly = 네, 네. 어디 가요?
-slowly-reply = 천천히 말해 주세요.
-slowly-alt1 = 네, 감사합니다.
-slowly-alt2 = 안녕하세요.
+again-alt2 = 네, 알아요.
 
 slow = 어디…… 가요?
 slow-reply = 몰라요.

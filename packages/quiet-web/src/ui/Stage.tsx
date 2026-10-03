@@ -250,7 +250,7 @@ export function Slips({ q, view, ex, ruby, touch }: { q: Quiet; view: QuietView;
   const now = Date.now();
   const order = replyOrder(p.options, ex?.missed ?? []);
   const tried = new Set((ex?.missed ?? []).map((m) => m.line?.text));
-  const meanings = replyMeanings(p.options, core.state.words, now, view.onboard);
+  const meanings = replyMeanings(p.options, core.state.words, now, view.onboard, (ex?.missed.length ?? 0) > 0);
   // While onboarding every reply shows its reading, whatever the setting. A reply that needs any reading
   // gets all of it, by word group as the line on stage has it.
   const reading = (o: RenderedLine) =>
