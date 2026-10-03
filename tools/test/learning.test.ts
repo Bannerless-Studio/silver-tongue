@@ -124,7 +124,7 @@ describe("learning limits", () => {
 
 describe("learning limits (real content)", () => {
   it("names come from the language's word files", () => {
-    expect(nameWords(CONTENT, "ko")).toEqual(new Set(["ko-minjun", "ko-jiu", "ko-bak"]));
+    expect(nameWords(CONTENT, "ko")).toEqual(new Set(["ko-minjun", "ko-jiu", "ko-bak", "ko-sujin"]));
     expect(nameWords(CONTENT, "zh").has("x0002")).toBe(true);
   });
 

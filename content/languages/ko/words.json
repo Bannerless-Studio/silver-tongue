@@ -343,6 +343,12 @@
   "forms": {
    "오세요": [
     "oseyo"
+   ],
+   "왔어요": [
+    "wasseoyo"
+   ],
+   "올게요": [
+    "olgeyo"
    ]
   }
  },
@@ -727,6 +733,176 @@
   "lv": "T1",
   "readings": [
    "mianhaeyo"
+  ]
+ },
+ {
+  "id": "ko-pyeonji",
+  "w": "편지",
+  "lv": "T2",
+  "readings": [
+   "pyeonji"
+  ]
+ },
+ {
+  "id": "ko-daehakgyo",
+  "w": "대학교",
+  "lv": "T2",
+  "readings": [
+   "daehakgyo"
+  ]
+ },
+ {
+  "id": "ko-eseo",
+  "w": "에서",
+  "lv": "T2",
+  "readings": [
+   "eseo"
+  ],
+  "attach": true
+ },
+ {
+  "id": "ko-haksaeng",
+  "w": "학생",
+  "lv": "T2",
+  "readings": [
+   "haksaeng"
+  ]
+ },
+ {
+  "id": "ko-buteo",
+  "w": "부터",
+  "lv": "T2",
+  "readings": [
+   "buteo"
+  ],
+  "attach": true
+ },
+ {
+  "id": "ko-an",
+  "w": "안",
+  "lv": "T2",
+  "readings": [
+   "an"
+  ]
+ },
+ {
+  "id": "ko-gajyeogayo",
+  "w": "가져가요",
+  "lv": "T2",
+  "readings": [
+   "gajyeogayo"
+  ],
+  "forms": {
+   "가져갔어요": [
+    "gajyeogasseoyo"
+   ]
+  }
+ },
+ {
+  "id": "ko-billyeoyo",
+  "w": "빌려요",
+  "lv": "T2",
+  "readings": [
+   "billyeoyo"
+  ],
+  "forms": {
+   "빌렸어요": [
+    "billyeosseoyo"
+   ]
+  }
+ },
+ {
+  "id": "ko-sip",
+  "w": "십",
+  "lv": "T2",
+  "readings": [
+   "sip"
+  ]
+ },
+ {
+  "id": "ko-eonje",
+  "w": "언제",
+  "lv": "T2",
+  "readings": [
+   "eonje"
+  ]
+ },
+ {
+  "id": "ko-daeum",
+  "w": "다음",
+  "lv": "T2",
+  "readings": [
+   "daeum"
+  ]
+ },
+ {
+  "id": "ko-ju",
+  "w": "주",
+  "lv": "T2",
+  "readings": [
+   "ju"
+  ]
+ },
+ {
+  "id": "ko-tto",
+  "w": "또",
+  "lv": "T2",
+  "readings": [
+   "tto"
+  ]
+ },
+ {
+  "id": "ko-anieyo",
+  "w": "아니에요",
+  "lv": "T2",
+  "readings": [
+   "anieyo"
+  ]
+ },
+ {
+  "id": "ko-boksajip",
+  "w": "복사집",
+  "lv": "T2",
+  "readings": [
+   "boksajip"
+  ]
+ },
+ {
+  "id": "ko-boksa",
+  "w": "복사",
+  "lv": "T2",
+  "readings": [
+   "boksa"
+  ]
+ },
+ {
+  "id": "ko-haeyo",
+  "w": "해요",
+  "lv": "T2",
+  "readings": [
+   "haeyo"
+  ],
+  "forms": {
+   "해": [
+    "hae"
+   ]
+  },
+  "attach": true
+ },
+ {
+  "id": "ko-jang",
+  "w": "장",
+  "lv": "T2",
+  "readings": [
+   "jang"
+  ]
+ },
+ {
+  "id": "ko-naeil",
+  "w": "내일",
+  "lv": "T2",
+  "readings": [
+   "naeil"
   ]
  }
 ]

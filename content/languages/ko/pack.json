@@ -4,11 +4,15 @@
  "locale": "ko",
  "tts": "ko-KR",
  "levels": [
-  "T1"
+  "T1",
+  "T2"
  ],
  "stages": {
   "1": [
    "T1"
+  ],
+  "2": [
+   "T2"
   ]
  },
  "typing": null,

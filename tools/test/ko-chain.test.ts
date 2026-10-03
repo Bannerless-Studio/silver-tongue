@@ -35,6 +35,9 @@ const CHAIN = [
   "room-rent",
 ];
 
+/** Stage 2's scenes: the letter opens them once stage 1 is done. */
+const STAGE2 = ["room-letter", "campus-labmate", "copy-intro", "copy-shift", "room-creditor"];
+
 /** The right reply in whatever mode the core asks for. */
 function rightReply(course: Course, state: GameState): Input {
   const run = state.run!;
@@ -90,7 +93,7 @@ function playChain(c: Course, idleNights: number) {
     play(id);
     if (i === 0) for (let n = 0; n < idleNights; n++) sleep();
   }
-  expect(openOneOffs()).toEqual([]);
+  expect(openOneOffs()).toEqual(["room-letter"]);
   // Shopping opens with the clerk's apology, and the wages pay for it.
   expect(availableSceneIds(c, core.state)).toContain("shop-buy");
   play("shop-buy");
@@ -133,8 +136,8 @@ describe("ko-seoul's stage-1 chain", () => {
 
   it("builds with the chain plus the shop, one-off except the jobs", () => {
     expect(errors).toEqual([]);
-    expect(course!.scenes.map((s) => s.id).sort()).toEqual([...CHAIN, "shop-buy"].sort());
-    expect(course!.scenes.filter((s) => s.repeatable).map((s) => s.id).sort()).toEqual(["shop-buy", "stall-shift"]);
+    expect(course!.scenes.map((s) => s.id).sort()).toEqual([...CHAIN, "shop-buy", ...STAGE2].sort());
+    expect(course!.scenes.filter((s) => s.repeatable).map((s) => s.id).sort()).toEqual(["copy-shift", "shop-buy", "stall-shift"]);
   });
 
   it("a new player plays it in order: each scene opens only after the one before, never blocked", () => {
@@ -189,9 +192,12 @@ describe("ko-seoul's stage-1 chain", () => {
     }
   });
 
-  it("keeps the three pinned clue lines word for word", () => {
+  it("keeps the pinned clue lines word for word", () => {
     const pinned = extra(course!).scenes.flatMap((s) => s.exchanges.filter((ex) => ex.pin).map((ex) => `${s.id}: ${Object.values(ex.variants)[0].npc.text}`));
     expect(pinned.sort()).toEqual([
+      "campus-labmate: 민준 씨가 책을 가져갔어요.",
+      "campus-labmate: 민준 씨는 삼월부터 안 왔어요.",
+      "room-creditor: 다음 주에 또 올게요.",
       "room-rent: 민준 씨는 삼월까지 냈어요.",
       "room-wake: 민준 씨 친구예요?",
       "stall-family: 동생이에요. 지금 없어요.",

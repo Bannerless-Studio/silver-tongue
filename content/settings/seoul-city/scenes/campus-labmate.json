@@ -1,0 +1,81 @@
+{
+ "id": "campus-labmate",
+ "place": "campus",
+ "npc": "labmate",
+ "stage": 2,
+ "after": [
+  "room-letter"
+ ],
+ "requires": {},
+ "repeatable": false,
+ "trustGain": 1,
+ "exchanges": [
+  {
+   "id": "friend",
+   "slots": {},
+   "expect": {
+    "action": "friend"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0,
+   "alts": {
+    "1": {
+     "accept": true
+    }
+   }
+  },
+  {
+   "id": "sujin",
+   "slots": {},
+   "expect": {
+    "action": "sujin"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "where",
+   "slots": {},
+   "expect": {
+    "action": "whereis"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "since",
+   "slots": {},
+   "expect": {
+    "action": "since"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0,
+   "pin": true
+  },
+  {
+   "id": "took",
+   "slots": {},
+   "expect": {
+    "action": "took"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0,
+   "pin": true
+  },
+  {
+   "id": "bye",
+   "slots": {},
+   "expect": {
+    "action": "bye"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  }
+ ]
+}

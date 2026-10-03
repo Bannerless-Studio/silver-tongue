@@ -17,7 +17,8 @@
    "links": [
     "room",
     "stall",
-    "shop"
+    "shop",
+    "campus"
    ]
   },
   "stall": {
@@ -35,6 +36,24 @@
    "after": [
     "street-hungry"
    ]
+  },
+  "campus": {
+   "links": [
+    "street",
+    "copyshop"
+   ],
+   "after": [
+    "room-letter"
+   ]
+  },
+  "copyshop": {
+   "links": [
+    "street",
+    "campus"
+   ],
+   "after": [
+    "campus-labmate"
+   ]
   }
  },
  "npcs": {
@@ -49,6 +68,15 @@
   },
   "clerk": {
    "place": "shop"
+  },
+  "labmate": {
+   "place": "campus"
+  },
+  "copyman": {
+   "place": "copyshop"
+  },
+  "creditor": {
+   "place": "room"
   }
  },
  "mentor": {

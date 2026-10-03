@@ -1,0 +1,102 @@
+{
+ "id": "copy-shift",
+ "place": "copyshop",
+ "npc": "copyman",
+ "stage": 2,
+ "after": [
+  "copy-intro",
+  "room-creditor"
+ ],
+ "requires": {
+  "trust": {
+   "copyman": 1
+  }
+ },
+ "repeatable": true,
+ "trustGain": 1,
+ "exchanges": [
+  {
+   "id": "greet",
+   "slots": {},
+   "expect": {
+    "action": "greet"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "order",
+   "slots": {
+    "item": "papers",
+    "count": "counts"
+   },
+   "expect": {
+    "action": "copy",
+    "item": "$item",
+    "count": "$count"
+   },
+   "hinges": [
+    "$item",
+    "$count"
+   ],
+   "pay": 10000,
+   "missCost": 3000
+  },
+  {
+   "id": "chat-a",
+   "slots": {
+    "topic": "chat_copy"
+   },
+   "expect": {
+    "action": "chat",
+    "topic": "$topic"
+   },
+   "hinges": [
+    "$topic"
+   ],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "chat-b",
+   "slots": {
+    "topic": "chat_copy"
+   },
+   "expect": {
+    "action": "chat",
+    "topic": "$topic"
+   },
+   "hinges": [
+    "$topic"
+   ],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "chat-c",
+   "slots": {
+    "topic": "chat_copy"
+   },
+   "expect": {
+    "action": "chat",
+    "topic": "$topic"
+   },
+   "hinges": [
+    "$topic"
+   ],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "thanks",
+   "slots": {},
+   "expect": {
+    "action": "thanks"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  }
+ ]
+}
