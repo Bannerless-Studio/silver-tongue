@@ -430,10 +430,6 @@ street-again/slow/alt1: 네|,|알아요|.
 street-again/slow/alt2: 안녕히|가세요|.
 street-again/slow/npc: 어디|……|가요|?
 street-again/slow/reply: 몰라요|.
-street-again/slowly/alt1: 네|,|감사합니다|.
-street-again/slowly/alt2: 안녕하세요|.
-street-again/slowly/npc: 네|,|네|.|어디|가요|?
-street-again/slowly/reply: 천천히|말해|주세요|.
 street-hello/ask/alt1: 민준|씨|친구|예요|.
 street-hello/ask/alt2: 아니요|.
 street-hello/ask/npc: 이름|이|뭐|예요|?
