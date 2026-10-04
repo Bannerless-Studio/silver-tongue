@@ -2,31 +2,30 @@ import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-/** Replaces one meta's content; throws when the page doesn't have it, so a broken site never ships. */
-function setMeta(html: string, name: string, from: string, to: string): string {
-  const tag = `name="${name}" content="${from}"`;
-  if (!html.includes(tag)) throw new Error(`page has no <meta ${tag}>`);
-  return html.replace(tag, `name="${name}" content="${to}"`);
+/** The courses the site offers, in the order a first visit lists them to pick from. */
+export const SITE_COURSES = ["ko-seoul", "zh-china", "ja-japan"];
+
+/** The catalog cut down to the site's courses, in their order; throws when one is missing, so a broken site never ships. */
+export function siteCatalog<T extends { id: string }>(catalog: T[]): T[] {
+  return SITE_COURSES.map((id) => {
+    const entry = catalog.find((c) => c.id === id);
+    if (!entry) throw new Error(`catalog has no course ${id}`);
+    return entry;
+  });
 }
 
-/** The course the site starts on. */
-export const KO_COURSE = "ko-seoul";
-
-/** The one page the site serves: the quiet terminal made for the Korean game, at /. */
-export function sitePage(quietHtml: string): string {
-  return setMeta(quietHtml, "st-course", "", KO_COURSE);
-}
-
-/** site/: the Korean game at / and the courses folder, ready for GitHub Pages. */
+/** site/: the quiet terminal at / (a first visit picks Korean, Chinese or Japanese) and those courses, ready for GitHub Pages. */
 export function buildSite(repo: string): void {
   const out = join(repo, "site");
   const quietDist = join(repo, "packages", "quiet-web", "dist");
-  const page = sitePage(readFileSync(join(quietDist, "index.html"), "utf8"));
+  const courses = join(quietDist, "courses");
+  const catalog = siteCatalog(JSON.parse(readFileSync(join(courses, "index.json"), "utf8")) as { id: string }[]);
   rmSync(out, { recursive: true, force: true });
-  mkdirSync(out, { recursive: true });
-  writeFileSync(join(out, "index.html"), page);
-  cpSync(join(quietDist, "courses"), join(out, "courses"), { recursive: true });
-  console.log(`site/: the Korean game at /, courses at /courses/`);
+  mkdirSync(join(out, "courses"), { recursive: true });
+  cpSync(join(quietDist, "index.html"), join(out, "index.html"));
+  writeFileSync(join(out, "courses", "index.json"), JSON.stringify(catalog));
+  for (const { id } of catalog) cpSync(join(courses, id), join(out, "courses", id), { recursive: true });
+  console.log(`site/: the quiet terminal at /, courses ${SITE_COURSES.join(", ")} at /courses/`);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) buildSite(resolve(fileURLToPath(new URL("../..", import.meta.url))));

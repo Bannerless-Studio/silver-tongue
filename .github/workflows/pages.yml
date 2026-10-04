@@ -1,5 +1,5 @@
 name: pages
-# Builds the site (the Korean game in the quiet terminal, at /) and deploys it to GitHub Pages on every push to main.
+# Builds the site (the quiet terminal at /, offering Korean, Chinese and Japanese) and deploys it to GitHub Pages on every push to main.
 # Needs Pages turned on for the repository with "GitHub Actions" as the source.
 
 on:

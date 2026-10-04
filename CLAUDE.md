@@ -23,7 +23,7 @@ flowchart LR
 - `packages/tui-node`: the Node `Terminal` backend and the `silver-tongue` CLI bundle.
 - `packages/view`: presentation logic both front ends share (menus, narration, help cards, notebook, settings, text). Pure: no terminal, no DOM, no I/O.
 - `packages/web-common`: browser sessions, settings, audio and course fetching, used by the quiet terminal page.
-- `packages/quiet-web`: the quiet terminal page (Preact), forked from the visual novel page (since removed); the only page the site serves, starting on ko-seoul until the player picks another course in settings. `quiet.ts` turns core events into transcript lines; the surprisal rules (what the anchor row, glosses and notebook show) live in `packages/view/src/quiet.ts`. Spec: `docs/superpowers/specs/2026-09-28-quiet-terminal-design.md`.
+- `packages/quiet-web`: the quiet terminal page (Preact), forked from the visual novel page (since removed); the only page the site serves; a first visit picks Korean, Chinese or Japanese (`tools/src/site.ts` `SITE_COURSES`), switched later in settings. `quiet.ts` turns core events into transcript lines; the surprisal rules (what the anchor row, glosses and notebook show) live in `packages/view/src/quiet.ts`. Spec: `docs/superpowers/specs/2026-09-28-quiet-terminal-design.md`.
 - `tools`: pack import, content build (Fluent → rendered, tagged lines) and the content checker.
 - Scenes are language-neutral skeletons that name concepts; each language supplies Fluent lines. Slot values are bound by copying a concept's term under the slot's name (`tools/src/fluent.ts` `bindSlots`).
 
@@ -41,7 +41,7 @@ npm run import:zh        # re-import the zh pack from vendor/vocab-engine
 npm run audio            # every course (or one: -- zh-china): make missing clips with edge-tts (pipx install edge-tts) + ffmpeg trim, delete unused ones
 npm run bundle -w silver-tongue   # build packages/tui-node/dist (a local build; nothing is published to npm any more)
 npm run build:quiet      # the quiet terminal page -> packages/quiet-web/dist
-npm run build:site       # the site as GitHub Pages serves it: only the quiet terminal on ko-seoul, at /
+npm run build:site       # the site as GitHub Pages serves it: the quiet terminal at /, offering ko-seoul, zh-china and ja-japan
 ```
 
 ## Rules

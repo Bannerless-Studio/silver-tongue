@@ -8,7 +8,7 @@ The first course is Mandarin (HSK 1), in a Chinese city, explained in English.
 
 ## Play in the browser
 
-https://bannerless-studio.github.io/silver-tongue/ — the Korean game (Seoul) in the quiet terminal: a calm text screen that shows only what changed. New words explain themselves once.
+https://bannerless-studio.github.io/silver-tongue/ — Korean (Seoul), Chinese or Japanese, in the quiet terminal: a calm text screen that shows only what changed. New words explain themselves once. Pick the language on your first visit; switch it later in settings.
 
 Games save in the browser; Export and Import move a game between the browser and the terminal.
 
@@ -45,7 +45,7 @@ Needs Node 22 or newer.
 npm install
 npm run build:course
 npm run play        # the terminal game
-npm run build:site  # the browser page in site/: the Korean game at / (serve it: npx serve site)
+npm run build:site  # the browser page in site/: Korean, Chinese or Japanese at / (serve it: npx serve site)
 npm run bots        # scripted players through the course
 ```
 
