@@ -47,7 +47,7 @@ npm run audio            # every course (or one: -- zh-china): make missing clip
 npm run bundle -w silver-tongue   # build packages/tui-node/dist (a local build; nothing is published to npm any more)
 npm run build:vn         # the visual novel page -> packages/vn-web/dist
 npm run build:quiet      # the quiet terminal page -> packages/quiet-web/dist
-npm run build:site       # all three pages into site/, as GitHub Pages serves them (visual novel at /, text game at /text/, quiet terminal at /quiet/)
+npm run build:site       # the site as GitHub Pages serves it: only the quiet terminal on ko-seoul, at /
 ```
 
 ## Rules

@@ -18,7 +18,7 @@
     "build:vn": "npm run build -w @silver-tongue/vn-web",
     "build:web": "npm run build -w @silver-tongue/tui-web",
     "build:quiet": "npm run build -w @silver-tongue/quiet-web",
-    "build:site": "npm run build:web && npm run build:vn && npm run build:quiet && tsx tools/src/site.ts",
+    "build:site": "npm run build:quiet && tsx tools/src/site.ts",
     "play": "tsx packages/tui-node/src/main.ts"
   },
   "devDependencies": {
