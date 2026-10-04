@@ -35,7 +35,7 @@ npm test                 # vitest, all packages
 npm run typecheck        # tsc
 npm run build:course     # content -> dist/courses/<course>/<learner>.json + index.json (fails on any checker error); one course: npm run build:course -- zh-china
 npm run learning -- ko-seoul 14 learner   # learning simulator: a bot plays N game days; per-word uses, line familiarity, exchanges with >2 new words (bot "diligent" also takes the daily quick review)
-npm run import:syllabus -- ko vendor/korean/pack   # graded word list (A1/A2/B1) -> content/languages/ko/syllabus.json, read by the learning report
+npm run import:syllabus -- ko vendor/korean/pack   # graded word list (A1/A2/B1) -> content/languages/<lang>/syllabus.json, read by the learning report; zh: vendor/vocab-engine/packs/zh (HSK 1/2/3 as A1/A2/B1), ja: vendor/jlpt (N5/N4/N3)
 npm run play             # play from source in this terminal
 npm run import:zh        # re-import the zh pack from vendor/vocab-engine
 npm run audio            # every course (or one: -- zh-china): make missing clips with edge-tts (pipx install edge-tts) + ffmpeg trim, delete unused ones

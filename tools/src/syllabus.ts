@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Course, RenderedLine, WordId } from "@silver-tongue/core";
@@ -67,13 +67,77 @@ interface PackWordJson {
   forms?: string[];
 }
 
-export function buildSyllabus(pack: { levels: { id: string }[] }, words: PackWordJson[], source: string, license: string): Syllabus {
+/**
+ * A syllabus from a vocab pack. `levels` renames the pack's levels to the syllabus's (HSK "1" to "A1")
+ * and keeps only those; without it every pack level is kept under its own name.
+ */
+export function buildSyllabus(pack: { levels: { id: string }[] }, words: PackWordJson[], source: string, license: string, levels?: Record<string, string>): Syllabus {
+  const lv = (id: string) => (levels ? levels[id] : id);
   return {
     source,
     license,
-    levels: pack.levels.map((l) => String(l.id)),
-    words: words.map((v) => ({ id: v.id, w: v.w, pos: v.pos ?? "", lv: String(v.lv), en: v.en, forms: v.forms ?? [] })),
+    levels: pack.levels.map((l) => lv(String(l.id))).filter((l): l is string => !!l),
+    words: words.filter((v) => lv(String(v.lv))).map((v) => ({ id: v.id, w: v.w, pos: v.pos ?? "", lv: lv(String(v.lv)), en: v.en, forms: v.forms ?? [] })),
   };
+}
+
+/** The fields of one CSV line; a field in double quotes may hold commas and "" for a quote. */
+export function csvFields(line: string): string[] {
+  const out: string[] = [];
+  let i = 0;
+  while (i <= line.length) {
+    if (line[i] === '"') {
+      let f = "";
+      i++;
+      while (i < line.length && !(line[i] === '"' && line[i + 1] !== '"')) f += line[i] === '"' ? (i++, '"') : line[i], i++;
+      out.push(f);
+      i += 2; // the closing quote and the comma
+    } else {
+      const end = line.indexOf(",", i);
+      out.push(line.slice(i, end < 0 ? line.length : end));
+      i = end < 0 ? line.length + 1 : end + 1;
+    }
+  }
+  return out;
+}
+
+const GODAN_I: Record<string, string> = { う: "い", く: "き", ぐ: "ぎ", す: "し", つ: "ち", ぬ: "に", ぶ: "び", む: "み", る: "り" };
+
+/**
+ * A verb's polite forms (-ます, -ました, -ません, -ましょう), since a course writes verbs that way and the
+ * JLPT lists give the dictionary form. Whether a る verb is godan (帰る: 帰ります) or ichidan (食べる: 食べます)
+ * isn't in the list, so it gets both; the wrong one matches nothing.
+ */
+export function masuForms(verb: string): string[] {
+  const stems =
+    verb.endsWith("する") ? [verb.slice(0, -2) + "し"]
+    : verb === "来る" || verb === "くる" ? [verb === "来る" ? "来" : "き"]
+    : GODAN_I[verb.slice(-1)] ? [verb.slice(0, -1) + GODAN_I[verb.slice(-1)], ...(verb.endsWith("る") ? [verb.slice(0, -1)] : [])]
+    : [];
+  return stems.flatMap((st) => ["ます", "ました", "ません", "ましょう"].map((e) => st + e));
+}
+
+/**
+ * A syllabus from JLPT word lists (expression,reading,meaning,tags), easiest list first. A word in
+ * more than one list keeps its easiest level; its kana reading is a form, for a course that writes it
+ * in kana (かぎ for 鍵), and so are a verb's polite forms (masuForms).
+ */
+export function buildJlptSyllabus(lists: { level: string; csv: string }[], source: string, license: string): Syllabus {
+  const seen = new Set<string>();
+  const words: SyllabusWord[] = [];
+  for (const { level, csv } of lists) {
+    for (const line of csv.split(/\r?\n/).slice(1)) {
+      if (!line.trim()) continue;
+      const [w, reading, en] = csvFields(line);
+      if (seen.has(w)) continue;
+      seen.add(w);
+      // A one-kana reading would match particles (か, の) to unrelated words (可, 野).
+      const spellings = [w, ...(reading && reading !== w && reading.length > 1 ? [reading] : [])];
+      const forms = [...new Set([...spellings.slice(1), ...(/^to /.test(en) ? spellings.flatMap(masuForms) : [])])];
+      words.push({ id: `${level.toLowerCase()}-${String(words.length + 1).padStart(4, "0")}`, w, pos: "", lv: level, en, forms });
+    }
+  }
+  return { source, license, levels: lists.map((l) => l.level), words };
 }
 
 // Hangul syllables are 0xAC00 + (initial * 21 + vowel) * 28 + final.
@@ -218,22 +282,47 @@ export function loadSyllabus(contentDir: string, lang: string): { syllabus?: Syl
   return { syllabus: read<Syllabus>("syllabus.json"), grammar: read<Grammar>("grammar.json") };
 }
 
+/** JLPT level to CEFR level, the usual rough match. */
+const JLPT_LEVELS = [
+  { file: "n5.csv", level: "A1" },
+  { file: "n4.csv", level: "A2" },
+  { file: "n3.csv", level: "B1" },
+];
+
+/** HSK 2.0 level to CEFR level, as Hanban matched them. */
+const HSK_LEVELS: Record<string, string> = { "1": "A1", "2": "A2", "3": "B1" };
+
 /**
- * npm run import:syllabus -- <lang> <pack dir>: writes content/languages/<lang>/syllabus.json from
- * a vocab pack's pack.json, words.json and attribution.json.
+ * npm run import:syllabus -- <lang> <dir>: writes content/languages/<lang>/syllabus.json. <dir> is a
+ * vocab pack (pack.json, words.json; for zh its HSK levels become A1/A2/B1) or JLPT word lists
+ * (n5.csv, n4.csv, n3.csv: vendor/jlpt).
  */
 function main(): void {
-  const [lang, packDir] = process.argv.slice(2);
-  if (!lang || !packDir) throw new Error("usage: import:syllabus -- <lang> <pack dir>, e.g. ko vendor/korean/pack");
+  const [lang, dir] = process.argv.slice(2);
+  if (!lang || !dir) throw new Error("usage: import:syllabus -- <lang> <dir>, e.g. ko vendor/korean/pack, zh vendor/vocab-engine/packs/zh, ja vendor/jlpt");
   const repo = resolve(fileURLToPath(new URL("../..", import.meta.url)));
-  const pack = JSON.parse(readFileSync(join(packDir, "pack.json"), "utf8"));
-  const words = JSON.parse(readFileSync(join(packDir, "words.json"), "utf8")) as PackWordJson[];
-  const syllabus = buildSyllabus(
-    pack,
-    words,
-    `${pack.name}: ${packDir} (vocab-engine pack "${pack.key}"). Generated by npm run import:syllabus; never hand-edit.`,
-    "CC BY-SA 4.0 (the pack's data licence: glosses from Wiktionary via kaikki.org, frequency from hermitdave/FrequencyWords). See the pack's attribution.json.",
-  );
+  const note = "Generated by npm run import:syllabus; never hand-edit.";
+  let syllabus: Syllabus;
+  if (existsSync(join(dir, "n5.csv"))) {
+    syllabus = buildJlptSyllabus(
+      JLPT_LEVELS.map(({ file, level }) => ({ level, csv: readFileSync(join(dir, file), "utf8") })),
+      `JLPT N5/N4/N3 word lists as A1/A2/B1: ${dir}. ${note}`,
+      "MIT (elzup/jlpt-word-list, from Jonathan Waller's lists at tanos.co.uk). See the folder's README.md and LICENSE.",
+    );
+  } else {
+    const pack = JSON.parse(readFileSync(join(dir, "pack.json"), "utf8"));
+    const words = JSON.parse(readFileSync(join(dir, "words.json"), "utf8")) as PackWordJson[];
+    const hsk = lang === "zh";
+    syllabus = buildSyllabus(
+      pack,
+      words,
+      `${pack.name}: ${dir} (vocab-engine pack "${pack.key}")${hsk ? ", HSK 1/2/3 as A1/A2/B1" : ""}. ${note}`,
+      hsk
+        ? "Used with the vocab-engine author's consent (the pack's HSK word list)."
+        : "CC BY-SA 4.0 (the pack's data licence: glosses from Wiktionary via kaikki.org, frequency from hermitdave/FrequencyWords). See the pack's attribution.json.",
+      hsk ? HSK_LEVELS : undefined,
+    );
+  }
   const out = join(repo, "content", "languages", lang, "syllabus.json");
   writeFileSync(out, JSON.stringify(syllabus, null, 1) + "\n");
   console.log(`${out}: ${syllabus.words.length} words in ${syllabus.levels.join("/")}`);

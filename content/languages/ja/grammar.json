@@ -1,0 +1,548 @@
+{
+ "note": "Hand-written grammar syllabus, A1-B1, following the usual JLPT N5-N3 grammar lists (N5 as A1, N4 as A2, N3 as B1). Not reviewed by a native speaker. Detectors are approximate: `words` are this language's word ids, `pattern` a regular expression over a line's text. A point is due by its level's stage (A1 on 1, A2 on 2, B1 on 3).",
+ "points": [
+  {
+   "id": "desu",
+   "lv": "A1",
+   "label": "です",
+   "en": "is, am, are (polite)",
+   "pattern": "です"
+  },
+  {
+   "id": "deshita",
+   "lv": "A1",
+   "label": "でした",
+   "en": "was (polite)",
+   "pattern": "でした"
+  },
+  {
+   "id": "ja-nai",
+   "lv": "A1",
+   "label": "じゃありません / じゃない",
+   "en": "is not",
+   "pattern": "じゃ(?:ありません|ない)|ではありません|ではない"
+  },
+  {
+   "id": "masu",
+   "lv": "A1",
+   "label": "〜ます",
+   "en": "polite verb",
+   "pattern": "ます"
+  },
+  {
+   "id": "masen",
+   "lv": "A1",
+   "label": "〜ません",
+   "en": "polite negative",
+   "pattern": "ません"
+  },
+  {
+   "id": "mashita",
+   "lv": "A1",
+   "label": "〜ました",
+   "en": "polite past",
+   "pattern": "ました"
+  },
+  {
+   "id": "mashou",
+   "lv": "A1",
+   "label": "〜ましょう / ませんか",
+   "en": "let's; won't you",
+   "pattern": "ましょう|ませんか"
+  },
+  {
+   "id": "wa",
+   "lv": "A1",
+   "label": "は",
+   "en": "topic marker",
+   "words": [
+    "ja-wa"
+   ]
+  },
+  {
+   "id": "ga",
+   "lv": "A1",
+   "label": "が",
+   "en": "subject marker",
+   "words": [
+    "ja-ga"
+   ]
+  },
+  {
+   "id": "o",
+   "lv": "A1",
+   "label": "を",
+   "en": "object marker",
+   "words": [
+    "ja-o"
+   ]
+  },
+  {
+   "id": "no",
+   "lv": "A1",
+   "label": "の",
+   "en": "possessive; of",
+   "words": [
+    "ja-no"
+   ]
+  },
+  {
+   "id": "mo",
+   "lv": "A1",
+   "label": "も",
+   "en": "also, too",
+   "words": [
+    "ja-mo"
+   ]
+  },
+  {
+   "id": "ka",
+   "lv": "A1",
+   "label": "…か",
+   "en": "question",
+   "words": [
+    "ja-ka"
+   ],
+   "pattern": "か[。？?]"
+  },
+  {
+   "id": "ne-yo",
+   "lv": "A1",
+   "label": "…ね / …よ",
+   "en": "isn't it / you know",
+   "words": [
+    "ja-ne"
+   ],
+   "pattern": "[ねよ][。！!？?]"
+  },
+  {
+   "id": "de",
+   "lv": "A1",
+   "label": "で",
+   "en": "at (place of action); by means of",
+   "words": [
+    "ja-de"
+   ]
+  },
+  {
+   "id": "ni",
+   "lv": "A1",
+   "label": "に",
+   "en": "at, to, on (time, place, person)",
+   "pattern": "[^\\s]に(?![ちほ])"
+  },
+  {
+   "id": "he-made",
+   "lv": "A1",
+   "label": "へ / まで / から",
+   "en": "to; until; from",
+   "pattern": "から|まで|[^\\s]へ"
+  },
+  {
+   "id": "to",
+   "lv": "A1",
+   "label": "と",
+   "en": "and; with",
+   "pattern": "[^\\s]と(?!う|も)"
+  },
+  {
+   "id": "kudasai",
+   "lv": "A1",
+   "label": "〜をください / 〜てください",
+   "en": "please give; please do",
+   "pattern": "ください"
+  },
+  {
+   "id": "tai",
+   "lv": "A1",
+   "label": "〜たい",
+   "en": "want to",
+   "pattern": "たい(?:です|。|！|$)|たく(?:ない|ありません)"
+  },
+  {
+   "id": "aru-iru",
+   "lv": "A1",
+   "label": "あります / います",
+   "en": "there is; to have",
+   "pattern": "あります|あり|います|いる"
+  },
+  {
+   "id": "kosoado",
+   "lv": "A1",
+   "label": "これ / それ / あれ / どれ",
+   "en": "this, that, which",
+   "pattern": "これ|それ|あれ|どれ|この|その|あの|どの|ここ|そこ|あそこ|どこ"
+  },
+  {
+   "id": "qwords",
+   "lv": "A1",
+   "label": "何 / 誰 / いつ / いくら / いくつ",
+   "en": "question words",
+   "pattern": "何|なに|なん|誰|だれ|いつ|いくら|いくつ|どう"
+  },
+  {
+   "id": "counters",
+   "lv": "A1",
+   "label": "一つ / 千円 / 三人",
+   "en": "counting",
+   "pattern": "[一二三四五六七八九十百千万][つ人円枚本個時分日月回]|ひとつ|ふたつ"
+  },
+  {
+   "id": "adj-i",
+   "lv": "A1",
+   "label": "い-adjective + です",
+   "en": "describing",
+   "pattern": "い(?:です|。)"
+  },
+  {
+   "id": "teiru",
+   "lv": "A1",
+   "label": "〜ています",
+   "en": "is doing; is in a state",
+   "pattern": "[てで]います|[てで]いる"
+  },
+  {
+   "id": "te-form",
+   "lv": "A1",
+   "label": "〜て、〜",
+   "en": "and then",
+   "pattern": "[てで]、"
+  },
+  {
+   "id": "ga-but",
+   "lv": "A1",
+   "label": "〜が、〜",
+   "en": "but",
+   "pattern": "が、"
+  },
+  {
+   "id": "nai",
+   "lv": "A1",
+   "label": "〜ない",
+   "en": "plain negative",
+   "pattern": "ない"
+  },
+  {
+   "id": "te-mo-ii",
+   "lv": "A2",
+   "label": "〜てもいい",
+   "en": "may",
+   "pattern": "[てで]も(?:いい|いいです)"
+  },
+  {
+   "id": "te-wa-ikenai",
+   "lv": "A2",
+   "label": "〜てはいけない",
+   "en": "must not",
+   "pattern": "[てで]は(?:いけ|だめ)|ちゃ(?:いけ|だめ)"
+  },
+  {
+   "id": "nakereba",
+   "lv": "A2",
+   "label": "〜なければならない",
+   "en": "must",
+   "pattern": "なければ|なきゃ|ないと(?:いけ|だめ)"
+  },
+  {
+   "id": "potential",
+   "lv": "A2",
+   "label": "〜られる / 〜える, できる",
+   "en": "can",
+   "pattern": "できます|できる|できない|られ(?:ます|る)|[えけげせてねべめれ]ます"
+  },
+  {
+   "id": "tara",
+   "lv": "A2",
+   "label": "〜たら",
+   "en": "if, when",
+   "pattern": "[たっ]たら|だら"
+  },
+  {
+   "id": "ba",
+   "lv": "A2",
+   "label": "〜ば",
+   "en": "if",
+   "pattern": "[えけげせてねべめれ]ば(?!か)"
+  },
+  {
+   "id": "to-omou",
+   "lv": "A2",
+   "label": "〜と思う",
+   "en": "I think",
+   "pattern": "と(?:思|おも)"
+  },
+  {
+   "id": "tsumori",
+   "lv": "A2",
+   "label": "〜つもり",
+   "en": "intend to",
+   "pattern": "つもり"
+  },
+  {
+   "id": "sou",
+   "lv": "A2",
+   "label": "〜そうです",
+   "en": "looks like; I hear",
+   "pattern": "そう(?:です|だ|な|に)"
+  },
+  {
+   "id": "kamo",
+   "lv": "A2",
+   "label": "〜かもしれない",
+   "en": "might",
+   "pattern": "かもしれ"
+  },
+  {
+   "id": "you-ni-naru",
+   "lv": "A2",
+   "label": "〜ようになる",
+   "en": "come to (do)",
+   "pattern": "ようにな"
+  },
+  {
+   "id": "shimau",
+   "lv": "A2",
+   "label": "〜てしまう",
+   "en": "end up; completely",
+   "pattern": "[てで]しま|ちゃ(?:う|った)|じゃ(?:う|った)"
+  },
+  {
+   "id": "oku",
+   "lv": "A2",
+   "label": "〜ておく",
+   "en": "do in advance",
+   "pattern": "[てで]お[きくか]"
+  },
+  {
+   "id": "miru",
+   "lv": "A2",
+   "label": "〜てみる",
+   "en": "try doing",
+   "pattern": "[てで]み(?:る|ます|た|て)"
+  },
+  {
+   "id": "giving",
+   "lv": "A2",
+   "label": "あげる / くれる / もらう",
+   "en": "giving and receiving",
+   "pattern": "あげ|くれ|もら"
+  },
+  {
+   "id": "node",
+   "lv": "A2",
+   "label": "〜ので",
+   "en": "because",
+   "pattern": "ので"
+  },
+  {
+   "id": "noni",
+   "lv": "A2",
+   "label": "〜のに",
+   "en": "even though",
+   "pattern": "のに"
+  },
+  {
+   "id": "hou-ga-ii",
+   "lv": "A2",
+   "label": "〜ほうがいい",
+   "en": "had better",
+   "pattern": "(?:ほう|方)がいい"
+  },
+  {
+   "id": "nagara",
+   "lv": "A2",
+   "label": "〜ながら",
+   "en": "while",
+   "pattern": "ながら"
+  },
+  {
+   "id": "tari",
+   "lv": "A2",
+   "label": "〜たり〜たりする",
+   "en": "things like…",
+   "pattern": "[たっだ]り"
+  },
+  {
+   "id": "koto-dekiru",
+   "lv": "A2",
+   "label": "〜ことができる",
+   "en": "be able to",
+   "pattern": "ことができ"
+  },
+  {
+   "id": "ta-koto",
+   "lv": "A2",
+   "label": "〜たことがある",
+   "en": "have done before",
+   "pattern": "[ただ]ことがあ"
+  },
+  {
+   "id": "mae-ato",
+   "lv": "A2",
+   "label": "〜前に / 〜後で",
+   "en": "before; after",
+   "pattern": "前に|まえに|後で|あとで"
+  },
+  {
+   "id": "volitional",
+   "lv": "A2",
+   "label": "〜よう / 〜おう",
+   "en": "let's (plain); I'll",
+   "pattern": "[よこそとろもごぼのお]う[。か！]|よう[。か！]"
+  },
+  {
+   "id": "you-da",
+   "lv": "B1",
+   "label": "〜ようだ / 〜みたい",
+   "en": "seems",
+   "pattern": "よう(?:だ|です)|みたい"
+  },
+  {
+   "id": "rashii",
+   "lv": "B1",
+   "label": "〜らしい",
+   "en": "apparently",
+   "pattern": "らしい"
+  },
+  {
+   "id": "hazu",
+   "lv": "B1",
+   "label": "〜はず",
+   "en": "should be, expected",
+   "pattern": "はず"
+  },
+  {
+   "id": "wake",
+   "lv": "B1",
+   "label": "〜わけ",
+   "en": "reason; it means",
+   "pattern": "わけ"
+  },
+  {
+   "id": "tame",
+   "lv": "B1",
+   "label": "〜ために",
+   "en": "in order to; because of",
+   "pattern": "ために|ため"
+  },
+  {
+   "id": "you-ni",
+   "lv": "B1",
+   "label": "〜ように",
+   "en": "so that",
+   "pattern": "ように(?!な)"
+  },
+  {
+   "id": "causative",
+   "lv": "B1",
+   "label": "〜させる",
+   "en": "make / let (someone do)",
+   "pattern": "させ|[かがさたなばまらわ]せ(?:る|ます|て)"
+  },
+  {
+   "id": "causative-passive",
+   "lv": "B1",
+   "label": "〜させられる",
+   "en": "be made to",
+   "pattern": "させられ|[かがさたなばまらわ]され"
+  },
+  {
+   "id": "bakari",
+   "lv": "B1",
+   "label": "〜ばかり",
+   "en": "only; just did",
+   "pattern": "ばかり"
+  },
+  {
+   "id": "shika",
+   "lv": "B1",
+   "label": "〜しか〜ない",
+   "en": "nothing but",
+   "pattern": "しか.{0,10}(?:ない|ません)"
+  },
+  {
+   "id": "tokoro",
+   "lv": "B1",
+   "label": "〜ところ",
+   "en": "just about to; just did",
+   "pattern": "ところ"
+  },
+  {
+   "id": "ni-tsuite",
+   "lv": "B1",
+   "label": "〜について",
+   "en": "about",
+   "pattern": "について"
+  },
+  {
+   "id": "ni-yotte",
+   "lv": "B1",
+   "label": "〜によって",
+   "en": "by; depending on",
+   "pattern": "によ(?:って|り|る)"
+  },
+  {
+   "id": "toshite",
+   "lv": "B1",
+   "label": "〜として",
+   "en": "as",
+   "pattern": "として"
+  },
+  {
+   "id": "sae",
+   "lv": "B1",
+   "label": "〜さえ",
+   "en": "even",
+   "pattern": "さえ"
+  },
+  {
+   "id": "sei-okage",
+   "lv": "B1",
+   "label": "〜せいで / 〜おかげで",
+   "en": "because of (bad / good)",
+   "pattern": "せいで|おかげ"
+  },
+  {
+   "id": "hoshii",
+   "lv": "B1",
+   "label": "〜てほしい",
+   "en": "want someone to",
+   "pattern": "[てで]ほしい"
+  },
+  {
+   "id": "you-ni-suru",
+   "lv": "B1",
+   "label": "〜ようにする",
+   "en": "make a point of",
+   "pattern": "ようにし|ようにす"
+  },
+  {
+   "id": "tte",
+   "lv": "B1",
+   "label": "〜って",
+   "en": "quoting; they say",
+   "pattern": "って(?:言|いう|いった|[。！？])"
+  },
+  {
+   "id": "keigo",
+   "lv": "B1",
+   "label": "いらっしゃる / いたします / ございます",
+   "en": "honorific and humble speech",
+   "pattern": "いらっしゃ|おっしゃ|召し上が|ございます|いたしま|申し"
+  },
+  {
+   "id": "ba-yokatta",
+   "lv": "B1",
+   "label": "〜ばよかった",
+   "en": "should have",
+   "pattern": "ばよかった"
+  },
+  {
+   "id": "toka",
+   "lv": "B1",
+   "label": "〜とか",
+   "en": "things like",
+   "pattern": "とか"
+  }
+ ]
+}

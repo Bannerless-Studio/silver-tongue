@@ -1,0 +1,518 @@
+{
+ "note": "Hand-written grammar syllabus, A1-B1, following the HSK 1-3 (2.0) grammar points (HSK 1 as A1, 2 as A2, 3 as B1). Not reviewed by a native speaker. Detectors are approximate: `words` are this language's word ids, `pattern` a regular expression over a line's text. A point is due by its level's stage (A1 on 1, A2 on 2, B1 on 3).",
+ "points": [
+  {
+   "id": "shi",
+   "lv": "A1",
+   "label": "是",
+   "en": "is, am, are (noun = noun)",
+   "pattern": "是"
+  },
+  {
+   "id": "ma",
+   "lv": "A1",
+   "label": "…吗？",
+   "en": "yes/no question",
+   "words": [
+    "w0051"
+   ],
+   "pattern": "吗"
+  },
+  {
+   "id": "ne",
+   "lv": "A1",
+   "label": "…呢？",
+   "en": "and you? / what about…?",
+   "words": [
+    "w0053"
+   ],
+   "pattern": "呢"
+  },
+  {
+   "id": "bu",
+   "lv": "A1",
+   "label": "不 + verb/adj",
+   "en": "not",
+   "pattern": "不"
+  },
+  {
+   "id": "mei",
+   "lv": "A1",
+   "label": "没(有)",
+   "en": "did not; have not",
+   "pattern": "没"
+  },
+  {
+   "id": "de-poss",
+   "lv": "A1",
+   "label": "的",
+   "en": "possessive; modifier marker",
+   "words": [
+    "w0125"
+   ],
+   "pattern": "的"
+  },
+  {
+   "id": "you",
+   "lv": "A1",
+   "label": "有",
+   "en": "to have; there is",
+   "pattern": "有"
+  },
+  {
+   "id": "zai-loc",
+   "lv": "A1",
+   "label": "在 + place",
+   "en": "to be at; at",
+   "pattern": "在"
+  },
+  {
+   "id": "measure",
+   "lv": "A1",
+   "label": "number + 个/本/块…",
+   "en": "measure words",
+   "pattern": "[一两二三四五六七八九十几这那哪每][个本块杯口岁点些]"
+  },
+  {
+   "id": "jiao",
+   "lv": "A1",
+   "label": "叫",
+   "en": "to be called",
+   "pattern": "叫"
+  },
+  {
+   "id": "qwords",
+   "lv": "A1",
+   "label": "什么/谁/哪/几/多少/怎么",
+   "en": "question words",
+   "pattern": "什么|谁|哪|几|多少|怎么"
+  },
+  {
+   "id": "hen",
+   "lv": "A1",
+   "label": "很 + adj",
+   "en": "very; links a subject to an adjective",
+   "pattern": "很"
+  },
+  {
+   "id": "dou",
+   "lv": "A1",
+   "label": "都",
+   "en": "all, both",
+   "pattern": "都"
+  },
+  {
+   "id": "le",
+   "lv": "A1",
+   "label": "了",
+   "en": "change; done",
+   "words": [
+    "w0018"
+   ],
+   "pattern": "了"
+  },
+  {
+   "id": "hui",
+   "lv": "A1",
+   "label": "会 + verb",
+   "en": "can (learned skill); will",
+   "pattern": "会"
+  },
+  {
+   "id": "neng",
+   "lv": "A1",
+   "label": "能 + verb",
+   "en": "can, be able to",
+   "pattern": "能"
+  },
+  {
+   "id": "xiang",
+   "lv": "A1",
+   "label": "想 + verb",
+   "en": "would like to",
+   "pattern": "想"
+  },
+  {
+   "id": "qing",
+   "lv": "A1",
+   "label": "请",
+   "en": "please",
+   "pattern": "请"
+  },
+  {
+   "id": "time",
+   "lv": "A1",
+   "label": "…点 / 星期… / …月…日",
+   "en": "telling time and dates",
+   "pattern": "[一二三四五六七八九十两几]点|星期|[一二三四五六七八九十]+月|[一二三四五六七八九十]+[日号]"
+  },
+  {
+   "id": "money",
+   "lv": "A1",
+   "label": "…块 / …元",
+   "en": "prices",
+   "pattern": "块|元"
+  },
+  {
+   "id": "zhe-na",
+   "lv": "A1",
+   "label": "这/那",
+   "en": "this, that",
+   "pattern": "这|那"
+  },
+  {
+   "id": "tai-le",
+   "lv": "A1",
+   "label": "太…了",
+   "en": "too…",
+   "pattern": "太.{1,4}了"
+  },
+  {
+   "id": "he",
+   "lv": "A1",
+   "label": "和",
+   "en": "and (nouns)",
+   "pattern": "和"
+  },
+  {
+   "id": "shihou",
+   "lv": "A1",
+   "label": "…的时候",
+   "en": "when…",
+   "pattern": "时候"
+  },
+  {
+   "id": "ye",
+   "lv": "A2",
+   "label": "也",
+   "en": "also",
+   "pattern": "也"
+  },
+  {
+   "id": "guo",
+   "lv": "A2",
+   "label": "verb + 过",
+   "en": "have done before",
+   "words": [
+    "w1138"
+   ],
+   "pattern": "[\\u4e00-\\u9fff]过(?!来|去)"
+  },
+  {
+   "id": "zhe",
+   "lv": "A2",
+   "label": "verb + 着",
+   "en": "ongoing state",
+   "words": [
+    "w0250"
+   ],
+   "pattern": "着"
+  },
+  {
+   "id": "zhengzai",
+   "lv": "A2",
+   "label": "(正)在…呢",
+   "en": "in the middle of doing",
+   "pattern": "正在|在.{1,6}呢"
+  },
+  {
+   "id": "yao",
+   "lv": "A2",
+   "label": "要",
+   "en": "want; will; need",
+   "pattern": "要"
+  },
+  {
+   "id": "bi",
+   "lv": "A2",
+   "label": "A 比 B + adj",
+   "en": "comparison",
+   "pattern": "比"
+  },
+  {
+   "id": "de-comp",
+   "lv": "A2",
+   "label": "verb + 得 + adj",
+   "en": "how well something is done",
+   "words": [
+    "w0208"
+   ],
+   "pattern": "得"
+  },
+  {
+   "id": "yinwei",
+   "lv": "A2",
+   "label": "因为…所以…",
+   "en": "because… so…",
+   "pattern": "因为|所以"
+  },
+  {
+   "id": "danshi",
+   "lv": "A2",
+   "label": "但是",
+   "en": "but",
+   "pattern": "但是|可是"
+  },
+  {
+   "id": "hai",
+   "lv": "A2",
+   "label": "还",
+   "en": "still; also",
+   "pattern": "还"
+  },
+  {
+   "id": "jiu",
+   "lv": "A2",
+   "label": "就",
+   "en": "then; right away; just",
+   "pattern": "就"
+  },
+  {
+   "id": "cong-dao",
+   "lv": "A2",
+   "label": "从…到…",
+   "en": "from… to…",
+   "pattern": "从.{1,8}到"
+  },
+  {
+   "id": "li",
+   "lv": "A2",
+   "label": "A 离 B + 远/近",
+   "en": "distance",
+   "pattern": "离"
+  },
+  {
+   "id": "yixia",
+   "lv": "A2",
+   "label": "verb + 一下",
+   "en": "do a bit, briefly",
+   "pattern": "一下"
+  },
+  {
+   "id": "yidian",
+   "lv": "A2",
+   "label": "一点(儿)",
+   "en": "a little",
+   "pattern": "一点"
+  },
+  {
+   "id": "gei",
+   "lv": "A2",
+   "label": "给",
+   "en": "to give; for",
+   "pattern": "给"
+  },
+  {
+   "id": "rang",
+   "lv": "A2",
+   "label": "让",
+   "en": "to let, to make (someone do)",
+   "pattern": "让"
+  },
+  {
+   "id": "ba-sugg",
+   "lv": "A2",
+   "label": "…吧",
+   "en": "suggestion; I suppose",
+   "words": [
+    "w0181"
+   ],
+   "pattern": "吧"
+  },
+  {
+   "id": "keyi",
+   "lv": "A2",
+   "label": "可以",
+   "en": "may, can",
+   "pattern": "可以"
+  },
+  {
+   "id": "zui",
+   "lv": "A2",
+   "label": "最",
+   "en": "most",
+   "pattern": "最"
+  },
+  {
+   "id": "yijing",
+   "lv": "A2",
+   "label": "已经…了",
+   "en": "already",
+   "pattern": "已经"
+  },
+  {
+   "id": "kuai-le",
+   "lv": "A2",
+   "label": "快…了",
+   "en": "about to",
+   "pattern": "快.{0,3}了"
+  },
+  {
+   "id": "ba",
+   "lv": "B1",
+   "label": "把 + object + verb",
+   "en": "doing something to an object",
+   "words": [
+    "w0428"
+   ],
+   "pattern": "把"
+  },
+  {
+   "id": "bei",
+   "lv": "B1",
+   "label": "被",
+   "en": "passive",
+   "words": [
+    "w0549"
+   ],
+   "pattern": "被"
+  },
+  {
+   "id": "yue",
+   "lv": "B1",
+   "label": "越…越…",
+   "en": "the more… the more…",
+   "pattern": "越.{1,6}越"
+  },
+  {
+   "id": "yibian",
+   "lv": "B1",
+   "label": "一边…一边…",
+   "en": "while",
+   "pattern": "一边.{1,8}一边"
+  },
+  {
+   "id": "ruguo",
+   "lv": "B1",
+   "label": "如果…(就)…",
+   "en": "if",
+   "pattern": "如果"
+  },
+  {
+   "id": "suiran",
+   "lv": "B1",
+   "label": "虽然…但是…",
+   "en": "although",
+   "pattern": "虽然"
+  },
+  {
+   "id": "chule",
+   "lv": "B1",
+   "label": "除了…以外",
+   "en": "besides, except",
+   "pattern": "除了"
+  },
+  {
+   "id": "yizhi",
+   "lv": "B1",
+   "label": "一直",
+   "en": "all along, straight on",
+   "pattern": "一直"
+  },
+  {
+   "id": "gang",
+   "lv": "B1",
+   "label": "刚/刚才",
+   "en": "just now",
+   "pattern": "刚"
+  },
+  {
+   "id": "zhiyou-cai",
+   "lv": "B1",
+   "label": "只有…才…",
+   "en": "only if",
+   "pattern": "只有.{1,10}才"
+  },
+  {
+   "id": "lian-dou",
+   "lv": "B1",
+   "label": "连…都/也…",
+   "en": "even",
+   "pattern": "连.{1,8}[都也]"
+  },
+  {
+   "id": "yinggai",
+   "lv": "B1",
+   "label": "应该",
+   "en": "should",
+   "pattern": "应该"
+  },
+  {
+   "id": "bixu",
+   "lv": "B1",
+   "label": "必须",
+   "en": "must",
+   "pattern": "必须"
+  },
+  {
+   "id": "you-you",
+   "lv": "B1",
+   "label": "又…又…",
+   "en": "both… and…",
+   "pattern": "又.{1,4}又"
+  },
+  {
+   "id": "yiyang",
+   "lv": "B1",
+   "label": "跟/和…一样",
+   "en": "the same as",
+   "pattern": "一样"
+  },
+  {
+   "id": "de-adv",
+   "lv": "B1",
+   "label": "adj + 地 + verb",
+   "en": "adverb marker",
+   "pattern": "[\\u4e00-\\u9fff]地(?:说|走|跑|看|笑|写|做|吃|问|回答)"
+  },
+  {
+   "id": "ranhou",
+   "lv": "B1",
+   "label": "先…然后/再…",
+   "en": "first… then…",
+   "pattern": "然后|先.{1,8}再"
+  },
+  {
+   "id": "result",
+   "lv": "B1",
+   "label": "verb + 完/到/好/懂",
+   "en": "result complement",
+   "pattern": "[做写看吃听买找说学]完|[看听找买收拿]到|[做写准备]好|[看听]懂"
+  },
+  {
+   "id": "potential",
+   "lv": "B1",
+   "label": "verb + 得/不 + 懂/完/到/了",
+   "en": "can / can't (manage to)",
+   "pattern": "[看听说做吃找]得?不?(?:懂|完|到|见|了)(?=[吗。！？，]|$)"
+  },
+  {
+   "id": "haishi",
+   "lv": "B1",
+   "label": "…还是…？ / 或者",
+   "en": "or",
+   "pattern": "还是|或者"
+  },
+  {
+   "id": "xingqu",
+   "lv": "B1",
+   "label": "对…感兴趣",
+   "en": "be interested in",
+   "pattern": "感兴趣"
+  },
+  {
+   "id": "buguo",
+   "lv": "B1",
+   "label": "不过",
+   "en": "but, however",
+   "pattern": "不过"
+  },
+  {
+   "id": "bijiao",
+   "lv": "B1",
+   "label": "比较",
+   "en": "fairly, comparatively",
+   "pattern": "比较"
+  }
+ ]
+}

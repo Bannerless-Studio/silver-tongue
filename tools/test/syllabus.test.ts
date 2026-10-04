@@ -6,7 +6,7 @@ import { fixtureCourse } from "@silver-tongue/core/testing";
 import { BOTS } from "../src/bots";
 import { buildCourse } from "../src/build-course";
 import { learningReport } from "../src/learning";
-import { buildSyllabus, grammarCoverage, grammarDetector, grammarRegExp, matchSyllabus, type Grammar } from "../src/syllabus";
+import { buildJlptSyllabus, buildSyllabus, csvFields, masuForms, grammarCoverage, grammarDetector, grammarRegExp, matchSyllabus, type Grammar } from "../src/syllabus";
 
 const CONTENT = fileURLToPath(new URL("../../content", import.meta.url));
 const KO_GRAMMAR = JSON.parse(readFileSync(`${CONTENT}/languages/ko/grammar.json`, "utf8")) as Grammar;
@@ -149,5 +149,66 @@ describe("syllabus matching", () => {
     expect(r.syllabus!.levels[0].words).toBe(2);
     expect(r.syllabus!.levels[0].inCourse).toBe(1);
     expect(r.syllabus!.missing.map((m) => m.id)).toEqual(["y"]);
+  });
+});
+
+describe("Chinese and Japanese syllabus sources", () => {
+  it("renames a pack's levels and keeps only the renamed ones (HSK 1/2/3 as A1/A2/B1)", () => {
+    const s = buildSyllabus(
+      { levels: [{ id: "1" }, { id: "2" }, { id: "3" }, { id: "4" }] },
+      [{ id: "a", w: "你", lv: "1", en: "you" }, { id: "b", w: "比", lv: "2", en: "than" }, { id: "c", w: "被", lv: "4", en: "by" }],
+      "t",
+      "t",
+      { "1": "A1", "2": "A2", "3": "B1" },
+    );
+    expect(s.levels).toEqual(["A1", "A2", "B1"]);
+    expect(s.words.map((w) => [w.id, w.lv])).toEqual([["a", "A1"], ["b", "A2"]]);
+  });
+
+  it("reads CSV fields, quoted ones with commas and doubled quotes", () => {
+    expect(csvFields(`会う,あう,"to meet, to see",JLPT`)).toEqual(["会う", "あう", "to meet, to see", "JLPT"]);
+    expect(csvFields(`a,"say ""hi""",`)).toEqual(["a", `say "hi"`, ""]);
+  });
+
+  it("JLPT lists: a word keeps its easiest level, and its kana reading is a form", () => {
+    const s = buildJlptSyllabus(
+      [
+        { level: "A1", csv: `expression,reading,meaning,tags\n鍵,かぎ,key,JLPT_N5\nはい,はい,yes,JLPT_N5\n` },
+        { level: "A2", csv: `expression,reading,meaning,tags\n鍵,かぎ,key,JLPT_N4\n会議,かいぎ,meeting,JLPT_N4\n` },
+      ],
+      "t",
+      "t",
+    );
+    expect(s.levels).toEqual(["A1", "A2"]);
+    expect(s.words.map((w) => [w.w, w.lv, w.forms])).toEqual([["鍵", "A1", ["かぎ"]], ["はい", "A1", []], ["会議", "A2", ["かいぎ"]]]);
+  });
+
+  it("a verb's polite forms; a one-kana reading is not a form", () => {
+    expect(masuForms("働く")).toContain("働きます");
+    expect(masuForms("食べる")).toEqual(expect.arrayContaining(["食べます", "食べました"]));
+    expect(masuForms("勉強する")).toContain("勉強します");
+    expect(masuForms("鍵")).toEqual([]);
+    const s = buildJlptSyllabus([{ level: "A1", csv: `e,r,m,t\n可,か,passable,x\n分かる,わかる,to understand,x\n` }], "t", "t");
+    expect(s.words[0].forms).toEqual([]);
+    expect(s.words[1].forms).toEqual(expect.arrayContaining(["わかる", "わかります", "分かります"]));
+  });
+
+  for (const lang of ["zh", "ja"]) {
+    it(`${lang}: every grammar pattern compiles, ids are unique, levels are A1/A2/B1`, () => {
+      const g = JSON.parse(readFileSync(`${CONTENT}/languages/${lang}/grammar.json`, "utf8")) as Grammar;
+      for (const p of g.points) if (p.pattern) expect(() => grammarRegExp(p.pattern!), p.id).not.toThrow();
+      expect(new Set(g.points.map((p) => p.id)).size).toBe(g.points.length);
+      for (const p of g.points) expect(["A1", "A2", "B1"]).toContain(p.lv);
+    });
+  }
+
+  it("a few Chinese and Japanese detectors on real sentences", () => {
+    const zh = grammarDetector(JSON.parse(readFileSync(`${CONTENT}/languages/zh/grammar.json`, "utf8")) as Grammar);
+    const ja = grammarDetector(JSON.parse(readFileSync(`${CONTENT}/languages/ja/grammar.json`, "utf8")) as Grammar);
+    expect(zh(text("我把书给他了。"))).toEqual(expect.arrayContaining(["ba", "gei", "le"]));
+    expect(zh(text("他比我高。"))).toContain("bi");
+    expect(zh(text("你好！"))).not.toContain("ba");
+    expect(ja(text("明日、行ってもいいですか。"))).toEqual(expect.arrayContaining(["te-mo-ii", "desu", "ka"]));
+    expect(ja(text("日本語がわかりません。"))).toContain("masen");
   });
 });
