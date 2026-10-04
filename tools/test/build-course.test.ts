@@ -460,7 +460,7 @@ describe("courses and the catalog", () => {
     const { course } = buildCourse(CONTENT, "zh-china");
     expect(course!.id).toBe("zh-china");
     expect(course!.learner).toBe("en");
-    expect(course!.language).toEqual({ code: "zh", locale: "zh", tts: "zh-CN", spaced: false });
+    expect(course!.language).toEqual({ code: "zh", locale: "zh", tts: "zh-CN", spaced: false, book: true });
     expect(course!.aliases).toEqual(["zh-china-en"]);
     expect(Object.values(course!.words).find((w) => w.w === "你")!.readings).toEqual(["nǐ"]);
   });

@@ -25,5 +25,6 @@
     ]
   },
   "typing": { "input": "pinyin" },
-  "spaced": false
+  "spaced": false,
+  "book": true
 }

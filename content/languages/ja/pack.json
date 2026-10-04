@@ -13,5 +13,6 @@
   ]
  },
  "typing": { "input": "romaji" },
- "spaced": false
+ "spaced": false,
+ "book": true
 }
