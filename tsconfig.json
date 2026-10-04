@@ -22,9 +22,7 @@
     "tools/test"
   ],
   "exclude": [
-    "packages/tui-web",
     "packages/web-common",
-    "packages/vn-web",
     "packages/quiet-web"
   ]
 }

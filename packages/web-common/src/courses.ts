@@ -1,6 +1,5 @@
 import type { CatalogEntry } from "@silver-tongue/core";
 import { chooseStart, learnerFor, type PlayerSettings, type Start } from "@silver-tongue/view";
-import type { KeyValue } from "./web-storage";
 
 /** The part of `document` the page metas need. */
 export interface MetaSource {
@@ -25,23 +24,14 @@ export async function fetchJson<T>(path: string): Promise<T> {
   return (await res.json()) as T;
 }
 
-/** Whether this browser has a saved game for any course. */
-export function hasAnySession(kv: KeyValue): boolean {
-  try {
-    return kv.keys().some((k) => /^silver-tongue:[^:]+:session:/.test(k));
-  } catch {
-    return false;
-  }
-}
-
 /**
- * The course a page starts on. A page made for one course (the `st-course` meta, e.g. /ko/) starts
- * there: for a first visit it becomes the player's course (`remember`); a player with games already
- * gets it for this visit only, their own choice kept and switching still in settings. A course the
- * catalog doesn't have is ignored: the page starts as it would without the meta.
+ * The course a page starts on. A page made for one course (the `st-course` meta) starts there until
+ * the player has chosen a course of their own; after that, their choice (switched in settings) wins.
+ * A course the catalog doesn't have is ignored: the page starts as it would without the meta.
  */
-export function pageStart(catalog: CatalogEntry[], settings: PlayerSettings, pageCourse: string, anySession: boolean): { start: Start; remember: boolean } {
-  const course = pageCourse ? catalog.find((c) => c.id === pageCourse) : undefined;
-  if (course) return { start: { ask: false, course, learner: learnerFor(course, settings.learner) }, remember: !anySession };
-  return { start: chooseStart(catalog, settings), remember: true };
+export function pageStart(catalog: CatalogEntry[], settings: PlayerSettings, pageCourse: string): Start {
+  const chosen = catalog.some((c) => c.id === settings.course);
+  const course = pageCourse && !chosen ? catalog.find((c) => c.id === pageCourse) : undefined;
+  if (course) return { ask: false, course, learner: learnerFor(course, settings.learner) };
+  return chooseStart(catalog, settings);
 }

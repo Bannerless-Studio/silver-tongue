@@ -19,7 +19,8 @@ const HELP_AFTER = 3;
 /** After the name screen on a book course with papers: the papers on the desk, all in the language, no meanings.
  * Each is read out one syllable at a time, typing its reading in Latin letters; once all are read, someone knocks
  * and the game starts. */
-export function Desk({ q, papers, bookOpen, onBook }: { q: Quiet; papers: DeskPaper[]; bookOpen: boolean; onBook: () => void }) {
+/** `covered`: the Book or Settings is open over the desk. */
+export function Desk({ q, papers, covered, onBook, onSettings }: { q: Quiet; papers: DeskPaper[]; covered: boolean; onBook: () => void; onSettings: () => void }) {
   const t = q.t;
   const read = q.readPapers();
   const [paper, setPaper] = useState<string | null>(null);
@@ -38,7 +39,7 @@ export function Desk({ q, papers, bookOpen, onBook }: { q: Quiet; papers: DeskPa
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.ctrlKey || e.altKey || e.metaKey || bookOpen) return;
+      if (e.ctrlKey || e.altKey || e.metaKey || covered) return;
       if (leaving === "knock" && e.key === "Enter") return void (e.preventDefault(), q.leaveDesk());
       if (e.key === "Escape" && paper) return void (e.preventDefault(), setPaper(null));
       // On the desk, Enter reads the bright card, unless a focused button takes it.
@@ -59,7 +60,7 @@ export function Desk({ q, papers, bookOpen, onBook }: { q: Quiet; papers: DeskPa
     );
   }
   const open = paper ? papers.find((p) => p.id === paper) : undefined;
-  if (open) return <PaperView q={q} paper={open} done={read.has(open.id)} bookOpen={bookOpen} onBook={onBook} onBack={() => setPaper(null)} />;
+  if (open) return <PaperView q={q} paper={open} done={read.has(open.id)} covered={covered} onBook={onBook} onBack={() => setPaper(null)} />;
   // One card is bright: the next to read, labelled. The rest are dimmed; a read one says so. All stay tappable.
   const next = firstUnread(papers, read);
   return (
@@ -78,6 +79,7 @@ export function Desk({ q, papers, bookOpen, onBook }: { q: Quiet; papers: DeskPa
       </div>
       <footer class="bar">
         <button type="button" class="dim" onClick={onBook}>{t("quiet-book").toLowerCase()}</button>
+        <button type="button" class="dim" onClick={onSettings}>{t("vn-settings").toLowerCase()}</button>
       </footer>
     </div>
   );
@@ -98,7 +100,7 @@ function Tile({ q, tile, shown, onShow }: { q: Quiet; tile: SumTile; shown: bool
 
 /** One paper, laid out like the document, read one syllable at a time: the syllable being read is taken out of the card
  * and shown large, over the letters it is made of; its reading is typed under it. */
-function PaperView({ q, paper, done, bookOpen, onBook, onBack }: { q: Quiet; paper: DeskPaper; done: boolean; bookOpen: boolean; onBook: () => void; onBack: () => void }) {
+function PaperView({ q, paper, done, covered, onBook, onBack }: { q: Quiet; paper: DeskPaper; done: boolean; covered: boolean; onBook: () => void; onBack: () => void }) {
   const t = q.t;
   const chart = useMemo(() => letterChart(q.course), [q.course]);
   const syls = useMemo(() => paperSyllables(paper), [paper]);
@@ -132,7 +134,7 @@ function PaperView({ q, paper, done, bookOpen, onBook, onBack }: { q: Quiet; pap
   useEffect(() => {
     if (cur) q.meet(tiles.map((r) => r.key));
   }, [key]);
-  useEffect(() => input.current?.focus(), [key, bookOpen]);
+  useEffect(() => input.current?.focus(), [key, covered]);
 
   // Where the syllable sits in the card, and the line down to its big copy; the copy slides out of the card.
   const measure = () => {
@@ -166,7 +168,7 @@ function PaperView({ q, paper, done, bookOpen, onBook, onBack }: { q: Quiet; pap
     if (!done) q.readPaper(paper.id);
   }, [finished]);
   useEffect(() => {
-    if (!finished || bookOpen) return;
+    if (!finished || covered) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Enter" || e.ctrlKey || e.altKey || e.metaKey || Date.now() - doneAt.current < DONE_GUARD_MS) return;
       e.preventDefault();
@@ -174,7 +176,7 @@ function PaperView({ q, paper, done, bookOpen, onBook, onBack }: { q: Quiet; pap
     };
     addEventListener("keydown", onKey);
     return () => removeEventListener("keydown", onKey);
-  }, [finished, bookOpen]);
+  }, [finished, covered]);
 
   // First press: the "?" tiles of this block; then (or at once when none are) what the block reads.
   const askHelp = () => {

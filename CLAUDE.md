@@ -13,22 +13,17 @@ flowchart LR
   B -- dist/courses/&lt;id&gt;/ --> C[@silver-tongue/core: private package]
   C -- events --> V[packages/view]
   V --> T[packages/tui]
-  V --> VN[packages/vn-web: visual novel]
   T --> N[packages/tui-node: terminal + CLI bundle]
-  T --> W[packages/tui-web: text page]
-  WC[packages/web-common] --> W
-  WC --> VN
-  V --> Q[packages/quiet-web: quiet terminal]
-  WC --> Q
+  WC[packages/web-common] --> Q
+  V --> Q[packages/quiet-web: quiet terminal, the site]
 ```
 
 - `@silver-tongue/core`: all game rules. `core.send(input) → events`. Closed source: lives in the private repo `Bannerless-Studio/silver-tongue-core` and arrives here as a compiled package (`npm:@bannerless-studio/silver-tongue-core`, GitHub Packages). Test fixtures: `@silver-tongue/core/testing`.
 - `packages/tui`: text front end written against the `Terminal` interface. It never keeps game state; everything comes from core events and `core.state`.
 - `packages/tui-node`: the Node `Terminal` backend and the `silver-tongue` CLI bundle.
 - `packages/view`: presentation logic both front ends share (menus, narration, help cards, notebook, settings, text). Pure: no terminal, no DOM, no I/O.
-- `packages/web-common`: browser sessions, settings, audio and course fetching, shared by the web pages.
-- `packages/vn-web`: the visual novel page (Preact). `vn.ts` turns core events into beats; components only draw.
-- `packages/quiet-web`: the quiet terminal page (Preact), forked from vn-web. `quiet.ts` turns core events into transcript lines; the surprisal rules (what the anchor row, glosses and notebook show) live in `packages/view/src/quiet.ts`. Spec: `docs/superpowers/specs/2026-09-28-quiet-terminal-design.md`.
+- `packages/web-common`: browser sessions, settings, audio and course fetching, used by the quiet terminal page.
+- `packages/quiet-web`: the quiet terminal page (Preact), forked from the visual novel page (since removed); the only page the site serves, starting on ko-seoul until the player picks another course in settings. `quiet.ts` turns core events into transcript lines; the surprisal rules (what the anchor row, glosses and notebook show) live in `packages/view/src/quiet.ts`. Spec: `docs/superpowers/specs/2026-09-28-quiet-terminal-design.md`.
 - `tools`: pack import, content build (Fluent → rendered, tagged lines) and the content checker.
 - Scenes are language-neutral skeletons that name concepts; each language supplies Fluent lines. Slot values are bound by copying a concept's term under the slot's name (`tools/src/fluent.ts` `bindSlots`).
 
@@ -45,7 +40,6 @@ npm run play             # play from source in this terminal
 npm run import:zh        # re-import the zh pack from vendor/vocab-engine
 npm run audio            # every course (or one: -- zh-china): make missing clips with edge-tts (pipx install edge-tts) + ffmpeg trim, delete unused ones
 npm run bundle -w silver-tongue   # build packages/tui-node/dist (a local build; nothing is published to npm any more)
-npm run build:vn         # the visual novel page -> packages/vn-web/dist
 npm run build:quiet      # the quiet terminal page -> packages/quiet-web/dist
 npm run build:site       # the site as GitHub Pages serves it: only the quiet terminal on ko-seoul, at /
 ```
@@ -61,8 +55,7 @@ npm run build:site       # the site as GitHub Pages serves it: only the quiet te
 - Conversations never branch: every exchange runs in order. A written wrong reply (`<id>-alt<n>`) can have the NPC's own answer (`<id>-alt<n>-answer`, with its meaning in the learner's lines), and the scene's exchange can accept it as a way through (`"alts": { "<n>": { "accept": true, "pay": 0, "loss": 1000 } }`): a lie that works, short change taken. An answer may use only words already met.
 - Bonus (off-list) words go in `content/languages/<lang>/extra-words.json` with glosses in `content/learner/<l>/glosses-<lang>-extra.ftl`.
 - Every UI string the TUI uses must be listed in `packages/view/src/text.ts` `UI_KEYS`.
-- Every UI string the visual novel uses must be listed in `packages/view/src/text.ts` `VN_UI_KEYS`.
-- Every UI string the quiet terminal uses must be listed in `packages/view/src/text.ts` `QUIET_UI_KEYS` (strings it shares with the visual novel stay in `VN_UI_KEYS`).
+- Every UI string the quiet terminal uses must be listed in `packages/view/src/text.ts` `QUIET_UI_KEYS` or `VN_UI_KEYS` (strings from the removed visual novel page that it still uses).
 - A new place or NPC needs its drawing (`content/settings/<setting>/art/places|npcs/<id>.svg`) and its `art.json` entry. Characters are faceless silhouettes in `currentColor`; no text in art. Ids inside a drawing start with its file name.
 - Code ported from vocab-engine is used with its author's consent; note the origin in a comment.
 - Every release adds its `CHANGELOG.md` entry (newest first, `## <version> (<date>)`, plain words for players) before the `release:` commit.

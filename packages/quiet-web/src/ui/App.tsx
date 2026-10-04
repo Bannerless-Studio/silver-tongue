@@ -94,7 +94,7 @@ export function App({ q, page }: { q: Quiet; page: Page }) {
       const target = e.target as HTMLElement | null;
       const typing = !!target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
       if (e.ctrlKey || e.altKey || e.metaKey) return;
-      // The desk: only the Book opens ([n]) and closes (Escape); the rest is the desk's own.
+      // The desk: only the Book opens ([n]) and an overlay closes (Escape); the rest is the desk's own.
       if (q.view().desk) {
         if (e.key === "Escape" && open) (e.preventDefault(), setOpen(null));
         else if (!typing && !open && e.key.toLowerCase() === bookKey(true)) (e.preventDefault(), setOpen("notebook"));
@@ -117,12 +117,14 @@ export function App({ q, page }: { q: Quiet; page: Page }) {
   const book = bookOn(q.course);
   // A new game on a course with the Book: the crawl and the name screen, nothing else on screen.
   if (view.opening) return <Opening q={q} story={view.opening} />;
-  // Then, on a course with papers, the desk: the papers read out before the game starts. The Book opens over it.
+  // Then, on a course with papers, the desk: the papers read out before the game starts. The Book and Settings open over it.
   if (view.desk) {
     return (
       <>
-        <Desk q={q} papers={view.desk} bookOpen={open === "notebook"} onBook={() => setOpen("notebook")} />
+        <Desk q={q} papers={view.desk} covered={open !== null} onBook={() => setOpen("notebook")} onSettings={() => setOpen("settings")} />
         {open === "notebook" && <Notebook q={q} first="letters" onClose={close} />}
+        {open === "settings" && <Menu q={q} page={page} onClose={close} onGames={() => setOpen("games")} />}
+        {open === "games" && <Games q={q} page={page} onClose={close} />}
       </>
     );
   }

@@ -3,7 +3,7 @@ import { render } from "preact";
 import { createCore, mulberry32, type CatalogEntry, type Course, type GameState } from "@silver-tongue/core";
 import { courseLabels, decodeSave, DEFAULT_RUBY, DEFAULT_SPEED, encodeSave, learnerFor, deskKey, emptyProgress, lookupHintKey, makeText, papersKey, parseProgress, playbackRate, sessionLines, type RubySetting, type SpeechSpeed, type Text } from "@silver-tongue/view";
 import {
-  coursesBase, createWebAudio, fetchJson, fromLocalStorage, hasAnySession, loadWebSettings, metaContent, migrateWebAliases, pageStart, updateWebSettings, WebSessions,
+  coursesBase, createWebAudio, fetchJson, fromLocalStorage, loadWebSettings, metaContent, migrateWebAliases, pageStart, updateWebSettings, WebSessions,
   type KeyValue, type Opened,
 } from "@silver-tongue/web-common";
 import { App, type Page } from "./ui/App";
@@ -205,11 +205,11 @@ async function boot() {
   ruby = settings.ruby ?? DEFAULT_RUBY;
   try {
     catalog = await fetchJson<CatalogEntry[]>(`${base}index.json`);
-    // A page made for one course (st-course) starts on it; see pageStart.
-    const { start: picked, remember } = pageStart(catalog, settings, metaContent(document, "st-course"), hasAnySession(kv));
+    // The page's course (st-course) until the player picks their own; see pageStart.
+    const picked = pageStart(catalog, settings, metaContent(document, "st-course"));
     if ("error" in picked) throw new Error(picked.error);
     if (!picked.ask) {
-      use(await load(picked.course, picked.learner), remember);
+      use(await load(picked.course, picked.learner), true);
       return title();
     }
     // Several courses and none chosen yet: list them, named in the first course's reading language.
