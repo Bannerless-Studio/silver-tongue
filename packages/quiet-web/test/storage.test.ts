@@ -3,7 +3,7 @@ import { fromLocalStorage, labKeyValue } from "@silver-tongue/web-common";
 import { scribeCountKey } from "@silver-tongue/view";
 import { installPageStorage, pageStorage } from "../src/storage";
 import { finishTilesHint, tilesHintDone } from "../src/ui/Stage";
-import { resetRounds, scribeRound } from "../src/scribe";
+import { scribeRound } from "../src/scribe";
 
 function fakeLocalStorage(): Storage & { map: Map<string, string> } {
   const map = new Map<string, string>();
@@ -28,7 +28,6 @@ describe("page storage under the lab wrapper", () => {
   afterEach(() => {
     installPageStorage(undefined as never);
     delete (globalThis as { localStorage?: Storage }).localStorage;
-    resetRounds();
   });
 
   it("tiles hint lands under the lab prefix", () => {
@@ -44,7 +43,7 @@ describe("page storage under the lab wrapper", () => {
   });
 
   it("scribe counter lands under the lab prefix", () => {
-    scribeRound("ko-seoul", 1);
+    scribeRound({}, "ko-seoul", 1);
     const keys = [...ls.map.keys()];
     expect(keys).toEqual([scribeCountKey("ko-seoul").replace("silver-tongue:", "silver-tongue-lab:")]);
   });

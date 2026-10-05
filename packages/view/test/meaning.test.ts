@@ -87,3 +87,44 @@ describe("bestMeaning", () => {
     expect(meaningScore("hello friend", "Hello.")).toBe(2);
   });
 });
+
+describe("a negation in the meaning", () => {
+  it("lets 'not' say 'no', and does not count it as an extra word", () => {
+    expect(ok("no, I'm not", "No.")).toBe(true);
+    expect(ok("no, I'm not his friend", "No.")).toBe(true);
+    expect(ok("I'm not his friend", "No.")).toBe(true);
+  });
+  it("still never lets an added negation flip a meaning without one", () => {
+    expect(ok("I'm not his friend", "I'm his friend.")).toBe(false);
+    expect(bestMeaning("I'm not his friend", [{ meaning: "I'm his friend." }, { meaning: "Who are you?" }])).toBe(-1);
+  });
+  it("matches nothing for a bare yes or friend", () => {
+    expect(ok("yes", "No.")).toBe(false);
+    expect(ok("friend", "No.")).toBe(false);
+  });
+});
+
+describe("natural phrasing of the scribe scenes' lines", () => {
+  const cases: [string, string[]][] = [
+    ["Sit here.", ["sit down", "have a seat", "please sit", "sit", "sit down here", "take a seat"]],
+    ["Do you know Korean?", ["do you speak korean", "can you speak korean", "you know korean", "do you understand korean"]],
+    ["I'm Grandpa Park.", ["grandfather park", "i am grandfather park", "he is park", "i am grandpa park"]],
+    ["Hello, Grandpa Park.", ["hello", "hi", "hi grandpa park", "hello grandfather park"]],
+    ["What's your name?", ["what is your name", "whats your name", "your name", "what are you called"]],
+    ["Are you Min-jun's friend?", ["are you min jun's friend", "are you minjun's friend", "are you a friend of min-jun"]],
+    ["Where's Min-jun?", ["where is min jun", "wheres minjun", "where is min-jun"]],
+    ["I'm Min-jun.", ["i am min jun", "im minjun"]],
+    ["I'm Min-jun's friend.", ["i am min jun's friend", "im a friend of minjun"]],
+    ["Who are you?", ["who are you", "who r you".replace("r", "are")]],
+    ["No, I don't.", ["no", "no i don't speak korean", "i don't speak korean"]],
+    ["Yes, I do.", ["yes", "yes i speak korean", "i do"]],
+    ["Thank you.", ["thanks", "thank you so much", "thank you grandpa"]],
+    ["Goodbye.", ["bye", "bye bye", "see you"]],
+  ];
+  for (const [meaning, typed] of cases) it(`${meaning}`, () => void typed.forEach((t) => expect(ok(t, meaning), t).toBe(true)));
+  it("does not let a safe accept pick the opposite line", () => {
+    expect(ok("hello", "Goodbye, Grandpa Park.")).toBe(false);
+    expect(ok("hello grandpa park", "Goodbye, Grandpa Park.")).toBe(false);
+    expect(ok("sit down", "Goodbye.")).toBe(false);
+  });
+});

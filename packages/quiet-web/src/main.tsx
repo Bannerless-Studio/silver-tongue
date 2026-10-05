@@ -9,7 +9,8 @@ import {
 } from "@silver-tongue/web-common";
 import { App, type Page } from "./ui/App";
 import { DevBadge } from "./ui/DevBadge";
-import { DEV_GAME, devClock, driveTo, maxScreen, setSkipCrawl } from "./dev";
+import { DEV_GAME, devClock, driveTo, lastScreen, maxScreen, setSkipCrawl } from "./dev";
+import { writeCount } from "./scribe";
 import { Title } from "./ui/Title";
 import { createQuiet, type PaperStore, type Quiet } from "./quiet";
 import { opensOnStory } from "./opening";
@@ -202,6 +203,8 @@ function jumpTo(requested: number) {
     // an address that can't change: the jump still happens
   }
   setSkipCrawl(n === 2);
+  // The scribe arc (worked example, early help) counts exchanges: landing on exchange k leaves k-1 behind it.
+  writeCount(l.course.id, Math.max(0, n - lastScreen(l.course, 0) - 1));
   // One fixed game id: the next jump replaces it, so jumping never grows the game list.
   l.sessions.remove(DEV_GAME);
   play({ id: DEV_GAME, state: newGame(l.course), readOnly: false }, (q) => void driveTo(q, n, () => (devClock.skew += 1000), n === 2));

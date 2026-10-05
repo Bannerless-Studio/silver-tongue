@@ -225,7 +225,7 @@ export function Stage({ q, view, shown, ruby, reveal, onWord, onReveal, onClose,
         </p>
         {scribe ? (
           <>
-            <ScribeKeys />
+            <ScribeKeys held={!!shown.hold} />
             <ScribeTheir q={q} ex={ex} held={!!shown.hold} onWord={word}>
               {view.lookupHint === ex.line.id && <p class="hint">{t(matches("(pointer: coarse)") ? "quiet-lookup-tap" : "quiet-lookup-click")}</p>}
             </ScribeTheir>

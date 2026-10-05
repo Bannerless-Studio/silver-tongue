@@ -28,13 +28,18 @@ export const scribeCountKey = (course: string): string => `silver-tongue:scribe-
 export const SCRIBE_ACCEPTS: Record<string, string[]> = {
   "Who is it?": ["who is there", "who is that", "who is this"],
   "I don't know.": ["no idea", "dunno", "i have no idea"],
-  "No, I don't.": ["no", "i do not", "no i do not know korean", "i do not know korean"],
   "Yes, I do.": ["yes", "i do", "yes i know korean"],
   "Yes, thank you.": ["yes thank you very much"],
   "Thank you.": ["thank you very much", "thanks a lot"],
   "Hello.": ["good morning", "good day"],
   "Goodbye.": ["see you", "farewell"],
   "Well… goodbye.": ["well goodbye"],
+  "Sit here.": ["sit down", "sit down here", "have a seat", "have a seat here", "take a seat", "take a seat here", "please sit", "sit", "sit down please"],
+  "Do you know Korean?": ["do you speak korean", "can you speak korean", "you know korean", "you speak korean", "know korean", "speak korean", "do you understand korean", "can you understand korean"],
+  "I'm Grandpa Park.": ["grandfather park", "i am grandfather park", "he is park", "he is grandpa park", "he is grandfather park", "my name is park", "i am park"],
+  "Hello, Grandpa Park.": ["hello", "hello grandfather park", "hello grandpa", "hello park", "hello grandfather"],
+  "What's your name?": ["your name", "what are you called", "may i ask your name"],
+  "No, I don't.": ["no", "i do not", "no i do not know korean", "i do not know korean", "i do not speak korean", "no i do not speak korean"],
 };
 const ACCEPTS = new Map(Object.entries(SCRIBE_ACCEPTS).map(([k, v]) => [normalizeMeaning(k), v]));
 /** The other accepted ways to say a line's meaning. */

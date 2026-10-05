@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { PLAYER_MARK, type RenderedLine } from "@silver-tongue/core";
 import { fixtureWithText } from "@silver-tongue/view/testing";
 import { bestMeaning, meaningMatches, SCRIBE_SCENES, scribeAccepts, scribeCountKey, type CourseExtra } from "@silver-tongue/view";
-import { resetRounds, scribeOn, scribeRound, updateRound } from "../src/scribe";
+import { scribeOn, scribeRound, updateRound, writeCount } from "../src/scribe";
 
 /** A course with or without the desk (papers to read by romanising). */
 const course = (desk: boolean) => {
@@ -36,7 +36,6 @@ describe("rounds", () => {
   const store = new Map<string, string>();
   beforeEach(() => {
     store.clear();
-    resetRounds();
     (globalThis as unknown as { localStorage: Storage }).localStorage = {
       getItem: (k: string) => store.get(k) ?? null,
       setItem: (k: string, v: string) => void store.set(k, v),
@@ -44,20 +43,38 @@ describe("rounds", () => {
   });
   afterEach(() => void delete (globalThis as { localStorage?: Storage }).localStorage);
 
+  const quiet = () => ({}) as object; // a Quiet is only an owner key here
   it("count the exchanges a course has begun, once each, and keep that between visits", () => {
-    expect(scribeRound("ko-seoul", 1).index).toBe(0);
-    expect(scribeRound("ko-seoul", 1).index).toBe(0);
-    expect(scribeRound("ko-seoul", 5).index).toBe(1);
+    const q = quiet();
+    expect(scribeRound(q, "ko-seoul", 1).index).toBe(0);
+    expect(scribeRound(q, "ko-seoul", 1).index).toBe(0);
+    expect(scribeRound(q, "ko-seoul", 5).index).toBe(1);
     expect(store.get(scribeCountKey("ko-seoul"))).toBe("2");
-    resetRounds(); // a new visit
-    expect(scribeRound("ko-seoul", 9).index).toBe(2);
-    expect(scribeRound("other", 1).index).toBe(0);
+    expect(scribeRound(quiet(), "ko-seoul", 9).index).toBe(2); // a new visit
+    expect(scribeRound(q, "other", 1).index).toBe(0);
   });
   it("change by patch and keep the rest", () => {
-    scribeRound("ko-seoul", 1);
-    updateRound("ko-seoul", 1, { misses: 2 });
-    updateRound("ko-seoul", 1, { solved: true });
-    expect(scribeRound("ko-seoul", 1)).toMatchObject({ misses: 2, solved: true, help: 0, index: 0 });
+    const q = quiet();
+    scribeRound(q, "ko-seoul", 1);
+    updateRound(q, "ko-seoul", 1, { misses: 2 });
+    updateRound(q, "ko-seoul", 1, { solved: true });
+    expect(scribeRound(q, "ko-seoul", 1)).toMatchObject({ misses: 2, solved: true, help: 0, index: 0 });
+  });
+  it("belong to the game: a second Quiet for the same course starts with fresh rounds (beat ids restart at 1)", () => {
+    const a = quiet();
+    scribeRound(a, "ko-seoul", 1);
+    updateRound(a, "ko-seoul", 1, { misses: 3, solved: true, help: 2 });
+    const b = quiet();
+    expect(scribeRound(b, "ko-seoul", 1)).toMatchObject({ misses: 0, solved: false, help: 0 });
+    expect(scribeRound(a, "ko-seoul", 1)).toMatchObject({ misses: 3, solved: true });
+  });
+  it("restart the arc when the count is set (a lab jump)", () => {
+    scribeRound(quiet(), "ko-seoul", 1);
+    scribeRound(quiet(), "ko-seoul", 2);
+    writeCount("ko-seoul", 0);
+    expect(scribeRound(quiet(), "ko-seoul", 1).index).toBe(0);
+    writeCount("ko-seoul", 4);
+    expect(scribeRound(quiet(), "ko-seoul", 1).index).toBe(4);
   });
 });
 

@@ -66,9 +66,14 @@ export function meaningScore(typed: string, meaning: string, accepts: readonly s
   const need = contentWords(m);
   if (!need.length) return undefined;
   const have = contentWords(t);
-  if (!need.every((w) => have.includes(w))) return undefined;
+  const negated = need.some((w) => NEG.has(w));
+  // "not" says "no" ("no, I'm not his friend" for "No."): it stands in for it, and a negation is no extra word there.
+  const said = negated && have.includes("not") ? [...have, "no"] : have;
+  if (!need.every((w) => said.includes(w))) return undefined;
   const extra = have.filter((w) => !need.includes(w));
-  if (extra.some((w) => NEG.has(w))) return undefined;
+  // An added negation flips the meaning, unless the meaning is itself a negation.
+  if (!negated && extra.some((w) => NEG.has(w))) return undefined;
+  if (negated) extra.splice(0, extra.length, ...extra.filter((w) => !NEG.has(w)));
   return extra.length <= EXTRA_WORDS ? 1 + extra.length : undefined;
 }
 

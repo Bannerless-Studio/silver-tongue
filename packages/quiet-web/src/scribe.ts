@@ -30,7 +30,13 @@ export interface Round {
   rHelp: boolean;
 }
 
-const rounds = new Map<string, Round>();
+/** Rounds belong to the Quiet (one game on screen): a new game or a lab jump starts with none. */
+const rounds = new WeakMap<object, Map<string, Round>>();
+const roundsOf = (owner: object): Map<string, Round> => {
+  let m = rounds.get(owner);
+  if (!m) rounds.set(owner, (m = new Map()));
+  return m;
+};
 const listeners = new Set<() => void>();
 
 const readCount = (course: string): number => {
@@ -41,7 +47,8 @@ const readCount = (course: string): number => {
     return 0;
   }
 };
-const writeCount = (course: string, n: number) => {
+/** Sets how many scribe exchanges a course has begun (a lab jump to exchange k: k-1 are behind it). */
+export const writeCount = (course: string, n: number) => {
   try {
     pageStorage().setItem(scribeCountKey(course), String(n));
   } catch {
@@ -49,27 +56,25 @@ const writeCount = (course: string, n: number) => {
   }
 };
 
-/** The round of an exchange on this course, begun (and counted) the first time it is asked for. */
-export function scribeRound(course: string, exchange: string | number): Round {
+/** The round of an exchange of the game `owner` (its Quiet) plays on this course, begun (and counted) the first time it is asked for. */
+export function scribeRound(owner: object, course: string, exchange: string | number): Round {
   const key = `${course}:${exchange}`;
-  let r = rounds.get(key);
+  const all = roundsOf(owner);
+  let r = all.get(key);
   if (!r) {
     const index = readCount(course);
     writeCount(course, index + 1);
     r = { index, solved: false, misses: 0, help: 0, rMisses: 0, rHelp: false };
-    rounds.set(key, r);
+    all.set(key, r);
   }
   return r;
 }
 
 /** Changes a round and tells whoever draws it. */
-export function updateRound(course: string, exchange: string | number, change: Partial<Round>) {
+export function updateRound(owner: object, course: string, exchange: string | number, change: Partial<Round>) {
   const key = `${course}:${exchange}`;
-  rounds.set(key, { ...scribeRound(course, exchange), ...change });
+  roundsOf(owner).set(key, { ...scribeRound(owner, course, exchange), ...change });
   listeners.forEach((l) => l());
 }
 
 export const subscribeRounds = (l: () => void): (() => void) => (listeners.add(l), () => void listeners.delete(l));
-
-/** For tests: forget every round. */
-export const resetRounds = () => rounds.clear();

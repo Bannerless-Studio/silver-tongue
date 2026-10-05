@@ -17,7 +17,7 @@ const SHAKE_MS = 400;
 export function useRound(q: Quiet, ex: Exchange | undefined): Round | undefined {
   const [, tick] = useState(0);
   useEffect(() => subscribeRounds(() => tick((n) => n + 1)), []);
-  return ex ? scribeRound(q.course.id, ex.line.id) : undefined;
+  return ex ? scribeRound(q, q.course.id, ex.line.id) : undefined;
 }
 
 /** A field that takes a typed meaning; a wrong try shakes it. `?` typed asks for help, as on the desk. */
@@ -71,7 +71,7 @@ export function ScribeTheir({ q, ex, held, onWord, children }: {
   const segs = romanSegments(line);
   const accepts = scribeAccepts(meaning);
   const glosses = !solved && round.help >= 1;
-  const set = (change: Partial<Round>) => updateRound(course.id, ex.line.id, change);
+  const set = (change: Partial<Round>) => updateRound(q, course.id, ex.line.id, change);
   const onTry = (typed: string) => {
     if (meaningMatches(typed, meaning, accepts)) return set({ solved: true }), true;
     set({ misses: round.misses + 1 });
@@ -111,9 +111,11 @@ export function ScribeTheir({ q, ex, held, onWord, children }: {
 }
 
 /** While a scribe exchange is on stage the number keys never say a reply: typing is the one way to say. */
-export function ScribeKeys() {
+export function ScribeKeys({ held = false }: { held?: boolean }) {
   useEffect(() => {
     const guard = (e: KeyboardEvent) => {
+      // A held moment moves on with any key (App's skip), and an open overlay keeps its own keys.
+      if (held || document.querySelector('[role="dialog"]')) return;
       if (e.ctrlKey || e.altKey || e.metaKey) return;
       const t = e.target as HTMLElement | null;
       if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
@@ -124,7 +126,7 @@ export function ScribeKeys() {
     };
     addEventListener("keydown", guard, true);
     return () => removeEventListener("keydown", guard, true);
-  }, []);
+  }, [held]);
   return null;
 }
 
@@ -142,7 +144,7 @@ export function ScribeSlips({ q, view, ex }: { q: Quiet; view: QuietView; ex?: E
   if (p.kind !== "pick" || !ex || !round) return null;
   if (!round.solved && lineMeaning(ex.shown)) return null;
   const order = replyOrder(p.options, ex.missed);
-  const set = (change: Partial<Round>) => updateRound(q.course.id, ex.line.id, change);
+  const set = (change: Partial<Round>) => updateRound(q, q.course.id, ex.line.id, change);
   const onTry = (typed: string) => {
     // The closest meaning, a reply not yet tried first; a tie goes to the earlier slip.
     const at = bestMeaning(typed, order.map((i) => ({ meaning: meaningOf(p.options[i]), accepts: scribeAccepts(meaningOf(p.options[i])) })));
