@@ -14,8 +14,16 @@ export function siteCatalog<T extends { id: string }>(catalog: T[]): T[] {
   });
 }
 
-/** site/: the quiet terminal at / (a first visit picks Korean, Chinese or Japanese) and those courses, ready for GitHub Pages. */
-export function buildSite(repo: string): void {
+/** Sets a `<meta name=… content=…>` of the page; throws when the page has no such meta, so a changed template never ships silently. */
+export function setMeta(html: string, name: string, content: string): string {
+  const re = new RegExp(`(<meta name="${name}" content=")[^"]*(")`);
+  if (!re.test(html)) throw new Error(`index.html has no meta ${name}`);
+  return html.replace(re, (_, a: string, b: string) => `${a}${content}${b}`);
+}
+
+/** site/: the quiet terminal at / (a first visit picks Korean, Chinese or Japanese) and those courses, ready for GitHub Pages.
+ * `lab`: also site/ko/, the same page one directory down, starting on Korean with the lab flag on (the lab build serves it at /lab/ko/). */
+export function buildSite(repo: string, opts: { lab?: boolean } = {}): void {
   const out = join(repo, "site");
   const quietDist = join(repo, "packages", "quiet-web", "dist");
   const courses = join(quietDist, "courses");
@@ -23,9 +31,17 @@ export function buildSite(repo: string): void {
   rmSync(out, { recursive: true, force: true });
   mkdirSync(join(out, "courses"), { recursive: true });
   cpSync(join(quietDist, "index.html"), join(out, "index.html"));
+  if (opts.lab) {
+    mkdirSync(join(out, "ko"), { recursive: true });
+    let page = readFileSync(join(quietDist, "index.html"), "utf8");
+    page = setMeta(page, "st-course", "ko-seoul");
+    page = setMeta(page, "st-lab", "on");
+    page = setMeta(page, "st-courses", "../courses/");
+    writeFileSync(join(out, "ko", "index.html"), page);
+  }
   writeFileSync(join(out, "courses", "index.json"), JSON.stringify(catalog));
   for (const { id } of catalog) cpSync(join(courses, id), join(out, "courses", id), { recursive: true });
-  console.log(`site/: the quiet terminal at /, courses ${SITE_COURSES.join(", ")} at /courses/`);
+  console.log(`site/: the quiet terminal at /, courses ${SITE_COURSES.join(", ")} at /courses/${opts.lab ? ", lab Korean at /ko/" : ""}`);
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) buildSite(resolve(fileURLToPath(new URL("../..", import.meta.url))));
+if (process.argv[1] === fileURLToPath(import.meta.url)) buildSite(resolve(fileURLToPath(new URL("../..", import.meta.url))), { lab: process.argv.includes("--lab") });

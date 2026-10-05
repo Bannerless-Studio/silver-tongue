@@ -41,7 +41,7 @@ npm run import:zh        # re-import the zh pack from vendor/vocab-engine
 npm run audio            # every course (or one: -- zh-china): make missing clips with edge-tts (pipx install edge-tts) + ffmpeg trim, delete unused ones
 npm run bundle -w silver-tongue   # build packages/tui-node/dist (a local build; nothing is published to npm any more)
 npm run build:quiet      # the quiet terminal page -> packages/quiet-web/dist
-npm run build:site       # the site as GitHub Pages serves it: the quiet terminal at /, offering ko-seoul, zh-china and ja-japan
+npm run build:site       # the site as GitHub Pages serves it: the quiet terminal at /, offering ko-seoul, zh-china and ja-japan; -- --lab also writes site/ko/ (Korean, lab flag on; served at /lab/ko/)
 ```
 
 ## Rules

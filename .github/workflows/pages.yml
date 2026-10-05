@@ -1,10 +1,11 @@
 name: pages
 # Builds the site (the quiet terminal at /, offering Korean, Chinese and Japanese) and deploys it to GitHub Pages on every push to main.
+# Also builds the branch `lab` (when it exists) and serves it under /lab/, rebuilt on every push to main or lab; its Korean page with the lab flag on is at /lab/ko/.
 # Needs Pages turned on for the repository with "GitHub Actions" as the source.
 
 on:
   push:
-    branches: [main]
+    branches: [main, lab]
   workflow_dispatch:
 
 permissions:
@@ -33,6 +34,26 @@ jobs:
           GITHUB_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: npm run build:course
       - run: npm run build:site
+      - name: Look for the lab branch
+        id: lab
+        run: |
+          if git ls-remote --exit-code --heads origin lab > /dev/null; then echo "exists=true" >> "$GITHUB_OUTPUT"; else echo "exists=false" >> "$GITHUB_OUTPUT"; fi
+      - uses: actions/checkout@v5
+        if: steps.lab.outputs.exists == 'true'
+        with:
+          ref: lab
+          path: lab-src
+      - name: Build the lab branch into site/lab/
+        if: steps.lab.outputs.exists == 'true'
+        working-directory: lab-src
+        run: |
+          npm ci
+          npm run build:course
+          npm run build:site -- --lab
+          mkdir -p ../site/lab
+          cp -R site/. ../site/lab/
+        env:
+          GITHUB_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/upload-pages-artifact@v4
         with:
           path: site

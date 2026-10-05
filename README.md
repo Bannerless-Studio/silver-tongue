@@ -45,7 +45,7 @@ Needs Node 22 or newer.
 npm install
 npm run build:course
 npm run play        # the terminal game
-npm run build:site  # the browser page in site/: Korean, Chinese or Japanese at / (serve it: npx serve site)
+npm run build:site  # the browser page in site/: Korean, Chinese or Japanese at / (serve it: npx serve site); -- --lab adds site/ko/, the lab page
 npm run bots        # scripted players through the course
 ```
 
