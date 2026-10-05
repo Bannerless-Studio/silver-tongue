@@ -48,3 +48,11 @@ go-alt1-intent = See him off
 go-alt2 = Are you Grandpa Park?
 go-alt2-intent = Check his name again
 go-alt2-answer = I'm Grandpa Park. Go on!
+
+# My reading of what was just said.
+hungry-why = Am I hungry?
+food-why = Do I have any bread?
+shop-why = The shop has bread.
+stall-name-why = He is naming the snack stall.
+stall-why = He is pointing out the two places.
+go-why = He thinks I should get going.

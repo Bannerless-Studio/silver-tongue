@@ -45,3 +45,11 @@ bye-alt1 = Goodbye (I'm leaving).
 bye-alt1-intent = Say goodbye as you leave
 bye-alt2 = Sorry.
 bye-alt2-intent = Apologise
+
+# My reading of what was just said.
+hello-why = Where is Min-jun?
+paid-why = Have I paid the rent?
+amount-why = The rent is fifty thousand won.
+week-why = That is the weekly rent.
+march-why = Min-jun paid through March.
+bye-why = She is saying goodbye.

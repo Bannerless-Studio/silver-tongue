@@ -73,7 +73,10 @@ function use(l: Loaded, remember: boolean) {
 /** The desk's read papers, one list per course; storage that throws just forgets them. */
 function paperStore(kv: KeyValue, course: string): PaperStore {
   const key = papersKey(course);
+  const voiceKey = `silver-tongue:voice:${course}`;
   return {
+    loadVoice() { try { return JSON.parse(kv.getItem(voiceKey) ?? "{}"); } catch { return undefined; } },
+    saveVoice(memory) { try { kv.setItem(voiceKey, JSON.stringify(memory)); } catch { /* private window */ } },
     load() {
       try {
         const v: unknown = JSON.parse(kv.getItem(key) ?? "[]");

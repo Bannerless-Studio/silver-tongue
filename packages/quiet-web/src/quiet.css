@@ -536,3 +536,6 @@ textarea { width: 100%; background: var(--bg); border: 1px solid var(--line); bo
 @media (prefers-reduced-motion: reduce) {
   .h-row, .direction, .their .tag, .say.enter, .say.again, .said, .slip, .word-paper { animation: none; }
 }
+
+/* The player's own head, in the learner language. */
+.h-note.voice, .direction.voice { opacity: .65; font-style: italic; }

@@ -18,3 +18,8 @@ bye-alt1-answer = Min-jun…
 bye-alt2 = A friend?
 bye-alt2-intent = Ask about the friend
 bye-alt2-answer = A friend? Goodbye (stay well).
+
+# My reading of what was just said.
+call-why = She is calling for the name on the ID.
+friend-why = Am I his friend?
+bye-why = She is saying goodbye as she leaves.

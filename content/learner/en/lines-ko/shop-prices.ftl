@@ -53,3 +53,12 @@ bye-alt1 = Goodbye.
 bye-alt1-intent = See him off
 bye-alt2 = How much is it?
 bye-alt2-intent = Ask the price
+
+# My reading of what was just said.
+welcome-why = She is welcoming me.
+milk-why = There is milk as well.
+price-why = Bread and milk are a thousand won each.
+again-why = She is repeating the prices, louder.
+slow-why = The same prices, slowly this time.
+change-why = She is handing over my change.
+bye-why = She is saying goodbye.

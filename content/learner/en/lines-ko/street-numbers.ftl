@@ -65,3 +65,13 @@ next-b = { $number ->
 }
 next-b-reply = { -number(form: "cap") }!
 next-b-reply-intent = Say the next number
+
+# My reading of what was just said.
+cost-why = What did the bread and milk cost?
+money-why = Is my money gone?
+note-why = That note is worth a thousand won.
+count-why = He wants me to count with him.
+owed-why = He says I am owed three thousand won.
+five-why = He is counting up to five.
+next-a-why = He wants the next number.
+next-b-why = He wants the next number.

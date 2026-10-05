@@ -37,3 +37,9 @@ newspaper-alt1-answer = It's a newspaper!
 newspaper-alt2 = Are you Grandpa Park?
 newspaper-alt2-intent = Check his name again
 newspaper-alt2-answer = I'm Grandpa Park. It's a newspaper.
+
+# My reading of what was just said.
+hello-why = He is just saying hello.
+park-why = He is introducing himself.
+ask-why = He thinks I am the man from the ID.
+newspaper-why = Is that a newspaper?

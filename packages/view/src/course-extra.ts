@@ -1,4 +1,4 @@
-import type { Course, Exchange, LanguageProfile, Scene, Word, WordId } from "@silver-tongue/core";
+import type { Course, Exchange, LanguageProfile, Scene, Variant, Word, WordId } from "@silver-tongue/core";
 import type { DeskPaper } from "./desk";
 
 /*
@@ -56,6 +56,8 @@ export interface Liaison {
 }
 /** `pin`: the NPC's line is a paper (a notice, a form) kept in the Book once the scene is done. */
 export type ExchangeExtra = Exchange & { pin?: boolean };
+/** Optional learner-language explanation of what carries the NPC line. */
+export type VoiceVariant = Variant & { why?: string };
 /** `rent`: the scene where rent is first raised; a course with the Book keeps rent off the anchor row until it is done. */
 export type SceneExtra = Omit<Scene, "exchanges"> & { exchanges: ExchangeExtra[]; rent?: boolean };
 

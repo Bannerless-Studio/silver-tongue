@@ -56,3 +56,10 @@ describe("quiet terminal keys", () => {
     expect(keyAction("Enter", ctx({ phase: "pick", primary: 0 }))).toBeNull();
   });
 });
+
+
+it("h thinks on a Book stage and never consumes a typed letter", () => {
+  expect(keyAction("h", ctx({ book: true, phase: "pick" }))).toEqual({ kind: "think" });
+  expect(keyAction("h", ctx({ book: false, phase: "pick" }))).toBeNull();
+  expect(keyAction("h", ctx({ book: true, typing: true }))).toBeNull();
+});

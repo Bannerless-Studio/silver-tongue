@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "preact/hooks";
 import type { RenderedLine, WordId } from "@silver-tongue/core";
-import { npcLabel, quietRuby, replyMeanings, sentenceCard, soundedTokens, speakerHue, speakerNamed, type RubySetting, type SentenceCard } from "@silver-tongue/view";
+import { voiceOn, npcLabel, quietRuby, replyMeanings, sentenceCard, soundedTokens, speakerHue, speakerNamed, type RubySetting, type SentenceCard } from "@silver-tongue/view";
 import { CONFUSED, type Beat, type Quiet, type QuietView } from "../quiet";
 import { replyOrder, stageView, type Exchange, type HistoryRow, type StageView } from "../stage";
 import { Line } from "./Line";
@@ -101,7 +101,7 @@ export function History({ q, rows }: { q: Quiet; rows: HistoryRow[] }) {
 function Direction({ beats }: { beats: Beat[] }) {
   return (
     <>
-      {beats.map((b) => <p key={b.id} class={`direction${b.tone ? ` ${b.tone}` : ""}`}>{b.title && <b>{b.title} </b>}{b.text}</p>)}
+      {beats.map((b) => <p key={b.id} class={b.tone === "voice" ? "h-note voice" : `direction${b.tone ? ` ${b.tone}` : ""}`}>{b.title && <b>{b.title} </b>}{b.text}</p>)}
     </>
   );
 }
@@ -181,7 +181,7 @@ export function Stage({ q, view, shown, ruby, reveal, onWord, onReveal, onClose,
   if (shown.hold === "intro") {
     return (
       <section class="stage-now" ref={ref}>
-        <div class="direction-row"><Direction beats={ex.direction.slice(-1)} /></div>
+        <div class="direction-row"><Direction beats={ex.direction.filter((b) => b.tone !== "voice").slice(-1)} /></div>
       </section>
     );
   }
@@ -211,7 +211,7 @@ export function Stage({ q, view, shown, ruby, reveal, onWord, onReveal, onClose,
   const readAll = !spans.length;
   return (
     <section class="stage-now" ref={ref}>
-      <div class="direction-row">{shown.hold !== "picked" && <Direction beats={ex.direction.slice(-1)} />}</div>
+      <div class="direction-row">{shown.hold !== "picked" && <Direction beats={ex.direction.filter((b) => b.tone !== "voice").slice(-1)} />}</div>
       <div class={`their ${hue(q, ex.line)}`}>
         <p class="who">
           {named.get(ex.line.id) && <span>{npcLabel(course, core.state, t, ex.line.speaker!)}</span>}
@@ -228,6 +228,10 @@ export function Stage({ q, view, shown, ruby, reveal, onWord, onReveal, onClose,
         {(meaningShown || rephrased) && whole && (
           <p class="say-mean">{[readAll ? whole.reading : "", whole.meaning].filter(Boolean).join(" · ")}</p>
         )}
+        {voiceOn(course) && <div class="inner-voice" aria-live="polite">
+          <Direction beats={ex.direction.filter((b) => b.tone === "voice")} />
+          <button type="button" class="dim" onClick={() => q.stall()}>{t("voice-help")}</button>
+        </div>}
         {view.lookupHint === ex.line.id && <p class="hint">{t(matches("(pointer: coarse)") ? "quiet-lookup-tap" : "quiet-lookup-click")}</p>}
       </div>
       {ex.said && <Said q={q} b={ex.said} />}

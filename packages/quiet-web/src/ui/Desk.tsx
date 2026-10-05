@@ -1,6 +1,6 @@
 import { Fragment } from "preact";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "preact/hooks";
-import { firstUnread, letterChart, lineRead, paperSyllables, readsSyllable, romanize, sumTiles, type DeskPaper, type SumTile } from "@silver-tongue/view";
+import { firstUnread, letterChart, lineRead, paperSyllables, readsSyllable, romanize, sumTiles, voiceOn, type DeskPaper, type SumTile } from "@silver-tongue/view";
 import type { Quiet } from "../quiet";
 import { DeskArt } from "./desk-art";
 
@@ -196,6 +196,7 @@ function PaperView({ q, paper, done, bookOpen, onBook, onBack }: { q: Quiet; pap
       setAt(at + 1);
     } else {
       setWrong(wrong + 1);
+      if (wrong + 1 === 2) q.deskWrong(cur.ch);
       setShake(true);
       setTimeout(() => setShake(false), SHAKE_MS);
       input.current?.focus();
@@ -244,7 +245,7 @@ function PaperView({ q, paper, done, bookOpen, onBook, onBack }: { q: Quiet; pap
         </div>
         {finished && (
           <>
-            {t.has(learned) && <p class="learned">{t(learned)}</p>}
+            {voiceOn(q.course) ? <p class="h-note voice">{q.view().voicePaper === paper.id ? q.view().voice : `› ${t(`voice-paper-${paper.id}`)}`}</p> : t.has(learned) && <p class="learned">{t(learned)}</p>}
             <button type="button" class="go next-btn" onClick={onBack}>{touch ? t("vn-continue") : `↵ ${t("quiet-enter")}`}</button>
           </>
         )}
@@ -268,6 +269,7 @@ function PaperView({ q, paper, done, bookOpen, onBook, onBack }: { q: Quiet; pap
             </form>
             {first && <p class="example">{t("quiet-read-example", { parts: tiles.map((x) => x.sound).join(" + "), reading: romanize(cur.ch) })}</p>}
             {reading && <p class="rh-full">{t("quiet-read-help-full", { reading: romanize(cur.ch) })}</p>}
+            {voiceOn(q.course) && wrong >= 2 && <p class="h-note voice">{q.view().voice}</p>}
             <div class="read-tools">
               <button type="button" class={wrong >= HELP_AFTER ? "help hot" : "help"} onClick={askHelp}>{touch ? t("quiet-read-help") : `? ${t("quiet-read-help")}`}</button>
               {!touch && <span class="dim">{t("quiet-read-tab-book")}</span>}

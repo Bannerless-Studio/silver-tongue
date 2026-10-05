@@ -39,3 +39,10 @@ that-alt1 = A book?
 that-alt1-intent = Ask if it's a book
 that-alt2 = No, I don't know.
 that-alt2-intent = Say you don't know
+
+# My reading of what was just said.
+sit-why = He wants me to sit here.
+book-why = Is this a Korean book?
+good-why = He approves.
+newspaper-why = That is a newspaper.
+that-why = He is pointing out the shop.

@@ -21,3 +21,8 @@ eat-alt1 = Goodbye.
 eat-alt1-intent = Say goodbye as you leave
 eat-alt2 = How much is the gimbap?
 eat-alt2-intent = Ask the price
+
+# My reading of what was just said.
+photo-why = She wants me to look at something.
+brother-why = Her little brother is away.
+eat-why = She is offering me some food.

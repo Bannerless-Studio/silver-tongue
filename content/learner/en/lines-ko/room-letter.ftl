@@ -45,3 +45,11 @@ bye-alt1 = Goodbye (I'm leaving).
 bye-alt1-intent = Say goodbye as you leave
 bye-alt2 = Min-jun?
 bye-alt2-intent = Ask after Min-jun
+
+# My reading of what was just said.
+look-why = She wants me to look at something.
+whose-why = The letter belongs to Min-jun.
+from-why = It came from the university.
+student-why = Min-jun is a university student.
+uni-why = She is pointing out the university.
+bye-why = She is saying goodbye.

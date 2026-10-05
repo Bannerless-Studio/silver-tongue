@@ -16,6 +16,11 @@ jobs:
         env:
           GITHUB_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: npm run typecheck
+      - name: Make missing audio clips (lab experiments change lines; clips are not committed yet)
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg > /dev/null
+          pipx install edge-tts
+          npm run audio -- ko-seoul
       - run: npm run build:course
       - name: goal 3 report (job summary; missed limits as warnings, never a failure)
         run: npm run report:goal3

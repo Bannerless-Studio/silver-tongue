@@ -27,3 +27,8 @@ slow-alt1-answer = A newspaper? Do you know Korean?
 slow-alt2 = Goodbye.
 slow-alt2-intent = See him off
 slow-alt2-answer = Do you know Korean?
+
+# My reading of what was just said.
+fast-why = Do I know Korean?
+again-why = He is offering to slow down.
+slow-why = Do I know Korean?

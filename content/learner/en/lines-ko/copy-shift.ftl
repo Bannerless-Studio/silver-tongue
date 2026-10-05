@@ -22,3 +22,11 @@ chat-c-reply-intent = Answer him
 thanks = Thank you!
 thanks-reply = Thank you! Come again!
 thanks-reply-intent = See the student off
+
+# My reading of what was just said.
+greet-why = A student has arrived.
+order-why = He wants { -count } copies of the { -item }.
+chat-a-why = He is making small talk.
+chat-b-why = He is making small talk.
+chat-c-why = He is making small talk.
+thanks-why = The customer is thanking me.

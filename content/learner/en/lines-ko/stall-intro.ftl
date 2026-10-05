@@ -55,3 +55,12 @@ work-alt1 = Yes, I'm hungry.
 work-alt1-intent = Say you're hungry
 work-alt2 = Goodbye.
 work-alt2-intent = Say goodbye as you leave
+
+# My reading of what was just said.
+welcome-why = She is inviting me in.
+eat-why = She says the food is good.
+fed-why = She has put food in front of me.
+tasty-why = Do I like it?
+jiwoo-why = She is introducing herself.
+name-why = She wants my name.
+work-why = She is offering me work.

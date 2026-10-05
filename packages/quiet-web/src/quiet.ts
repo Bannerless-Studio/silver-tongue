@@ -5,6 +5,8 @@
 // be revealed.
 import { describeRun, normalizeTyped, wordState, type Core, type Course, type GameEvent, type GameState, type Input, type RenderedLine, type WordId } from "@silver-tongue/core";
 import {
+  emptyVoice, parseVoice, pickVoice, voiceDay, voiceDesk, deskVoiceRule, voiceSeed, voiceEvents, voiceHint, voiceOn, VOICE_MARK,
+  type VoiceMemory, type VoiceCue,
   bookOn, deskOn, deskPapers, emptyProgress, freshMarks, heardCount, lettersFollowDesk, metLetters, onboarding, paperSyllables, placeName,
   actionNarration, bedHint, bedPlace, introLines, isBedtime, likelyOrder, menuDirection, npcLabel, primaryItem, joinTilesForDisplay, makeText, placeMenu, sentenceCard, tileEcho, typePrompt, waitingForMoney, wordCard,
   type AudioOut, type DeskPaper, type DeskProgress, type MenuItem, type SentenceCard, type Speech, type Text, type WordCard,
@@ -23,7 +25,7 @@ export interface Beat {
   /** react: an NPC's reaction to a miss, and narration of what was asked instead. narr: stage direction
    * (the opening story, a scene's framing, what the player did, where a resumed game is, a new day).
    * good / warn / plain: outcomes (wages, money). done: a finished conversation, folded to one line. */
-  tone?: "plain" | "warn" | "good" | "react" | "narr" | "done";
+  tone?: "plain" | "warn" | "good" | "react" | "narr" | "done" | "voice";
   /** words new to the player when this line was said: heard for the first time, or never heard at all
    * (a reaction line is not counted as hearing), and not glossed yet in this transcript. The only words
    * that gloss themselves; each word glosses once per game session. None on a course with the Book (see freshMarks). */
@@ -61,6 +63,9 @@ export type Phase =
   | { kind: "explore"; menu: MenuItem[]; waiting: string[]; primary?: number };
 export interface Toast { id: number; text: string; tone: "good" | "bad" | "info" }
 export interface QuietView {
+  /** Latest thought, also used while the desk is up. */
+  voice?: string;
+  voicePaper?: string;
   /** the scene being played, for the review tell */
   scene?: string;
   phase: Phase;
@@ -83,6 +88,8 @@ export interface QuietView {
 /** Where the desk's read papers are kept (the browser's storage on the page). */
 export interface PaperStore {
   load(): string[];
+  loadVoice?(): unknown;
+  saveVoice?(memory: VoiceMemory): void;
   save(ids: string[]): void;
   /** syllables read per paper, and the letters met */
   loadProgress?(): DeskProgress;
@@ -120,6 +127,8 @@ export interface Quiet {
   /** a line's reading and meaning; not logged as help. Defaults to the line replies answer. */
   sentence(line?: RenderedLine): SentenceCard | undefined;
   replay(slow?: boolean): void;
+  stall(): void;
+  deskWrong(ch: string): void;
   play(clips: string[]): void;
   setName(name: string): boolean;
   /** the desk's papers read so far */
@@ -180,6 +189,11 @@ export function createQuiet(opts: QuietOptions): Quiet {
   let backlog: Beat[] = [];
   let toasts: Toast[] = [];
   let naming = course.needsName && !core.state.player;
+  let voiceMemory = emptyVoice(voiceSeed(core.state.player ?? course.id));
+  try { if (!naming) voiceMemory = parseVoice(opts.papers?.loadVoice?.(), voiceMemory.seed); }
+  catch (error) { console.warn("Inner voice load skipped:", error); }
+  let thought: string | undefined;
+  let thoughtPaper: string | undefined;
   // A new game starts with the desk unread (the list is kept per course; it is saved again once named).
   const read = new Set(naming ? [] : (opts.papers?.load() ?? []));
   let progress = naming ? emptyProgress() : (opts.papers?.loadProgress?.() ?? emptyProgress());
@@ -238,6 +252,18 @@ export function createQuiet(opts: QuietOptions): Quiet {
     return beat;
   };
 
+  const think = (makeCue: () => VoiceCue | undefined) => {
+    try {
+      const cue = makeCue();
+      if (!voiceOn(course) || !cue) return;
+      const picked = pickVoice(voiceMemory, cue, t);
+      thoughtPaper = undefined;
+      voiceMemory = picked.memory;
+      if (picked.line) { thought = picked.line; push({ text: `${VOICE_MARK} ${thought}`, tone: "voice" }); }
+      opts.papers?.saveVoice?.(voiceMemory);
+    } catch (error) { console.warn("Inner voice skipped:", error); }
+  };
+
   /** Folds the conversation just finished into one line: what was said is history once it ends. */
   function fold() {
     if (!finished) return;
@@ -276,7 +302,7 @@ export function createQuiet(opts: QuietOptions): Quiet {
     if (settle) shownAt = opts.now();
   }
 
-  function apply(events: GameEvent[]) {
+  function apply(events: GameEvent[], before?: GameState) {
     const fresh = new Set(events.flatMap((e) => (e.type === "wordStateChanged" && e.from === "unseen" ? [e.word] : [])));
     const now = opts.now();
     // Counted before this batch's own new words: a line that brings the tenth word still comes with its meaning.
@@ -414,6 +440,9 @@ export function createQuiet(opts: QuietOptions): Quiet {
           break;
       }
     }
+    if (before) try {
+      for (const cue of voiceEvents(course, before, core.state, events, t, opts.now())) think(() => cue);
+    } catch (error) { console.warn("Inner voice events skipped:", error); }
     if (revealed.length) news(t("place-revealed", { count: revealed.length, places: revealed.join(", ") }), "good");
     // No replies after the reaction (the scene ended): nothing to answer, so the request isn't said again.
     if (!events.some((e) => e.type === "replyOptions")) for (const r of reacted) if (!r.restate?.rephrase) delete r.restate;
@@ -445,11 +474,12 @@ export function createQuiet(opts: QuietOptions): Quiet {
 
   /** Sends an input; the player's own line (echo) is shown first, and only if the input was taken. */
   function send(input: Input, echo?: Omit<Beat, "id">, echoSpeech?: Speech, settle = true): boolean {
+    const before = voiceOn(course) ? structuredClone(core.state) : undefined;
     const events = core.send(input);
     const taken = !events.some((e) => e.type === "inputRejected");
     if (taken) moveOn();
     if (echo && taken) push(echo, echoSpeech);
-    apply(events);
+    apply(events, before);
     if (taken) persist();
     flush(settle);
     changed();
@@ -487,6 +517,7 @@ export function createQuiet(opts: QuietOptions): Quiet {
   resuming = true;
   apply(describeRun(course, core.state)); // a save made mid-scene resumes in the scene: its line, then its replies
   resuming = false;
+  if (voiceOn(course)) think(() => voiceDay(course, core.state, t, opts.now()));
   // A game picked up between scenes: say where the player is, so the screen is never blank.
   if (!told.length && !opening && !scene && !atDesk) push({ text: t("quiet-resume", { place: placeLabel() }), tone: "narr" });
   if (!scene) preludeTo = nextId;
@@ -503,6 +534,7 @@ export function createQuiet(opts: QuietOptions): Quiet {
     course,
     core,
     view: () => ({
+      ...(thought ? { voice: `${VOICE_MARK} ${thought}`, voicePaper: thoughtPaper } : {}),
       scene, phase: phase(), lastLine, backlog, toasts,
       onboard: onboarding(course, heardCount(core.state.words, opts.now())),
       ...(book && !lookupDone && scene ? hintAt() : {}),
@@ -565,6 +597,15 @@ export function createQuiet(opts: QuietOptions): Quiet {
       if (s) say([s]);
       return card;
     },
+    stall() {
+      think(() => voiceHint(course, core.state, t, opts.now(), "stall"));
+      flush(false); changed();
+    },
+    deskWrong(ch) {
+      thought = undefined; thoughtPaper = undefined;
+      think(() => voiceDesk(course, core.state, t, opts.now(), "desk-wrong", t(`voice-rule-${deskVoiceRule(course, ch)}`)));
+      flush(false); changed();
+    },
     replay(slow = false) {
       if (lastSpeech) say([slow || lastSpeech.slow ? { ...lastSpeech, slow: true } : lastSpeech]);
     },
@@ -583,6 +624,7 @@ export function createQuiet(opts: QuietOptions): Quiet {
       }
       persist();
       naming = false;
+      voiceMemory = { ...voiceMemory, seed: voiceSeed(core.state.player ?? course.id) };
       if (atDesk) {
         opts.papers?.save([...read]);
         opts.papers?.saveProgress?.(progress);
@@ -619,6 +661,9 @@ export function createQuiet(opts: QuietOptions): Quiet {
     readPaper(id) {
       if (read.has(id) || !deskPapers(course).some((p) => p.id === id)) return;
       read.add(id);
+      think(() => voiceDesk(course, core.state, t, opts.now(), "paper-done", t(`voice-paper-${id}`)));
+      thoughtPaper = id;
+      flush(false);
       opts.papers?.save([...read]);
       changed();
     },
