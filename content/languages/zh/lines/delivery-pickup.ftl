@@ -1,8 +1,8 @@
 # Miss Gao hands you a parcel and says where it goes. The place is what you walk to.
 
-parcel = 这个东西，去{ -place }。
+parcel = 这个，去{ -place }。
 parcel-reply = 好，我去{ -place }。
-parcel-rephrase = { -place }！这个东西。
+parcel-rephrase = { -place }！这个！
 
 now = 你现在去吗？
 now-reply = 我现在去！

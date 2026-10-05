@@ -1,7 +1,7 @@
-parcel = This thing goes to the { -place }.
+parcel = This one goes to the { -place }.
 parcel-reply = OK, I'll go to the { -place }.
 parcel-reply-intent = Say where you'll take it
-parcel-rephrase = The { -place }! This thing.
+parcel-rephrase = The { -place }! This one!
 
 now = Are you going now?
 now-reply = I'm going now!

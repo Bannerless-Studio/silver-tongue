@@ -159,7 +159,7 @@
 }
 -zk-thing = { $form ->
     [reply] 这是杯子。
-   *[base] 这个东西是什么？
+   *[base] 这个是什么？
 }
 -zk-gao = { $form ->
     [reply] 是，高小姐是我朋友。
@@ -349,7 +349,7 @@
 }
 -zo-sorry = { $form ->
     [reply] 没关系，是我的。
-   *[base] 对不起，这是你的东西吗？
+   *[base] 对不起，这是你的吗？
 }
 -zo-sleep = { $form ->
     [reply] 没有，我没睡觉。

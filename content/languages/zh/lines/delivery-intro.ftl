@@ -20,17 +20,12 @@ station-reply = 在医院后面。
 station-alt1 = 在医院前面。
 station-alt2 = 谢谢！再见！
 
-where = 学校在哪里？
-where-reply = 在医院前面！
-where-alt1 = 在医院后面！
-where-alt2 = 医院在那里。
-
 job = 很好！你想工作吗？
-job-reply = 想！我想工作。
+job-reply = 想！我在哪里工作？
 job-alt1 = 我喜欢面条。
 job-alt2 = 在医院后面。
 
-bye = 再见，{ $player }！
+bye = 在这里！再见，{ $player }！
 bye-reply = 再见，高小姐！
 bye-alt1 = 你好，高小姐！
 bye-alt2 = 学校在哪里？

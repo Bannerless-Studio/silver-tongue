@@ -151,6 +151,7 @@ asked-live = Mr Li said the room is yours.
 asked-numbers = { $npc } asked you to count along.
 asked-next = Old Wang wanted the next number: { $number }.
 asked-foreman = Big Liu told you his name.
+asked-things = Big Liu showed you the tables and chairs.
 asked-money = Mr Li wanted to know if you have money.
 asked-rent = Mr Li talked about the week's rent.
 asked-price = Mr Li told you the price.

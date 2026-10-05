@@ -5,8 +5,8 @@ greet-reply = 你好，李先生！
 greet-alt1 = 我饿了。
 greet-alt2 = 再见！
 
-money = 你有钱吗？
-money-reply = 有，我有工作。
+money = 你有工作吗？
+money-reply = 有！我有钱。
 money-alt1 = 我喜欢面条。
 money-alt2 = 我叫{ $player }。
 
@@ -15,7 +15,7 @@ week-reply = 多少钱？
 week-alt1 = 十个椅子。
 week-alt2 = 你好吗？
 
-price = 五十块。
+price = 五十！
 price-reply = 好，五十块。
 price-alt1 = 五个桌子。
 price-alt2 = 谢谢！再见！

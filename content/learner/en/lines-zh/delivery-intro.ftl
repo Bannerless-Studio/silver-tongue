@@ -30,23 +30,15 @@ station-alt1-intent = Say it's in front of the hospital
 station-alt2 = Thank you! Goodbye!
 station-alt2-intent = Thank Miss Gao and leave
 
-where = Where is the school?
-where-reply = In front of the hospital!
-where-reply-intent = Say it's in front of the hospital
-where-alt1 = Behind the hospital!
-where-alt1-intent = Say it's behind the hospital
-where-alt2 = The hospital is over there.
-where-alt2-intent = Say where the hospital is
-
 job = Very good! Do you want to work?
-job-reply = I do! I want to work.
-job-reply-intent = Say you want the job
+job-reply = I do! Where do I work?
+job-reply-intent = Say yes, and ask where
 job-alt1 = I like noodles.
 job-alt1-intent = Say you like noodles
 job-alt2 = Behind the hospital.
 job-alt2-intent = Say it's behind the hospital
 
-bye = Goodbye, { $player }!
+bye = Right here! Goodbye, { $player }!
 bye-reply = Goodbye, Miss Gao!
 bye-reply-intent = Say goodbye to Miss Gao
 bye-alt1 = Hello, Miss Gao!

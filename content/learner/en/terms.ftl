@@ -260,7 +260,7 @@
 }
 -zk-thing = { $form ->
     [reply] It's a cup.
-   *[base] What's this thing?
+   *[base] What is this?
 }
 -zk-gao = { $form ->
     [reply] Yes, Miss Gao is my friend.
