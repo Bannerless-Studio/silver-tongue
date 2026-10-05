@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { PROMPT_MS, firstSentence, openingStep, travelMs, type OpeningEvent, type OpeningStage } from "../opening";
+import { takeSkipCrawl } from "../dev";
 import type { Quiet } from "../quiet";
 
 const matches = (q: string) => typeof matchMedia === "function" && matchMedia(q).matches;
@@ -9,7 +10,7 @@ const EASE_OUT = "cubic-bezier(0.15, 0.55, 0.45, 1)"; // near-constant climb, ge
  * block to their place and settle, then the one name question. */
 export function Opening({ q, story }: { q: Quiet; story: string[] }) {
   const t = q.t;
-  const [stage, setStage] = useState<OpeningStage>("crawl");
+  const [stage, setStage] = useState<OpeningStage>(() => (takeSkipCrawl() ? "name" : "crawl"));
   const step = (ev: OpeningEvent) => setStage((s) => openingStep(s, ev));
   const still = matches("(prefers-reduced-motion: reduce)");
   const touch = matches("(pointer: coarse)");

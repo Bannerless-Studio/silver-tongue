@@ -536,3 +536,8 @@ textarea { width: 100%; background: var(--bg); border: 1px solid var(--line); bo
 @media (prefers-reduced-motion: reduce) {
   .h-row, .direction, .their .tag, .say.enter, .say.again, .said, .slip, .word-paper { animation: none; }
 }
+
+/* Lab page only: the screen number and the jump box (ui/DevBadge.tsx). */
+.dev-badge { position: fixed; right: 6px; bottom: 6px; z-index: 50; margin: 0; font: 11px/1 var(--mono); color: var(--muted); opacity: 0.7; }
+.dev-badge:hover, .dev-badge:focus-within { opacity: 1; }
+.dev-badge input { width: 3.2em; font: inherit; color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 2px; padding: 2px 4px; }
