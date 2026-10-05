@@ -533,6 +533,27 @@ textarea { width: 100%; background: var(--bg); border: 1px solid var(--line); bo
 @media (max-width: 560px) {
   .book { --fs-xl: 28px; }
 }
+/* Scribe mode (lab): their line in Latin letters, a field for its meaning; bare Latin slips and one field for the reply. */
+.sw { display: inline-flex; flex-direction: column; align-items: flex-start; vertical-align: top; }
+.sw-g { font-size: var(--fs-xs); font-weight: 400; color: var(--cyan); line-height: 1.2; }
+.scribe-field { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.6rem; width: 100%; max-width: 28rem; }
+.scribe-form { display: flex; align-items: center; gap: 0.4rem; }
+.scribe-form input {
+  flex: 1 1 auto; min-width: 0; font: inherit; font-size: var(--fs-md); background: none; border: 0; border-bottom: 2px solid var(--cyan);
+  padding: 0.2em 0; color: var(--text); caret-color: var(--cyan); outline: none;
+}
+.scribe-form input::placeholder { color: var(--muted); }
+.scribe-form .go { color: var(--cyan); white-space: nowrap; }
+.scribe-form.shake { animation: shake 0.4s ease-in-out; }
+.scribe-field .example, .scribe-field .rh-full { text-align: left; }
+.scribe-field .read-tools { justify-content: flex-start; }
+.scribe-list { display: flex; flex-direction: column; gap: 0.45rem; }
+.scribe-slips .scribe-field { margin-top: 0.3rem; max-width: none; }
+.scribe-slip { animation: none; cursor: default; }
+.scribe-slip:focus-visible { outline: 1px solid var(--cyan); outline-offset: 2px; }
+@media (hover: hover) { .scribe-slip:hover { box-shadow: 0 1px 0 #0005; } }
+.scribe-slip:active { transform: none; }
 @media (prefers-reduced-motion: reduce) {
   .h-row, .direction, .their .tag, .say.enter, .say.again, .said, .slip, .word-paper { animation: none; }
+  .scribe-form.shake { animation: none; outline: 1px solid var(--red); }
 }

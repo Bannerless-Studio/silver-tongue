@@ -1,9 +1,11 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "preact/hooks";
 import type { RenderedLine, WordId } from "@silver-tongue/core";
-import { npcLabel, quietRuby, replyMeanings, sentenceCard, soundedTokens, speakerHue, speakerNamed, type RubySetting, type SentenceCard } from "@silver-tongue/view";
+import { npcLabel, quietRuby, replyMeanings, romanLine, sentenceCard, soundedTokens, speakerHue, speakerNamed, type RubySetting, type SentenceCard } from "@silver-tongue/view";
 import { CONFUSED, type Beat, type Quiet, type QuietView } from "../quiet";
 import { replyOrder, stageView, type Exchange, type HistoryRow, type StageView } from "../stage";
+import { scribeOn } from "../scribe";
 import { Line } from "./Line";
+import { ScribeKeys, ScribeSlips, ScribeTheir } from "./Scribe";
 import type { Reveal } from "./Transcript";
 
 /*
@@ -69,6 +71,7 @@ export function History({ q, rows }: { q: Quiet; rows: HistoryRow[] }) {
   const ref = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState<{ id: number; card: SentenceCard } | null>(null);
   const last = rows.at(-1)?.beat.id;
+  const roman = scribeOn(q.view(), q.course);
   useLayoutEffect(() => {
     const el = ref.current;
     if (el) el.scrollTop = el.scrollHeight;
@@ -86,7 +89,7 @@ export function History({ q, rows }: { q: Quiet; rows: HistoryRow[] }) {
           const card = open?.id === b.id ? open.card : undefined;
           return (
             <div key={b.id} class={`h-row ${mine ? "h-mine" : `h-their ${hue(q, b)}`}`}>
-              <button type="button" class="h-say" lang={q.course.language.locale} aria-expanded={!!card} onClick={() => toggle(b)}>{b.line.text}</button>
+              <button type="button" class="h-say" lang={q.course.language.locale} aria-expanded={!!card} onClick={() => toggle(b)}>{roman ? romanLine(b.line) : b.line.text}</button>
               {card && <p class="h-open">{[card.reading, card.meaning].filter(Boolean).join(" · ")}</p>}
             </div>
           );
@@ -137,12 +140,12 @@ function WordPaper({ q, reveal, at, onClose }: { q: Quiet; reveal: Extract<Revea
 }
 
 /** Your line, said: paper, compact, on your side. `building`: the sentence being put together from tiles. */
-function Said({ q, b }: { q: Quiet; b: Beat }) {
+function Said({ q, b, roman }: { q: Quiet; b: Beat; roman: boolean }) {
   const { t, course } = q;
   return (
     <div class="said-row">
       <p class="said" lang={q.course.language.locale}>
-        {b.line?.text ?? (b.text === CONFUSED ? "…" : b.text)}
+        {b.line ? (roman ? romanLine(b.line) : b.line.text) : b.text === CONFUSED ? "…" : b.text}
         {b.cost && (
           <span class={`cost ${b.cost.reason}`}>
             {t("wallet-change", { sign: "-", amount: Math.abs(b.cost.amount), currency: course.world.currency, reason: t(`reason-${b.cost.reason}`) })}
@@ -187,6 +190,8 @@ export function Stage({ q, view, shown, ruby, reveal, onWord, onReveal, onClose,
   }
   const now = Date.now();
   const b = ex.current;
+  // The lab's scribe mode (see Scribe.tsx): their line in Latin letters, its meaning typed. Off everywhere else.
+  const scribe = scribeOn(view, course);
   const word = (w: WordId, s: string, el: HTMLElement) => {
     const box = ref.current?.getBoundingClientRect();
     // Under the word's reading, when it has one: the card never covers it.
@@ -217,23 +222,34 @@ export function Stage({ q, view, shown, ruby, reveal, onWord, onReveal, onClose,
           {named.get(ex.line.id) && <span>{npcLabel(course, core.state, t, ex.line.speaker!)}</span>}
           {tag && <span class="tag" key={ex.again}>{tag}</span>}
         </p>
-        <div class={`say${ex.again ? " again" : " enter"}`} key={`${ex.line.id}:${ex.again}`} onClick={auto ? () => onReveal(b) : undefined}>
-          <span class="say-text" lang={q.course.language.locale}>
-            <Line line={ex.shown} words={core.state.words} now={now} book sounded={sounded} ruby={spans} onWord={word} />
-          </span>
-          {ask && (
-            <button type="button" class="q" aria-label={t("quiet-reveal")} aria-expanded={lineOpen} onClick={(e) => (e.stopPropagation(), onReveal(b))}>?</button>
+        {scribe ? (
+          <>
+            <ScribeKeys />
+            <ScribeTheir q={q} ex={ex} held={!!shown.hold} onWord={word}>
+              {view.lookupHint === ex.line.id && <p class="hint">{t(matches("(pointer: coarse)") ? "quiet-lookup-tap" : "quiet-lookup-click")}</p>}
+            </ScribeTheir>
+          </>
+        ) : (
+          <>
+          <div class={`say${ex.again ? " again" : " enter"}`} key={`${ex.line.id}:${ex.again}`} onClick={auto ? () => onReveal(b) : undefined}>
+            <span class="say-text" lang={q.course.language.locale}>
+              <Line line={ex.shown} words={core.state.words} now={now} book sounded={sounded} ruby={spans} onWord={word} />
+            </span>
+            {ask && (
+              <button type="button" class="q" aria-label={t("quiet-reveal")} aria-expanded={lineOpen} onClick={(e) => (e.stopPropagation(), onReveal(b))}>?</button>
+            )}
+          </div>
+          {(meaningShown || rephrased) && whole && (
+            <p class="say-mean">{[readAll ? whole.reading : "", whole.meaning].filter(Boolean).join(" · ")}</p>
           )}
-        </div>
-        {(meaningShown || rephrased) && whole && (
-          <p class="say-mean">{[readAll ? whole.reading : "", whole.meaning].filter(Boolean).join(" · ")}</p>
+          {view.lookupHint === ex.line.id && <p class="hint">{t(matches("(pointer: coarse)") ? "quiet-lookup-tap" : "quiet-lookup-click")}</p>}
+          </>
         )}
-        {view.lookupHint === ex.line.id && <p class="hint">{t(matches("(pointer: coarse)") ? "quiet-lookup-tap" : "quiet-lookup-click")}</p>}
       </div>
-      {ex.said && <Said q={q} b={ex.said} />}
+      {ex.said && <Said q={q} b={ex.said} roman={scribe} />}
       {missed && ex.reaction?.line && (
         <div class={`their reaction ${hue(q, ex.reaction)}`}>
-          <p class="say-text" lang={q.course.language.locale}>{ex.reaction.line.text}</p>
+          <p class="say-text" lang={q.course.language.locale}>{scribe ? romanLine(ex.reaction.line) : ex.reaction.line.text}</p>
         </div>
       )}
       {children}
@@ -246,6 +262,7 @@ export function Stage({ q, view, shown, ruby, reveal, onWord, onReveal, onClose,
 export function Slips({ q, view, ex, ruby, touch }: { q: Quiet; view: QuietView; ex?: Exchange; ruby: RubySetting; touch: boolean }) {
   const p = view.phase;
   if (p.kind !== "pick") return null;
+  if (scribeOn(view, q.course)) return <ScribeSlips q={q} view={view} ex={ex} />;
   const { course, core, t } = q;
   const now = Date.now();
   const order = replyOrder(p.options, ex?.missed ?? []);
