@@ -6,9 +6,9 @@ cold-alt1-intent = Say you're going to Beijing
 cold-alt2 = I'm hungry.
 cold-alt2-intent = Say you're hungry
 
-weather = What's the weather like?
-weather-reply = The weather's cold.
-weather-reply-intent = Talk about the cold
+weather = Yes! Very cold!
+weather-reply = The weather's bad!
+weather-reply-intent = Say the weather's bad
 weather-alt1 = I'm glad!
 weather-alt1-intent = Say you're glad
 weather-alt2 = Thank you!

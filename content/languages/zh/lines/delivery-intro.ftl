@@ -5,8 +5,8 @@ greet-reply = 是，我是{ $player }。
 greet-alt1 = 我饿了。
 greet-alt2 = 八，九，十！
 
-hospital = 医院在那里。
-hospital-reply = 医院在那里。
+hospital = 那里！
+hospital-reply = 医院在那里？
 hospital-alt1 = 那个大桌子。
 hospital-alt2 = 你好吗？
 

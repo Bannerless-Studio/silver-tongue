@@ -6,9 +6,9 @@ greet-alt1-intent = Say you're hungry
 greet-alt2 = Eight, nine, ten!
 greet-alt2-intent = Count to ten
 
-hospital = The hospital is over there.
-hospital-reply = The hospital is over there.
-hospital-reply-intent = Say where the hospital is
+hospital = Over there!
+hospital-reply = The hospital is over there?
+hospital-reply-intent = Ask if the hospital is there
 hospital-alt1 = That big table.
 hospital-alt1-intent = Point at a table
 hospital-alt2 = How are you?
