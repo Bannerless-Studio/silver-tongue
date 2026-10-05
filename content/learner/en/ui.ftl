@@ -389,3 +389,8 @@ quiet-p-not-yet = not yet · { $count }
 quiet-st-parcel = Carrying a parcel
 quiet-st-no-parcel = No parcel
 quiet-no-save = no save found
+# Scribe mode (lab): the first conversations, read in Latin letters and answered by typing meanings.
+quiet-scribe-hear = What did they say?
+quiet-scribe-say = Say it: type the meaning of the reply you want
+quiet-scribe-example = “{ $line }” means “{ $meaning }”. Type what they said.
+quiet-scribe-full = It means: { $meaning }
