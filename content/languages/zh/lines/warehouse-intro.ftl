@@ -30,8 +30,8 @@ things-reply = 有桌子，有椅子。
 things-alt1 = 十！
 things-alt2 = 我叫{ $player }。
 
-job = 很好！你来工作，好吗？
-job-reply = 好！我想工作。
+job = 很好！你想工作吗？
+job-reply = 想！我想工作。
 job-alt1 = 我叫{ $player }。
 job-alt2 = 我喜欢面条。
 

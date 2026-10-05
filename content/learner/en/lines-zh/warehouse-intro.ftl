@@ -46,8 +46,8 @@ things-alt1-intent = Say ten
 things-alt2 = My name is { $player }.
 things-alt2-intent = Say your name
 
-job = Very good! Come and work here, all right?
-job-reply = All right! I want to work.
+job = Very good! Do you want to work?
+job-reply = I do! I want to work.
 job-reply-intent = Say you want the job
 job-alt1 = My name is { $player }.
 job-alt1-intent = Say your name

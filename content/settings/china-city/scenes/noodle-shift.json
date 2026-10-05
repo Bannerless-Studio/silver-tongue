@@ -9,10 +9,10 @@
   "trustGain": 1,
   "exchanges": [
     { "id": "drink", "slots": { "item": "drinks" }, "expect": { "action": "fetch", "item": "$item" }, "hinges": ["$item"], "pay": 2, "missCost": 1 },
-    { "id": "chat-d", "slots": { "topic": "chat_noodle" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
-    { "id": "chat-a", "slots": { "topic": "chat_noodle" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
     { "id": "order", "slots": { "item": "drinks", "count": "numbers_3_5" }, "expect": { "action": "serve", "item": "$item", "count": "$count" }, "hinges": ["$item", "$count"], "pay": 8, "missCost": 2 },
+    { "id": "chat-a", "slots": { "topic": "chat_noodle" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
     { "id": "chat-b", "slots": { "topic": "chat_noodle" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
-    { "id": "chat-c", "slots": { "topic": "chat_noodle" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 }
+    { "id": "chat-c", "slots": { "topic": "chat_noodle" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
+    { "id": "chat-d", "slots": { "topic": "chat_noodle" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 }
   ]
 }
