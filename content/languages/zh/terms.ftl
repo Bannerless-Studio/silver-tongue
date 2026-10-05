@@ -95,6 +95,18 @@
     [reply] 你叫小张！
    *[base] 我叫什么名字？
 }
+-zn-thanks-t = { $form ->
+    [reply] 不客气！
+   *[base] 谢谢你！
+}
+-zn-sorry-t = { $form ->
+    [reply] 没关系！吃面条！
+   *[base] 对不起，我饿了！
+}
+-zn-wang-t = { $form ->
+    [reply] 很喜欢！
+   *[base] 老王喜欢面条吗？
+}
 # chat_ware: Big Liu, between loads (words of Old Wang's talks and the warehouse).
 -zw-hungry = { $form ->
     [reply] 饿！我想吃面条。
@@ -136,6 +148,18 @@
     [reply] 你叫大刘！
    *[base] 我叫什么名字？
 }
+-zw-thanks-t = { $form ->
+    [reply] 不客气，大刘！
+   *[base] 谢谢你！
+}
+-zw-seven-t = { $form ->
+    [reply] 好！七个椅子。
+   *[base] 七个椅子，好吗？
+}
+-zw-sorry-t = { $form ->
+    [reply] 没关系！
+   *[base] 对不起，椅子很大！
+}
 # chat_kitchen: the cook in the kitchen (words up to Miss Gao's first parcel).
 -zk-hospital = { $form ->
     [reply] 医院在那里。
@@ -176,6 +200,22 @@
 -zk-big = { $form ->
     [reply] 很大！
    *[base] 那个桌子大吗？
+}
+-zk-thanks-t = { $form ->
+    [reply] 不客气！
+   *[base] 谢谢你！
+}
+-zk-seven-t = { $form ->
+    [reply] 在那里，在桌子后面。
+   *[base] 七个杯子在哪里？
+}
+-zk-sorry-t = { $form ->
+    [reply] 没关系！
+   *[base] 对不起，杯子很小！
+}
+-zk-now-t = { $form ->
+    [reply] 现在很饿！
+   *[base] 你现在饿吗？
 }
 # chat_lin: Mrs Lin, in her own voice, on the stairs (words up to the rent and the talks on the stairs).
 -zs-son = { $form ->
@@ -375,6 +415,34 @@
     [reply] 是，二零八。
    *[base] 林太太家是二零八吗？
 }
+-zo-thanks-t = { $form ->
+    [reply] 不客气！
+   *[base] 谢谢你！
+}
+-zo-shop-t = { $form ->
+    [reply] 在饭馆前面。
+   *[base] 商店在哪里？
+}
+-zo-parents-t = { $form ->
+    [reply] 很好，谢谢！
+   *[base] 你爸爸和妈妈好吗？
+}
+-zo-fruit-t = { $form ->
+    [reply] 爱！我爱吃苹果。
+   *[base] 你爱吃水果吗？
+}
+-zo-doctor-t = { $form ->
+    [reply] 是，他在医院工作。
+   *[base] 你爸爸是医生吗？
+}
+-zo-seen-t = { $form ->
+    [reply] 没看见。
+   *[base] 你看见我的狗了吗？
+}
+-zo-son-t = { $form ->
+    [reply] 没有，我没有儿子。
+   *[base] 你有儿子吗？
+}
 # chat_school: small talk about the noon rush, the shop and the first class (words up to the first class).
 -zq-study = { $form ->
     [reply] 是，我学习汉语。
@@ -455,6 +523,34 @@
 -zq-sit = { $form ->
     [reply] 谢谢，我坐这里。
    *[base] 请坐这个椅子！
+}
+-zq-thanks-t = { $form ->
+    [reply] 不客气！
+   *[base] 谢谢你！
+}
+-zq-sir-t = { $form ->
+    [reply] 是，他是我的老师。
+   *[base] 那个先生是你的老师吗？
+}
+-zq-few-t = { $form ->
+    [reply] 很少，七个学生。
+   *[base] 学校里学生多吗？
+}
+-zq-these-t = { $form ->
+    [reply] 会！这些字我会写。
+   *[base] 这些字你会写吗？
+}
+-zq-which-t = { $form ->
+    [reply] 我喜欢这个老师！
+   *[base] 你喜欢哪个老师？
+}
+-zq-how-t = { $form ->
+    [reply] 太好了！我爱汉语。
+   *[base] 你的汉语怎么样？
+}
+-zq-shop-t = { $form ->
+    [reply] 有，米饭很少了。
+   *[base] 商店里有米饭吗？
 }
 # chat_class: the teacher and others after class (every word up to the class and Old Ma's taxi).
 -zc-read = { $form ->
@@ -553,6 +649,30 @@
     [reply] 是，我是他同学。
    *[base] 对不起，你是大卫的同学吗？
 }
+-zc-thanks-t = { $form ->
+    [reply] 不客气！
+   *[base] 谢谢你！
+}
+-zc-film-t = { $form ->
+    [reply] 看！我们都看电影。
+   *[base] 你星期六看电影吗？
+}
+-zc-bike-t = { $form ->
+    [reply] 有，他有自行车。
+   *[base] 大卫有自行车吗？
+}
+-zc-how-t = { $form ->
+    [reply] 我坐出租车去。
+   *[base] 你怎么去学校？
+}
+-zc-up-t = { $form ->
+    [reply] 在学校前面。
+   *[base] 你在哪里上出租车？
+}
+-zc-station-t = { $form ->
+    [reply] 在医院后面。
+   *[base] 火车站在哪里？
+}
 # chat_tea: Old Chen, between pots (every word up to his first talk).
 -zt-tea = { $form ->
     [reply] 喝！我喜欢茶。
@@ -606,6 +726,18 @@
     [reply] 我家里有四个人。
    *[base] 你家里有几个人？
 }
+-zt-thanks-t = { $form ->
+    [reply] 不客气！
+   *[base] 谢谢你！
+}
+-zt-sorry-t = { $form ->
+    [reply] 没关系！
+   *[base] 对不起，茶很热！
+}
+-zt-up-t = { $form ->
+    [reply] 在火车站前面。
+   *[base] 你在哪里上出租车？
+}
 # chat_taxi: Old Ma at the taxi rank (every word up to his first talk).
 -zx-beijing = { $form ->
     [reply] 不，我不去北京。
@@ -655,6 +787,18 @@
     [reply] 是，很热！
    *[base] 出租车里很热！
 }
+-zx-up-t = { $form ->
+    [reply] 去火车站！
+   *[base] 上出租车！去哪里？
+}
+-zx-thanks-t = { $form ->
+    [reply] 不客气！
+   *[base] 谢谢你！
+}
+-zx-sorry-t = { $form ->
+    [reply] 没关系！
+   *[base] 对不起，出租车很小！
+}
 # chat_errand: whoever takes a delivery (words of the first three days only).
 -ze-hungry = { $form ->
     [reply] 饿了！我想吃面条。
@@ -695,5 +839,17 @@
 -ze-work = { $form ->
     [reply] 是，我现在工作！
    *[base] 你现在工作吗？
+}
+-ze-thanks-t = { $form ->
+    [reply] 不客气！
+   *[base] 谢谢你！
+}
+-ze-sorry-t = { $form ->
+    [reply] 没关系！
+   *[base] 对不起，这里很小！
+}
+-ze-seven-t = { $form ->
+    [reply] 七个，谢谢！
+   *[base] 一，二……七个！好！
 }
 # End of Chinese small talk.

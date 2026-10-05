@@ -1,6 +1,6 @@
-open = The restaurant's open! It's hot in here!
-open-reply = It's noon!
-open-reply-intent = Say it's noon
+open = It's noon!
+open-reply = The restaurant's open! It's hot!
+open-reply-intent = Say it's open, and hot
 open-alt1 = I'm hungry.
 open-alt1-intent = Say you're hungry
 open-alt2 = How are you?

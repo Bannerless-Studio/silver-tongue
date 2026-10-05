@@ -196,6 +196,18 @@
     [reply] You're Xiao Zhang!
    *[base] What's my name?
 }
+-zn-thanks-t = { $form ->
+    [reply] You're welcome!
+   *[base] Thank you!
+}
+-zn-sorry-t = { $form ->
+    [reply] No problem! Have some noodles!
+   *[base] Sorry, I'm hungry!
+}
+-zn-wang-t = { $form ->
+    [reply] He loves them!
+   *[base] Does Old Wang like noodles?
+}
 # chat_ware: Big Liu, between loads (words of Old Wang's talks and the warehouse).
 -zw-hungry = { $form ->
     [reply] Yes! I'd like some noodles.
@@ -237,6 +249,18 @@
     [reply] You're Big Liu!
    *[base] What's my name?
 }
+-zw-thanks-t = { $form ->
+    [reply] You're welcome, Big Liu!
+   *[base] Thank you!
+}
+-zw-seven-t = { $form ->
+    [reply] All right! Seven chairs.
+   *[base] Seven chairs, all right?
+}
+-zw-sorry-t = { $form ->
+    [reply] That's all right!
+   *[base] Sorry, the chair is big!
+}
 # chat_kitchen: the cook in the kitchen (words up to Miss Gao's first parcel).
 -zk-hospital = { $form ->
     [reply] The hospital's over there.
@@ -277,6 +301,22 @@
 -zk-big = { $form ->
     [reply] Very big!
    *[base] Is that table big?
+}
+-zk-thanks-t = { $form ->
+    [reply] You're welcome!
+   *[base] Thank you!
+}
+-zk-seven-t = { $form ->
+    [reply] Over there, behind the table.
+   *[base] Where are the seven cups?
+}
+-zk-sorry-t = { $form ->
+    [reply] That's all right!
+   *[base] Sorry, the cups are small!
+}
+-zk-now-t = { $form ->
+    [reply] Very hungry now!
+   *[base] Are you hungry now?
 }
 # chat_lin: Mrs Lin, in her own voice, on the stairs (words up to the rent and the talks on the stairs).
 -zs-son = { $form ->
@@ -476,6 +516,34 @@
     [reply] Yes, two-oh-eight.
    *[base] Is Mrs Lin's flat two-oh-eight?
 }
+-zo-thanks-t = { $form ->
+    [reply] You're welcome!
+   *[base] Thank you!
+}
+-zo-shop-t = { $form ->
+    [reply] In front of the restaurant.
+   *[base] Where's the shop?
+}
+-zo-parents-t = { $form ->
+    [reply] Very well, thanks!
+   *[base] How are your dad and mum?
+}
+-zo-fruit-t = { $form ->
+    [reply] I do! I love apples.
+   *[base] Do you like fruit?
+}
+-zo-doctor-t = { $form ->
+    [reply] Yes, he works at the hospital.
+   *[base] Is your dad a doctor?
+}
+-zo-seen-t = { $form ->
+    [reply] I haven't seen it.
+   *[base] Have you seen my dog?
+}
+-zo-son-t = { $form ->
+    [reply] No, I don't have a son.
+   *[base] Do you have a son?
+}
 # chat_school: small talk about the noon rush, the shop and the first class (words up to the first class).
 -zq-study = { $form ->
     [reply] Yes, I'm studying Chinese.
@@ -556,6 +624,34 @@
 -zq-sit = { $form ->
     [reply] Thanks, I'll sit here.
    *[base] Please take this chair!
+}
+-zq-thanks-t = { $form ->
+    [reply] You're welcome!
+   *[base] Thank you!
+}
+-zq-sir-t = { $form ->
+    [reply] Yes, he's my teacher.
+   *[base] Is that gentleman your teacher?
+}
+-zq-few-t = { $form ->
+    [reply] Very few, seven students.
+   *[base] Are there many students at the school?
+}
+-zq-these-t = { $form ->
+    [reply] Yes! I can write these.
+   *[base] Can you write these characters?
+}
+-zq-which-t = { $form ->
+    [reply] I like this teacher!
+   *[base] Which teacher do you like?
+}
+-zq-how-t = { $form ->
+    [reply] Great! I love Chinese.
+   *[base] How's your Chinese?
+}
+-zq-shop-t = { $form ->
+    [reply] Yes, but there's not much left.
+   *[base] Does the shop have rice?
 }
 # chat_class: the teacher and others after class (every word up to the class and Old Ma's taxi).
 -zc-read = { $form ->
@@ -654,6 +750,30 @@
     [reply] Yes, I'm his classmate.
    *[base] Sorry, are you David's classmate?
 }
+-zc-thanks-t = { $form ->
+    [reply] You're welcome!
+   *[base] Thank you!
+}
+-zc-film-t = { $form ->
+    [reply] Yes! We're all watching a film.
+   *[base] Are you watching a film on Saturday?
+}
+-zc-bike-t = { $form ->
+    [reply] Yes, he has a bike.
+   *[base] Does David have a bike?
+}
+-zc-how-t = { $form ->
+    [reply] I go by taxi.
+   *[base] How do you get to school?
+}
+-zc-up-t = { $form ->
+    [reply] In front of the school.
+   *[base] Where do you get the taxi?
+}
+-zc-station-t = { $form ->
+    [reply] Behind the hospital.
+   *[base] Where's the station?
+}
 # chat_tea: Old Chen, between pots (every word up to his first talk).
 -zt-tea = { $form ->
     [reply] Yes! I like tea.
@@ -707,6 +827,18 @@
     [reply] Four.
    *[base] How many people are in your family?
 }
+-zt-thanks-t = { $form ->
+    [reply] You're welcome!
+   *[base] Thank you!
+}
+-zt-sorry-t = { $form ->
+    [reply] That's all right!
+   *[base] Sorry, the tea is hot!
+}
+-zt-up-t = { $form ->
+    [reply] In front of the station.
+   *[base] Where do you get a taxi?
+}
 # chat_taxi: Old Ma at the taxi rank (every word up to his first talk).
 -zx-beijing = { $form ->
     [reply] No, I'm not going to Beijing.
@@ -756,6 +888,18 @@
     [reply] Yes, very hot!
    *[base] It's hot in the taxi!
 }
+-zx-up-t = { $form ->
+    [reply] To the station!
+   *[base] Get in! Where to?
+}
+-zx-thanks-t = { $form ->
+    [reply] You're welcome!
+   *[base] Thank you!
+}
+-zx-sorry-t = { $form ->
+    [reply] That's all right!
+   *[base] Sorry, the taxi is small!
+}
 # chat_errand: whoever takes a delivery (words of the first three days only).
 -ze-hungry = { $form ->
     [reply] I am! I'd like noodles.
@@ -796,6 +940,18 @@
 -ze-work = { $form ->
     [reply] Yes, I'm working now!
    *[base] Are you working now?
+}
+-ze-thanks-t = { $form ->
+    [reply] You're welcome!
+   *[base] Thank you!
+}
+-ze-sorry-t = { $form ->
+    [reply] That's all right!
+   *[base] Sorry, it is small in here!
+}
+-ze-seven-t = { $form ->
+    [reply] Seven, thank you!
+   *[base] One, two... seven! Good!
 }
 # End of Chinese small talk.
 

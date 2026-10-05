@@ -1,6 +1,6 @@
 # Mrs Lin comes home with her shopping: you carry it up, and she talks on the way.
 
-carry = { -amount }个东西！我们回家。
+carry = { -amount }个！我们回家。
 carry-reply = 好，我来！{ -amount }个东西。
 carry-rephrase = 东西！{ -amount }个！
 

@@ -1,4 +1,4 @@
-carry = { -amount(form: "cap") } bags! Let's get home.
+carry = { -amount(form: "cap") } of them! Let's get home.
 carry-reply = Right, I'll take them! { -amount(form: "cap") } bags.
 carry-reply-intent = Offer to carry them
 carry-rephrase = The bags! { -amount(form: "cap") } of them!

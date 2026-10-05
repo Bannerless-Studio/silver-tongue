@@ -1,7 +1,7 @@
 # The noon rush, and a staff lunch with the cook.
 
-open = 饭馆开了！很热！
-open-reply = 中午了！
+open = 中午了！
+open-reply = 饭馆开了！很热！
 open-alt1 = 我饿了。
 open-alt2 = 你好吗？
 

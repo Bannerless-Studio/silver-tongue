@@ -1,8 +1,8 @@
 # Small talk: the weather, and the time.
 
-cold = 今天很冷！
-cold-reply = 很冷！
-cold-alt1 = 很好！
+cold = 今天怎么样？
+cold-reply = 今天很冷！
+cold-alt1 = 我去北京！
 cold-alt2 = 我饿了。
 
 weather = 天气怎么样？

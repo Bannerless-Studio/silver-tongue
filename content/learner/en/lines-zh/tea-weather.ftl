@@ -1,8 +1,8 @@
-cold = It's cold today!
-cold-reply = Very cold!
-cold-reply-intent = Say it's very cold
-cold-alt1 = Very good!
-cold-alt1-intent = Say very good
+cold = How is it today?
+cold-reply = It's cold today!
+cold-reply-intent = Say it's cold today
+cold-alt1 = I'm going to Beijing!
+cold-alt1-intent = Say you're going to Beijing
 cold-alt2 = I'm hungry.
 cold-alt2-intent = Say you're hungry
 

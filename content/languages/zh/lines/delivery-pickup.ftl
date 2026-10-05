@@ -4,7 +4,7 @@ parcel = 这个，去{ -place }。
 parcel-reply = 好，我去{ -place }。
 parcel-rephrase = { -place }！这个！
 
-now = 你现在去吗？
+now = 你去吗？
 now-reply = 我现在去！
 now-alt1 = 我想工作。
 now-alt2 = 在医院后面！
