@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Course, RenderedLine } from "@silver-tongue/core";
-import { foldRomanization, readsAs, romanize, soundedTokens } from "../src/desk";
+import { canOpenPaper, foldRomanization, readsAs, romanize, soundedTokens } from "../src/desk";
 import type { CourseExtra } from "../src/course-extra";
 
 describe("romanize", () => {
@@ -73,5 +73,15 @@ describe("soundedTokens", () => {
   it("ignores one-syllable words, which turn up inside other words by chance", () => {
     const one = { text: "준", tokens: [{ word: "c", start: 0, end: 1 }] } as unknown as RenderedLine;
     expect(soundedTokens(course, new Set(["idcard"]), one).size).toBe(0);
+  });
+});
+
+describe("canOpenPaper", () => {
+  const papers = ["idcard", "bill", "news"].map((id) => ({ id, kind: "card", lines: [] }) as unknown as Parameters<typeof canOpenPaper>[0][number]);
+  it("opens read papers and the first unread, never a later one", () => {
+    const open = (read: string[]) => papers.map((p) => canOpenPaper(papers, new Set(read), p.id));
+    expect(open([])).toEqual([true, false, false]);
+    expect(open(["idcard"])).toEqual([true, true, false]);
+    expect(open(["idcard", "bill", "news"])).toEqual([true, true, true]);
   });
 });

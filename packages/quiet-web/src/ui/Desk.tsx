@@ -1,6 +1,6 @@
 import { Fragment } from "preact";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "preact/hooks";
-import { firstUnread, letterChart, lineRead, paperSyllables, readsSyllable, romanize, sumTiles, type DeskPaper, type SumTile } from "@silver-tongue/view";
+import { canOpenPaper, firstUnread, letterChart, lineRead, paperSyllables, readsSyllable, romanize, sumTiles, type DeskPaper, type SumTile } from "@silver-tongue/view";
 import type { Quiet } from "../quiet";
 import { DeskArt } from "./desk-art";
 
@@ -61,7 +61,7 @@ export function Desk({ q, papers, covered, onBook, onSettings }: { q: Quiet; pap
   }
   const open = paper ? papers.find((p) => p.id === paper) : undefined;
   if (open) return <PaperView q={q} paper={open} done={read.has(open.id)} covered={covered} onBook={onBook} onBack={() => setPaper(null)} />;
-  // One card is bright: the next to read, labelled. The rest are dimmed; a read one says so. All stay tappable.
+  // One card is bright: the next to read, labelled. The rest are dimmed; a read one says so and stays tappable; later ones wait their turn.
   const next = firstUnread(papers, read);
   return (
     <div class={leaving === "fade" ? "desk-screen leaving" : "desk-screen"}>
@@ -69,11 +69,17 @@ export function Desk({ q, papers, covered, onBook, onSettings }: { q: Quiet; pap
       <div class="desk">
         {papers.map((p) => {
           const done = read.has(p.id);
-          return (
-            <button key={p.id} type="button" class={`desk-card ${done ? "read" : p.id === next ? "next" : "later"}`} aria-label={p.lines[0]?.text} onClick={() => setPaper(p.id)}>
+          const cls = `desk-card ${done ? "read" : p.id === next ? "next" : "later"}`;
+          const art = (
+            <>
               <DeskArt kind={p.kind} title={p.lines[0]?.text ?? ""} lang={q.course.language.code} />
-              <span class="desk-card-state">{done ? t("quiet-desk-done") : p.id === next ? t("quiet-desk-read") : " "}</span>
-            </button>
+              <span class="desk-card-state">{done ? t("quiet-desk-done") : p.id === next ? t("quiet-desk-read") : " "}</span>
+            </>
+          );
+          return canOpenPaper(papers, read, p.id) ? (
+            <button key={p.id} type="button" class={cls} aria-label={p.lines[0]?.text} onClick={() => setPaper(p.id)}>{art}</button>
+          ) : (
+            <div key={p.id} class={cls} role="img" aria-label={p.lines[0]?.text} aria-disabled="true">{art}</div>
           );
         })}
       </div>
