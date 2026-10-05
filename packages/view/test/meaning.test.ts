@@ -115,7 +115,7 @@ describe("natural phrasing of the scribe scenes' lines", () => {
     ["Where's Min-jun?", ["where is min jun", "wheres minjun", "where is min-jun"]],
     ["I'm Min-jun.", ["i am min jun", "im minjun"]],
     ["I'm Min-jun's friend.", ["i am min jun's friend", "im a friend of minjun"]],
-    ["Who are you?", ["who are you", "who r you".replace("r", "are")]],
+    ["Who are you?", ["who are you", "Who are you?"]],
     ["No, I don't.", ["no", "no i don't speak korean", "i don't speak korean"]],
     ["Yes, I do.", ["yes", "yes i speak korean", "i do"]],
     ["Thank you.", ["thanks", "thank you so much", "thank you grandpa"]],
