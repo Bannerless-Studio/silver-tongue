@@ -1,5 +1,6 @@
 // Scribe mode (lab only): the first conversations read in Latin letters and answered by typing meanings.
 // Whether it is on, and the little state it keeps: per exchange (misses, help) and per course (how many it has begun).
+import { pageStorage } from "./storage";
 import type { Course } from "@silver-tongue/core";
 import { deskPapers, isScribeScene, scribeCountKey } from "@silver-tongue/view";
 import { labMode } from "@silver-tongue/web-common";
@@ -34,7 +35,7 @@ const listeners = new Set<() => void>();
 
 const readCount = (course: string): number => {
   try {
-    const n = Number(localStorage.getItem(scribeCountKey(course)));
+    const n = Number(pageStorage().getItem(scribeCountKey(course)));
     return Number.isInteger(n) && n >= 0 ? n : 0;
   } catch {
     return 0;
@@ -42,7 +43,7 @@ const readCount = (course: string): number => {
 };
 const writeCount = (course: string, n: number) => {
   try {
-    localStorage.setItem(scribeCountKey(course), String(n));
+    pageStorage().setItem(scribeCountKey(course), String(n));
   } catch {
     // private window: the arc starts over next time
   }

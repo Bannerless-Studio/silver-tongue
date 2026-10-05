@@ -1,4 +1,5 @@
 // Forked from packages/vn-web/src/main.tsx: the same loading and saves, drawn as a quiet terminal.
+import { installPageStorage } from "./storage";
 import { render } from "preact";
 import { createCore, mulberry32, newGame, type CatalogEntry, type Course, type GameState } from "@silver-tongue/core";
 import { courseLabels, decodeSave, DEFAULT_RUBY, DEFAULT_SPEED, encodeSave, learnerFor, deskKey, emptyProgress, lookupHintKey, makeText, papersKey, parseProgress, playbackRate, sessionLines, type RubySetting, type SpeechSpeed, type Text } from "@silver-tongue/view";
@@ -37,6 +38,7 @@ try {
 // Lab page only: all storage under its own prefix (the page shares an origin with the real game).
 const lab = labMode();
 if (lab) kv = labKeyValue(kv);
+installPageStorage(kv);
 
 interface Loaded { course: Course; t: Text; sessions: WebSessions; audio: ReturnType<typeof createWebAudio> }
 let catalog: CatalogEntry[] = [];

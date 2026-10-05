@@ -1,3 +1,4 @@
+import { pageStorage } from "../storage";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "preact/hooks";
 import type { RenderedLine, WordId } from "@silver-tongue/core";
 import { npcLabel, quietRuby, replyMeanings, romanLine, sentenceCard, soundedTokens, speakerHue, speakerNamed, type RubySetting, type SentenceCard } from "@silver-tongue/view";
@@ -310,14 +311,14 @@ export function slipChoice(view: QuietView, ex: Exchange | undefined, n: number)
 const tilesHintKey = (course: string) => `silver-tongue:tiles-hint:${course}`;
 export function tilesHintDone(course: string): boolean {
   try {
-    return localStorage.getItem(tilesHintKey(course)) === "1";
+    return pageStorage().getItem(tilesHintKey(course)) === "1";
   } catch {
     return false;
   }
 }
 export function finishTilesHint(course: string) {
   try {
-    localStorage.setItem(tilesHintKey(course), "1");
+    pageStorage().setItem(tilesHintKey(course), "1");
   } catch {
     // private window: the hint shows again next time
   }
