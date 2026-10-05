@@ -4,7 +4,7 @@
  "npc": "ramen_owner",
  "stage": 1,
  "after": [
-  "tanaka-name"
+  "apartment-hello"
  ],
  "requires": {},
  "repeatable": false,
@@ -15,6 +15,16 @@
    "slots": {},
    "expect": {
     "action": "welcome"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "place",
+   "slots": {},
+   "expect": {
+    "action": "place"
    },
    "hinges": [],
    "pay": 0,
