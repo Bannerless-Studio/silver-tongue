@@ -11,6 +11,11 @@ export function metaContent(doc: MetaSource, name: string): string {
   return doc.querySelector(`meta[name="${name}"]`)?.getAttribute("content") ?? "";
 }
 
+/** The lab build marks its page with `<meta name="st-lab" content="on">`; experiments check this. */
+export function labMode(doc: MetaSource = document): boolean {
+  return metaContent(doc, "st-lab") === "on";
+}
+
 /** Where the catalog, course files, art and clips are: next to the page unless the site says otherwise. */
 export function coursesBase(doc: MetaSource): string {
   return metaContent(doc, "st-courses") || "courses/";

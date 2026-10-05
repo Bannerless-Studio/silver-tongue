@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CatalogEntry } from "@silver-tongue/core";
-import { coursesBase, metaContent, pageStart, type MetaSource } from "../src/courses";
+import { coursesBase, labMode, metaContent, pageStart, type MetaSource } from "../src/courses";
 
 const doc = (metas: Record<string, string>): MetaSource => ({
   querySelector: (sel) => {
@@ -37,5 +37,13 @@ describe("a page made for one course", () => {
   it("without the meta, or naming a course the catalog lacks, starts as before", () => {
     expect(pageStart(catalog, {}, "")).toEqual({ ask: true });
     expect(pageStart(catalog, { course: "zh-china" }, "xx-nowhere")).toEqual({ ask: false, course: catalog[0], learner: "en" });
+  });
+});
+
+describe("lab mode", () => {
+  it("is on only when the st-lab meta says on", () => {
+    expect(labMode(doc({ "st-lab": "on" }))).toBe(true);
+    expect(labMode(doc({ "st-lab": "" }))).toBe(false);
+    expect(labMode(doc({}))).toBe(false);
   });
 });
