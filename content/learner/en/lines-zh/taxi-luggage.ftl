@@ -23,3 +23,11 @@ pay-alt1 = You take the call, I'll work!
 pay-alt1-intent = Tell him to answer it
 pay-alt2 = How much?
 pay-alt2-intent = Ask the price
+
+chat-a = { -topic }
+chat-a-reply = { -topic(form: "reply") }
+chat-a-reply-intent = Answer Old Ma
+
+chat-b = { -topic }
+chat-b-reply = { -topic(form: "reply") }
+chat-b-reply-intent = Answer Old Ma

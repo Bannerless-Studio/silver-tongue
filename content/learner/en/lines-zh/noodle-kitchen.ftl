@@ -15,3 +15,11 @@ out-alt1 = I like working.
 out-alt1-intent = Say you like the work
 out-alt2 = OK, I'll eat noodles!
 out-alt2-intent = Say you'll have noodles
+
+chat-a = { -topic }
+chat-a-reply = { -topic(form: "reply") }
+chat-a-reply-intent = Answer Xiao Zhang
+
+chat-b = { -topic }
+chat-b-reply = { -topic(form: "reply") }
+chat-b-reply-intent = Answer Xiao Zhang

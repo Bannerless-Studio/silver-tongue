@@ -17,3 +17,9 @@ pay = 今天下午很好！这是钱。
 pay-reply = 谢谢，老马！
 pay-alt1 = 你打电话，我工作！
 pay-alt2 = 多少钱？
+
+chat-a = { -topic }
+chat-a-reply = { -topic(form: "reply") }
+
+chat-b = { -topic }
+chat-b-reply = { -topic(form: "reply") }

@@ -1,0 +1,17 @@
+{
+  "id": "class-help",
+  "place": "school",
+  "npc": "teacher",
+  "stage": 1,
+  "after": ["class-read", "taxi-way"],
+  "requires": { "trust": { "teacher": 1 } },
+  "repeatable": true,
+  "trustGain": 1,
+  "exchanges": [
+    { "id": "books", "slots": { "amount": "numbers_3_10" }, "expect": { "action": "shelve", "amount": "$amount" }, "hinges": ["$amount"], "pay": 6, "missCost": 1 },
+    { "id": "chat-a", "slots": { "topic": "chat_class" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
+    { "id": "chat-b", "slots": { "topic": "chat_class" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
+    { "id": "chat-c", "slots": { "topic": "chat_class" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
+    { "id": "bye", "slots": {}, "expect": { "action": "classbye" }, "hinges": [], "pay": 2, "missCost": 0 }
+  ]
+}

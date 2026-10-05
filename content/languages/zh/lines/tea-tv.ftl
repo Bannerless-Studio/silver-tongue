@@ -39,3 +39,6 @@ bye = 你明天什么时候来？几点？
 bye-reply = 三点来！
 bye-alt1 = 电影！
 bye-alt2 = 今天很冷！
+
+chat = { -topic }
+chat-reply = { -topic(form: "reply") }

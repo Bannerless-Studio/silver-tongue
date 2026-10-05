@@ -29,3 +29,6 @@ quiet = 不说话！老师来了！
 quiet-reply = 好，我听。
 quiet-alt1 = 这本书很好！
 quiet-alt2 = 一九八零年。
+
+chat = { -topic }
+chat-reply = { -topic(form: "reply") }

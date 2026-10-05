@@ -34,3 +34,6 @@ bye = 好，回家！
 bye-reply = 再见，老师！
 bye-alt1 = 我同学在说话！
 bye-alt2 = 没关系！
+
+chat = { -topic }
+chat-reply = { -topic(form: "reply") }

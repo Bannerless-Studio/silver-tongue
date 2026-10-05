@@ -53,3 +53,7 @@ come-alt1 = I'm glad!
 come-alt1-intent = Say you're glad
 come-alt2 = My name is Big Liu.
 come-alt2-intent = Say you're Big Liu
+
+chat = { -topic }
+chat-reply = { -topic(form: "reply") }
+chat-reply-intent = Answer Old Chen

@@ -61,3 +61,7 @@ taste-alt1 = Yes! Thanks!
 taste-alt1-intent = Accept, with thanks
 taste-alt2 = I'll go and buy cups.
 taste-alt2-intent = Offer to buy cups
+
+chat = { -topic }
+chat-reply = { -topic(form: "reply") }
+chat-reply-intent = Answer Xiao Zhang

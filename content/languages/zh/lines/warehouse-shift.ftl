@@ -5,3 +5,9 @@ carry-rephrase = { -item }。{ -amount }个。
 pick = 那个{ -size }{ -item }。
 pick-reply = 好，那个{ -size }{ -item }。
 pick-rephrase = { -size }{ -item }。那个！
+
+chat-a = { -topic }
+chat-a-reply = { -topic(form: "reply") }
+
+chat-b = { -topic }
+chat-b-reply = { -topic(form: "reply") }

@@ -154,6 +154,610 @@
    *[base] milk
 }
 
+# Chinese small talk (zh-china): what an NPC says between jobs (base) and the answer (reply).
+# chat_noodle: the cook, between orders (words of Old Wang's talks and the noodle shop's first talk).
+-zn-hungry = { $form ->
+    [reply] I'm very hungry!
+   *[base] Are you hungry?
+}
+-zn-noodles = { $form ->
+    [reply] Yes! I really like noodles.
+   *[base] Do you like noodles?
+}
+-zn-wang = { $form ->
+    [reply] Yes, Old Wang is my friend.
+   *[base] Is Old Wang your friend?
+}
+-zn-eat = { $form ->
+    [reply] Yes please! Thank you!
+   *[base] Will you have some noodles?
+}
+-zn-work = { $form ->
+    [reply] Yes! I like the work.
+   *[base] Do you like the work?
+}
+-zn-cups = { $form ->
+    [reply] There are five.
+   *[base] How many cups are there?
+}
+-zn-how = { $form ->
+    [reply] Very well, thank you!
+   *[base] How are you?
+}
+-zn-shop = { $form ->
+    [reply] Very good! I like the restaurant.
+   *[base] Is the restaurant all right?
+}
+-zn-there = { $form ->
+    [reply] Yes! There's a restaurant there.
+   *[base] Is there a restaurant over there?
+}
+-zn-name = { $form ->
+    [reply] You're Xiao Zhang!
+   *[base] What's my name?
+}
+# chat_ware: Big Liu, between loads (words of Old Wang's talks and the warehouse).
+-zw-hungry = { $form ->
+    [reply] Yes! I'd like some noodles.
+   *[base] Are you hungry?
+}
+-zw-work = { $form ->
+    [reply] Yes! I like working.
+   *[base] Do you want to work?
+}
+-zw-noodles = { $form ->
+    [reply] Yes! I love eating noodles.
+   *[base] Do you like eating noodles?
+}
+-zw-wang = { $form ->
+    [reply] Yes, Old Wang is my friend.
+   *[base] Is Old Wang your friend?
+}
+-zw-there = { $form ->
+    [reply] Yes, there's a restaurant there.
+   *[base] Is there a restaurant over there?
+}
+-zw-how = { $form ->
+    [reply] Very well, thank you!
+   *[base] How are you?
+}
+-zw-tables = { $form ->
+    [reply] All right! Six tables.
+   *[base] Six tables, all right?
+}
+-zw-big = { $form ->
+    [reply] Very big!
+   *[base] Is that table big?
+}
+-zw-small = { $form ->
+    [reply] Very small!
+   *[base] Is that chair small?
+}
+-zw-name = { $form ->
+    [reply] You're Big Liu!
+   *[base] What's my name?
+}
+# chat_kitchen: the cook in the kitchen (words up to Miss Gao's first parcel).
+-zk-hospital = { $form ->
+    [reply] The hospital's over there.
+   *[base] Where's the hospital?
+}
+-zk-school = { $form ->
+    [reply] The school's in front of the hospital.
+   *[base] Where's the school?
+}
+-zk-station = { $form ->
+    [reply] Behind the hospital.
+   *[base] Where's the station?
+}
+-zk-live = { $form ->
+    [reply] I live at Mr Li's.
+   *[base] Where do you live?
+}
+-zk-now = { $form ->
+    [reply] I'm going to the school now.
+   *[base] Where are you going now?
+}
+-zk-thing = { $form ->
+    [reply] It's a cup.
+   *[base] What's this thing?
+}
+-zk-gao = { $form ->
+    [reply] Yes, Miss Gao is my friend.
+   *[base] Is Miss Gao your friend?
+}
+-zk-work = { $form ->
+    [reply] I work at the restaurant.
+   *[base] Where do you work?
+}
+-zk-hungry = { $form ->
+    [reply] Yes! I'd like some noodles.
+   *[base] Are you hungry yet?
+}
+-zk-big = { $form ->
+    [reply] Very big!
+   *[base] Is that table big?
+}
+# chat_lin: Mrs Lin, in her own voice, on the stairs (words up to the rent and the talks on the stairs).
+-zs-son = { $form ->
+    [reply] He's eight.
+   *[base] How old is my son?
+}
+-zs-daughter = { $form ->
+    [reply] She's ten.
+   *[base] How old is my daughter?
+}
+-zs-dog = { $form ->
+    [reply] The dog is three.
+   *[base] How old is our dog?
+}
+-zs-cat = { $form ->
+    [reply] Yes! The cat's asleep.
+   *[base] Have you seen my daughter's cat?
+}
+-zs-dad = { $form ->
+    [reply] He's a doctor.
+   *[base] What does my father do?
+}
+-zs-mum = { $form ->
+    [reply] Yes, she has a shop.
+   *[base] Does my mother have a shop?
+}
+-zs-people = { $form ->
+    [reply] Six.
+   *[base] How many people are in my family?
+}
+-zs-clothes = { $form ->
+    [reply] Very pretty!
+   *[base] Are my daughter's clothes pretty?
+}
+-zs-love = { $form ->
+    [reply] Yes! I love dogs.
+   *[base] Do you love dogs?
+}
+-zs-fruit = { $form ->
+    [reply] Yes! I love fruit.
+   *[base] Will you have an apple?
+}
+-zs-tv = { $form ->
+    [reply] Yes! I love watching television.
+   *[base] Do you watch television?
+}
+-zs-rent = { $form ->
+    [reply] Fifty kuai.
+   *[base] At Mr Li's, how much is it a week?
+}
+-zs-years = { $form ->
+    [reply] Ten years!
+   *[base] How many years have I lived here?
+}
+-zs-li = { $form ->
+    [reply] Yes! He's very nice.
+   *[base] Do you know Mr Li?
+}
+-zs-home = { $form ->
+    [reply] Yes, I'm going home.
+   *[base] Are you going home?
+}
+-zs-happy = { $form ->
+    [reply] Very glad!
+   *[base] Are you glad to know us?
+}
+-zs-and = { $form ->
+    [reply] I'm going to work at the restaurant.
+   *[base] My son and I are going to the shop. And you?
+}
+-zs-inside = { $form ->
+    [reply] Yes, I work in the restaurant.
+   *[base] Do you work in the restaurant?
+}
+-zs-sorry = { $form ->
+    [reply] That's all right! He's a good dog.
+   *[base] Sorry, our dog is so big!
+}
+-zs-sleep = { $form ->
+    [reply] No, she's watching television.
+   *[base] Is my daughter asleep?
+}
+-zs-flat = { $form ->
+    [reply] Yes, your flat is two-oh-eight.
+   *[base] Is my flat two-oh-eight?
+}
+-zs-shop = { $form ->
+    [reply] Yes! There are apples.
+   *[base] Is there fruit in my mother's shop?
+}
+-zs-people2 = { $form ->
+    [reply] Lots of people!
+   *[base] How many people live here?
+}
+# chat_town: small talk anyone can make about home and the neighbours (words up to the talks on the stairs).
+-zo-son = { $form ->
+    [reply] He's eight.
+   *[base] How old is Mrs Lin's son?
+}
+-zo-daughter = { $form ->
+    [reply] She's ten.
+   *[base] How old is Mrs Lin's daughter?
+}
+-zo-dog = { $form ->
+    [reply] Yes, she has a dog.
+   *[base] Does Mrs Lin have a dog?
+}
+-zo-cat = { $form ->
+    [reply] Yes! The cat's asleep.
+   *[base] Have you seen Mrs Lin's daughter's cat?
+}
+-zo-dad = { $form ->
+    [reply] My father's a doctor.
+   *[base] What does your father do?
+}
+-zo-mum = { $form ->
+    [reply] Very well! She's at home.
+   *[base] How's your mother?
+}
+-zo-people = { $form ->
+    [reply] Five.
+   *[base] How many people are in your family?
+}
+-zo-clothes = { $form ->
+    [reply] Very nice!
+   *[base] Are my clothes nice?
+}
+-zo-love = { $form ->
+    [reply] Yes! I love dogs.
+   *[base] Do you love dogs?
+}
+-zo-cats = { $form ->
+    [reply] Yes, cats are pretty.
+   *[base] Do you love cats?
+}
+-zo-fruit = { $form ->
+    [reply] Yes! I love fruit.
+   *[base] Will you have an apple?
+}
+-zo-tv = { $form ->
+    [reply] Yes! I love watching television.
+   *[base] Do you watch television?
+}
+-zo-rent = { $form ->
+    [reply] Fifty kuai.
+   *[base] At Mr Li's, how much is it a week?
+}
+-zo-years = { $form ->
+    [reply] I've lived here a week.
+   *[base] How many years have you lived here?
+}
+-zo-li = { $form ->
+    [reply] Yes! He's very nice.
+   *[base] Do you know Mr Li?
+}
+-zo-lin = { $form ->
+    [reply] Yes! She's my friend.
+   *[base] Do you know Mrs Lin?
+}
+-zo-home = { $form ->
+    [reply] Yes, I'm going home now.
+   *[base] Are you going home now?
+}
+-zo-happy = { $form ->
+    [reply] Very happy!
+   *[base] Are you happy here?
+}
+-zo-inside = { $form ->
+    [reply] Yes, I work in the restaurant.
+   *[base] Do you work in the restaurant?
+}
+-zo-sorry = { $form ->
+    [reply] That's all right, it's mine.
+   *[base] Sorry, is this yours?
+}
+-zo-sleep = { $form ->
+    [reply] No, I didn't sleep.
+   *[base] Did you get any sleep?
+}
+-zo-shop = { $form ->
+    [reply] Yes! There are apples.
+   *[base] Is there fruit in the shop?
+}
+-zo-doctor = { $form ->
+    [reply] Yes, he's a doctor.
+   *[base] Is Mrs Lin's father a doctor?
+}
+-zo-and = { $form ->
+    [reply] Yes, we're going to the restaurant.
+   *[base] Are you and your friend going to the restaurant?
+}
+-zo-money = { $form ->
+    [reply] Yes, I have work.
+   *[base] Do you have money?
+}
+-zo-flat = { $form ->
+    [reply] Yes, two-oh-eight.
+   *[base] Is Mrs Lin's flat two-oh-eight?
+}
+# chat_school: small talk about the noon rush, the shop and the first class (words up to the first class).
+-zq-study = { $form ->
+    [reply] Yes, I'm studying Chinese.
+   *[base] Are you studying Chinese?
+}
+-zq-write = { $form ->
+    [reply] Yes, I can write characters.
+   *[base] Can you write characters?
+}
+-zq-noon = { $form ->
+    [reply] I have rice.
+   *[base] What do you eat at noon?
+}
+-zq-restaurant = { $form ->
+    [reply] Good! Lots of people.
+   *[base] How's the restaurant?
+}
+-zq-hot = { $form ->
+    [reply] Very hot!
+   *[base] Is it hot in the restaurant?
+}
+-zq-money = { $form ->
+    [reply] No, I have very little.
+   *[base] Do you have much money?
+}
+-zq-saturday = { $form ->
+    [reply] To the school.
+   *[base] Where are you going on Saturday afternoon?
+}
+-zq-teacher = { $form ->
+    [reply] Very! I like the teacher.
+   *[base] Is your teacher nice?
+}
+-zq-lady = { $form ->
+    [reply] Yes, she's my classmate.
+   *[base] Is that young woman your classmate?
+}
+-zq-sir = { $form ->
+    [reply] He'd like rice.
+   *[base] What would that gentleman like to eat?
+}
+-zq-apple = { $form ->
+    [reply] Five kuai an apple.
+   *[base] How much are the apples?
+}
+-zq-buy = { $form ->
+    [reply] I'm buying fruit.
+   *[base] What are you buying?
+}
+-zq-which = { $form ->
+    [reply] I'd like this one.
+   *[base] Which dish would you like?
+}
+-zq-these = { $form ->
+    [reply] Wonderful!
+   *[base] How are these dishes?
+}
+-zq-listen = { $form ->
+    [reply] I'm listening!
+   *[base] Are you listening?
+}
+-zq-david = { $form ->
+    [reply] Yes, David is my classmate.
+   *[base] Is David your classmate?
+}
+-zq-read = { $form ->
+    [reply] Yes, I can read it.
+   *[base] Can you read Chinese?
+}
+-zq-come = { $form ->
+    [reply] Yes! I can come.
+   *[base] Can you come to the school?
+}
+-zq-open = { $form ->
+    [reply] It's open!
+   *[base] Is the restaurant open?
+}
+-zq-sit = { $form ->
+    [reply] Thanks, I'll sit here.
+   *[base] Please take this chair!
+}
+# chat_class: the teacher and others after class (every word up to the class and Old Ma's taxi).
+-zc-read = { $form ->
+    [reply] Yes, I can read this book.
+   *[base] Can you read this book?
+}
+-zc-write = { $form ->
+    [reply] Yes! I can write characters.
+   *[base] Can you write Chinese?
+}
+-zc-bike = { $form ->
+    [reply] No, I don't have a bicycle.
+   *[base] Do you have a bicycle?
+}
+-zc-film = { $form ->
+    [reply] Yes! I love watching films.
+   *[base] Do you love films?
+}
+-zc-students = { $form ->
+    [reply] Lots of students!
+   *[base] How many students are there at the school?
+}
+-zc-parents = { $form ->
+    [reply] Yes, both are teachers.
+   *[base] Are David's parents teachers?
+}
+-zc-sit = { $form ->
+    [reply] Behind David.
+   *[base] Where do you sit?
+}
+-zc-listen = { $form ->
+    [reply] Yes! I listen to the teacher.
+   *[base] Do you listen to the teacher?
+}
+-zc-minutes = { $form ->
+    [reply] Yes, ten minutes.
+   *[base] Is it ten minutes to the hospital by taxi?
+}
+-zc-how = { $form ->
+    [reply] I can write it, but I can't read it.
+   *[base] How do you read this character?
+}
+-zc-saturday = { $form ->
+    [reply] Yes! I'll come on Saturday afternoon.
+   *[base] Are you coming on Saturday afternoon?
+}
+-zc-china = { $form ->
+    [reply] Yes! I love China.
+   *[base] Do you love China?
+}
+-zc-beijing = { $form ->
+    [reply] No, I'm not going to Beijing.
+   *[base] Are you going to Beijing?
+}
+-zc-pets = { $form ->
+    [reply] Yes, David has a cat and a dog.
+   *[base] Does David have a cat?
+}
+-zc-clothes = { $form ->
+    [reply] Very nice!
+   *[base] Are David's clothes nice?
+}
+-zc-all = { $form ->
+    [reply] Yes, we're all students.
+   *[base] Are we all students?
+}
+-zc-date = { $form ->
+    [reply] Yes! The first of September.
+   *[base] The first of September: can you write it?
+}
+-zc-talk = { $form ->
+    [reply] David does!
+   *[base] At school, which student loves to talk?
+}
+-zc-taxi = { $form ->
+    [reply] No, I haven't got the money!
+   *[base] Do you take taxis?
+}
+-zc-month = { $form ->
+    [reply] It's September.
+   *[base] What month is it now?
+}
+-zc-book = { $form ->
+    [reply] I have three books.
+   *[base] How many books do you have?
+}
+-zc-gentleman = { $form ->
+    [reply] No, he's a doctor.
+   *[base] Is that gentleman a teacher?
+}
+-zc-plane = { $form ->
+    [reply] Yes! I'd like to go to Beijing.
+   *[base] Would you like to fly?
+}
+-zc-sorry = { $form ->
+    [reply] Yes, I'm his classmate.
+   *[base] Sorry, are you David's classmate?
+}
+# chat_tea: Old Chen, between pots (every word up to his first talk).
+-zt-tea = { $form ->
+    [reply] Yes! I like tea.
+   *[base] Do you drink tea?
+}
+-zt-water = { $form ->
+    [reply] Yes! Thank you!
+   *[base] Would you like some water?
+}
+-zt-china = { $form ->
+    [reply] Very much!
+   *[base] Do you like China?
+}
+-zt-job = { $form ->
+    [reply] I work at a restaurant.
+   *[base] What work do you do?
+}
+-zt-meet = { $form ->
+    [reply] So am I!
+   *[base] Glad to know you!
+}
+-zt-saturday = { $form ->
+    [reply] Yes! I'll come and work on Saturday.
+   *[base] Are you coming on Saturday?
+}
+-zt-sit = { $form ->
+    [reply] Thank you, Old Chen!
+   *[base] Please sit down!
+}
+-zt-station = { $form ->
+    [reply] Behind the hospital.
+   *[base] Where's the station?
+}
+-zt-gao = { $form ->
+    [reply] Yes! Miss Gao is my friend.
+   *[base] Do you know Miss Gao?
+}
+-zt-study = { $form ->
+    [reply] Yes, I study at the school.
+   *[base] Are you studying Chinese?
+}
+-zt-lady = { $form ->
+    [reply] She'd like water.
+   *[base] What would that young woman like to drink?
+}
+-zt-film = { $form ->
+    [reply] Yes! I love films.
+   *[base] Do you watch films?
+}
+-zt-family = { $form ->
+    [reply] Four.
+   *[base] How many people are in your family?
+}
+# chat_taxi: Old Ma at the taxi rank (every word up to his first talk).
+-zx-beijing = { $form ->
+    [reply] No, I'm not going to Beijing.
+   *[base] Are you going to Beijing?
+}
+-zx-plane = { $form ->
+    [reply] No, I'm taking a taxi.
+   *[base] Are you taking a plane?
+}
+-zx-price = { $form ->
+    [reply] Ten kuai.
+   *[base] How much is it to the hospital?
+}
+-zx-home = { $form ->
+    [reply] Yes, I'm going home.
+   *[base] Are you going home?
+}
+-zx-lady = { $form ->
+    [reply] To the hospital.
+   *[base] Where's that young woman going?
+}
+-zx-sir = { $form ->
+    [reply] To the school.
+   *[base] Where's that gentleman going?
+}
+-zx-taxi = { $form ->
+    [reply] In front of the station.
+   *[base] Where are the taxis?
+}
+-zx-things = { $form ->
+    [reply] Lots! Too many!
+   *[base] Lots of things?
+}
+-zx-much = { $form ->
+    [reply] Too much!
+   *[base] How much is a taxi to Beijing?
+}
+-zx-student = { $form ->
+    [reply] Yes, I'm studying Chinese.
+   *[base] Are you a student?
+}
+-zx-son = { $form ->
+    [reply] I'm twenty-eight.
+   *[base] My son is eight. And you?
+}
+-zx-hot = { $form ->
+    [reply] Yes, very hot!
+   *[base] It's hot in the taxi!
+}
+# End of Chinese small talk.
+
 # Korean small talk at the copy shop (ko-seoul stage 2).
 -cc-photo = { $form ->
     [reply] Yes, it's a photo.

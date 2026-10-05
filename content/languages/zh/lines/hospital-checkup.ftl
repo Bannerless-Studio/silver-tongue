@@ -44,3 +44,6 @@ bye = 好！明天不工作，多睡觉！
 bye-reply = 谢谢，医生！再见！
 bye-alt1 = 好，我睡觉。
 bye-alt2 = 我饿了。
+
+chat = { -topic }
+chat-reply = { -topic(form: "reply") }

@@ -34,3 +34,6 @@ come = 星期六来工作！
 come-reply = 好！我想工作！
 come-alt1 = 我很高兴！
 come-alt2 = 我叫大刘。
+
+chat = { -topic }
+chat-reply = { -topic(form: "reply") }

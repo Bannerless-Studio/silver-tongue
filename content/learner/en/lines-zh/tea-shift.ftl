@@ -15,3 +15,11 @@ busy-alt1 = I'm hungry.
 busy-alt1-intent = Say you're hungry
 busy-alt2 = I'll drink water.
 busy-alt2-intent = Say you'll have water
+
+chat-a = { -topic }
+chat-a-reply = { -topic(form: "reply") }
+chat-a-reply-intent = Answer Old Chen
+
+chat-b = { -topic }
+chat-b-reply = { -topic(form: "reply") }
+chat-b-reply-intent = Answer Old Chen

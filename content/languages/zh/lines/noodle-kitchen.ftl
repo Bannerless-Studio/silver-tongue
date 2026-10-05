@@ -12,3 +12,9 @@ out = 杯子没有了！
 out-reply = 我去买杯子。
 out-alt1 = 我喜欢工作。
 out-alt2 = 好，我吃面条！
+
+chat-a = { -topic }
+chat-a-reply = { -topic(form: "reply") }
+
+chat-b = { -topic }
+chat-b-reply = { -topic(form: "reply") }

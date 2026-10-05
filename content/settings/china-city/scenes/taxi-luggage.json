@@ -9,7 +9,9 @@
   "trustGain": 1,
   "exchanges": [
     { "id": "bags", "slots": { "amount": "numbers_3_10", "way": "ways" }, "expect": { "action": "load", "amount": "$amount", "way": "$way" }, "hinges": ["$amount", "$way"], "pay": 6, "missCost": 1 },
+    { "id": "chat-a", "slots": { "topic": "chat_taxi" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
     { "id": "train", "slots": { "hour": "numbers_3_10" }, "expect": { "action": "train", "hour": "$hour" }, "hinges": ["$hour"], "pay": 2, "missCost": 1 },
+    { "id": "chat-b", "slots": { "topic": "chat_taxi" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
     { "id": "phone", "slots": {}, "expect": { "action": "busyphone" }, "hinges": [], "pay": 1, "missCost": 0 },
     { "id": "pay", "slots": {}, "expect": { "action": "paid" }, "hinges": [], "pay": 1, "missCost": 0 }
   ]

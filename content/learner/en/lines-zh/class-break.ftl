@@ -53,3 +53,7 @@ bye-alt1 = I love films!
 bye-alt1-intent = Say you love films
 bye-alt2 = Thanks!
 bye-alt2-intent = Thank him
+
+chat = { -topic }
+chat-reply = { -topic(form: "reply") }
+chat-reply-intent = Answer David

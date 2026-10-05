@@ -34,3 +34,6 @@ minutes = 坐下，喝茶，十分钟。
 minutes-reply = 好，十分钟。
 minutes-alt1 = 中午来。
 minutes-alt2 = 天气很冷。
+
+chat = { -topic }
+chat-reply = { -topic(form: "reply") }

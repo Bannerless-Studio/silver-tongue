@@ -69,3 +69,7 @@ bye-alt1 = OK, I'll sleep.
 bye-alt1-intent = Promise to rest
 bye-alt2 = I'm hungry.
 bye-alt2-intent = Say you're hungry
+
+chat = { -topic }
+chat-reply = { -topic(form: "reply") }
+chat-reply-intent = Answer the doctor

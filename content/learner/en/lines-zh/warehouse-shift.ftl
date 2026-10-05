@@ -7,3 +7,11 @@ pick = That { -size } { -item }.
 pick-reply = OK, that { -size } { -item }.
 pick-reply-intent = Say which one
 pick-rephrase = The { -size } { -item }. That one!
+
+chat-a = { -topic }
+chat-a-reply = { -topic(form: "reply") }
+chat-a-reply-intent = Answer Big Liu
+
+chat-b = { -topic }
+chat-b-reply = { -topic(form: "reply") }
+chat-b-reply-intent = Answer Big Liu

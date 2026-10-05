@@ -15,6 +15,7 @@
     { "id": "daughter", "slots": {}, "expect": { "action": "visit" }, "hinges": [], "pay": 0, "missCost": 0 },
     { "id": "year", "slots": {}, "expect": { "action": "daughteryear" }, "hinges": [], "pay": 0, "missCost": 0 },
     { "id": "date", "slots": {}, "expect": { "action": "schoolday" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "chat", "slots": { "topic": "chat_class" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
     { "id": "how", "slots": {}, "expect": { "action": "howgo" }, "hinges": [], "pay": 0, "missCost": 0 },
     { "id": "bye", "slots": {}, "expect": { "action": "seeoff" }, "hinges": [], "pay": 0, "missCost": 0 }
   ]

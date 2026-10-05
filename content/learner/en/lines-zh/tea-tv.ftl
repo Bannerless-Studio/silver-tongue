@@ -61,3 +61,7 @@ bye-alt1 = The film!
 bye-alt1-intent = Say the film
 bye-alt2 = It's cold today!
 bye-alt2-intent = Say it's cold
+
+chat = { -topic }
+chat-reply = { -topic(form: "reply") }
+chat-reply-intent = Answer Old Chen

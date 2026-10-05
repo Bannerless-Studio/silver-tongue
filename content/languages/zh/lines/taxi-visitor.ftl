@@ -44,3 +44,6 @@ bye = 好！他上出租车了。
 bye-reply = 再见，先生！
 bye-alt1 = 坐飞机！
 bye-alt2 = 不认识。
+
+chat = { -topic }
+chat-reply = { -topic(form: "reply") }

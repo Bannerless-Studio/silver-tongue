@@ -53,3 +53,7 @@ bye-alt1 = My classmate is!
 bye-alt1-intent = Point at your classmate
 bye-alt2 = That's all right!
 bye-alt2-intent = Say it's fine
+
+chat = { -topic }
+chat-reply = { -topic(form: "reply") }
+chat-reply-intent = Answer the teacher

@@ -3,7 +3,7 @@
   "place": "station",
   "npc": "driver",
   "stage": 1,
-  "after": ["delivery-pickup"],
+  "after": ["delivery-pickup", "class-first", "noodle-lunch", "shop-intro"],
   "requires": {},
   "repeatable": false,
   "trustGain": 1,
@@ -15,6 +15,7 @@
     { "id": "toomuch", "slots": {}, "expect": { "action": "toomuch" }, "hinges": [], "pay": 0, "missCost": 0 },
     { "id": "lady", "slots": {}, "expect": { "action": "lady" }, "hinges": [], "pay": 0, "missCost": 0 },
     { "id": "name", "slots": {}, "expect": { "action": "name" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "chat", "slots": { "topic": "chat_school" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
     { "id": "bye", "slots": {}, "expect": { "action": "bye" }, "hinges": [], "pay": 0, "missCost": 0 }
   ]
 }

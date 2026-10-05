@@ -61,3 +61,7 @@ bye-alt1 = No, tomorrow I'm working.
 bye-alt1-intent = Say you're working
 bye-alt2 = Hello?
 bye-alt2-intent = Answer the phone
+
+chat = { -topic }
+chat-reply = { -topic(form: "reply") }
+chat-reply-intent = Answer Mr Li

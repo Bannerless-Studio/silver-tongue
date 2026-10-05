@@ -39,3 +39,6 @@ taste = 菜怎么样？
 taste-reply = 太好了！
 taste-alt1 = 想！谢谢！
 taste-alt2 = 我去买杯子。
+
+chat = { -topic }
+chat-reply = { -topic(form: "reply") }

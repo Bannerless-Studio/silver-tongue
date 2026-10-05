@@ -34,3 +34,6 @@ bye = 老师来了！写字！
 bye-reply = 好，写字！
 bye-alt1 = 我爱电影！
 bye-alt2 = 谢谢！
+
+chat = { -topic }
+chat-reply = { -topic(form: "reply") }

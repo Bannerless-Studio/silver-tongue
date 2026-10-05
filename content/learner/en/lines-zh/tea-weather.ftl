@@ -53,3 +53,7 @@ minutes-alt1 = At noon.
 minutes-alt1-intent = Say at noon
 minutes-alt2 = The weather's cold.
 minutes-alt2-intent = Talk about the cold
+
+chat = { -topic }
+chat-reply = { -topic(form: "reply") }
+chat-reply-intent = Answer Old Chen

@@ -39,3 +39,6 @@ bye = 好！我回家。再见！
 bye-reply = 再见，老马！
 bye-alt1 = 我去北京！
 bye-alt2 = 多少钱？
+
+chat = { -topic }
+chat-reply = { -topic(form: "reply") }

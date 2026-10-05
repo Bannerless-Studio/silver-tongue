@@ -45,3 +45,7 @@ quiet-alt1 = This book is good!
 quiet-alt1-intent = Praise the book
 quiet-alt2 = Nineteen eighty.
 quiet-alt2-intent = Write a year
+
+chat = { -topic }
+chat-reply = { -topic(form: "reply") }
+chat-reply-intent = Answer David

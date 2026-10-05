@@ -348,6 +348,22 @@ scene-noodle-lunch = Help with the lunch rush
 scene-noodle-lunch-start = It's noon, and the cook waves you behind the counter.
 scene-noodle-lunch-end = The bowls are empty, and Xiao Zhang leans back on her stool: the rush is over.
 
+# Small talk between jobs: $topic is what the NPC said, or what you answered.
+asked-chat = { $npc } said: "{ $topic }"
+action-chat = You answered: "{ $topic }"
+action-carryhome = You carry { $amount } bags up the stairs.
+asked-carryhome = Mrs Lin had { $amount } bags.
+asked-linpaid = Mrs Lin paid you.
+scene-stairs-help = Carry Mrs Lin's shopping
+scene-stairs-help-start = Mrs Lin is at the bottom of the stairs with her arms full of shopping, and she's in a mood to talk.
+scene-stairs-help-end = The bags are in. Mrs Lin presses a few coins into your hand.
+action-shelve = You carry { $amount } books to the back.
+asked-shelve = The teacher wanted { $amount } books moved to the back.
+asked-classbye = The teacher thanked you.
+scene-class-help = Help the teacher
+scene-class-help-start = Class is over, and the teacher points at a pile of books: they go to the back. The teacher talks while you work.
+scene-class-help-end = The books are stacked. The teacher pays you, and calls you a good student.
+
 # Notebook topics: a word in one of these slot groups is filed under the topic, not the place.
 notebook-topic-foods = Food and drink
 notebook-topic-drinks = Food and drink
