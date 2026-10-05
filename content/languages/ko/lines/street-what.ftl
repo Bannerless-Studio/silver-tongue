@@ -1,5 +1,12 @@
-# Grandpa Park and your textbook, his newspaper, and the shop across the alley.
+# Grandpa Park offers a seat on his bench, then asks about your textbook, his newspaper, and the shop.
 # Each <id>-alt<n> is a written wrong reply, using only words met by then; <id>-alt<n>-answer is the answer to it.
+
+sit = 여기 앉으세요.
+sit-reply = 감사합니다.
+sit-alt1 = 안녕히 계세요.
+sit-alt1-answer = 여기 앉으세요.
+sit-alt2 = 박 할아버지예요?
+sit-alt2-answer = 박 할아버지예요. 여기 앉으세요.
 
 book = 이거 한국어 책이에요?
 book-reply = 네, 한국어 책이에요.

@@ -31,6 +31,8 @@ menu-needs-money = { $npc }: { $scene } · needs { $currency }{ $cost }
 menu-mentor = Ask { $npc } about the language
 menu-no-time = no time left
 menu-cost-money = { " · " }{ $currency }{ $cost }
+menu-cost-time = { " · " }takes the rest of this part of the day
+menu-day-used = You've used all of today's time, so conversations, language advice, work, and shopping will be available again after you sleep.
 menu-review = Quick review · { $count ->
     [one] one fading word
    *[other] { $count } fading words

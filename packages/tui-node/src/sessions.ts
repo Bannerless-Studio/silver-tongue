@@ -23,6 +23,7 @@ export function listSessions(dir: string, course: Course): Session[] {
   if (!existsSync(dir)) return [];
   const out: Session[] = [];
   for (const file of readdirSync(dir)) {
+    if (file.endsWith(".view.json")) continue;
     if (!file.endsWith(".json")) continue;
     const path = join(dir, file);
     try {

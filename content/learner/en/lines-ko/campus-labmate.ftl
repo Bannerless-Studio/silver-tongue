@@ -46,3 +46,11 @@ bye-alt1 = Welcome!
 bye-alt1-intent = Welcome her
 bye-alt2 = Where is Min-jun?
 bye-alt2-intent = Ask about Min-jun
+
+# My reading of what was just said.
+friend-why = She wants to know if I know Min-jun.
+sujin-why = She is introducing herself.
+where-why = Where is Min-jun?
+since-why = She has not seen him since March.
+took-why = He took his books with him.
+bye-why = She is saying goodbye.

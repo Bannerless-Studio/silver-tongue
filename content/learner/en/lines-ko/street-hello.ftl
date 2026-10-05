@@ -1,39 +1,45 @@
 hello = Hello.
 hello-reply = Hello.
 hello-reply-intent = Say hello
-hello-alt1 = Goodbye.
+hello-alt1 = Goodbye (go well).
 hello-alt1-intent = See him off
-hello-alt2 = Goodbye.
+hello-alt1-answer = Goodbye? Hello!
+hello-alt2 = Goodbye (stay well).
 hello-alt2-intent = Say goodbye as you leave
+hello-alt2-answer = Hello!
 
 park = I'm Grandpa Park.
 park-reply = Hello, Grandpa Park.
 park-reply-intent = Greet him by name
 park-alt1 = Goodbye, Grandpa Park.
 park-alt1-intent = See him off
-park-alt2 = Who are you?
-park-alt2-intent = Ask who he is
+park-alt1-answer = I'm Grandpa Park. Hello!
+park-alt2 = Min-jun?
+park-alt2-intent = Offer the name on the card
+park-alt2-answer = I'm Grandpa Park.
 
-ask = What's your name?
-ask-reply = I'm { $player }.
-ask-reply-intent = Give your name
+ask = Min-jun? Please tell me.
+ask-reply = No. I'm { $player }.
+ask-reply-intent = Correct him with your own name
 ask-alt1 = I'm Min-jun.
 ask-alt1-intent = Use the name on the ID card
+ask-alt1-answer = Min-jun?
 ask-alt2 = I'm Min-jun's friend.
 ask-alt2-intent = Say you're Min-jun's friend
+ask-alt2-answer = A friend? Please tell me.
 
-sit = Sit here.
-sit-reply = Thank you.
-sit-reply-intent = Thank him
-sit-alt1 = Goodbye.
-sit-alt1-intent = Say goodbye as you leave
-sit-alt2 = Who is it?
-sit-alt2-intent = Ask who he is
+newspaper = Is it a newspaper?
+newspaper-reply = Yes, it's a newspaper.
+newspaper-reply-intent = Confirm the desk word
+newspaper-alt1 = Goodbye.
+newspaper-alt1-intent = See him off
+newspaper-alt1-answer = It's a newspaper!
+newspaper-alt2 = Are you Grandpa Park?
+newspaper-alt2-intent = Check his name again
+newspaper-alt2-answer = I'm Grandpa Park. It's a newspaper.
 
-understand = Do you know Korean?
-understand-reply = No, I don't.
-understand-reply-intent = Admit you don't
-understand-alt1 = Yes, I do.
-understand-alt1-intent = Say you do
-understand-alt2 = Yes, thank you.
-understand-alt2-intent = Say yes and thank him
+# My reading of what was just said.
+hello-why = He is just saying hello.
+park-why = He is introducing himself.
+ask-why = He thinks I am the man from the ID.
+newspaper-why = Is that a newspaper?

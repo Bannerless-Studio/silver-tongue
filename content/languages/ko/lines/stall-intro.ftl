@@ -21,10 +21,17 @@ tasty-reply = 네, 맛있어요!
 tasty-alt1 = 네, 배고파요.
 tasty-alt2 = 아니요, 몰라요.
 
-jiwoo = 저는 지우예요. 이름이 뭐예요?
-jiwoo-reply = 저는 { $player }입니다.
-jiwoo-alt1 = 저는 지우예요.
+jiwoo = 지우예요.
+jiwoo-reply = 지우 씨, 안녕하세요.
+jiwoo-alt1 = 지우예요.
 jiwoo-alt2 = 박 할아버지예요.
+
+name = 이름이 뭐예요?
+name-reply = 저는 { $player }입니다.
+name-alt1 = 민준 씨 친구예요.
+name-alt1-answer = 친구? 이름이 뭐예요?
+name-alt2 = 박 할아버지예요.
+name-alt2-answer = 박 할아버지? 이름이 뭐예요?
 
 work = 같이 일해요!
 work-reply = 네, 좋아요!

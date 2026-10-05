@@ -11,6 +11,7 @@ import {
   learnerFor,
   makeText,
   sessionLines,
+  voiceOn, voiceSeed,
   startApp,
   type PlayerSettings,
   type RubySetting,
@@ -22,7 +23,7 @@ import { createNodeAudio, nodeAudioDeps } from "./node-audio";
 import { createNodeTerminal } from "./node-terminal";
 import pkg from "../package.json" with { type: "json" };
 import { listSessions, migrateCourseSessions, newSessionPath, sessionsDir } from "./sessions";
-import { configDir, loadSave, loadSettings, updateSettings, writeSave } from "./storage";
+import { configDir, loadSave, loadSettings, updateSettings, writeFileAtomic, writeSave } from "./storage";
 
 const [major] = process.versions.node.split(".").map(Number);
 if (major < 22) {
@@ -30,7 +31,12 @@ if (major < 22) {
   process.exit(1);
 }
 
-const flags = parseFlags(process.argv.slice(2));
+// The lab can be started by course id as well as --learn; file paths keep their meaning.
+const argv = process.argv.slice(2);
+const catalogDir = coursesDir();
+const positionalCourses = catalogDir ? readCatalog(catalogDir) ?? [] : [];
+const args = positionalCourses.some((entry) => entry.id === argv[0]) ? ["--learn", argv[0], ...argv.slice(1)] : argv;
+const flags = parseFlags(args);
 if (flags.mode === "version") {
   console.log(pkg.version);
   process.exit(0);
@@ -261,6 +267,10 @@ function play(session: Chosen, savePath: string, carried?: { state: GameState; r
       },
     },
     save: readOnly ? undefined : (s) => writeSave(savePath, s),
+    ...(voiceOn(session.course) ? { presentation: {
+      load: () => { try { return JSON.parse(readFileSync(`${savePath}.view.json`, "utf8")); } catch { return { voice: { seed: voiceSeed(savePath), day: 0, used: [], once: [], picks: 0 } }; } },
+      ...(readOnly ? {} : { save: (value: unknown) => writeFileAtomic(`${savePath}.view.json`, JSON.stringify(value)) }),
+    } } : {}),
     quit: () => bail(0),
     settings: dir
       ? {

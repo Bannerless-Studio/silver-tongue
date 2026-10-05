@@ -1,5 +1,6 @@
+import { FluentBundle, FluentResource } from "@fluent/bundle";
 import { PLAYER_MARK, tilePieces, type Course, type RenderedLine, type Scene, type Variant, type WordId } from "@silver-tongue/core";
-import { extra, type ExchangeExtra } from "@silver-tongue/view";
+import { makeText, displayGloss, voiceGloss, voiceWord, voiceIntent, npcShort, voiceAsked, VOICE_LIMIT, VOICE_POOLS, VOICE_VARS, voiceOn, extra, type ExchangeExtra } from "@silver-tongue/view";
 import { speakable } from "./voices";
 
 export interface CheckInput {
@@ -9,6 +10,8 @@ export interface CheckInput {
   checks: { coverage: boolean; audio: boolean; art?: boolean };
   /** message ids available in the learner-language files */
   learnerIds: Set<string>;
+  /** Namespaced learner explanation ids, collected while reading scene Fluent files. */
+  whyIds?: Set<string>;
   /** message ids the front ends need */
   requiredUi: string[];
   /** clip ids that have a file (checked when checks.audio is on) */
@@ -185,6 +188,7 @@ export function checkCourse(input: CheckInput): string[] {
   const { course, stages, checks, learnerIds } = input;
   const errors: string[] = [];
   const { world } = course;
+  errors.push(...voiceProblems(course, learnerIds, input.whyIds));
 
   if (!world.places[world.start]) errors.push(`world: start place "${world.start}" does not exist`);
   // Saves hold whole numbers only, so money, time and trust amounts must be whole numbers too.
@@ -482,5 +486,53 @@ export function checkCourse(input: CheckInput): string[] {
   for (const id of need) if (!learnerIds.has(id)) errors.push(`learner text: missing "${id}"`);
   if (checks.audio) errors.push(...audioProblems(course, input.audioFiles ?? new Set()));
 
+  return errors;
+}
+
+/** The helper's content contract; no new required fields for older courses. */
+export function voiceProblems(course: Course, learnerIds: ReadonlySet<string>, whyIds: ReadonlySet<string> = new Set()): string[] {
+  const errors: string[] = [];
+  const exchanges = new Set(course.scenes.flatMap((s) => s.exchanges.map((e) => `${s.id}.${e.id}-why`)));
+  for (const id of whyIds) if (!exchanges.has(id)) errors.push(`voice: explanation "${id}" has no exchange`);
+  if (!voiceOn(course)) return errors;
+  const t = makeText(course.learnerFtl, course.learner);
+  const bundle = new FluentBundle(course.learner, { useIsolating: false });
+  bundle.addResource(new FluentResource(course.learnerFtl));
+  const longest = (values: string[]) => values.sort((a, b) => [...b].length - [...a].length)[0] ?? "";
+  const variants = course.scenes.flatMap((s) => s.exchanges.flatMap((e) => Object.values(e.variants)));
+  const npc = longest(Object.keys(course.world.npcs).flatMap((id) => [t(`npc-${id}`), ...(t.has(`npc-${id}-unmet`) ? [t(`npc-${id}-unmet`)] : [])]));
+  const base = { wallet: 999999, currency: course.world.currency };
+  const fragments = (prefix: string) => [...learnerIds].filter((id) => id.startsWith(prefix)).map((id) => t(id, base));
+  const vars: Record<string, string | number> = {
+    ...Object.fromEntries(VOICE_VARS.map((v) => [v, "x"])), ...base, day: 999, known: Object.keys(course.words).length, hunger: 1,
+    npc, npcShort: npcShort(npc),
+    asked: longest(variants.map((v) => voiceAsked((v as typeof v & { why?: string }).why ?? v.npc.meaning ?? ""))),
+    word: longest(Object.values(course.words).map((w) => w.w)), gloss: longest(Object.values(course.words).map((w) => voiceGloss(displayGloss(w)))),
+    wordMeaning: longest(Object.values(course.words).flatMap((w) => [w.w, ...Object.keys(w.forms ?? {})].map((surface) => voiceWord(w, surface, t)))),
+    shape: longest(variants.map((v) => t("voice-shape-intent", { intent: voiceIntent(v.reply.intent ?? "answer what was asked") }))),
+    memory: t("voice-memory-used", { npcShort: npcShort(npc) }),
+    situation: longest(fragments("voice-situation-")), reflection: longest(fragments("voice-reflection-")),
+    rule: longest(fragments("voice-rule-")), paper: longest(["idcard", "newspaper", "bill"].map((id) => t(`voice-paper-${id}`))),
+  };
+  for (const w of Object.values(course.words)) {
+    const gloss = voiceGloss(displayGloss(w));
+    if (/[?!;]$/.test(gloss) || gloss.includes(";")) errors.push(`voice: unsafe gloss for ${w.id}`);
+  }
+  for (const pool of VOICE_POOLS) {
+    const ids = [...learnerIds].filter((id) => new RegExp(`^voice-${pool}-[0-9]+$`).test(id));
+    if (ids.length < 4) errors.push(`voice: ${pool} needs at least 4 variants`);
+    for (let n = 1; n <= ids.length; n++) if (!learnerIds.has(`voice-${pool}-${n}`)) errors.push(`voice: ${pool} variants must be contiguous from 1`);
+    for (const id of ids) {
+      const rendered = t(id, vars);
+      if (/[?!]\./.test(rendered)) errors.push(`voice: ${id} joins gloss punctuation incorrectly`);
+      if ([...rendered].length > VOICE_LIMIT) errors.push(`voice: ${id} exceeds ${VOICE_LIMIT} characters`);
+      const value = bundle.getMessage(id)?.value;
+      if (value) { const problems: Error[] = []; bundle.formatPattern(value, vars, problems); for (const e of problems) errors.push(`voice: ${id}: ${e.message}`); }
+    }
+  }
+  for (const scene of course.scenes) for (const ex of scene.exchanges) for (const v of Object.values(ex.variants)) {
+    const why = (v as typeof v & { why?: string }).why;
+    if (why && [...why].length > VOICE_LIMIT) errors.push(`voice: ${scene.id}.${ex.id}-why exceeds ${VOICE_LIMIT} characters`);
+  }
   return errors;
 }

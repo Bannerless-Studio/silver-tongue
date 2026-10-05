@@ -25,19 +25,19 @@ describe("place menu", () => {
     expect(placeMenu(course, state, t).map((m) => m.kind)).toEqual(["go", "sleep"]);
   });
 
-  it("offers a scene here with who it is with, and hides the cost when it's just the default slot", () => {
+  it("offers a scene here with who it is with and says that it takes part of the day", () => {
     const { course, state, t } = setup();
     course.world.npcs.boss = { place: "noodle_shop" };
     state.place = "noodle_shop";
     expect(placeMenu(course, state, t)[0]).toEqual({
-      kind: "talk", label: "Say hello · Cook", input: { type: "startScene", scene: "intro" }, npc: "cook", scene: "intro",
+      kind: "talk", label: "Say hello · Cook · takes the rest of this part of the day", input: { type: "startScene", scene: "intro" }, npc: "cook", scene: "intro",
     });
   });
 
   it("drops the npc suffix when they're the only one here", () => {
     const { course, state, t } = setup();
     state.place = "noodle_shop";
-    expect(placeMenu(course, state, t)[0]).toMatchObject({ kind: "talk", label: "Say hello" });
+    expect(placeMenu(course, state, t)[0]).toMatchObject({ kind: "talk", label: "Say hello · takes the rest of this part of the day" });
   });
 
   it("drops the npc suffix when the scene name already names them", () => {
@@ -47,7 +47,7 @@ describe("place menu", () => {
     const state = newGame(course);
     const t = makeText(course.learnerFtl, "en");
     state.place = "noodle_shop";
-    expect(placeMenu(course, state, t)[0]).toMatchObject({ kind: "talk", label: "Meet Cook" });
+    expect(placeMenu(course, state, t)[0]).toMatchObject({ kind: "talk", label: "Meet Cook · takes the rest of this part of the day" });
   });
 
   it("shows a yuan cost when the scene has one", () => {
@@ -57,7 +57,7 @@ describe("place menu", () => {
     state.scenesDone.intro = 1;
     state.trust.cook = 1;
     state.place = "noodle_shop";
-    expect(placeMenu(course, state, t)[0]).toMatchObject({ kind: "talk", label: "Serve drinks · Cook · ¥5" });
+    expect(placeMenu(course, state, t)[0]).toMatchObject({ kind: "talk", label: "Serve drinks · Cook · ¥5 · takes the rest of this part of the day" });
   });
 
   it("offers the mentor only when a note is waiting", () => {
@@ -67,7 +67,9 @@ describe("place menu", () => {
     state.scenesDone.intro = 1;
     expect(placeMenu(course, state, t).some((m) => m.kind === "mentor")).toBe(false);
     state.notes.ready = ["hao"];
-    expect(placeMenu(course, state, t).find((m) => m.kind === "mentor")).toMatchObject({ npc: "cook", input: { type: "visitMentor" } });
+    expect(placeMenu(course, state, t).find((m) => m.kind === "mentor")).toMatchObject({
+      npc: "cook", label: "Ask Cook about the language · takes the rest of this part of the day", input: { type: "visitMentor" },
+    });
   });
 
   it("keeps at most seven items before sleep", () => {

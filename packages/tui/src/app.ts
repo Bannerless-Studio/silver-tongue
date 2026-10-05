@@ -22,13 +22,18 @@ import type { Key, StyledLine, Terminal } from "./terminal";
 import {
   actionNarration, bookOn, freshMarks, DEFAULT_RUBY, hasLetters, heardCount, onboarding, hintView, hudValues, introLines, jobView, joinTilesForDisplay, lettersView, makeText, nextRuby, notebookEntries, papers,
   placeMenu, readingRow, reviewCard, reviewOffer, rubyRow, sentenceCard, settingsRows, typePrompt, tileEcho, waitingForMoney, wordCard, wordExample,
-  type HintView, type HudValues, type JobView, type ReviewCard, type SentenceCard, type SettingsScreen, type Text,
+  deskOn, deskPapers, firstUnread, letterChart, metLetters, parseProgress, paperSyllables, readsSyllable, sumTiles,
+  dayPart, emptyVoice, parseVoice, pickVoice, voiceDay, voiceDesk, deskVoiceRule, voiceSeed, voiceEvents, voiceHint, voiceOn, VOICE_MARK, menuDirection, primaryItem, npcLabel,
+  type DeskProgress, type VoiceCue, type VoiceMemory, type HintView, type HudValues, type JobView, type ReviewCard, type SentenceCard, type SettingsScreen, type Text,
 } from "@silver-tongue/view";
 
 /** slow -> normal -> fast -> slow, as the settings screen's Speed row cycles. */
 const SPEED_CYCLE: SpeechSpeed[] = ["slow", "normal", "fast"];
 
+export interface AppPresentation { read: string[]; desk: DeskProgress; voice: VoiceMemory }
 export interface AppOptions {
+  /** Optional per-session presentation sidecar; never serialized into core game state. */
+  presentation?: { load(): unknown; save?(value: AppPresentation): boolean };
   course: Course;
   core: Core;
   term: Terminal;
@@ -65,7 +70,7 @@ export interface AppOptions {
 }
 
 type MenuItem = { label: string; input?: Input; quit?: true; disabled?: string };
-type Mode = "explore" | "scene" | "help" | "notebook" | "name" | "review" | "settings" | "settings-course" | "settings-reading";
+type Mode = "explore" | "scene" | "help" | "notebook" | "name" | "review" | "settings" | "settings-course" | "settings-reading" | "opening" | "desk" | "status";
 const SETTINGS_MODES: Mode[] = ["settings", "settings-course", "settings-reading"];
 
 export interface App {
@@ -88,6 +93,36 @@ export function startApp(opts: AppOptions): App {
   const t: Text = makeText(course.learnerFtl, course.learner);
 
   let mode: Mode = "explore";
+  const innerVoice = voiceOn(course);
+  let stored: Partial<AppPresentation> = {};
+  try { stored = (opts.presentation?.load() ?? {}) as Partial<AppPresentation>; }
+  catch (error) { console.warn("Presentation load skipped:", error); }
+  const readPapers = new Set<string>(Array.isArray(stored.read) ? stored.read.filter((x): x is string => typeof x === "string") : []);
+  let deskProgress = parseProgress(stored.desk);
+  let voiceMemory = emptyVoice(voiceSeed(core.state.player ?? course.id));
+  try { voiceMemory = parseVoice(stored.voice, voiceMemory.seed); }
+  catch (error) { console.warn("Inner voice load skipped:", error); }
+  let thought: string | undefined;
+  let deskPaper = firstUnread(deskPapers(course), readPapers);
+  let deskTyped = "";
+  let deskWrong = 0;
+  let deskShown = false;
+  let deskDone = false;
+  let openingAt = 0;
+  const opening = innerVoice && course.needsName && !core.state.player ? introLines(course, core.state, t) : [];
+  let statusFrom: Mode = "explore";
+  let presentationSave = opts.presentation?.save;
+  const savePresentation = () => {
+    try {
+      if (presentationSave && !presentationSave({ read: [...readPapers], desk: deskProgress, voice: voiceMemory })) {
+        presentationSave = undefined;
+        push([{ text: t("notice-read-only"), color: "yellow" }]);
+      }
+    } catch (error) {
+      presentationSave = undefined;
+      console.warn("Presentation save skipped:", error);
+    }
+  };
   let log: StyledLine[] = [];
   let pickOptions: RenderedLine[] = [];
   let tiles: string[] = [];
@@ -141,7 +176,17 @@ export function startApp(opts: AppOptions): App {
   const push = (...lines: StyledLine[]) => {
     log = [...log, ...lines].slice(-LOG_LIMIT);
   };
-  const npcName = (npc: string) => t(`npc-${npc}`);
+  const think = (makeCue: () => VoiceCue | undefined) => {
+    try {
+      const cue = makeCue();
+      if (!innerVoice || !cue) return;
+      const picked = pickVoice(voiceMemory, cue, t);
+      voiceMemory = picked.memory;
+      if (picked.line) { thought = picked.line; push([{ text: `${VOICE_MARK} ${thought}`, dim: true }]); }
+      savePresentation();
+    } catch (error) { console.warn("Inner voice skipped:", error); }
+  };
+  const npcName = (npc: string) => innerVoice ? npcLabel(course, core.state, t, npc) : t(`npc-${npc}`);
   const say = (npc: string, line: RenderedLine, fresh: Set<WordId>, suffix = ""): StyledLine => [
     { text: `${npcName(npc)}${suffix}: `, color: "cyan", bold: true },
     ...lineSpans(line, fresh),
@@ -251,7 +296,7 @@ export function startApp(opts: AppOptions): App {
     push([], [{ text: t(`place-${place}-desc`), dim: true }]);
   }
 
-  function apply(events: GameEvent[]) {
+  function apply(events: GameEvent[], before?: GameState) {
     // Counted before this batch's own new words: a line that brings the tenth word still comes with its meaning.
     onboardNow = onboarding(course, heardCount(core.state.words, opts.now()) - events.filter((e) => e.type === "wordStateChanged" && e.from === "unseen").length);
     // Words heard for the first time are underlined; a course with the Book leaves them to the readings (see freshMarks).
@@ -436,6 +481,9 @@ export function startApp(opts: AppOptions): App {
           break;
       }
     }
+    if (before) try {
+      for (const cue of voiceEvents(course, before, core.state, events, t, opts.now())) think(() => cue);
+    } catch (error) { console.warn("Inner voice events skipped:", error); }
     // A note readied mid-scene surfaces once we're back in explore mode, not mid-conversation, and
     // only the first time: a player who hasn't visited the mentor yet sees this once, not again for
     // every further scene that readies another note on top of the ones already waiting.
@@ -443,6 +491,12 @@ export function startApp(opts: AppOptions): App {
       push([{ text: t("note-hint", { npc: npcName(course.world.mentor.npc) }), color: "magenta" }]);
       noteHintShown = true;
     }
+  }
+
+  function finishPaper(id: string) {
+    readPapers.add(id); deskDone = true;
+    think(() => voiceDesk(course, core.state, t, opts.now(), "paper-done", t(`voice-paper-${id}`)));
+    savePresentation();
   }
 
   let save = opts.save;
@@ -454,8 +508,9 @@ export function startApp(opts: AppOptions): App {
   }
 
   function send(input: Input) {
+    const before = innerVoice ? structuredClone(core.state) : undefined;
     const events = core.send(input);
-    apply(events);
+    apply(events, before);
     flush();
     if (!events.some((e) => e.type === "inputRejected")) persist();
   }
@@ -480,7 +535,7 @@ export function startApp(opts: AppOptions): App {
   /** The notebook's tabs: with the Book, Letters (for a language with a letter chart) and Papers too. */
   const bookTabs = () => (hasBook ? notebookTabs(hasLetters(course)) : NOTEBOOK_TABS_OLD);
   /** The letter chart and the papers kept, for the Book's Letters and Papers tabs. */
-  const bookExtras = (): BookExtras => ({ course, letters: lettersView(course, t), papers: papers(course, core.state, t, opts.now()) });
+  const bookExtras = (): BookExtras => ({ course, letters: lettersView(course, t, innerVoice ? metLetters(course, deskProgress, readPapers) : undefined), papers: papers(course, core.state, t, opts.now()) });
 
   const settingsScreen = (): SettingsScreen => (mode === "settings-course" ? "course" : mode === "settings-reading" ? "reading" : "main");
   /** The rows the settings screen shows, and what choosing each one does. */
@@ -525,7 +580,7 @@ export function startApp(opts: AppOptions): App {
     // A review takes no time, so it's offered whenever words are fading, just above quit.
     const count = reviewOffer(course, core.state, opts.now());
     const reviewItem: MenuItem[] = count ? [{ label: t("menu-review", { count }), input: { type: "startReview" } }] : [];
-    return [...placeMenu(course, core.state, t), ...reviewItem, { label: t("menu-quit"), quit: true }];
+    return [...placeMenu(course, core.state, t).filter((m) => !innerVoice || !("disabled" in m && m.disabled)), ...reviewItem, { label: t("menu-quit"), quit: true }];
   }
 
   /** Answers the review question on screen; the next question waits for enter. */
@@ -606,7 +661,7 @@ export function startApp(opts: AppOptions): App {
     }
     if (mode === "explore") {
       // Scenes here that wait only for money: shown, not offered, so an empty shop says why.
-      const waiting: StyledLine[] = waitingForMoney(course, core.state, t).map((text) => [{ text, dim: true }]);
+      const waiting: StyledLine[] = [...(innerVoice ? menuDirection(course, core.state, t) : []), ...waitingForMoney(course, core.state, t)].map((text) => [{ text, dim: true }]);
       return {
         title: t("menu-title"),
         lines: [
@@ -822,6 +877,38 @@ export function startApp(opts: AppOptions): App {
     const { cols, rows } = term.size();
     const h = hudValues(course, s, t, opts.now());
     const title = t(`place-${s.place}`);
+    if (mode === "opening") {
+      const footer = t("keys-opening");
+      term.write(renderFrame({ title: "Silver Tongue", panels: [{ lines: [[{ text: opening[openingAt] }]], grow: true }], footer }, cols, rows));
+      return;
+    }
+    if (mode === "status") {
+      const panels: Panel[] = [{ lines: [
+        [{ text: t("quiet-st-day", { day: s.day, part: t(`day-part-${dayPart(course, s)}`) }) }],
+        [{ text: t("quiet-st-wallet", { currency: h.currency, wallet: h.wallet }) }],
+        [{ text: t("quiet-st-rent", { currency: h.currency, rent: course.world.rentPerWeek, days: h.rentInDays }) }],
+      ], grow: true }];
+      term.write(renderFrame({ title: t("quiet-status"), panels, footer: t("keys-status") }, cols, rows));
+      return;
+    }
+    if (mode === "desk") {
+      const p = deskPapers(course).find((p) => p.id === deskPaper);
+      const syls = p ? paperSyllables(p) : [];
+      const at = p ? deskProgress.at[p.id] ?? 0 : 0;
+      const cur = syls[at];
+      const met = metLetters(course, deskProgress, readPapers);
+      const tiles = cur ? sumTiles(letterChart(course), cur.ch, met) : [];
+      const lines: StyledLine[] = [
+        [{ text: t("quiet-desk-why"), dim: true }],
+        ...deskPapers(course).map((paper) => [{ text: `${readPapers.has(paper.id) ? "✓" : "·"} ${paper.lines[0].text}`, dim: paper.id !== deskPaper }]),
+        [],
+        ...(p ? p.lines.map((line): StyledLine => [{ text: line.text, bold: true }]) : [[{ text: t("desk-done"), bold: true }]]),
+        ...(cur ? [[], [{ text: cur.ch, bold: true, color: "cyan" as const }], [{ text: tiles.map((tl) => `${tl.letter.ch} ${deskShown || tl.fresh ? tl.sound : "?"}`).join(" + ") + " = " }, { text: deskTyped || "_", bold: true }]] : []),
+        ...(thought ? [[], [{ text: `${VOICE_MARK} ${thought}`, dim: true }]] : []),
+      ];
+      term.write(renderFrame({ title: t("quiet-desk-read"), panels: [{ lines, grow: true }], footer: t(cur ? "keys-desk" : "keys-desk-next") }, cols, rows));
+      return;
+    }
     // Day, time, then where: a narrow screen drops them from the end, keeping the place whole.
     let right = [t("hud-top", { day: h.day }), h.clock, h.where].filter((x): x is string => !!x);
     while (right.length > 1 && strWidth(title) + strWidth(right.join(" · ")) + 8 > cols) right = right.slice(0, -1);
@@ -830,6 +917,7 @@ export function startApp(opts: AppOptions): App {
       const book = notebookEntries(course, s, t, opts.now());
       const tabs = bookTabs();
       const head = notebookHead(book, t, nbView.tab, tabs);
+      if (innerVoice && thought) head.push([{ text: `${VOICE_MARK} ${thought}`, dim: true }]);
       const headRows = head.flatMap((l) => wrapLine(l, innerWidth(cols))).length;
       const height = Math.max(1, rows - 3 - headRows); // top border, the rule under the head, bottom border
       const body = notebookBody(book, t, nbView, cols, height, bookExtras());
@@ -867,7 +955,8 @@ export function startApp(opts: AppOptions): App {
     // With the Book, [n] opens "the book": the hints that name it have their own messages.
     const named = hasBook && ["keys-explore", "keys-pick", "keys-tiles"].includes(footerId) ? `${footerId}-book` : footerId;
     const keys = t(named, { keys: keyRange(count) });
-    const footer = opts.settings && ["explore", "scene", "help"].includes(mode) ? `${keys} · ${t("keys-o")}` : keys;
+    const baseFooter = opts.settings && ["explore", "scene", "help"].includes(mode) ? `${keys} · ${t("keys-o")}` : keys;
+    const footer = innerVoice && ["explore", "scene", "help"].includes(mode) ? `${baseFooter} · ${t(mode === "explore" ? "voice-status" : typing ? "keys-voice-type" : "keys-voice")}${mode === "help" ? ` · ${t("keys-voice-book")}` : ""}` : baseFooter;
     const inner = innerWidth(cols);
     const shownCard = card && mode !== "explore" ? card : null;
     const job = mode === "scene" || mode === "help" || mode === "explore" ? jobView(course, s, t, opts.now()) : undefined;
@@ -913,12 +1002,55 @@ export function startApp(opts: AppOptions): App {
   function press(key: Key) {
     if (handedOver) return;
     if (key.name === "ctrl-c") return opts.quit();
+    if (mode === "opening") {
+      if (key.name === "return") {
+        openingAt++;
+        if (openingAt >= opening.length) mode = course.needsName && !core.state.player ? "name" : deskOn(course, core.state, readPapers) ? "desk" : "explore";
+      }
+      return render();
+    }
+    if (mode === "status") {
+      if (key.name === "escape" || key.name === "s") mode = statusFrom;
+      return render();
+    }
+    if (mode === "desk") {
+      if (key.name === "tab" || (key.name === "b" && deskDone)) { notebookFrom = mode; mode = "notebook"; return render(); }
+      const p = deskPapers(course).find((p) => p.id === deskPaper);
+      const syls = p ? paperSyllables(p) : [];
+      const at = p ? deskProgress.at[p.id] ?? 0 : 0;
+      const cur = syls[at];
+      if (!cur && key.name === "return") {
+        if (p && !deskDone) finishPaper(p.id);
+        deskPaper = firstUnread(deskPapers(course), readPapers); deskDone = false; thought = undefined;
+        if (!deskPaper) { mode = "explore"; const door = menu().find((m) => m.input?.type === "startScene"); if (door?.input) send(door.input); }
+      } else if (cur) {
+        if (key.name === "?") deskShown = true;
+        else if (key.name === "backspace") deskTyped = [...deskTyped].slice(0, -1).join("");
+        else if (key.name === "return" && deskTyped.trim()) {
+          if (readsSyllable(deskTyped, cur.ch)) {
+            const keys = sumTiles(letterChart(course), cur.ch, new Set()).map((tl) => tl.key);
+            deskProgress = { at: { ...deskProgress.at, [p!.id]: at + 1 }, met: [...new Set([...deskProgress.met, ...keys])] };
+            deskTyped = ""; deskWrong = 0; deskShown = false; thought = undefined;
+            if (at + 1 === syls.length) finishPaper(p!.id);
+            savePresentation();
+          } else {
+            deskWrong++; deskTyped = "";
+            if (deskWrong === 2) {
+              think(() => voiceDesk(course, core.state, t, opts.now(), "desk-wrong", t(`voice-rule-${deskVoiceRule(course, cur.ch)}`)));
+            }
+          }
+        } else { const ch = key.text ?? ([...key.name].length === 1 ? key.name : undefined); if (ch && /^[a-z0-9 ]$/i.test(ch) && deskTyped.length < MAX_TYPED) deskTyped += ch; }
+      }
+      return render();
+    }
     if (mode === "name") {
       const ch = key.text ?? ([...key.name].length === 1 ? key.name : undefined);
       if (key.name === "return") {
         if (!core.send({ type: "setName", name: nameInput }).some((e) => e.type === "inputRejected")) {
           persist();
-          mode = core.state.run ? "scene" : "explore";
+          if (innerVoice) voiceMemory = { ...voiceMemory, seed: voiceSeed(core.state.player ?? course.id) };
+          mode = core.state.run ? "scene" : innerVoice && deskOn(course, core.state, readPapers) ? "desk" : "explore";
+          savePresentation();
         } else push([{ text: t("reject-bad-name"), color: "red" }]);
       } else if (key.name === "backspace") nameInput = [...nameInput].slice(0, -1).join("");
       else if (ch && ch >= " " && [...nameInput].length < MAX_NAME_LENGTH) nameInput += ch;
@@ -942,11 +1074,15 @@ export function startApp(opts: AppOptions): App {
       } else if (n >= 0 && n < review.card.options.length) answerReview(n);
       return render();
     }
-    // Typing a reply: every character is text. Enter says it, tab asks for a hint, escape looks a
+    // Typing a reply: h thinks only with empty input. Enter says it, Tab asks for a hint, Escape looks a
     // word up (or closes the card open).
     if (mode === "scene" && replyMode === "type") {
       const ch = key.text ?? ([...key.name].length === 1 ? key.name : undefined);
       if (key.name === "return") sendTyped();
+      else if (innerVoice && key.name === "?") {
+        const sentence = lastLine && sentenceCard(course, lastLine);
+        if (sentence) card = { rows: [[{ text: sentence.meaning }]], compact: [{ text: sentence.meaning }], col: anchor?.indent ?? 0 };
+      } else if (key.name === "h" && innerVoice && !typed) think(() => voiceHint(course, core.state, t, opts.now(), "stall"));
       else if (key.name === "tab") send({ type: "hint" });
       else if (key.name === "backspace") typed = [...typed].slice(0, -1).join("");
       else if (key.name === "escape") {
@@ -1004,12 +1140,19 @@ export function startApp(opts: AppOptions): App {
       else if (n >= 0 && n < rows.length) rows[n].choose();
       return render();
     }
+    if (innerVoice && key.name === "s" && mode === "explore") { statusFrom = mode; mode = "status"; return render(); }
+    if (innerVoice && key.name === "h" && (mode === "scene" || mode === "help")) { think(() => voiceHint(course, core.state, t, opts.now(), "stall")); return render(); }
+    if (innerVoice && key.name === "?" && lastLine) {
+      const sentence = sentenceCard(course, lastLine);
+      if (sentence) card = { rows: [[{ text: sentence.meaning }]], compact: [{ text: sentence.meaning }], col: anchor?.indent ?? 0 };
+      return render();
+    }
     if (key.name === "o" && opts.settings && (mode === "explore" || mode === "scene" || mode === "help")) {
       settingsFrom = mode;
       mode = "settings";
       return render();
     }
-    if (key.name === bookKey && mode !== "help") {
+    if (key.name === bookKey && (mode !== "help" || innerVoice)) {
       notebookFrom = mode;
       nbView = { tab: "words", group: 0, word: 0, open: false, top: 0 };
       mode = "notebook";
@@ -1021,7 +1164,10 @@ export function startApp(opts: AppOptions): App {
     } else if (mode === "explore") {
       const item = n >= 0 ? menu()[n] : undefined;
       if (key.name === "q" || item?.quit) return opts.quit();
-      if (item?.input) send(item.input);
+      if (key.name === "return" && innerVoice) {
+        const items = menu(); const i = primaryItem(course, core.state, placeMenu(course, core.state, t).filter((m) => !("disabled" in m && m.disabled)));
+        if (i !== undefined && items[i]?.input) send(items[i].input!);
+      } else if (item?.input) send(item.input);
     } else if (mode === "help") {
       const word = n >= 0 ? helpWords()[n] : undefined;
       if (word) {
@@ -1111,7 +1257,7 @@ export function startApp(opts: AppOptions): App {
   }
 
   if (opts.notice) push([{ text: t(opts.notice), color: "yellow" }]);
-  tellIntro();
+  if (!innerVoice) tellIntro();
   enterPlace(core.state.place);
   // A note readied mid-scene, then quitting before it was shown, would otherwise lose the one-time
   // hint: core.state.notes.ready survives a save, so it's the source of truth on resume too.
@@ -1121,7 +1267,10 @@ export function startApp(opts: AppOptions): App {
   flush();
   resuming = false;
   // A course whose lines say the player's name asks for it before anything else.
+  if (innerVoice) think(() => voiceDay(course, core.state, t, opts.now()));
   if (course.needsName && !core.state.player) mode = "name";
+  else if (innerVoice && deskOn(course, core.state, readPapers)) mode = "desk";
+  if (opening.length) mode = "opening";
   term.onKey(press);
   term.onResize(render);
   render();

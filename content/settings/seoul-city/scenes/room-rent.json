@@ -15,7 +15,7 @@
    "id": "hello",
    "slots": {},
    "expect": {
-    "action": "hello"
+    "action": "missing"
    },
    "hinges": [],
    "pay": 0,

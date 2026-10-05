@@ -31,20 +31,20 @@
    "missCost": 0
   },
   {
-   "id": "money",
-   "slots": {},
-   "hinges": [],
-   "pay": 0,
-   "missCost": 0,
-   "expect": {
-    "action": "money"
-   }
-  },
-  {
    "id": "shop",
    "slots": {},
    "expect": {
     "action": "shop"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "stall-name",
+   "slots": {},
+   "expect": {
+    "action": "stall-name"
    },
    "hinges": [],
    "pay": 0,

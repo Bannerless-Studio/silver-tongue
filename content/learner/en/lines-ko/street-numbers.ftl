@@ -6,6 +6,16 @@ cost-alt1-intent = Say you don't know
 cost-alt2 = Yes, thank you.
 cost-alt2-intent = Say yes and thank him
 
+money = No money?
+money-reply = I have a thousand won.
+money-reply-intent = Say how much is left
+money-alt1 = Yes, I know.
+money-alt1-intent = Say you know
+money-alt1-answer = Do you have money?
+money-alt2 = No, I don't know.
+money-alt2-intent = Say you don't know
+money-alt2-answer = A thousand won?
+
 note = This is a thousand won. One.
 note-reply = One?
 note-reply-intent = Repeat the number
@@ -55,3 +65,13 @@ next-b = { $number ->
 }
 next-b-reply = { -number(form: "cap") }!
 next-b-reply-intent = Say the next number
+
+# My reading of what was just said.
+cost-why = What did the bread and milk cost?
+money-why = Is my money gone?
+note-why = That note is worth a thousand won.
+count-why = He wants me to count with him.
+owed-why = He says I am owed three thousand won.
+five-why = He is counting up to five.
+next-a-why = He wants the next number.
+next-b-why = He wants the next number.

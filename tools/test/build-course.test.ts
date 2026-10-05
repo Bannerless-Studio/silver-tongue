@@ -1,6 +1,7 @@
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { execFileSync } from "node:child_process";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, describe, expect, it } from "vitest";
 import { PLAYER_MARK } from "@silver-tongue/core";
@@ -577,5 +578,58 @@ describe("word forms", () => {
     });
     expect(errors).toEqual([]);
     expect(Object.values(course!.words).find((w) => w.w === "谢谢")!.forms).toEqual({ "谢谢你": ["xièxie nǐ"] });
+  });
+});
+
+
+describe("Korean voice build compatibility", () => {
+  it("pins voice-sensitive zh/ja JSON fields to be2c0fe, with a CI snapshot fallback", { timeout: 120_000 }, () => {
+    const snapshot = JSON.parse(readFileSync(new URL("./fixtures/voice-compat-be2c0fe.json", import.meta.url), "utf8")) as { revision: string; courses: Record<string, { learnerMessages: Record<string, string>; voiceKeys: string[]; whyExchanges: unknown[] }> };
+    expect(snapshot.revision).toBe("be2c0fe");
+    const project = (course: NonNullable<ReturnType<typeof buildCourse>["course"]>, baseline: Record<string, string>) => {
+      const messages: Record<string, string> = {}; let id: string | undefined;
+      for (const line of course.learnerFtl.split("\n")) {
+        const m = /^([\w-]+) = (.*)$/.exec(line);
+        if (m) { id = m[1]; messages[id] = m[2]; }
+        else if (id && (/^\s/.test(line) || line === "}")) messages[id] += `\n${line}`;
+        else id = undefined;
+      }
+      return {
+        // Compare baseline message fields directly; opening chrome additions are outside this seam.
+        learnerMessages: Object.fromEntries(Object.keys(baseline).map((key) => [key, messages[key]])),
+        voiceKeys: Object.keys(messages).filter((key) => /^(?:voice-|keys-(?:voice|desk|opening|status))/.test(key) && !(key in baseline)),
+        whyExchanges: course.scenes.flatMap((scene) => scene.exchanges.flatMap((ex) => Object.entries(ex.variants).flatMap(([key, v]) => (v as { why?: string }).why === undefined ? [] : [{ scene: scene.id, exchange: ex.id, key, why: (v as { why?: string }).why }]))),
+      };
+    };
+    const repo = fileURLToPath(new URL("../../", import.meta.url));
+    let fixedRoot: string | undefined;
+    try {
+      const paths = execFileSync("git", ["ls-tree", "-r", "--name-only", snapshot.revision, "content"], { cwd: repo, encoding: "utf8" }).trim().split("\n");
+      fixedRoot = mkdtempSync(join(tmpdir(), "st-fixed-content-")); temps.push(fixedRoot);
+      for (const path of paths) {
+        if (path.startsWith("content/audio/")) continue;
+        const dest = join(fixedRoot, path.slice("content/".length)); mkdirSync(dirname(dest), { recursive: true });
+        writeFileSync(dest, execFileSync("git", ["show", `${snapshot.revision}:${path}`], { cwd: repo, maxBuffer: 32 * 1024 * 1024 }));
+      }
+      if (existsSync(join(CONTENT, "audio"))) symlinkSync(join(CONTENT, "audio"), join(fixedRoot, "audio"));
+    } catch { fixedRoot = undefined; } // Source archive / shallow CI: the fixed checked-in snapshot still gates this seam.
+    for (const id of ["zh-china", "ja-japan"]) {
+      const expected = snapshot.courses[id];
+      const current = buildCourse(CONTENT, id);
+      expect(current.errors).toEqual([]);
+      expect(project(current.course!, expected.learnerMessages)).toEqual(expected);
+      if (fixedRoot) {
+        const fixed = buildCourse(fixedRoot, id);
+        expect(fixed.course).toBeDefined();
+        expect(project(fixed.course!, expected.learnerMessages)).toEqual(expected);
+      }
+    }
+  });
+  it("rejects an orphan -why key in the scene's learner file", () => {
+    const root = copyContent((dir) => {
+      const path = join(dir, "learner/en/lines-ko/street-again.ftl");
+      writeFileSync(path, readFileSync(path, "utf8") + "\nmissing-why = A thought without an exchange.\n");
+    });
+    expect(buildCourse(root, "ko-seoul").errors).toContain('voice: explanation "street-again.missing-why" has no exchange');
   });
 });

@@ -17,3 +17,8 @@ bye-alt1 = Goodbye (you go).
 bye-alt1-intent = See him off
 bye-alt2 = Sorry.
 bye-alt2-intent = Apologise
+
+# My reading of what was just said.
+buy-why = She is pricing the { -item } at a thousand won.
+change-why = She is giving me four thousand won in change.
+bye-why = She is saying goodbye.

@@ -14,7 +14,7 @@
    "id": "fast",
    "slots": {},
    "expect": {
-    "action": "where"
+    "action": "understand"
    },
    "hinges": [],
    "pay": 0,
@@ -24,7 +24,7 @@
    "id": "again",
    "slots": {},
    "expect": {
-    "action": "where"
+    "action": "understand"
    },
    "hinges": [],
    "pay": 0,
@@ -34,7 +34,7 @@
    "id": "slow",
    "slots": {},
    "expect": {
-    "action": "where"
+    "action": "understand"
    },
    "hinges": [],
    "pay": 0,

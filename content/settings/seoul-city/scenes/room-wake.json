@@ -37,26 +37,6 @@
    }
   },
   {
-   "id": "who",
-   "slots": {},
-   "expect": {
-    "action": "who"
-   },
-   "hinges": [],
-   "pay": 0,
-   "missCost": 0
-  },
-  {
-   "id": "missing",
-   "slots": {},
-   "hinges": [],
-   "pay": 0,
-   "missCost": 0,
-   "expect": {
-    "action": "missing"
-   }
-  },
-  {
    "id": "bye",
    "slots": {},
    "expect": {

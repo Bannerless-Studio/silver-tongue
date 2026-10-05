@@ -6,6 +6,7 @@ export type QuietAction =
   | { kind: "undo" }
   | { kind: "send" }
   | { kind: "reveal" }
+  | { kind: "think" }
   | { kind: "open"; overlay: Overlay }
   | { kind: "sound" }
   | { kind: "replay" }
@@ -40,6 +41,7 @@ export function keyAction(key: string, ctx: KeyContext): QuietAction | null {
   if (ctx.phase === "explore" && ctx.primary !== undefined && k === "Enter") return { kind: "choose", n: ctx.primary };
   const lower = k.toLowerCase();
   // w is the text game's look-up key, and the shared opening prose names it.
+  if (ctx.book && lower === "h") return { kind: "think" };
   if (k === "?" || lower === "w") return { kind: "reveal" };
   if (lower === bookKey(ctx.book)) return { kind: "open", overlay: "notebook" };
   if (OPEN[lower]) return { kind: "open", overlay: OPEN[lower] };

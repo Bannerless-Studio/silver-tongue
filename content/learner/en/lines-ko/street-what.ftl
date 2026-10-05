@@ -1,3 +1,13 @@
+sit = Sit here.
+sit-reply = Thank you.
+sit-reply-intent = Thank him for the seat
+sit-alt1 = Goodbye.
+sit-alt1-intent = Say goodbye as you leave
+sit-alt1-answer = Sit here.
+sit-alt2 = Are you Grandpa Park?
+sit-alt2-intent = Check his name again
+sit-alt2-answer = I'm Grandpa Park. Sit here.
+
 book = Is this a Korean book?
 book-reply = Yes, it's a Korean book.
 book-reply-intent = Say what it is
@@ -29,3 +39,10 @@ that-alt1 = A book?
 that-alt1-intent = Ask if it's a book
 that-alt2 = No, I don't know.
 that-alt2-intent = Say you don't know
+
+# My reading of what was just said.
+sit-why = He wants me to sit here.
+book-why = Is this a Korean book?
+good-why = He approves.
+newspaper-why = That is a newspaper.
+that-why = He is pointing out the shop.

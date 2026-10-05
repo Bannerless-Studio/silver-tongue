@@ -11,6 +11,16 @@
  "trustGain": 1,
  "exchanges": [
   {
+   "id": "sit",
+   "slots": {},
+   "expect": {
+    "action": "sit"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
    "id": "book",
    "slots": {},
    "expect": {

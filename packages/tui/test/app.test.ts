@@ -729,7 +729,7 @@ describe("tui app", () => {
     expect(s).toContain("That's not what was asked.");
   });
 
-  it("shows a scene's slot cost only in the HUD, not the menu, and shows late rent in the HUD", () => {
+  it("shows conversation time in the menu, free movement, and late rent in the HUD", () => {
     const { term } = setup((s) => {
       s.place = "noodle_shop";
       s.rentLate = true;
@@ -738,7 +738,7 @@ describe("tui app", () => {
     expect(s).toContain("1) Say hello");
     expect(s).toContain("2) Go to The street"); // moving is free
     expect(s).not.toContain("The street · 1 slot");
-    expect(s).not.toContain("Say hello · 1 slot");
+    expect(s).toContain("Say hello · takes the rest of this part of the day");
     expect(s).toContain("¥20 · rent late");
   });
 
@@ -1308,7 +1308,7 @@ describe("menu surprisal and place notices", () => {
     });
     const before = term.frames.at(-1)!;
     const line = before.find((l) => l.some((span) => span.text.includes("Serve drinks")))!;
-    expect(line.map((span) => span.text).join("")).toContain("no time left");
+    expect(term.screen().join("\n")).toContain("no time left"); // the longer action label wraps
     expect(line.find((span) => span.text.includes("Serve drinks"))?.dim).toBe(true);
     term.press("1"); // still selectable: choosing it gives the normal rejection
     expect(term.screen().join("\n")).toContain("You're out of time today. Go and find your bed.");

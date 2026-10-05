@@ -17,7 +17,7 @@ import {
   type World,
 } from "@silver-tongue/core";
 import { heuristicGloss, narrationProblems, uiTextProblems } from "@silver-tongue/tui";
-import type { CourseExtra, DeskPaper, LetterChart, WordExtra } from "@silver-tongue/view";
+import type { CourseExtra, DeskPaper, LetterChart, VoiceVariant, WordExtra } from "@silver-tongue/view";
 import { checkCourse, usedWords } from "./check";
 import { bindSlots, duplicateIds, messageIds, parseFtl, Renderer, termNames, type FtlSource } from "./fluent";
 import type { PackMeta, PackWord } from "./pack";
@@ -202,6 +202,7 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
 
   const scenesDir = join(settingDir, "scenes");
   const scenes: Scene[] = [];
+  const whyIds = new Set<string>();
   const newWordsOverride: Record<string, number> = {};
   const sceneFiles = attempt("scenes", () => readdirSync(scenesDir).filter((f) => f.endsWith(".json")).sort()) ?? [];
   for (const file of sceneFiles) {
@@ -233,6 +234,9 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
           });
     for (const [name, src] of [[linesName, linesSrc], [meaningsName, meaningsSrc]] as const)
       if (src !== undefined) for (const id of duplicateIds(src, name)) errors.push(`${name}: "${id}" is defined more than once`);
+    if (meaningsSrc) for (const id of messageIds(meaningsSrc, meaningsName).filter((id) => id.endsWith("-why"))) {
+      whyIds.add(`${sk.id}.${id}`);
+    }
     const exchanges: Exchange[] = [];
     for (const ex of sk.exchanges) {
       const variants: Record<string, Variant> = {};
@@ -259,7 +263,7 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
             ["slots", bindSlots(termsSrc, combo, linesSrc, linesName)],
             [linesName, linesSrc],
           ]);
-          const variant: Variant = {
+          const variant: VoiceVariant = {
             npc: toLine(r.render(ex.id, args), where),
             reply: toLine(r.render(`${ex.id}-reply`, args), where),
           };
@@ -288,6 +292,7 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
               [meaningsName, meaningsSrc],
             ]);
             variant.npc.meaning = m.render(ex.id, args);
+            if (m.has(`${ex.id}-why`)) variant.why = m.render(`${ex.id}-why`, args);
             variant.reply.meaning = m.render(`${ex.id}-reply`, args);
             if (variant.rephrase) variant.rephrase.meaning = m.render(`${ex.id}-rephrase`, args);
             variant.alts?.forEach((l, i) => (l.meaning = m.render(altIds[i], args)));
@@ -384,6 +389,7 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
         readFileSync(join(learnerDir, `narration-${cfg.setting}.ftl`), "utf8"),
         readOptional(join(learnerDir, `mentor-${cfg.language}.ftl`)),
         readOptional(join(learnerDir, `letters-${cfg.language}.ftl`)),
+        ...(cfg.language === "ko" ? [readOptional(join(learnerDir, "voice-ko.ftl"))] : []),
       ].join("\n"),
     ) ?? "";
 
@@ -392,6 +398,7 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
   for (const [name, src] of [...glossSrc, shortSrc]) for (const id of duplicateIds(src, name)) errors.push(`learner/${learner}/${name}: "${id}" is defined more than once`);
   if (meta.tileGap !== undefined && typeof meta.tileGap !== "string") errors.push(`pack.json: "tileGap" must be text, got ${JSON.stringify(meta.tileGap)}`);
   if (meta.book !== undefined && typeof meta.book !== "boolean") errors.push(`pack.json: "book" must be true or false, got ${JSON.stringify(meta.book)}`);
+  if (meta.voice !== undefined && typeof meta.voice !== "boolean") errors.push(`pack.json: "voice" must be true or false, got ${JSON.stringify(meta.voice)}`);
   const liaisonOk = (l: unknown) =>
     !!l && typeof l === "object" && typeof (l as { before?: unknown }).before === "string" && Object.values((l as { finals?: object }).finals ?? { x: 0 }).every((v) => typeof v === "string");
   if (meta.liaison !== undefined && !liaisonOk(meta.liaison)) errors.push(`pack.json: "liaison" must be { "before": text, "finals": { text: text } }, got ${JSON.stringify(meta.liaison)}`);
@@ -399,7 +406,7 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
     id: cfg.id,
     learner,
     ...(cfg.aliases?.length ? { aliases: cfg.aliases } : {}),
-    language: { code: meta.key, locale: meta.locale, tts: meta.tts, spaced: meta.spaced, ...(typeof meta.tileGap === "string" && meta.tileGap ? { tileGap: meta.tileGap } : {}), ...(meta.book === true ? { book: true } : {}), ...(meta.liaison && liaisonOk(meta.liaison) ? { liaison: meta.liaison } : {}) },
+    language: { code: meta.key, locale: meta.locale, tts: meta.tts, spaced: meta.spaced, ...(typeof meta.tileGap === "string" && meta.tileGap ? { tileGap: meta.tileGap } : {}), ...(meta.book === true ? { book: true } : {}), ...(meta.voice === true ? { voice: true } : {}), ...(meta.liaison && liaisonOk(meta.liaison) ? { liaison: meta.liaison } : {}) },
     typing: meta.typing !== null,
     words,
     concepts,
@@ -459,7 +466,7 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
   for (const id of ["learner-name", `language-${cfg.language}`, ...(course.letters ? letterMessageIds(course.letters) : []), ...(course.papers ? paperMessageIds(course.papers) : [])]) {
     if (!learnerIds.has(id)) errors.push(`learner/${learner}/${id.startsWith("letters-guide-") ? `letters-${cfg.language}` : "ui"}.ftl: missing "${id}"`);
   }
-  errors.push(...checkCourse({ course, stages: meta.stages, checks: cfg.checks, learnerIds, requiredUi: [], audioFiles, newWordsOverride }));
+  errors.push(...checkCourse({ course, stages: meta.stages, checks: cfg.checks, learnerIds, requiredUi: [], audioFiles, newWordsOverride, whyIds }));
   errors.push(...uiTextProblems(learnerFtl, learner));
   // Each action's narration gets the parameters its exchanges' `expect` gives it, plus the current
   // scene's NPC (npc), which the front ends always supply alongside the action's own arguments.

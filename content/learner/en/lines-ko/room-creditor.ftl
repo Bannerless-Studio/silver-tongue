@@ -48,3 +48,11 @@ nextweek-alt1 = Goodbye (I'm leaving).
 nextweek-alt1-intent = Say goodbye as you leave
 nextweek-alt2 = I have a hundred thousand.
 nextweek-alt2-intent = Say you have the money
+
+# My reading of what was just said.
+knock-why = Is Min-jun here?
+who-why = He wants to know who I am.
+borrowed-why = Min-jun borrowed money from him.
+debt-why = He says the debt is a hundred thousand won.
+when-why = When is Min-jun coming back?
+nextweek-why = He intends to return next week.

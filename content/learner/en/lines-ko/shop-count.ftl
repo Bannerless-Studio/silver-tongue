@@ -37,3 +37,10 @@ bye-alt1 = Goodbye.
 bye-alt1-intent = See him off
 bye-alt2 = Sorry.
 bye-alt2-intent = Apologise
+
+# My reading of what was just said.
+welcome-why = She is welcoming me.
+note-why = She wants to know what I mean.
+count-why = She is counting out the money.
+sorry-why = She is apologising.
+bye-why = She is saying goodbye.

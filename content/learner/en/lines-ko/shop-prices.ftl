@@ -11,8 +11,8 @@ milk-reply = Milk too, please.
 milk-reply-intent = Ask for milk as well
 milk-alt1 = What's milk?
 milk-alt1-intent = Ask what milk is
-milk-alt2 = There's no milk.
-milk-alt2-intent = Say there's no milk
+milk-alt2 = Is it milk?
+milk-alt2-intent = Check what it is
 
 price = Bread's a thousand won, milk's a thousand won.
 price-reply = Sorry? How much?
@@ -35,8 +35,8 @@ slow-reply = OK, here you go.
 slow-reply-intent = Hand over the money
 slow-alt1 = A thousand won, please.
 slow-alt1-intent = Ask him for money
-slow-alt2 = I have no money.
-slow-alt2-intent = Say you have no money
+slow-alt2 = Is it bread?
+slow-alt2-intent = Check what it is
 
 change = Here you go.
 change-reply = OK, thank you.
@@ -53,3 +53,12 @@ bye-alt1 = Goodbye.
 bye-alt1-intent = See him off
 bye-alt2 = How much is it?
 bye-alt2-intent = Ask the price
+
+# My reading of what was just said.
+welcome-why = She is welcoming me.
+milk-why = There is milk as well.
+price-why = Bread and milk are a thousand won each.
+again-why = She is repeating the prices, louder.
+slow-why = The same prices, slowly this time.
+change-why = She is handing over my change.
+bye-why = She is saying goodbye.

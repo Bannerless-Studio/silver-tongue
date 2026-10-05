@@ -81,6 +81,6 @@
  },
  "mentor": {
   "npc": "oldman",
-  "after": "street-hello"
+  "after": "shop-count"
  }
 }

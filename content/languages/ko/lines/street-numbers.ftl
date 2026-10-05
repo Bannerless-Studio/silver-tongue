@@ -7,6 +7,13 @@ cost-reply = 천 원, 천 원.
 cost-alt1 = 몰라요.
 cost-alt2 = 네, 감사합니다.
 
+money = 돈 없어요?
+money-reply = 천 원 있어요.
+money-alt1 = 네, 알아요.
+money-alt1-answer = 돈 있어요?
+money-alt2 = 아니요, 몰라요.
+money-alt2-answer = 천 원?
+
 note = 이거 천 원. 하나.
 note-reply = 하나?
 note-alt1 = 우유도 주세요.

@@ -19,6 +19,7 @@
  "spaced": false,
  "tileGap": " ",
  "book": true,
+ "voice": true,
  "liaison": {
   "before": "aeiouwy",
   "finals": {

@@ -80,6 +80,7 @@ export function App({ q, page }: { q: Quiet; page: Page }) {
       if (bookOn(q.course)) finishTilesHint(q.course.id);
       q.sendTiles();
     }
+    else if (a.kind === "think") q.stall();
     else if (a.kind === "reveal") {
       const last = latestNpcLine(q.view().backlog);
       if (last) onReveal(last);

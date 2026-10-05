@@ -46,3 +46,11 @@ again-alt1 = Work tomorrow?
 again-alt1-intent = Ask about work
 again-alt2 = Is it a copy shop?
 again-alt2-intent = Ask what it is
+
+# My reading of what was just said.
+areyou-why = Am I a student?
+shop-why = This is a copy shop.
+job-why = He is offering me work.
+copy-it-why = He wants this copied.
+sheets-why = He wants two copies.
+again-why = He wants me back tomorrow.
