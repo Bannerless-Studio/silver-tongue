@@ -132,6 +132,20 @@ export class WebSessions {
     }
   }
 
+  /** Deletes a game (the lab page's jump game is replaced, not added to). Returns false if storage failed. */
+  remove(id: string): boolean {
+    try {
+      this.kv.removeItem(`${this.prefix}session:${id}`);
+      const meta = this.meta();
+      delete meta.played[id];
+      if (meta.last === id) delete meta.last;
+      this.kv.setItem(`${this.prefix}meta`, JSON.stringify(meta));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   /** Adds an imported game as a new session; its id, or null if storage failed. */
   add(state: GameState): string | null {
     try {

@@ -1,6 +1,6 @@
 // Forked from packages/vn-web/src/main.tsx: the same loading and saves, drawn as a quiet terminal.
 import { render } from "preact";
-import { createCore, mulberry32, type CatalogEntry, type Course, type GameState } from "@silver-tongue/core";
+import { createCore, mulberry32, newGame, type CatalogEntry, type Course, type GameState } from "@silver-tongue/core";
 import { courseLabels, decodeSave, DEFAULT_RUBY, DEFAULT_SPEED, encodeSave, learnerFor, deskKey, emptyProgress, lookupHintKey, makeText, papersKey, parseProgress, playbackRate, sessionLines, type RubySetting, type SpeechSpeed, type Text } from "@silver-tongue/view";
 import {
   coursesBase, createWebAudio, fetchJson, fromLocalStorage, labMode, loadWebSettings, metaContent, migrateWebAliases, pageStart, updateWebSettings, WebSessions,
@@ -8,7 +8,7 @@ import {
 } from "@silver-tongue/web-common";
 import { App, type Page } from "./ui/App";
 import { DevBadge } from "./ui/DevBadge";
-import { devClock, driveTo, setSkipCrawl } from "./dev";
+import { DEV_GAME, devClock, driveTo, setSkipCrawl } from "./dev";
 import { Title } from "./ui/Title";
 import { createQuiet, type PaperStore, type Quiet } from "./quiet";
 import { opensOnStory } from "./opening";
@@ -192,7 +192,9 @@ function jumpTo(n: number) {
     // an address that can't change: the jump still happens
   }
   setSkipCrawl(n === 2);
-  play(l.sessions.startNew(), (q) => void driveTo(q, n, () => (devClock.skew += 1000), n === 2));
+  // One fixed game id: the next jump replaces it, so jumping never grows the game list.
+  l.sessions.remove(DEV_GAME);
+  play({ id: DEV_GAME, state: newGame(l.course), readOnly: false }, (q) => void driveTo(q, n, () => (devClock.skew += 1000), n === 2));
   devClock.skew += 1000; // taps on the screen it lands on count at once
 }
 

@@ -68,6 +68,20 @@ describe("web sessions", () => {
     expect(s.list()[0]).toMatchObject({ id, state: { day: 9 } });
   });
 
+  it("removes a game and forgets it was played; the lab jump game is replaced, not added to", () => {
+    const kv = new FakeStorage();
+    const s = new WebSessions(kv, course, () => T);
+    s.save("keep", newGame(course));
+    for (let i = 0; i < 3; i++) {
+      s.remove("dev-jump");
+      s.save("dev-jump", { ...newGame(course), day: i + 2 });
+    }
+    expect(s.list().map((x) => x.id).sort()).toEqual(["dev-jump", "keep"]);
+    expect(s.remove("dev-jump")).toBe(true);
+    expect(s.list().map((x) => x.id)).toEqual(["keep"]);
+    expect(s.continueLast().id).not.toBe("dev-jump");
+  });
+
   it("plays on read-only when storage throws", () => {
     const broken: KeyValue = {
       getItem: () => {

@@ -5,6 +5,9 @@ import { comboKey, type Course, type GameState } from "@silver-tongue/core";
 import { deskPapers, firstUnread, letterChart, paperSyllables, textLetterKeys } from "@silver-tongue/view";
 import type { Quiet } from "./quiet";
 
+/** The one saved game every jump creates, replaced by the next jump. */
+export const DEV_GAME = "dev-jump";
+
 /** A clock the lab page can push forward: a jump drives replies faster than the taps' settle time. */
 export const devClock = { skew: 0, now: (): number => Date.now() + devClock.skew };
 
