@@ -18,6 +18,24 @@ export function fromLocalStorage(ls: Storage): KeyValue {
   };
 }
 
+/** Every key the game writes starts with this; the lab page swaps it for LAB_PREFIX. */
+export const STORAGE_PREFIX = "silver-tongue:";
+export const LAB_PREFIX = "silver-tongue-lab:";
+
+/**
+ * The lab page shares localStorage with the main site (same origin): its keys live under LAB_PREFIX
+ * instead, so a jump never touches the real saves, settings or desk progress. Keys outside STORAGE_PREFIX pass through.
+ */
+export function labKeyValue(kv: KeyValue): KeyValue {
+  const to = (k: string) => (k.startsWith(STORAGE_PREFIX) ? LAB_PREFIX + k.slice(STORAGE_PREFIX.length) : k);
+  return {
+    getItem: (k) => kv.getItem(to(k)),
+    setItem: (k, v) => kv.setItem(to(k), v),
+    removeItem: (k) => kv.removeItem(to(k)),
+    keys: () => kv.keys().filter((k) => k.startsWith(LAB_PREFIX)).map((k) => STORAGE_PREFIX + k.slice(LAB_PREFIX.length)),
+  };
+}
+
 export interface Opened {
   id: string;
   state: GameState;

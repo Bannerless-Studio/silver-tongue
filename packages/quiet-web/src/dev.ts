@@ -47,6 +47,9 @@ export function screenOf(q: Pick<Quiet, "view" | "course" | "core" | "readPapers
 /** How many screens the flow has up to and including `exchanges` conversation exchanges. */
 export const lastScreen = (course: Course, exchanges: number): number => 3 + deskPapers(course).length + exchanges;
 
+/** The furthest screen a jump goes to: bounds the driver's loop. */
+export const maxScreen = (course: Course): number => 3 + deskPapers(course).length + 60;
+
 const MAX_STEPS = 600;
 const DEV_NAME = "Dev";
 

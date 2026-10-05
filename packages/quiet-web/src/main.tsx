@@ -3,12 +3,12 @@ import { render } from "preact";
 import { createCore, mulberry32, newGame, type CatalogEntry, type Course, type GameState } from "@silver-tongue/core";
 import { courseLabels, decodeSave, DEFAULT_RUBY, DEFAULT_SPEED, encodeSave, learnerFor, deskKey, emptyProgress, lookupHintKey, makeText, papersKey, parseProgress, playbackRate, sessionLines, type RubySetting, type SpeechSpeed, type Text } from "@silver-tongue/view";
 import {
-  coursesBase, createWebAudio, fetchJson, fromLocalStorage, labMode, loadWebSettings, metaContent, migrateWebAliases, pageStart, updateWebSettings, WebSessions,
+  coursesBase, createWebAudio, fetchJson, fromLocalStorage, labKeyValue, labMode, loadWebSettings, metaContent, migrateWebAliases, pageStart, updateWebSettings, WebSessions,
   type KeyValue, type Opened,
 } from "@silver-tongue/web-common";
 import { App, type Page } from "./ui/App";
 import { DevBadge } from "./ui/DevBadge";
-import { DEV_GAME, devClock, driveTo, setSkipCrawl } from "./dev";
+import { DEV_GAME, devClock, driveTo, maxScreen, setSkipCrawl } from "./dev";
 import { Title } from "./ui/Title";
 import { createQuiet, type PaperStore, type Quiet } from "./quiet";
 import { opensOnStory } from "./opening";
@@ -34,6 +34,9 @@ try {
 } catch {
   // stays noStorage
 }
+// Lab page only: all storage under its own prefix (the page shares an origin with the real game).
+const lab = labMode();
+if (lab) kv = labKeyValue(kv);
 
 interface Loaded { course: Course; t: Text; sessions: WebSessions; audio: ReturnType<typeof createWebAudio> }
 let catalog: CatalogEntry[] = [];
@@ -123,11 +126,13 @@ function paperStore(kv: KeyValue, course: string): PaperStore {
 }
 
 // Lab page only: jump to a screen of the flow (dev.ts). Off the lab page none of this runs.
-const lab = labMode();
 let devRoot: HTMLElement | undefined;
+/** Bumped by every lab jump: the page is mounted afresh, so no component state outlives the jump. */
+let jumpNonce = 0;
 /** `prepare` runs on the new game before it is drawn (the lab jump). */
 function play(opened: Opened, prepare?: (q: Quiet) => void) {
   const l = loaded!;
+  if (!prepare) setSkipCrawl(false); // a jump's one-shot never reaches a normal game
   l.audio.stop();
   const core = createCore(l.course, opened.state, { now: Date.now, rng: mulberry32(Date.now() >>> 0) });
   const store = l.sessions; // this game's own store: a course loaded later must not take its saves
@@ -173,7 +178,8 @@ function play(opened: Opened, prepare?: (q: Quiet) => void) {
       },
     },
   };
-  render(<App key={`${l.course.id}/${l.course.learner}/${opened.id}`} q={quiet} page={page} />, root);
+  render(<App key={`${l.course.id}/${l.course.learner}/${opened.id}/${jumpNonce}`} q={quiet} page={page} />, root);
+  setSkipCrawl(false); // taken (or not wanted) by now
   if (lab) {
     devRoot ??= document.body.appendChild(document.createElement("div"));
     render(<DevBadge key={opened.id} q={quiet} jump={jumpTo} />, devRoot);
@@ -181,9 +187,11 @@ function play(opened: Opened, prepare?: (q: Quiet) => void) {
 }
 
 /** Lab page: a new game brought to screen `n` (see dev.ts); the address keeps it so a reload lands there. */
-function jumpTo(n: number) {
+function jumpTo(requested: number) {
   const l = loaded;
   if (!l) return;
+  const n = Math.min(Math.max(requested, 1), maxScreen(l.course));
+  jumpNonce++;
   try {
     const url = new URL(location.href);
     url.searchParams.set("screen", String(n));

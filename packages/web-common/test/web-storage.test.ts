@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { newGame, serialize } from "@silver-tongue/core";
 import { fixtureCourse } from "@silver-tongue/core/testing";
-import { loadWebSettings, migrateWebAliases, saveWebSettings, SETTINGS_KEY, updateWebSettings, WebSessions, type KeyValue } from "../src/web-storage";
+import { labKeyValue, loadWebSettings, migrateWebAliases, saveWebSettings, SETTINGS_KEY, updateWebSettings, WebSessions, type KeyValue } from "../src/web-storage";
 
 /** An in-memory localStorage. */
 class FakeStorage implements KeyValue {
