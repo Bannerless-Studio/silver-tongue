@@ -29,7 +29,7 @@ jobs:
           cache: npm
       - run: npm ci
         env:
-          GITHUB_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_PACKAGES_TOKEN: ${{ secrets.GITHUB_PACKAGES_TOKEN || secrets.GITHUB_TOKEN }}
       - name: Make missing audio clips (lab experiments change lines; clips are not committed yet)
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg > /dev/null
@@ -56,7 +56,7 @@ jobs:
           mkdir -p ../site/lab
           cp -R site/. ../site/lab/
         env:
-          GITHUB_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_PACKAGES_TOKEN: ${{ secrets.GITHUB_PACKAGES_TOKEN || secrets.GITHUB_TOKEN }}
       - uses: actions/upload-pages-artifact@v4
         with:
           path: site

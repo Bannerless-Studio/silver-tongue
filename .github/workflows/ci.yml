@@ -14,7 +14,7 @@ jobs:
           cache: npm
       - run: npm ci
         env:
-          GITHUB_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_PACKAGES_TOKEN: ${{ secrets.GITHUB_PACKAGES_TOKEN || secrets.GITHUB_TOKEN }}
       - run: npm run typecheck
       - name: Make missing audio clips (lab experiments change lines; clips are not committed yet)
         run: |
