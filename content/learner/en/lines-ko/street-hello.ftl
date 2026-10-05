@@ -2,15 +2,15 @@ hello = Hello.
 hello-reply = Hello.
 hello-reply-intent = Say hello
 hello-alt1 = Goodbye.
-hello-alt1-intent = See him off
-hello-alt2 = Goodbye.
-hello-alt2-intent = Say goodbye as you leave
+hello-alt1-intent = Say goodbye as you leave
+hello-alt2 = Who is it?
+hello-alt2-intent = Ask who he is
 
 park = I'm Grandpa Park.
 park-reply = Hello, Grandpa Park.
 park-reply-intent = Greet him by name
 park-alt1 = Goodbye, Grandpa Park.
-park-alt1-intent = See him off
+park-alt1-intent = Say goodbye as you leave
 park-alt2 = Who are you?
 park-alt2-intent = Ask who he is
 
@@ -22,7 +22,7 @@ ask-alt1-intent = Use the name on the ID card
 ask-alt2 = I'm Min-jun's friend.
 ask-alt2-intent = Say you're Min-jun's friend
 
-sit = Sit here.
+sit = Have a seat.
 sit-reply = Thank you.
 sit-reply-intent = Thank him
 sit-alt1 = Goodbye.

@@ -1,24 +1,34 @@
-# The shop: bread, then milk too. The clerk says the prices too fast; you ask him to slow down and pay.
+# The shop: bread, then milk too. You ask the price; the clerk says it too fast; you ask him to slow down and pay.
 # Each <id>-alt<n> is a written wrong reply, using only words met by then; <id>-alt<n>-answer is the answer to it.
 
 welcome = 어서 오세요.
-welcome-reply = 이거 주세요.
-welcome-alt1 = 이거 뭐예요?
-welcome-alt2 = 안녕히 가세요.
+welcome-reply = 안녕하세요.
+welcome-alt1 = 안녕히 가세요.
+welcome-alt2 = 누구세요?
+
+bread = 빵 있어요.
+bread-reply = 이거 주세요.
+bread-alt1 = 이거 뭐예요?
+bread-alt2 = 빵 없어요.
 
 milk = 우유도 있어요.
 milk-reply = 우유도 주세요.
 milk-alt1 = 우유 뭐예요?
 milk-alt2 = 우유 없어요.
 
-price = 빵 천 원, 우유 천 원.
-price-reply = 네? 얼마예요?
+total = 네, 빵, 우유.
+total-reply = 얼마예요?
+total-alt1 = 이거 뭐예요?
+total-alt2 = 누구세요?
+
+price = 천 원, 천 원!
+price-reply = 네?
 price-alt1 = 이거 뭐예요?
 price-alt2 = 좋아요!
 
-again = 천 원, 천 원!
+again = 빵 천 원, 우유 천 원!
 again-reply = 천천히 말해 주세요.
-again-alt1 = 안녕하세요.
+again-alt1 = 우유 없어요.
 again-alt2 = 좋아요!
 
 slow = 빵…… 천 원. 우유…… 천 원.
@@ -34,4 +44,4 @@ change-alt2 = 안녕히 가세요.
 bye = 안녕히 가세요.
 bye-reply = 안녕히 계세요.
 bye-alt1 = 안녕히 가세요.
-bye-alt2 = 얼마예요?
+bye-alt2 = 이거 뭐예요?

@@ -21,10 +21,30 @@
    "missCost": 0
   },
   {
+   "id": "bread",
+   "slots": {},
+   "expect": {
+    "action": "bread"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
    "id": "milk",
    "slots": {},
    "expect": {
     "action": "milk"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "total",
+   "slots": {},
+   "expect": {
+    "action": "total"
    },
    "hinges": [],
    "pay": 0,

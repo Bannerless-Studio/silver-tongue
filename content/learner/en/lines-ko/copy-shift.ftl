@@ -19,6 +19,10 @@ chat-c = { -topic }
 chat-c-reply = { -topic(form: "reply") }
 chat-c-reply-intent = Answer him
 
+chat-d = { -topic }
+chat-d-reply = { -topic(form: "reply") }
+chat-d-reply-intent = Answer him
+
 thanks = Thank you!
-thanks-reply = Thank you! Come again!
+thanks-reply = Thank you! Come again tomorrow!
 thanks-reply-intent = See the student off
