@@ -296,7 +296,7 @@
    *[base] Whose letter is it? Did it come from the university?
 }
 -cc-stall = { $form ->
-    [reply] Yes, it's good! Let's go together.
+    [reply] Yes, it's good! Let's go and eat there.
    *[base] Do you know Ji-woo's snack stall? The tteokbokki's good, isn't it?
 }
 -cc-sujin = { $form ->
@@ -304,7 +304,7 @@
    *[base] Do you know Su-jin? Where is she now?
 }
 -cc-hungry = { $form ->
-    [reply] No, I'm fine. I'm not hungry.
+    [reply] No, I'm fine. I ate gimbap before I came.
    *[base] Are you hungry now? Shall we have some gimbap?
 }
 
