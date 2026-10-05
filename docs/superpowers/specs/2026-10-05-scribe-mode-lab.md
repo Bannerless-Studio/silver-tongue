@@ -8,6 +8,15 @@ Everywhere else (the main site, later scenes) the stage is unchanged. Switch: `s
   Right: the meaning stays under the line and the reply slips appear. Wrong: the field shakes.
 - **Your reply**: slips are Latin only and not tappable. One field takes the meaning of the reply you want; the closest slip is said (`q.choose`).
   Number keys never say a reply here.
+- **Layout**: the reply block (slips, field, `? help`, `… say nothing`) is drawn by the stage itself, right under their line and its
+  meaning, right-aligned on the player's side like a said line. It is not in the pinned `.replies` strip, so there is no gap and the
+  conversation reads downward. Narrow screens use the same column (`.slips` is `min(100%, 21rem)`).
+- **First-time glosses** (help first, hands off later): on their line and on every reply slip, a word the player has never met shows its
+  short gloss under the romanised word (`.sw-g`); a met word shows nothing until help asks. "Met" is core's word record (`first`):
+  `freshOnTheirLine` (a word whose first line is this one and not yet got right; core marks a line's words when it is heard) and
+  `freshOnReply` (no `first`: core records a reply's words only when it is said). So "Nuguseyo?" is glossed while it is a slip and bare on
+  the next exchange. The set is worked out once per exchange (`freshOnce`), so words do not turn bare mid-exchange. The first help press
+  still glosses every word of their line.
 - **Help** (button, or typing `?`): on their line first the words' glosses, then the whole meaning; on the reply, each slip's meaning.
   It lights after `scribeHelpAfter(index)` misses: 1 for the first two exchanges a course has begun, 3 after. Only the very first exchange shows a worked example.
   The count is kept per course in localStorage (`scribeCountKey`).

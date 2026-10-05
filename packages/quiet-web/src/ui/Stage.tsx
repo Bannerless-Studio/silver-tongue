@@ -253,6 +253,8 @@ export function Stage({ q, view, shown, ruby, reveal, onWord, onReveal, onClose,
           <p class="say-text" lang={q.course.language.locale}>{scribe ? romanLine(ex.reaction.line) : ex.reaction.line.text}</p>
         </div>
       )}
+      {/* Scribe mode: the reply is part of the conversation, under their line and its meaning, on your side. */}
+      {scribe && !shown.hold && <ScribeSlips q={q} view={view} ex={ex} />}
       {children}
       {wordOpen && at && <WordPaper q={q} reveal={wordOpen} at={at} onClose={onClose} />}
     </section>
@@ -263,7 +265,7 @@ export function Stage({ q, view, shown, ruby, reveal, onWord, onReveal, onClose,
 export function Slips({ q, view, ex, ruby, touch }: { q: Quiet; view: QuietView; ex?: Exchange; ruby: RubySetting; touch: boolean }) {
   const p = view.phase;
   if (p.kind !== "pick") return null;
-  if (scribeOn(view, q.course)) return <ScribeSlips q={q} view={view} ex={ex} />;
+  if (scribeOn(view, q.course)) return null; // drawn in the stage, under their line (Stage)
   const { course, core, t } = q;
   const now = Date.now();
   const order = replyOrder(p.options, ex?.missed ?? []);

@@ -78,3 +78,13 @@ export function updateRound(owner: object, course: string, exchange: string | nu
 }
 
 export const subscribeRounds = (l: () => void): (() => void) => (listeners.add(l), () => void listeners.delete(l));
+
+/** The words new on an exchange's line or reply, worked out when first asked for and kept: a word does not turn bare while its own exchange is still on stage. */
+const freshSets = new WeakMap<object, Map<string, Set<string>>>();
+export function freshOnce(owner: object, key: string, compute: () => Set<string>): Set<string> {
+  let m = freshSets.get(owner);
+  if (!m) freshSets.set(owner, (m = new Map()));
+  let f = m.get(key);
+  if (!f) m.set(key, (f = compute()));
+  return f;
+}

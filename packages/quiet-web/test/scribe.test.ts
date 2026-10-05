@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { PLAYER_MARK, type RenderedLine } from "@silver-tongue/core";
+import { createCore, mulberry32, newGame, PLAYER_MARK, type Course, type GameEvent, type RenderedLine } from "@silver-tongue/core";
 import { fixtureWithText } from "@silver-tongue/view/testing";
-import { bestMeaning, meaningMatches, SCRIBE_SCENES, scribeAccepts, scribeCountKey, type CourseExtra } from "@silver-tongue/view";
+import { bestMeaning, freshOnReply, freshOnTheirLine, meaningMatches, SCRIBE_SCENES, scribeAccepts, scribeCountKey, type CourseExtra } from "@silver-tongue/view";
 import { scribeOn, scribeRound, updateRound, writeCount } from "../src/scribe";
 
 /** A course with or without the desk (papers to read by romanising). */
@@ -106,5 +106,55 @@ describe("the real scribe scenes (ko-seoul build)", () => {
     for (const s of scenes) for (const ex of s.exchanges) for (const v of Object.values(ex.variants)) {
       expect(meaningMatches(name(v.npc.meaning), name(v.npc.meaning), scribeAccepts(v.npc.meaning ?? ""))).toBe(true);
     }
+  });
+});
+
+describe("first-time glosses (real ko-seoul room-wake)", () => {
+  const c = JSON.parse(readFileSync(new URL("../../../dist/courses/ko-seoul/en.json", import.meta.url), "utf8")) as Course;
+  const play = () => {
+    let clock = 0;
+    const core = createCore(c, newGame(c), { now: () => clock, rng: mulberry32(1) });
+    const send = (input: Parameters<typeof core.send>[0]) => ((clock += 1000), core.send(input));
+    if (c.needsName) send({ type: "setName", name: "Alex" });
+    const evs = send({ type: "startScene", scene: "room-wake" });
+    return { core, send, evs };
+  };
+  const replyLines = (evs: GameEvent[]): RenderedLine[] => {
+    const e = evs.find((x) => x.type === "replyOptions");
+    return e && e.type === "replyOptions" && e.mode === "pick" ? e.options : [];
+  };
+  const ids = (l: RenderedLine) => l.tokens.map((t) => t.word);
+
+  it("a first line and its replies are all new; every word of a met line is not", () => {
+    const { core, evs } = play();
+    const their = (evs.find((e) => e.type === "lineSpoken") as Extract<GameEvent, { type: "lineSpoken" }>).line;
+    const opts = replyLines(evs);
+    const fresh = freshOnTheirLine(their, core.state.words);
+    expect(fresh.size).toBe(new Set(ids(their)).size); // heard just now: still new while the line is on stage
+    for (const o of opts) expect([...freshOnReply(o, core.state.words)].sort(), o.text).toEqual([...new Set(ids(o))].filter((w) => !core.state.words[w]?.first).sort());
+    expect(opts.some((o) => freshOnReply(o, core.state.words).size > 0)).toBe(true);
+  });
+
+  it("a word said in a reply is not new on the next exchange, nor on the same reply again", () => {
+    const { core, send, evs } = play();
+    const opts = replyLines(evs);
+    const run = core.state.run!;
+    const right = opts.findIndex((_: RenderedLine, i: number) => run.options[i] === run.keys![0]);
+    const said = opts[right];
+    expect(freshOnReply(said, core.state.words).size).toBeGreaterThan(0);
+    const after = send({ type: "reply", choice: right });
+    expect(freshOnReply(said, core.state.words).size).toBe(0);
+    const next = after.find((e) => e.type === "lineSpoken") as Extract<GameEvent, { type: "lineSpoken" }> | undefined;
+    if (next) for (const w of freshOnTheirLine(next.line, core.state.words)) expect(core.state.words[w]?.first?.line, w).toBe(next.line.text);
+  });
+
+  it("a repeat of a line already met is bare once a word was got right", () => {
+    const { core } = play();
+    const l: RenderedLine = { text: "x", tokens: [{ start: 0, end: 1, word: "w" }] };
+    const words = { w: { first: { line: "x" }, right: 1 } };
+    expect(freshOnTheirLine(l, words as never).size).toBe(0);
+    expect(freshOnTheirLine(l, { w: { first: { line: "x" }, right: 0 } } as never).size).toBe(1);
+    expect(freshOnTheirLine(l, {}).size).toBe(1);
+    expect(core).toBeTruthy();
   });
 });

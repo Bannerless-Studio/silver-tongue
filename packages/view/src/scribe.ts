@@ -93,3 +93,27 @@ export const romanLine = (line: RenderedLine): string => romanSegments(line).map
 /** A line's meaning as the learner reads it (core has put the player's name in), or "" when it has none. */
 export const lineMeaning = (line: RenderedLine): string => line.meaning ?? "";
 
+
+type Words = Record<WordId, { first?: { line: string }; right: number } | undefined>;
+
+/**
+ * Words of their line that are new to the player: core records a word when it is first heard (`first` = that line), so a
+ * word is new while the line it first came on is still on stage and it has not been got right since. `origin` is the
+ * line as first said when `line` is a rephrase of it. Such a word shows its gloss under the line, help or not.
+ */
+export function freshOnTheirLine(line: RenderedLine, words: Words, origin: RenderedLine = line): Set<WordId> {
+  const out = new Set<WordId>();
+  for (const tk of line.tokens) {
+    const rec = words[tk.word];
+    if (!rec || (rec.first?.line === origin.text && rec.right === 0)) out.add(tk.word);
+  }
+  return out;
+}
+
+/**
+ * Words of a reply slip that are new: core records a reply's words only when that reply is said (or it was heard in a line),
+ * so a word with no `first` has never been met. Said once, it is not new on the next exchange.
+ */
+export function freshOnReply(line: RenderedLine, words: Words): Set<WordId> {
+  return new Set(line.tokens.filter((tk) => !words[tk.word]?.first).map((tk) => tk.word));
+}

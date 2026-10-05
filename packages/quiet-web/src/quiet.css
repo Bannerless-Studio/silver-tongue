@@ -548,7 +548,11 @@ textarea { width: 100%; background: var(--bg); border: 1px solid var(--line); bo
 .scribe-field .example, .scribe-field .rh-full { text-align: left; }
 .scribe-field .read-tools { justify-content: flex-start; }
 .scribe-list { display: flex; flex-direction: column; gap: 0.45rem; }
+/* In the stage's flow under their line and its meaning, on your side like a said line. */
+.scribe-slips { margin-top: 0.9rem; }
 .scribe-slips .scribe-field { margin-top: 0.3rem; max-width: none; }
+.scribe-slips .slip-text .sw-g { color: var(--ink-2); font-weight: 400; }
+.scribe-slips .say-nothing { align-self: flex-end; }
 .scribe-slip { animation: none; cursor: default; }
 .scribe-slip:focus-visible { outline: 1px solid var(--cyan); outline-offset: 2px; }
 @media (hover: hover) { .scribe-slip:hover { box-shadow: 0 1px 0 #0005; } }

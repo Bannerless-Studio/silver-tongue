@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { RenderedLine, WordId } from "@silver-tongue/core";
-import { bestMeaning, displayGloss, lineMeaning, meaningMatches, romanLine, romanSegments, scribeAccepts, scribeHelpAfter, scribeShowsExample } from "@silver-tongue/view";
+import { bestMeaning, displayGloss, freshOnReply, freshOnTheirLine, lineMeaning, meaningMatches, romanLine, romanSegments, scribeAccepts, scribeHelpAfter, scribeShowsExample } from "@silver-tongue/view";
 import type { Quiet, QuietView } from "../quiet";
 import { replyOrder, type Exchange } from "../stage";
-import { scribeRound, subscribeRounds, updateRound, type Round } from "../scribe";
+import { freshOnce, scribeRound, subscribeRounds, updateRound, type Round } from "../scribe";
 
 /*
  * Scribe mode (lab only, the first conversations): their line in Latin letters with a field for what it means, your
@@ -71,6 +71,8 @@ export function ScribeTheir({ q, ex, held, onWord, children }: {
   const segs = romanSegments(line);
   const accepts = scribeAccepts(meaning);
   const glosses = !solved && round.help >= 1;
+  // Help first, hands off later: a word never met shows its gloss, a met one only when help asks.
+  const fresh = freshOnce(q, `${course.id}:${ex.line.id}:line`, () => freshOnTheirLine(ex.shown, q.core.state.words, ex.line.line ?? ex.shown));
   const set = (change: Partial<Round>) => updateRound(q, course.id, ex.line.id, change);
   const onTry = (typed: string) => {
     if (meaningMatches(typed, meaning, accepts)) return set({ solved: true }), true;
@@ -88,7 +90,7 @@ export function ScribeTheir({ q, ex, held, onWord, children }: {
             ) : (
               <span key={i} class="sw">
                 <button type="button" class="w" onClick={(e) => (e.stopPropagation(), onWord(s.word!, s.surface ?? s.text, e.currentTarget))}>{s.text}</button>
-                {glosses && <span class="sw-g">{displayGloss(course.words[s.word])}</span>}
+                {(glosses || fresh.has(s.word)) && <span class="sw-g">{displayGloss(course.words[s.word])}</span>}
               </span>
             ),
           )}
@@ -153,6 +155,7 @@ export function ScribeSlips({ q, view, ex }: { q: Quiet; view: QuietView; ex?: E
     return true;
   };
   const tried = new Set(ex.missed.map((m) => m.line?.text));
+  const fresh = freshOnce(q, `${q.course.id}:${ex.line.id}:reply`, () => new Set(p.options.flatMap((o) => [...freshOnReply(o, q.core.state.words)])));
   return (
     <div class="slips scribe-slips">
       <div class="scribe-list" role="list">
@@ -160,7 +163,15 @@ export function ScribeSlips({ q, view, ex }: { q: Quiet; view: QuietView; ex?: E
           const o = p.options[i];
           return (
             <div key={o.text} role="listitem" tabIndex={0} class={`slip scribe-slip${tried.has(o.text) ? " tried" : ""}`}>
-              <span class="slip-text" lang={`${q.course.language.code}-Latn`}>{romanLine(o)}</span>
+              <span class="slip-text" lang={`${q.course.language.code}-Latn`}>
+                {romanSegments(o).map((sg, k) =>
+                  sg.word !== undefined && fresh.has(sg.word) ? (
+                    <span key={k} class="sw"><span>{sg.text}</span><span class="sw-g">{displayGloss(q.course.words[sg.word])}</span></span>
+                  ) : (
+                    <span key={k}>{sg.text}</span>
+                  ),
+                )}
+              </span>
               {round.rHelp && <span class="slip-mean">{meaningOf(o)}</span>}
             </div>
           );
