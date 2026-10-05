@@ -1,5 +1,5 @@
-greet = Hello, classmate! We're all learning Chinese!
-greet-reply = Hello, David!
+greet = Hello, classmate!
+greet-reply = Hello, David! We're all learning Chinese!
 greet-reply-intent = Greet David
 greet-alt1 = Hello, teacher!
 greet-alt1-intent = Greet the teacher
@@ -22,7 +22,7 @@ day-alt1-intent = Write a year
 day-alt2 = Hello, David!
 day-alt2-intent = Greet David
 
-book = This book: do you read it?
+book = This one: do you read it?
 book-reply = This book is good!
 book-reply-intent = Praise the book
 book-alt1 = The twenty-sixth of September!
@@ -38,9 +38,9 @@ name-alt1-intent = Praise the book
 name-alt2 = Hello, David!
 name-alt2-intent = Greet David
 
-quiet = Stop talking! The teacher's coming!
-quiet-reply = OK, I'm listening.
-quiet-reply-intent = Say you're listening
+quiet = The teacher's coming!
+quiet-reply = OK, no talking!
+quiet-reply-intent = Stop talking
 quiet-alt1 = This book is good!
 quiet-alt1-intent = Praise the book
 quiet-alt2 = Nineteen eighty.

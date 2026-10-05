@@ -22,8 +22,8 @@ pets-alt1-intent = Say that's great
 pets-alt2 = This book is good!
 pets-alt2-intent = Praise the book
 
-films = I love films! You?
-films-reply = I love films!
+films = What do you love watching?
+films-reply = I love watching films!
 films-reply-intent = Say you love films
 films-alt1 = I don't have a cat.
 films-alt1-intent = Say you have no cat

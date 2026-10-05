@@ -54,9 +54,9 @@ film-alt1-intent = Say you see it
 film-alt2 = How is your mother?
 film-alt2-intent = Ask after his mother
 
-bye = When are you coming tomorrow? What time?
-bye-reply = At three!
-bye-reply-intent = Say at three
+bye = When are you coming? What time?
+bye-reply = Tomorrow, at three!
+bye-reply-intent = Say tomorrow at three
 bye-alt1 = The film!
 bye-alt1-intent = Say the film
 bye-alt2 = It's cold today!

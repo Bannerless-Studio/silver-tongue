@@ -13,8 +13,8 @@ phone-reply = 你打电话，我工作！
 phone-alt1 = 太多了！
 phone-alt2 = 多少钱？
 
-pay = 今天下午很好！这是钱。
-pay-reply = 谢谢，老马！
+pay = 这是钱。
+pay-reply = 谢谢，老马！今天很好！
 pay-alt1 = 你打电话，我工作！
 pay-alt2 = 多少钱？
 

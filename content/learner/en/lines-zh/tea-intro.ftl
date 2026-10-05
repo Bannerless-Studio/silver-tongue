@@ -22,9 +22,9 @@ meet-alt1-intent = Say you want work
 meet-alt2 = In front of the hospital.
 meet-alt2-intent = Say it's in front of the hospital
 
-tea = Will you drink some tea?
-tea-reply = Yes! Thank you.
-tea-reply-intent = Accept, with thanks
+tea = Tea?
+tea-reply = Yes! I'll have tea.
+tea-reply-intent = Accept the tea
 tea-alt1 = I like noodles.
 tea-alt1-intent = Say you like noodles
 tea-alt2 = Goodbye!

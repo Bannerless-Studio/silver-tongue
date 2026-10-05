@@ -15,8 +15,8 @@ pets-reply = 我没有猫。
 pets-alt1 = 老师！很好！
 pets-alt2 = 这本书很好！
 
-films = 我爱电影！你呢？
-films-reply = 我爱电影！
+films = 你爱看什么？
+films-reply = 我爱看电影！
 films-alt1 = 我没有猫。
 films-alt2 = 你好，大卫！
 

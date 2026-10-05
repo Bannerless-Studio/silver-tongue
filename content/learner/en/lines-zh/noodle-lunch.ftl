@@ -14,42 +14,42 @@ many-alt1-intent = Offer to buy cups
 many-alt2 = It's noon!
 many-alt2-intent = Say it's noon
 
-rice = We're low on rice!
-rice-reply = I'll go to the shop for rice.
-rice-reply-intent = Offer to fetch rice
+rice = And the rice?
+rice-reply = Almost gone! I'll go to the shop and buy some.
+rice-reply-intent = Say it's low and offer to buy some
 rice-alt1 = So many!
 rice-alt1-intent = Marvel at the crowd
 rice-alt2 = I'm hungry.
 rice-alt2-intent = Say you're hungry
 
-see = Did you see that man?
-see-reply = I see him!
-see-reply-intent = Say you see him
-see-alt1 = I'll go to the shop for rice.
+see = Did you see that person?
+see-reply = I see him! That gentleman?
+see-reply-intent = Say you see the gentleman
+see-alt1 = Almost gone! I'll go to the shop and buy some.
 see-alt1-intent = Offer to fetch rice
 see-alt2 = It's noon!
 see-alt2-intent = Say it's noon
 
-these = These dishes, for that table at the front.
+these = This, for that table at the front.
 these-reply = OK, these dishes.
 these-reply-intent = Take the dishes
-these-alt1 = I see him!
+these-alt1 = I see him! That gentleman?
 these-alt1-intent = Say you see him
 these-alt2 = So many!
 these-alt2-intent = Marvel at the crowd
 
-price = That young woman, ten kuai!
-price-reply = OK, ten kuai for her!
-price-reply-intent = Ten kuai for her
+price = That person, ten kuai!
+price-reply = OK, ten kuai for that young woman!
+price-reply-intent = Ten kuai for the young woman
 price-alt1 = OK, these dishes.
 price-alt1-intent = Take the dishes
 price-alt2 = I'm hungry.
 price-alt2-intent = Say you're hungry
 
-eat = Right, we eat! Which dish do you want?
-eat-reply = I want this one.
+eat = Right, we eat! What do you want?
+eat-reply = Which dish? This one!
 eat-reply-intent = Choose this one
-eat-alt1 = OK, ten kuai for her!
+eat-alt1 = OK, ten kuai for that young woman!
 eat-alt1-intent = Ten kuai for her
 eat-alt2 = So many!
 eat-alt2-intent = Marvel at the crowd

@@ -14,9 +14,9 @@ sorry-alt1-intent = Say she loves cats
 sorry-alt2 = Hello, Mrs Lin!
 sorry-alt2-intent = Greet Mrs Lin
 
-love = My son and his dad really love the dog.
-love-reply = The dog's lovely!
-love-reply-intent = Praise the dog
+love = My son really loves the dog.
+love-reply = Your son and the dog are lovely!
+love-reply-intent = Praise the boy and the dog
 love-alt1 = She's ten.
 love-alt1-intent = Say her age
 love-alt2 = Very pretty!

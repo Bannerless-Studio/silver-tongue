@@ -16,8 +16,8 @@ phone-alt1-intent = Say it's too dear
 phone-alt2 = How much?
 phone-alt2-intent = Ask the price
 
-pay = A good afternoon today! Here's the money.
-pay-reply = Thank you, Old Ma!
+pay = Here's the money.
+pay-reply = Thank you, Old Ma! A good day today!
 pay-reply-intent = Thank Old Ma
 pay-alt1 = You take the call, I'll work!
 pay-alt1-intent = Tell him to answer it

@@ -15,8 +15,8 @@ meet-reply = 我很高兴！
 meet-alt1 = 我想工作。
 meet-alt2 = 在医院前面。
 
-tea = 你喝茶吗？
-tea-reply = 喝！谢谢。
+tea = 茶？
+tea-reply = 好！我喝茶。
 tea-alt1 = 我喜欢面条。
 tea-alt2 = 再见！
 

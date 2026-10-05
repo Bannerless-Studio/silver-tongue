@@ -10,8 +10,8 @@ sorry-reply = 没关系！
 sorry-alt1 = 她爱猫！
 sorry-alt2 = 你好，林太太！
 
-love = 我儿子和他爸爸很爱狗。
-love-reply = 狗很好！
+love = 我儿子很爱狗。
+love-reply = 你儿子和狗很好！
 love-alt1 = 她十岁。
 love-alt2 = 很漂亮！
 

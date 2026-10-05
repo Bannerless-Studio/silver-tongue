@@ -30,12 +30,12 @@ write-reply = 会！我会写。
 write-alt1 = 会，我会读。
 write-alt2 = 谢谢，老师！
 
-mate = 大卫是你同学。
-mate-reply = 你好，大卫！
+mate = 这是大卫。
+mate-reply = 你好，同学！
 mate-alt1 = 你好，老师！
 mate-alt2 = 我学习汉语。
 
-come = 你能来学校吗？
+come = 你星期六来学校吗？
 come-reply = 能！我能来。
 come-alt1 = 你好，大卫！
 come-alt2 = 会！我会写。
