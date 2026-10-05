@@ -5,7 +5,7 @@ name: pages
 
 on:
   push:
-    branches: [main, lab, lab-inner-voice]
+    branches: [main, lab]
   workflow_dispatch:
 
 permissions:
@@ -23,18 +23,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: main
       - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
       - run: npm ci
         env:
-          GITHUB_PACKAGES_TOKEN: ${{ secrets.GITHUB_PACKAGES_TOKEN || secrets.GITHUB_TOKEN }}
-      - name: Make missing audio clips (lab experiments change lines; clips are not committed yet)
-        run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg > /dev/null
-          pipx install edge-tts
-          npm run audio -- ko-seoul
+          GITHUB_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: npm run build:course
       - run: npm run build:site
       - name: Look for the lab branch
@@ -56,7 +53,7 @@ jobs:
           mkdir -p ../site/lab
           cp -R site/. ../site/lab/
         env:
-          GITHUB_PACKAGES_TOKEN: ${{ secrets.GITHUB_PACKAGES_TOKEN || secrets.GITHUB_TOKEN }}
+          GITHUB_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/upload-pages-artifact@v4
         with:
           path: site
