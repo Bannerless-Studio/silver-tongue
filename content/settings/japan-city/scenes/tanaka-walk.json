@@ -1,0 +1,74 @@
+{
+ "id": "tanaka-walk",
+ "place": "shotengai",
+ "npc": "tanaka",
+ "stage": 1,
+ "after": [
+  "konbini-lunch"
+ ],
+ "requires": {},
+ "repeatable": false,
+ "trustGain": 1,
+ "exchanges": [
+  {
+   "id": "job",
+   "slots": {},
+   "expect": {
+    "action": "job"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "nihongo",
+   "slots": {},
+   "expect": {
+    "action": "nihongo"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "going",
+   "slots": {},
+   "expect": {
+    "action": "going"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "konbini",
+   "slots": {},
+   "expect": {
+    "action": "konbini"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "together",
+   "slots": {},
+   "expect": {
+    "action": "together"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "home",
+   "slots": {},
+   "expect": {
+    "action": "home"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  }
+ ]
+}

@@ -43,7 +43,7 @@ scene-ramen-intro = Ask about work
 scene-ramen-intro-start = A man in a white headband waves you in from behind the counter.
 scene-ramen-intro-end = The owner ties a towel round your head: you have a job.
 scene-ramen-shift = Work a shift
-scene-ramen-shift-start = The owner shouts over the noise: fetch drinks, then serve them as the orders come in.
+scene-ramen-shift-start = The owner shouts over the noise: fetch drinks, serve them as the orders come in, and chat with him in between.
 scene-ramen-shift-end = The last bowl goes out. The owner wipes down the counter and pays you.
 
 scene-konbini-prices = Ask what things cost
@@ -53,6 +53,25 @@ scene-konbini-buy = Buy something to eat
 scene-konbini-buy-start = The clerk waits behind the counter: say what you want, then thank her when she rings it up.
 scene-konbini-buy-end = She bags your item and bows. Another sale done.
 
+scene-tanaka-rain = Sit with Mr Tanaka in the rain
+scene-tanaka-rain-start = Rain drums on the arcade roof. Mr Tanaka shakes out a black umbrella.
+scene-tanaka-rain-end = You leave with Mr Tanaka's umbrella over your head.
+scene-ramen-taste = Taste the ramen
+scene-ramen-taste-start = The last customer has gone. The owner sets a steaming bowl in front of you.
+scene-ramen-taste-end = You drink the soup to the last drop. The owner looks pleased.
+scene-apartment-morning = Say good morning to the landlady
+scene-apartment-morning-start = The landlady is sweeping the step outside your door.
+scene-apartment-morning-end = The landlady goes back to her sweeping, humming.
+scene-konbini-lunch = Buy lunch
+scene-konbini-lunch-start = The clerk recognises you now and smiles from behind the counter.
+scene-konbini-lunch-end = A rice ball and a bottle of tea: lunch.
+scene-tanaka-walk = Walk with Mr Tanaka
+scene-tanaka-walk-start = Mr Tanaka gets up from his bench, ready for a walk.
+scene-tanaka-walk-end = At the corner Mr Tanaka turns off toward the convenience store, waving.
+scene-konbini-shift = Work an evening at the store
+scene-konbini-shift-start = The clerk hands you a striped apron: help the customers find things and chat while the shop is quiet.
+scene-konbini-shift-end = The night clerk arrives. The clerk counts out your pay.
+
 # What a reply does (action-<name>), and on a mix-up what was asked (asked-<name>).
 # Concept values arrive as learner names: $item = "tea", $count = "three".
 action-fetch = You bring { $item }.
@@ -61,6 +80,12 @@ action-serve = You set down { $count } { $item }s.
 asked-serve = The owner wanted { $count } { $item }s.
 action-buy = You buy the { $item }.
 asked-buy = The clerk asked about { $item }.
+action-show = You show where the { $item } is.
+asked-show = The customer was looking for the { $item }.
+action-hand = You hand over { $count } { $item }s.
+asked-hand = The customer wanted { $count } { $item }s.
+action-chat = You answered: "{ $topic }"
+asked-chat = { $npc } said: "{ $topic }"
 
 # Conversations: what was asked, shown after a wrong reply. These are shared by every scene that
 # uses the action, so they say "they" unless only one person ever uses it.
@@ -90,8 +115,41 @@ asked-onigiri = The clerk told you what rice balls cost.
 asked-bread = The clerk told you what bread costs.
 asked-which = The clerk asked which one you meant.
 asked-thanks = { $npc } thanked you.
+asked-confirm = Mr Tanaka checked your name.
+asked-encourage = Mr Tanaka said you do understand.
+asked-place = The owner told you what the place is.
+asked-weekly = The landlady said how often the rent is due.
+asked-price = { $npc } told you the price.
+asked-take = The clerk handed it over.
+asked-today = Mr Tanaka talked about today's weather.
+asked-falling = Mr Tanaka said it's raining.
+asked-cold = Mr Tanaka said it's cold.
+asked-umbrella = Mr Tanaka asked if you have an umbrella.
+asked-lend = Mr Tanaka lent you his umbrella.
+asked-want = The owner asked if you want to eat.
+asked-taste = The owner asked if it's good.
+asked-expensive = The owner asked if it's expensive.
+asked-cheap = The owner said it's cheap but good.
+asked-drink = The owner offered you tea.
+asked-morning = { $npc } said good morning.
+asked-job = { $npc } asked about your work.
+asked-from = The landlady asked when your work starts.
+asked-until = The landlady asked when your work ends.
+asked-daily = The landlady said you work every day.
+asked-what = The clerk asked what you're buying.
+asked-and = The clerk checked your two things.
+asked-not = The clerk said that one isn't tea.
+asked-total = The clerk told you the total.
+asked-again = The clerk asked you to come again.
+asked-nihongo = Mr Tanaka asked if you understand Japanese.
+asked-going = Mr Tanaka asked where you're going.
+asked-konbini = Mr Tanaka said where he's going.
+asked-together = Mr Tanaka suggested going together.
+asked-home = Mr Tanaka said what he'll do.
+asked-walkhome = The clerk suggested walking home together.
 
 # Notebook topics: a word in one of these slot groups is filed under the topic, not the place.
 notebook-topic-drinks = Food and drink
 notebook-topic-numbers_2_5 = Numbers
 notebook-topic-goods = Things
+notebook-topic-shelf = Things
