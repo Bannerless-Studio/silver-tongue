@@ -1308,7 +1308,7 @@ describe("menu surprisal and place notices", () => {
     });
     const before = term.frames.at(-1)!;
     const line = before.find((l) => l.some((span) => span.text.includes("Serve drinks")))!;
-    expect(line.map((span) => span.text).join("")).toContain("no time left");
+    expect(term.screen().join("\n")).toContain("no time left"); // the longer action label wraps
     expect(line.find((span) => span.text.includes("Serve drinks"))?.dim).toBe(true);
     term.press("1"); // still selectable: choosing it gives the normal rejection
     expect(term.screen().join("\n")).toContain("You're out of time today. Go and find your bed.");

@@ -398,6 +398,7 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
   for (const [name, src] of [...glossSrc, shortSrc]) for (const id of duplicateIds(src, name)) errors.push(`learner/${learner}/${name}: "${id}" is defined more than once`);
   if (meta.tileGap !== undefined && typeof meta.tileGap !== "string") errors.push(`pack.json: "tileGap" must be text, got ${JSON.stringify(meta.tileGap)}`);
   if (meta.book !== undefined && typeof meta.book !== "boolean") errors.push(`pack.json: "book" must be true or false, got ${JSON.stringify(meta.book)}`);
+  if (meta.voice !== undefined && typeof meta.voice !== "boolean") errors.push(`pack.json: "voice" must be true or false, got ${JSON.stringify(meta.voice)}`);
   const liaisonOk = (l: unknown) =>
     !!l && typeof l === "object" && typeof (l as { before?: unknown }).before === "string" && Object.values((l as { finals?: object }).finals ?? { x: 0 }).every((v) => typeof v === "string");
   if (meta.liaison !== undefined && !liaisonOk(meta.liaison)) errors.push(`pack.json: "liaison" must be { "before": text, "finals": { text: text } }, got ${JSON.stringify(meta.liaison)}`);
@@ -405,7 +406,7 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
     id: cfg.id,
     learner,
     ...(cfg.aliases?.length ? { aliases: cfg.aliases } : {}),
-    language: { code: meta.key, locale: meta.locale, tts: meta.tts, spaced: meta.spaced, ...(typeof meta.tileGap === "string" && meta.tileGap ? { tileGap: meta.tileGap } : {}), ...(meta.book === true ? { book: true } : {}), ...(meta.liaison && liaisonOk(meta.liaison) ? { liaison: meta.liaison } : {}) },
+    language: { code: meta.key, locale: meta.locale, tts: meta.tts, spaced: meta.spaced, ...(typeof meta.tileGap === "string" && meta.tileGap ? { tileGap: meta.tileGap } : {}), ...(meta.book === true ? { book: true } : {}), ...(meta.voice === true ? { voice: true } : {}), ...(meta.liaison && liaisonOk(meta.liaison) ? { liaison: meta.liaison } : {}) },
     typing: meta.typing !== null,
     words,
     concepts,

@@ -109,7 +109,7 @@ export function startApp(opts: AppOptions): App {
   let deskShown = false;
   let deskDone = false;
   let openingAt = 0;
-  const opening = innerVoice ? introLines(course, core.state, t) : [];
+  const opening = innerVoice && course.needsName && !core.state.player ? introLines(course, core.state, t) : [];
   let statusFrom: Mode = "explore";
   let presentationSave = opts.presentation?.save;
   const savePresentation = () => {

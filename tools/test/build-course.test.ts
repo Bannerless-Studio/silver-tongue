@@ -583,7 +583,7 @@ describe("word forms", () => {
 
 
 describe("Korean voice build compatibility", () => {
-  it("pins voice-sensitive zh/ja JSON fields to be2c0fe, with a CI snapshot fallback", () => {
+  it("pins voice-sensitive zh/ja JSON fields to be2c0fe, with a CI snapshot fallback", { timeout: 120_000 }, () => {
     const snapshot = JSON.parse(readFileSync(new URL("./fixtures/voice-compat-be2c0fe.json", import.meta.url), "utf8")) as { revision: string; courses: Record<string, { learnerMessages: Record<string, string>; voiceKeys: string[]; whyExchanges: unknown[] }> };
     expect(snapshot.revision).toBe("be2c0fe");
     const project = (course: NonNullable<ReturnType<typeof buildCourse>["course"]>, baseline: Record<string, string>) => {

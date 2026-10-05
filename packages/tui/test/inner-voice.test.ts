@@ -90,12 +90,14 @@ describe("Korean terminal experiment", () => {
     term.press("escape");
     const stall = pickVoice(app.presentation()!.voice, voiceHint(course, core.state, t, 1000, "stall")!, t).line!;
     term.press("h"); expect(screen()).toContain(`› ${stall}`);
-    // The extra numbered "..." reply is a miss, in the same key path as a wrong choice.
+    answer(course, core, term); // the opening call has only a correct reply
+    answer(course, core, term); // the friend's alternative is an accepted lie
+    // Wrong replies advance misses one at a time; "..." asks core to repeat immediately.
     expect(core.state.run!.mode).toBe("pick");
-    const confused = () => term.press(String(core.state.run!.options.length + 1));
+    const wrongReply = () => term.press(String(core.state.run!.options.findIndex((key) => key !== comboKey(core.state.run!.combo)) + 1));
     for (const [index, trigger] of (["first-miss", "second-miss"] as const).entries()) {
       const thought = pickVoice(app.presentation()!.voice, voiceHint(course, core.state, t, 1000, trigger)!, t).line!;
-      confused(); expect(core.state.run!.misses).toBe(index + 1);
+      wrongReply(); expect(core.state.run!.misses).toBe(index + 1);
       expect(screen()).toContain(`› ${thought}`);
     }
     for (const id of ["room-wake", "street-hello", "street-again"]) {
@@ -153,13 +155,18 @@ describe("Korean terminal experiment", () => {
     const state = newGame(course); state.player = "Sam";
     const core = createCore(course, state, { now: () => 1000, rng: mulberry32(1) });
     core.send({ type: "startScene", scene: "room-wake" });
+    for (let i = 0; i < 2; i++) core.send({ type: "reply", choice: core.state.run!.options.indexOf(comboKey(core.state.run!.combo)) });
     const term = new FakeTerminal(140, 60);
     const stored: AppPresentation = { read: deskPapers(course).map((p) => p.id), desk: { at: {}, met: [] }, voice: { day: 1, seed: 42, used: [], once: ["day-start:1"], picks: 0 } };
     const save = vi.fn(() => true);
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     try {
-      startApp({ course, core, term, now: () => 1000, quit: () => {}, save, presentation: { load: () => stored, save: () => { throw new Error("voice storage failure"); } } });
-      expect(() => term.press(String(core.state.run!.options.length + 1))).not.toThrow();
+      startApp({ course, core, term, now: () => 1000, quit: () => {}, save, presentation: { load: () => stored, save: (v) => {
+        if (core.state.run!.misses > 0) throw new Error("voice storage failure");
+        return true;
+      } } });
+      save.mockClear(); warn.mockClear();
+      expect(() => term.press(String(core.state.run!.options.findIndex((key) => key !== comboKey(core.state.run!.combo)) + 1))).not.toThrow();
       expect(core.state.run!.misses).toBe(1);
       expect(save).toHaveBeenCalled();
       expect(warn).toHaveBeenCalled();

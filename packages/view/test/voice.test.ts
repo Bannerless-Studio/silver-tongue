@@ -11,6 +11,7 @@ function setup() {
   const course = fixtureWithText();
   course.language.code = "ko";
   extra(course).language.book = true;
+  extra(course).language.voice = true;
   course.learnerFtl += `\n${ftl}`;
   const t = makeText(course.learnerFtl, "en");
   const core = createCore(course, newGame(course), { now: () => 1000, rng: mulberry32(1) });
@@ -25,10 +26,11 @@ describe("the inner voice", () => {
     const { course, core, t } = setup();
     expect(core.state.run).toBeTruthy();
     let before = structuredClone(core.state);
-    let events = core.send({ type: "confused" });
+    const wrongChoice = () => core.state.run!.options.findIndex((key) => key !== comboKey(core.state.run!.combo));
+    let events = core.send({ type: "reply", choice: wrongChoice() });
     expect(voiceEvents(course, before, core.state, events, t, 1000).map((c) => c.trigger)).toContain("first-miss");
     before = structuredClone(core.state);
-    events = core.send({ type: "confused" });
+    events = core.send({ type: "reply", choice: wrongChoice() });
     expect(voiceEvents(course, before, core.state, events, t, 1000).map((c) => c.trigger)).toContain("second-miss");
     const hint = voiceHint(course, core.state, t, 1000, "stall")!;
     expect(hint.trigger).toBe("stall");
@@ -99,6 +101,7 @@ describe("the inner voice", () => {
     expect(voiceEvents(course, before, core.state, events, t, 1000)).toEqual([]);
     for (const code of ["zh", "ja"]) {
       course.language.code = code;
+      delete extra(course).language.voice;
       expect(voiceOn(course)).toBe(false);
       expect(voiceEvents(course, before, core.state, [{ type: "sceneEnded", scene: course.scenes[0].id, earned: 1 }], t, 1000)).toEqual([]);
     }

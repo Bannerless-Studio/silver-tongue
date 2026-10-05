@@ -45,7 +45,7 @@ export type WordExtra = Word & { attach?: boolean; alt?: string[] };
  * `book`: the course uses the Book (readings under words, the Letters and Papers tabs); unset, the
  * notebook stays as it was.
  */
-export type LanguageExtra = LanguageProfile & { tileGap?: string; book?: boolean; liaison?: Liaison };
+export type LanguageExtra = LanguageProfile & { tileGap?: string; book?: boolean; voice?: boolean; liaison?: Liaison };
 /**
  * `liaison`: how readings run together inside one written word (see joinReadings): when the next reading
  * starts with one of `before`, a reading ending in a key of `finals` ends in its value instead.

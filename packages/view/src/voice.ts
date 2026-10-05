@@ -25,7 +25,7 @@ export function parseVoice(value: unknown, seed = 1): VoiceMemory {
   const strings = (x: unknown): string[] => Array.isArray(x) ? x.filter((s): s is string => typeof s === "string") : [];
   return { day: Number.isInteger(v.day) ? v.day! : 0, seed: Number.isInteger(v.seed) ? v.seed! : seed, picks: Number.isInteger(v.picks) ? v.picks! : 0, used: strings(v.used), once: strings(v.once) };
 }
-export const voiceOn = (course: Course): boolean => course.language.code === "ko" && bookOn(course);
+export const voiceOn = (course: Course): boolean => extra(course).language.voice === true && bookOn(course);
 /** Only the NPC explanation may be shortened; complete thoughts are never clipped. */
 export const voiceAsked = (s: string): string => [...s].length <= 56 ? s : [...s].slice(0, 55).join("") + "…";
 export const npcShort = (label: string): string => label.replace(/^The /, "the ").replace(/^A /, "a ");
@@ -44,7 +44,7 @@ export function voiceWord(w: Word, surface: string, t: Text): string {
 }
 export function deskVoiceRule(course: Course, ch: string): "silent" | "final" | "sum" {
   const tiles = sumTiles(letterChart(course), ch, new Set());
-  return tiles.some((tl) => tl.letter.ch === "ㅇ" && !tl.final) ? "silent" : tiles.some((tl) => tl.final) ? "final" : "sum";
+  return tiles.some((tl) => tl.sound === "silent" && !tl.final) ? "silent" : tiles.some((tl) => tl.final) ? "final" : "sum";
 }
 const varsFor = (course: Course, state: GameState, now: number): VoiceCue["vars"] => ({
   // Keep money numeric: Fluent uses the same learner-locale number formatter as the HUD.
