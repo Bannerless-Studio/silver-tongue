@@ -19,7 +19,8 @@
     "chat_class": ["zc-read", "zc-write", "zc-bike", "zc-film", "zc-students", "zc-parents", "zc-sit", "zc-listen", "zc-minutes", "zc-how", "zc-saturday", "zc-china", "zc-beijing", "zc-pets", "zc-clothes", "zc-all", "zc-date", "zc-talk", "zc-taxi", "zc-month", "zc-book", "zc-gentleman", "zc-plane", "zc-sorry"],
     "chat_lin": ["zs-son", "zs-daughter", "zs-dog", "zs-cat", "zs-dad", "zs-mum", "zs-people", "zs-clothes", "zs-love", "zs-fruit", "zs-tv", "zs-rent", "zs-years", "zs-li", "zs-home", "zs-happy", "zs-and", "zs-inside", "zs-sorry", "zs-sleep", "zs-flat", "zs-shop", "zs-people2"],
     "chat_town": ["zo-son", "zo-daughter", "zo-dog", "zo-cat", "zo-dad", "zo-mum", "zo-people", "zo-clothes", "zo-love", "zo-cats", "zo-fruit", "zo-tv", "zo-rent", "zo-years", "zo-li", "zo-lin", "zo-home", "zo-happy", "zo-inside", "zo-sorry", "zo-sleep", "zo-shop", "zo-doctor", "zo-and", "zo-money", "zo-flat"],
-    "chat_school": ["zq-study", "zq-write", "zq-noon", "zq-restaurant", "zq-hot", "zq-money", "zq-saturday", "zq-teacher", "zq-lady", "zq-sir", "zq-apple", "zq-buy", "zq-which", "zq-these", "zq-listen", "zq-david", "zq-read", "zq-come", "zq-open", "zq-sit"]
+    "chat_school": ["zq-study", "zq-write", "zq-noon", "zq-restaurant", "zq-hot", "zq-money", "zq-saturday", "zq-teacher", "zq-lady", "zq-sir", "zq-apple", "zq-buy", "zq-which", "zq-these", "zq-listen", "zq-david", "zq-read", "zq-come", "zq-open", "zq-sit"],
+    "chat_errand": ["ze-hungry", "ze-hello", "ze-school", "ze-station", "ze-noodles", "ze-now", "ze-friend", "ze-big", "ze-chair", "ze-work"]
   },
   "numbers": {
     "two": 2,

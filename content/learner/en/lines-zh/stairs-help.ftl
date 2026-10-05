@@ -22,3 +22,7 @@ pay-alt1 = I'm very hungry!
 pay-alt1-intent = Say you're hungry
 pay-alt2 = Fifty kuai.
 pay-alt2-intent = Say fifty kuai
+
+chat-d = { -topic }
+chat-d-reply = { -topic(form: "reply") }
+chat-d-reply-intent = Answer Mrs Lin

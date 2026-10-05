@@ -42,3 +42,6 @@ bye-alt2 = 今天很冷！
 
 chat = { -topic }
 chat-reply = { -topic(form: "reply") }
+
+chat-2 = { -topic }
+chat-2-reply = { -topic(form: "reply") }

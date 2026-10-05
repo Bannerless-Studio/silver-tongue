@@ -1,4 +1,4 @@
-dog = Look! Our dog! Three years old!
+dog = Our dog! Three years old!
 dog-reply = A dog! So pretty!
 dog-reply-intent = Admire the dog
 dog-alt1 = Her clothes are pretty.
@@ -22,7 +22,7 @@ love-alt1-intent = Say her age
 love-alt2 = Very pretty!
 love-alt2-intent = Say it's pretty
 
-seen = Have you seen my daughter's cat?
+seen = Where's my daughter's cat?
 seen-reply = I haven't seen it.
 seen-reply-intent = Say you haven't seen it
 seen-alt1 = That's all right!

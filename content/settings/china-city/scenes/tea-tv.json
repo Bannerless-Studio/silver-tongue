@@ -8,14 +8,15 @@
   "repeatable": false,
   "trustGain": 1,
   "exchanges": [
-    { "id": "on", "slots": {}, "expect": { "action": "tvon" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "tv", "slots": {}, "expect": { "action": "tv" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "all", "slots": {}, "expect": { "action": "all" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "on", "slots": { }, "expect": { "action": "tvon" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "tv", "slots": { }, "expect": { "action": "tv" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "all", "slots": { }, "expect": { "action": "all" }, "hinges": [], "pay": 0, "missCost": 0 },
     { "id": "chat", "slots": { "topic": "chat_class" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
-    { "id": "phone", "slots": {}, "expect": { "action": "call" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "sorry", "slots": {}, "expect": { "action": "sorry" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "see", "slots": {}, "expect": { "action": "see" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "film", "slots": {}, "expect": { "action": "film" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "bye", "slots": {}, "expect": { "action": "nextvisit" }, "hinges": [], "pay": 0, "missCost": 0 }
+    { "id": "chat-2", "slots": { "topic": "chat_class" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
+    { "id": "phone", "slots": { }, "expect": { "action": "call" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "sorry", "slots": { }, "expect": { "action": "sorry" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "see", "slots": { }, "expect": { "action": "see" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "film", "slots": { }, "expect": { "action": "film" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "bye", "slots": { }, "expect": { "action": "nextvisit" }, "hinges": [], "pay": 0, "missCost": 0 }
   ]
 }

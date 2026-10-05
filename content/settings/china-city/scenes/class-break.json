@@ -8,13 +8,14 @@
   "repeatable": false,
   "trustGain": 1,
   "exchanges": [
-    { "id": "bike", "slots": {}, "expect": { "action": "bike" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "parents", "slots": {}, "expect": { "action": "parentsjob" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "pets", "slots": {}, "expect": { "action": "pets" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "films", "slots": {}, "expect": { "action": "films" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "bike", "slots": { }, "expect": { "action": "bike" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "parents", "slots": { }, "expect": { "action": "parentsjob" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "pets", "slots": { }, "expect": { "action": "pets" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "films", "slots": { }, "expect": { "action": "films" }, "hinges": [], "pay": 0, "missCost": 0 },
     { "id": "chat", "slots": { "topic": "chat_school" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
-    { "id": "clothes", "slots": {}, "expect": { "action": "compliment" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "fruit", "slots": {}, "expect": { "action": "snack" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "bye", "slots": {}, "expect": { "action": "backtowork" }, "hinges": [], "pay": 0, "missCost": 0 }
+    { "id": "chat-2", "slots": { "topic": "chat_school" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
+    { "id": "clothes", "slots": { }, "expect": { "action": "compliment" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "fruit", "slots": { }, "expect": { "action": "snack" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "bye", "slots": { }, "expect": { "action": "backtowork" }, "hinges": [], "pay": 0, "missCost": 0 }
   ]
 }

@@ -65,3 +65,7 @@ bye-alt2-intent = Ask the price
 chat = { -topic }
 chat-reply = { -topic(form: "reply") }
 chat-reply-intent = Answer Old Ma
+
+chat-2 = { -topic }
+chat-2-reply = { -topic(form: "reply") }
+chat-2-reply-intent = Answer Old Ma

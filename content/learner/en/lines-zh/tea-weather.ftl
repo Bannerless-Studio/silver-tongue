@@ -57,3 +57,7 @@ minutes-alt2-intent = Talk about the cold
 chat = { -topic }
 chat-reply = { -topic(form: "reply") }
 chat-reply-intent = Answer Old Chen
+
+chat-2 = { -topic }
+chat-2-reply = { -topic(form: "reply") }
+chat-2-reply-intent = Answer Old Chen

@@ -17,3 +17,6 @@ bye = 谢谢！你是好学生！
 bye-reply = 谢谢老师！再见！
 bye-alt1 = 我没有自行车。
 bye-alt2 = 太多了！
+
+chat-d = { -topic }
+chat-d-reply = { -topic(form: "reply") }

@@ -14,3 +14,11 @@ chat-a-reply-intent = Answer Xiao Zhang
 chat-b = { -topic }
 chat-b-reply = { -topic(form: "reply") }
 chat-b-reply-intent = Answer Xiao Zhang
+
+chat-c = { -topic }
+chat-c-reply = { -topic(form: "reply") }
+chat-c-reply-intent = Answer Xiao Zhang
+
+chat-d = { -topic }
+chat-d-reply = { -topic(form: "reply") }
+chat-d-reply-intent = Answer Xiao Zhang

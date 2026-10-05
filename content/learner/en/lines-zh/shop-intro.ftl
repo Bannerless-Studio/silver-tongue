@@ -49,3 +49,7 @@ bye-alt2-intent = Say you're only looking
 chat = { -topic }
 chat-reply = { -topic(form: "reply") }
 chat-reply-intent = Answer the shopkeeper
+
+chat-2 = { -topic }
+chat-2-reply = { -topic(form: "reply") }
+chat-2-reply-intent = Answer the shopkeeper

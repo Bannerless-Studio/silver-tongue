@@ -12,6 +12,7 @@
     { "id": "chat-a", "slots": { "topic": "chat_lin" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
     { "id": "chat-b", "slots": { "topic": "chat_lin" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
     { "id": "chat-c", "slots": { "topic": "chat_school" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
-    { "id": "pay", "slots": {}, "expect": { "action": "linpaid" }, "hinges": [], "pay": 2, "missCost": 0 }
+    { "id": "chat-d", "slots": { "topic": "chat_town" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
+    { "id": "pay", "slots": { }, "expect": { "action": "linpaid" }, "hinges": [], "pay": 2, "missCost": 0 }
   ]
 }

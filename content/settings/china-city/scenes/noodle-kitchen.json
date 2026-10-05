@@ -9,9 +9,11 @@
   "trustGain": 1,
   "exchanges": [
     { "id": "cups", "slots": { "amount": "numbers_3_10" }, "expect": { "action": "wash", "amount": "$amount" }, "hinges": ["$amount"], "pay": 6, "missCost": 1 },
+    { "id": "chat-d", "slots": { "topic": "chat_kitchen" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
     { "id": "chat-a", "slots": { "topic": "chat_kitchen" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
     { "id": "lunch", "slots": { "food": "foods" }, "expect": { "action": "eat", "food": "$food" }, "hinges": ["$food"], "pay": 2, "missCost": 1 },
     { "id": "chat-b", "slots": { "topic": "chat_kitchen" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
-    { "id": "out", "slots": {}, "expect": { "action": "out" }, "hinges": [], "pay": 2, "missCost": 0 }
+    { "id": "chat-c", "slots": { "topic": "chat_kitchen" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
+    { "id": "out", "slots": { }, "expect": { "action": "out" }, "hinges": [], "pay": 2, "missCost": 0 }
   ]
 }

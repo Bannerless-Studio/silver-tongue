@@ -65,3 +65,7 @@ taste-alt2-intent = Offer to buy cups
 chat = { -topic }
 chat-reply = { -topic(form: "reply") }
 chat-reply-intent = Answer Xiao Zhang
+
+chat-2 = { -topic }
+chat-2-reply = { -topic(form: "reply") }
+chat-2-reply-intent = Answer Xiao Zhang

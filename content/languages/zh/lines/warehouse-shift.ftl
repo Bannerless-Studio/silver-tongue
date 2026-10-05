@@ -11,3 +11,9 @@ chat-a-reply = { -topic(form: "reply") }
 
 chat-b = { -topic }
 chat-b-reply = { -topic(form: "reply") }
+
+chat-c = { -topic }
+chat-c-reply = { -topic(form: "reply") }
+
+chat-d = { -topic }
+chat-d-reply = { -topic(form: "reply") }

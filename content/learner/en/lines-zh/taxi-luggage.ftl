@@ -31,3 +31,11 @@ chat-a-reply-intent = Answer Old Ma
 chat-b = { -topic }
 chat-b-reply = { -topic(form: "reply") }
 chat-b-reply-intent = Answer Old Ma
+
+chat-c = { -topic }
+chat-c-reply = { -topic(form: "reply") }
+chat-c-reply-intent = Answer Old Ma
+
+chat-d = { -topic }
+chat-d-reply = { -topic(form: "reply") }
+chat-d-reply-intent = Answer Old Ma

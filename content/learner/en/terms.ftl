@@ -177,8 +177,8 @@
    *[base] Do you like the work?
 }
 -zn-cups = { $form ->
-    [reply] There are five.
-   *[base] How many cups are there?
+    [reply] Yes! Five cups.
+   *[base] Do you have cups?
 }
 -zn-how = { $form ->
     [reply] Very well, thank you!
@@ -296,8 +296,8 @@
    *[base] Have you seen my daughter's cat?
 }
 -zs-dad = { $form ->
-    [reply] He's a doctor.
-   *[base] What does my father do?
+    [reply] Yes, he's a doctor.
+   *[base] Is my dad a doctor?
 }
 -zs-mum = { $form ->
     [reply] Yes, she has a shop.
@@ -389,8 +389,8 @@
    *[base] Have you seen Mrs Lin's daughter's cat?
 }
 -zo-dad = { $form ->
-    [reply] My father's a doctor.
-   *[base] What does your father do?
+    [reply] No, she works at the hospital.
+   *[base] Does your mum have a shop?
 }
 -zo-mum = { $form ->
     [reply] Very well! She's at home.
@@ -755,6 +755,47 @@
 -zx-hot = { $form ->
     [reply] Yes, very hot!
    *[base] It's hot in the taxi!
+}
+# chat_errand: whoever takes a delivery (words of the first three days only).
+-ze-hungry = { $form ->
+    [reply] I am! I'd like noodles.
+   *[base] Are you hungry?
+}
+-ze-hello = { $form ->
+    [reply] Very well! And you?
+   *[base] How are you?
+}
+-ze-school = { $form ->
+    [reply] In front of the hospital.
+   *[base] Where is the school?
+}
+-ze-station = { $form ->
+    [reply] Behind the hospital.
+   *[base] Where is the station?
+}
+-ze-noodles = { $form ->
+    [reply] I do! Noodles are good.
+   *[base] Do you like noodles?
+}
+-ze-now = { $form ->
+    [reply] I'm going to the restaurant now.
+   *[base] Where are you going now?
+}
+-ze-friend = { $form ->
+    [reply] Yes, Xiao Zhang is my friend.
+   *[base] Is Xiao Zhang your friend?
+}
+-ze-big = { $form ->
+    [reply] Very big!
+   *[base] Is that school big?
+}
+-ze-chair = { $form ->
+    [reply] All right, thank you!
+   *[base] There's a chair here.
+}
+-ze-work = { $form ->
+    [reply] Yes, I'm working now!
+   *[base] Are you working now?
 }
 # End of Chinese small talk.
 

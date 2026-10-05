@@ -15,3 +15,11 @@ chat-a-reply-intent = Answer Big Liu
 chat-b = { -topic }
 chat-b-reply = { -topic(form: "reply") }
 chat-b-reply-intent = Answer Big Liu
+
+chat-c = { -topic }
+chat-c-reply = { -topic(form: "reply") }
+chat-c-reply-intent = Answer Big Liu
+
+chat-d = { -topic }
+chat-d-reply = { -topic(form: "reply") }
+chat-d-reply-intent = Answer Big Liu

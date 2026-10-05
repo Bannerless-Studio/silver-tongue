@@ -22,3 +22,7 @@ bye-alt1 = I don't have a bicycle.
 bye-alt1-intent = Say you have no bicycle
 bye-alt2 = That's too much!
 bye-alt2-intent = Say it's too dear
+
+chat-d = { -topic }
+chat-d-reply = { -topic(form: "reply") }
+chat-d-reply-intent = Answer the teacher

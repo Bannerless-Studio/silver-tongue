@@ -17,3 +17,6 @@ pay = 谢谢！这是钱。
 pay-reply = 谢谢，林太太！
 pay-alt1 = 我很饿！
 pay-alt2 = 五十块。
+
+chat-d = { -topic }
+chat-d-reply = { -topic(form: "reply") }

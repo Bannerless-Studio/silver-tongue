@@ -76,8 +76,8 @@
    *[base] 你喜欢工作吗？
 }
 -zn-cups = { $form ->
-    [reply] 有五个。
-   *[base] 杯子有几个？
+    [reply] 有！五个杯子。
+   *[base] 你有杯子吗？
 }
 -zn-how = { $form ->
     [reply] 很好，谢谢！
@@ -195,8 +195,8 @@
    *[base] 你看见我女儿的猫了吗？
 }
 -zs-dad = { $form ->
-    [reply] 他是医生。
-   *[base] 我爸爸做什么工作？
+    [reply] 是，他是医生。
+   *[base] 我爸爸是医生吗？
 }
 -zs-mum = { $form ->
     [reply] 有，她有商店。
@@ -288,8 +288,8 @@
    *[base] 你看见林太太女儿的猫了吗？
 }
 -zo-dad = { $form ->
-    [reply] 我爸爸是医生。
-   *[base] 你爸爸做什么工作？
+    [reply] 没有，她在医院工作。
+   *[base] 你妈妈有商店吗？
 }
 -zo-mum = { $form ->
     [reply] 很好！她在家。
@@ -654,5 +654,46 @@
 -zx-hot = { $form ->
     [reply] 是，很热！
    *[base] 出租车里很热！
+}
+# chat_errand: whoever takes a delivery (words of the first three days only).
+-ze-hungry = { $form ->
+    [reply] 饿了！我想吃面条。
+   *[base] 你饿了吗？
+}
+-ze-hello = { $form ->
+    [reply] 很好！你呢？
+   *[base] 你好吗？
+}
+-ze-school = { $form ->
+    [reply] 在医院前面。
+   *[base] 学校在哪里？
+}
+-ze-station = { $form ->
+    [reply] 在医院后面。
+   *[base] 火车站在哪里？
+}
+-ze-noodles = { $form ->
+    [reply] 喜欢！面条很好。
+   *[base] 你喜欢面条吗？
+}
+-ze-now = { $form ->
+    [reply] 我现在去饭馆。
+   *[base] 你现在去哪里？
+}
+-ze-friend = { $form ->
+    [reply] 是，小张是我朋友。
+   *[base] 小张是你朋友吗？
+}
+-ze-big = { $form ->
+    [reply] 很大！
+   *[base] 那个学校很大吗？
+}
+-ze-chair = { $form ->
+    [reply] 好，谢谢！
+   *[base] 这里有椅子。
+}
+-ze-work = { $form ->
+    [reply] 是，我现在工作！
+   *[base] 你现在工作吗？
 }
 # End of Chinese small talk.

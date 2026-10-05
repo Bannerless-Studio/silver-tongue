@@ -49,3 +49,7 @@ quiet-alt2-intent = Write a year
 chat = { -topic }
 chat-reply = { -topic(form: "reply") }
 chat-reply-intent = Answer David
+
+chat-2 = { -topic }
+chat-2-reply = { -topic(form: "reply") }
+chat-2-reply-intent = Answer David

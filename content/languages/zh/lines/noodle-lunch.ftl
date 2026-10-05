@@ -42,3 +42,6 @@ taste-alt2 = 我去买杯子。
 
 chat = { -topic }
 chat-reply = { -topic(form: "reply") }
+
+chat-2 = { -topic }
+chat-2-reply = { -topic(form: "reply") }
