@@ -10,7 +10,7 @@ year-reply = 一九八零年。
 year-alt1 = 你好，大卫！
 year-alt2 = 会！我会写。
 
-day = 九月二十六日。
+day = 好！你写，我看。
 day-reply = 九月二十六日！
 day-alt1 = 一九八零年。
 day-alt2 = 你好，大卫！

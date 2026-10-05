@@ -18,7 +18,7 @@ count-alt1 = 很好！
 count-alt2 = 我饿了。
 
 like = 你喜欢面条吗？
-like-reply = 喜欢！我喜欢面条。
+like-reply = 喜欢！我来工作，好吗？
 like-alt1 = 三个杯子！
 like-alt2 = 再见！
 

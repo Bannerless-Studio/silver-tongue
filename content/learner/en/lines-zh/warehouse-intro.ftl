@@ -38,9 +38,9 @@ ten-alt1-intent = Say five
 ten-alt2 = I'm hungry.
 ten-alt2-intent = Say you're hungry
 
-things = There are tables here, and chairs.
-things-reply = Very good!
-things-reply-intent = Say good
+things = What's in here?
+things-reply = Tables, and chairs.
+things-reply-intent = Say what's there
 things-alt1 = Ten!
 things-alt1-intent = Say ten
 things-alt2 = My name is { $player }.

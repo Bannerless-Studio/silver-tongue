@@ -15,8 +15,8 @@ seat-reply = 谢谢，老师！
 seat-alt1 = 我学习汉语。
 seat-alt2 = 你好，老师！
 
-listen = 请听！
-listen-reply = 好，我听。
+listen = 我们学习汉语！
+listen-reply = 好，我听！
 listen-alt1 = 你好，老师！
 listen-alt2 = 谢谢，老师！
 

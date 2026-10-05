@@ -25,8 +25,8 @@ ten-reply = 十！
 ten-alt1 = 五！
 ten-alt2 = 我饿了。
 
-things = 这里有桌子，有椅子。
-things-reply = 很好！
+things = 这里有什么？
+things-reply = 有桌子，有椅子。
 things-alt1 = 十！
 things-alt2 = 我叫{ $player }。
 

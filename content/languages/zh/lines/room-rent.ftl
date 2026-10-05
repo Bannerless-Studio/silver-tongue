@@ -10,8 +10,8 @@ money-reply = 有！我有钱。
 money-alt1 = 我喜欢面条。
 money-alt2 = 我叫{ $player }。
 
-week = 一个星期……
-week-reply = 多少钱？
+week = 很好！
+week-reply = 一个星期多少钱？
 week-alt1 = 十个椅子。
 week-alt2 = 你好吗？
 

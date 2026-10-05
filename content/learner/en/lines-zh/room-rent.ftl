@@ -14,9 +14,9 @@ money-alt1-intent = Say you like noodles
 money-alt2 = My name is { $player }.
 money-alt2-intent = Say your name
 
-week = One week…
-week-reply = How much?
-week-reply-intent = Ask the price
+week = Very good!
+week-reply = How much is it a week?
+week-reply-intent = Ask the weekly price
 week-alt1 = Ten chairs.
 week-alt1-intent = Say ten chairs
 week-alt2 = How are you?

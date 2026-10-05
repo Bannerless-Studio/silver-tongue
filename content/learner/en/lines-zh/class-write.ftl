@@ -14,7 +14,7 @@ year-alt1-intent = Greet David
 year-alt2 = Yes! I can write.
 year-alt2-intent = Say you can write
 
-day = The twenty-sixth of September.
+day = Good! You write, I'll watch.
 day-reply = The twenty-sixth of September!
 day-reply-intent = Write the date
 day-alt1 = Nineteen eighty.
