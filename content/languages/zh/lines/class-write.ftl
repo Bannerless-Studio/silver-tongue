@@ -26,7 +26,7 @@ name-alt1 = 这本书很好！
 name-alt2 = 你好，大卫！
 
 quiet = 老师来了！
-quiet-reply = 好，不说话！
+quiet-reply = 好，不说话！我听。
 quiet-alt1 = 这本书很好！
 quiet-alt2 = 一九八零年。
 

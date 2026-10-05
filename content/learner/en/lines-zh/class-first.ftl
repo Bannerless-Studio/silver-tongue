@@ -22,7 +22,7 @@ seat-alt1-intent = Say you study Chinese
 seat-alt2 = Hello, teacher!
 seat-alt2-intent = Greet the teacher
 
-listen = Let's study Chinese!
+listen = You're welcome! Let's study Chinese!
 listen-reply = OK, I'm listening!
 listen-reply-intent = Say you're listening
 listen-alt1 = Hello, teacher!

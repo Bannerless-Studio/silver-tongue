@@ -10,7 +10,7 @@ parents-reply = 老师！很好！
 parents-alt1 = 我没有自行车。
 parents-alt2 = 九月二十六日。
 
-pets = 我有猫，我有狗。你呢？
+pets = 我有猫和狗。你呢？
 pets-reply = 我没有猫。
 pets-alt1 = 老师！很好！
 pets-alt2 = 这本书很好！
@@ -30,7 +30,7 @@ fruit-reply = 谢谢！
 fruit-alt1 = 我没有猫。
 fruit-alt2 = 我爱电影！
 
-bye = 老师来了！写字！
+bye = 不客气！老师来了！写字！
 bye-reply = 好，写字！
 bye-alt1 = 我爱电影！
 bye-alt2 = 谢谢！

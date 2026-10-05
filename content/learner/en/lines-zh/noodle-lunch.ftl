@@ -30,7 +30,7 @@ see-alt1-intent = Offer to fetch rice
 see-alt2 = It's noon!
 see-alt2-intent = Say it's noon
 
-these = This, for that table at the front.
+these = This and this, for that table at the front.
 these-reply = OK, these dishes.
 these-reply-intent = Take the dishes
 these-alt1 = I see him! That gentleman?

@@ -39,7 +39,7 @@ name-alt2 = Hello, David!
 name-alt2-intent = Greet David
 
 quiet = The teacher's coming!
-quiet-reply = OK, no talking!
+quiet-reply = OK, no talking! I'm listening.
 quiet-reply-intent = Stop talking
 quiet-alt1 = This book is good!
 quiet-alt1-intent = Praise the book

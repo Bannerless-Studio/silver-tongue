@@ -30,9 +30,9 @@ live-alt1-intent = Say you're hungry
 live-alt2 = Xiao Zhang is my friend.
 live-alt2-intent = Mention Xiao Zhang
 
-bye = Goodbye, { $player }!
-bye-reply = Thank you! Goodbye, Mr Li!
-bye-reply-intent = Thank Mr Li and leave
+bye = You're welcome! Goodbye, { $player }!
+bye-reply = Goodbye, Mr Li!
+bye-reply-intent = Say goodbye to Mr Li
 bye-alt1 = Hello, Mr Li!
 bye-alt1-intent = Greet Mr Li
 bye-alt2 = My name is { $player }.

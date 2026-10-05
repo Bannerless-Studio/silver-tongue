@@ -20,7 +20,7 @@ live-reply = 好！谢谢！
 live-alt1 = 我饿了。
 live-alt2 = 小张是我朋友。
 
-bye = 再见，{ $player }！
-bye-reply = 谢谢！再见，李先生！
+bye = 不客气！再见，{ $player }！
+bye-reply = 再见，李先生！
 bye-alt1 = 你好，李先生！
 bye-alt2 = 我叫{ $player }。

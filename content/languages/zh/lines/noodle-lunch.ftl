@@ -20,7 +20,7 @@ see-reply = 看见了！那个先生？
 see-alt1 = 很少了！我去商店买。
 see-alt2 = 中午了！
 
-these = 这个，前面那个桌子。
+these = 这个和这个，前面那个桌子。
 these-reply = 好，这些菜。
 these-alt1 = 看见了！那个先生？
 these-alt2 = 很多！

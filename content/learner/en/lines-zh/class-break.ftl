@@ -46,7 +46,7 @@ fruit-alt1-intent = Say you have no cat
 fruit-alt2 = I love films!
 fruit-alt2-intent = Say you love films
 
-bye = The teacher's back! Write!
+bye = You're welcome! The teacher's back! Write!
 bye-reply = OK, writing!
 bye-reply-intent = Get writing
 bye-alt1 = I love films!
