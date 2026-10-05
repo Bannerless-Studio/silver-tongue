@@ -6,6 +6,16 @@ cost-alt1-intent = Say you don't know
 cost-alt2 = Yes, thank you.
 cost-alt2-intent = Say yes and thank him
 
+money = No money?
+money-reply = I have a thousand won.
+money-reply-intent = Say how much is left
+money-alt1 = Yes, I know.
+money-alt1-intent = Say you know
+money-alt1-answer = Do you have money?
+money-alt2 = No, I don't know.
+money-alt2-intent = Say you don't know
+money-alt2-answer = A thousand won?
+
 note = This is a thousand won. One.
 note-reply = One?
 note-reply-intent = Repeat the number

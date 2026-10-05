@@ -21,6 +21,16 @@
    "missCost": 0
   },
   {
+   "id": "money",
+   "slots": {},
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0,
+   "expect": {
+    "action": "money"
+   }
+  },
+  {
    "id": "note",
    "slots": {},
    "expect": {

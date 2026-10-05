@@ -59,6 +59,7 @@ export const UI_KEYS: Record<string, string[]> = {
   "menu-go": ["place"],
   "menu-mentor": ["npc"],
   "menu-cost-money": ["currency", "cost"],
+  "menu-cost-time": [],
   "menu-no-time": [],
   "note-hint": ["npc"],
   "mentor-nothing": ["npc"],
@@ -244,6 +245,7 @@ export const VN_UI_KEYS: Record<string, string[]> = {
 
 /** Message ids the quiet terminal page uses, with their variables; checked like UI_KEYS. */
 export const QUIET_UI_KEYS: Record<string, string[]> = {
+  "menu-day-used": [],
   "quiet-anchor": ["place", "day", "part"],
   "quiet-anchor-time": ["place", "part"],
   "quiet-tiles-tap": [],

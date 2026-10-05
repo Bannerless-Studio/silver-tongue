@@ -18,12 +18,15 @@ function namesNpc(label: string, npc: string): boolean {
   return label.toLowerCase().includes(npc.toLowerCase());
 }
 
-/**
- * Every talk/mentor action costs exactly one of the day's slots; that's the norm, so it's never
- * shown. A yuan cost is the only thing that varies here, so it's the only thing worth calling out.
- */
-function costSuffix(t: Text, cost: number, currency: string): string {
-  return cost > 0 ? t("menu-cost-money", { currency, cost }) : "";
+/** Every conversation, mentor visit, shift and purchase spends one part of the day. */
+export function slotActionLabel(t: Text, label: string, cost: number, currency: string): string {
+  const money = cost > 0 ? t("menu-cost-money", { currency, cost }) : "";
+  return label + money + t("menu-cost-time");
+}
+
+/** Why talk actions disappear from a page that hides disabled menu items, including at home. */
+export function menuDirection(course: Course, state: GameState, t: Text): string[] {
+  return state.slot >= course.world.slotsPerDay ? [t("menu-day-used")] : [];
 }
 
 /**
@@ -47,7 +50,7 @@ export function placeMenu(course: Course, state: GameState, t: Text, placeName =
     const label = alone || namesNpc(sceneName, npc) ? sceneName : t("menu-talk", { npc, scene: sceneName });
     items.push({
       kind: "talk",
-      label: label + costSuffix(t, sceneCost(scene), course.world.currency),
+      label: slotActionLabel(t, label, sceneCost(scene), course.world.currency),
       input: { type: "startScene", scene: id },
       npc: scene.npc,
       scene: id,
@@ -57,7 +60,7 @@ export function placeMenu(course: Course, state: GameState, t: Text, placeName =
   // Offered only when there is something to explain, so a slot is never spent on nothing.
   if (mentorAvailable(course, state) && state.notes.ready.length) {
     const npc = course.world.mentor!.npc;
-    items.push({ kind: "mentor", label: t("menu-mentor", { npc: npcName(npc) }), input: { type: "visitMentor" }, npc, disabled });
+    items.push({ kind: "mentor", label: slotActionLabel(t, t("menu-mentor", { npc: npcName(npc) }), 0, course.world.currency), input: { type: "visitMentor" }, npc, disabled });
   }
   // A place stays off the menu until the scenes that reveal it are done.
   for (const p of course.world.places[state.place].links) {

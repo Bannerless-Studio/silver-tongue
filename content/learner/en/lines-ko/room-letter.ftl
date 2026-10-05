@@ -43,5 +43,5 @@ bye-reply = Goodbye.
 bye-reply-intent = See her off
 bye-alt1 = Goodbye (I'm leaving).
 bye-alt1-intent = Say goodbye as you leave
-bye-alt2 = Who are you?
-bye-alt2-intent = Ask who she is
+bye-alt2 = Min-jun?
+bye-alt2-intent = Ask after Min-jun

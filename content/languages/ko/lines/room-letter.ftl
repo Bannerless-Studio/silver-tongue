@@ -29,4 +29,4 @@ uni-alt2 = 방세 내요.
 bye = 안녕히 계세요.
 bye-reply = 안녕히 가세요.
 bye-alt1 = 안녕히 계세요.
-bye-alt2 = 누구예요?
+bye-alt2 = 민준 씨?

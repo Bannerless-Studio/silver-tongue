@@ -1,10 +1,12 @@
 import { fileURLToPath } from "node:url";
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   availableSceneIds,
   comboKey,
   createCore,
   mulberry32,
+  mentorAvailable,
   newGame,
   personalize,
   sceneCost,
@@ -13,7 +15,8 @@ import {
   type GameState,
   type Input,
 } from "@silver-tongue/core";
-import { anchorRow, extra, makeText, npcLabel, placeMenu, primaryItem } from "@silver-tongue/view";
+import { anchorRow, extra, makeText, menuDirection, npcLabel, placeMenu, primaryItem } from "@silver-tongue/view";
+import { createQuiet } from "../../packages/quiet-web/src/quiet";
 import { stepToward } from "../src/bots";
 import { buildCourse } from "../src/build-course";
 
@@ -140,6 +143,108 @@ describe("ko-seoul's stage-1 chain", () => {
     expect(course!.scenes.filter((s) => s.repeatable).map((s) => s.id).sort()).toEqual(["copy-shift", "shop-buy", "stall-shift"]);
   });
 
+  it("keeps the first three scenes within six words, scenes through shop-count within eight, and lines within two", () => {
+    // The desk teaches these words; names never count toward the learning budget.
+    const seen = new Set(["ko-sinmun", "ko-wol", "ko-won"]);
+    const names = new Set<string>();
+    for (const file of ["words.json", "extra-words.json"]) {
+      const words = JSON.parse(readFileSync(`${CONTENT}/languages/ko/${file}`, "utf8")) as { id: string; name?: boolean }[];
+      for (const w of words) if (w.name) names.add(w.id);
+    }
+    for (const id of CHAIN) {
+      const scene = course!.scenes.find((s) => s.id === id)!;
+      expect(scene.stage, id).toBe(1);
+      const started = new Set(seen);
+      for (const ex of scene.exchanges) {
+        const exchangeWords = new Set<string>();
+        for (const v of Object.values(ex.variants)) {
+          const local = new Set(seen);
+          for (const [kind, line] of [["NPC", v.npc], ["reply", v.reply], ["rephrase", v.rephrase]] as const) {
+            if (!line) continue;
+            const words = new Set(line.tokens.map((t) => t.word).filter((w) => !names.has(w)));
+            const fresh = [...words].filter((w) => !local.has(w));
+            expect(fresh.length, `${id}/${ex.id} ${kind}: ${fresh.join(" ")}`).toBeLessThanOrEqual(2);
+            for (const w of words) { local.add(w); exchangeWords.add(w); }
+          }
+        }
+        for (const w of exchangeWords) seen.add(w);
+      }
+      if (CHAIN.indexOf(id) <= CHAIN.indexOf("shop-count")) {
+        const limit = CHAIN.indexOf(id) <= CHAIN.indexOf("street-again") ? 6 : 8;
+        expect([...seen].filter((w) => !started.has(w)).length, id).toBeLessThanOrEqual(limit);
+      }
+    }
+  });
+
+  it("teaches 저, 어디 and 은 in stage 1, with introductions followed by greetings before name questions", () => {
+    const words = new Set(course!.scenes.filter((s) => s.stage === 1).flatMap((s) =>
+      s.exchanges.flatMap((ex) => Object.values(ex.variants).flatMap((v) => [...v.npc.tokens, ...v.reply.tokens].map((t) => t.word))),
+    ));
+    for (const word of ["ko-jeo", "ko-eodi", "ko-eun"]) expect(words.has(word), word).toBe(true);
+    const intro = course!.scenes.find((s) => s.id === "stall-intro")!;
+    const jiwoo = Object.values(intro.exchanges.find((ex) => ex.id === "jiwoo")!.variants)[0];
+    const name = Object.values(intro.exchanges.find((ex) => ex.id === "name")!.variants)[0];
+    expect(jiwoo.reply.text).toBe("지우 씨, 안녕하세요.");
+    expect(name.reply.text).not.toBe(jiwoo.reply.text);
+  });
+
+  it("uses two purposeful repeats, answers every alt, and keeps repeat requests out of wrong replies", () => {
+    const scene = course!.scenes.find((s) => s.id === "street-again")!;
+    expect(scene.after).toEqual(["street-hello"]);
+    expect(course!.scenes.find((s) => s.id === "street-what")!.after).toEqual([scene.id]);
+    expect(scene.exchanges.map((ex) => ex.id)).toEqual(["fast", "again", "slow"]);
+    const variants = scene.exchanges.map((ex) => Object.values(ex.variants)[0]);
+    expect(variants.map((v) => v.reply.text)).toEqual(["다시 말해 주세요.", "천천히 말해 주세요. 감사합니다.", "아니요, 몰라요."]);
+    for (const [i, v] of variants.entries()) {
+      for (const [j, alt] of (v.alts ?? []).entries()) {
+        const outcome = v.altOutcomes?.[String(j)];
+        expect(outcome?.reaction?.meaning, `${scene.id}/${scene.exchanges[i].id}: ${alt.text}`).toBeTruthy();
+        if (i > 0) expect(alt.text).not.toBe("네?");
+        expect(["네?", "다시 말해 주세요.", "천천히 말해 주세요."], `${scene.id}/${scene.exchanges[i].id}`).not.toContain(alt.text);
+        expect(outcome?.accept).not.toBe(true);
+      }
+    }
+  });
+
+  it("keeps the mentor out of the first day and labels every slot-spending action with its cost", () => {
+    expect(course!.world.mentor?.after).toBe("shop-count");
+    const t = makeText(course!.learnerFtl, course!.learner);
+    const early = newGame(course!);
+    early.place = "street";
+    early.scenesDone["street-hello"] = 1;
+    early.notes.ready = ["yo"];
+    expect(mentorAvailable(course!, early)).toBe(false);
+    expect(placeMenu(course!, early, t).some((m) => m.kind === "mentor")).toBe(false);
+
+    const played = followBright(course!).state;
+    const state = { ...played, slot: 0, notes: { ...played.notes, ready: ["yo"] }, wallet: 20000 };
+    const suffix = " · takes the rest of this part of the day";
+    const at = (place: string) => placeMenu(course!, { ...state, place }, t);
+    expect(at("street").find((m) => m.kind === "mentor")?.label).toBe(`Ask Grandpa Park about the language${suffix}`);
+    for (const [place, id] of [["stall", "stall-shift"], ["shop", "shop-buy"]]) {
+      expect(at(place).find((m) => m.kind === "talk" && m.scene === id)?.label, id).toContain(suffix);
+    }
+    const opening = placeMenu(course!, newGame(course!), t).find((m) => m.kind === "talk");
+    expect(opening?.label).toContain(suffix);
+    expect(at("shop").find((m) => m.kind === "talk")?.label).toContain(t("menu-cost-money", { currency: "₩", cost: 1000 }));
+  });
+
+  it("explains exhausted time on a Book menu both in the alley and beside the bed", () => {
+    const { state, t } = followBright(course!);
+    expect(menuDirection(course!, { ...state, slot: 0 }, t)).toEqual([]);
+    for (const place of ["street", "room"]) {
+      const exhausted = { ...state, place, slot: course!.world.slotsPerDay };
+      const core = createCore(course!, exhausted, { now: () => 0, rng: mulberry32(1) });
+      const q = createQuiet({ course: course!, core, now: () => 0 });
+      const phase = q.view().phase;
+      expect(phase.kind).toBe("explore");
+      if (phase.kind !== "explore") throw new Error("expected a place menu");
+      expect(phase.waiting).toContain(t("menu-day-used"));
+      expect(phase.menu.some((m) => m.kind === "talk" || m.kind === "mentor")).toBe(false);
+      expect(phase.menu.some((m) => m.kind === (place === "room" ? "sleep" : "go"))).toBe(true);
+    }
+  });
+
   it("a new player plays it in order: each scene opens only after the one before, never blocked", () => {
     const { state, wallet } = playChain(course!, 0);
     expect(Math.min(...wallet)).toBeGreaterThan(0);
@@ -172,8 +277,8 @@ describe("ko-seoul's stage-1 chain", () => {
   });
 
   it("a wrong reply always looks wrong: never a reply the scene wants, never a request to hear it again", () => {
-    // A miss repeats the line, slower. A written wrong reply that the scene also takes as right, or
-    // that asks to hear the line again, gets what looks like an answer, and can be picked forever.
+    // A miss repeats the line, slower. A written wrong reply must never be a right reply
+    // elsewhere in the scene or a request whose repeated line looks like a successful answer.
     const repeatRequests = ["네?", "다시 말해 주세요.", "천천히 말해 주세요."];
     for (const s of course!.scenes) {
       const variants = s.exchanges.flatMap((ex) => Object.values(ex.variants));

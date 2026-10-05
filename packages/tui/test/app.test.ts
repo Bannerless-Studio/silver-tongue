@@ -729,7 +729,7 @@ describe("tui app", () => {
     expect(s).toContain("That's not what was asked.");
   });
 
-  it("shows a scene's slot cost only in the HUD, not the menu, and shows late rent in the HUD", () => {
+  it("shows conversation time in the menu, free movement, and late rent in the HUD", () => {
     const { term } = setup((s) => {
       s.place = "noodle_shop";
       s.rentLate = true;
@@ -738,7 +738,7 @@ describe("tui app", () => {
     expect(s).toContain("1) Say hello");
     expect(s).toContain("2) Go to The street"); // moving is free
     expect(s).not.toContain("The street · 1 slot");
-    expect(s).not.toContain("Say hello · 1 slot");
+    expect(s).toContain("Say hello · takes the rest of this part of the day");
     expect(s).toContain("¥20 · rent late");
   });
 

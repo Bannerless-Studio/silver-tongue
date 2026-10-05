@@ -30,13 +30,23 @@ tasty-alt1-intent = Say you're hungry
 tasty-alt2 = No, I don't know.
 tasty-alt2-intent = Say you don't know
 
-jiwoo = I'm Ji-woo. What's your name?
-jiwoo-reply = I'm { $player }.
-jiwoo-reply-intent = Give your name
+jiwoo = I'm Ji-woo.
+jiwoo-reply = Hello, Ji-woo.
+jiwoo-reply-intent = Greet her by name
 jiwoo-alt1 = I'm Ji-woo.
 jiwoo-alt1-intent = Say her name back
 jiwoo-alt2 = It's Grandpa Park.
 jiwoo-alt2-intent = Give a name
+
+name = What's your name?
+name-reply = I'm { $player }.
+name-reply-intent = Give your own name
+name-alt1 = I'm Min-jun's friend.
+name-alt1-intent = Say you're Min-jun's friend
+name-alt1-answer = A friend? What's your name?
+name-alt2 = It's Grandpa Park.
+name-alt2-intent = Give his name instead
+name-alt2-answer = Grandpa Park? What's your name?
 
 work = Let's work together!
 work-reply = Yes, great!

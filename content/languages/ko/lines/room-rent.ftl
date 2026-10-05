@@ -1,10 +1,10 @@
 # The landlady comes about the rent. Prices use the Sino-Korean numbers (오, 만).
 # "march" is a buried clue (pin). Each <id>-alt<n> is a written wrong reply, using only words met by then.
 
-hello = { $player } 씨, 안녕하세요.
-hello-reply = 안녕하세요.
+hello = 민준 씨 어디 있어요?
+hello-reply = 몰라요.
 hello-alt1 = 안녕히 계세요.
-hello-alt2 = 누구예요?
+hello-alt2 = 민준 씨?
 
 paid = 방세 냈어요?
 paid-reply = 아니요.
@@ -23,7 +23,7 @@ week-alt2 = 민준 씨 친구예요.
 
 march = 민준 씨는 삼월까지 냈어요.
 march-reply = 삼월까지?
-march-alt1 = 저는 { $player }입니다.
+march-alt1 = { $player }입니다.
 march-alt2 = 삼천 원이에요?
 
 bye = 안녕히 계세요.

@@ -1,3 +1,13 @@
+sit = Sit here.
+sit-reply = Thank you.
+sit-reply-intent = Thank him for the seat
+sit-alt1 = Goodbye.
+sit-alt1-intent = Say goodbye as you leave
+sit-alt1-answer = Sit here.
+sit-alt2 = Are you Grandpa Park?
+sit-alt2-intent = Check his name again
+sit-alt2-answer = I'm Grandpa Park. Sit here.
+
 book = Is this a Korean book?
 book-reply = Yes, it's a Korean book.
 book-reply-intent = Say what it is

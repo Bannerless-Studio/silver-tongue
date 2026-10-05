@@ -9,7 +9,7 @@ welcome-alt2 = 안녕히 가세요.
 milk = 우유도 있어요.
 milk-reply = 우유도 주세요.
 milk-alt1 = 우유 뭐예요?
-milk-alt2 = 우유 없어요.
+milk-alt2 = 우유예요?
 
 price = 빵 천 원, 우유 천 원.
 price-reply = 네? 얼마예요?
@@ -24,7 +24,7 @@ again-alt2 = 좋아요!
 slow = 빵…… 천 원. 우유…… 천 원.
 slow-reply = 네, 여기 있어요.
 slow-alt1 = 천 원 주세요.
-slow-alt2 = 돈 없어요.
+slow-alt2 = 빵이에요?
 
 change = 여기 있어요.
 change-reply = 네, 감사합니다.
