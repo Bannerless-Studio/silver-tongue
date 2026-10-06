@@ -3,7 +3,7 @@
   "place": "school",
   "npc": "teacher",
   "stage": 1,
-  "after": ["delivery-pickup"],
+  "after": ["delivery-pickup", "stairs-pets"],
   "requires": {},
   "repeatable": false,
   "trustGain": 1,

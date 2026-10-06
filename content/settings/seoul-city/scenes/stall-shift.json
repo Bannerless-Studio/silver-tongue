@@ -15,6 +15,16 @@
  "trustGain": 1,
  "exchanges": [
   {
+   "id": "welcome",
+   "slots": {},
+   "expect": {
+    "action": "welcome"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
    "id": "fetch",
    "slots": {
     "item": "food"
@@ -28,6 +38,21 @@
    ],
    "pay": 2000,
    "missCost": 1000
+  },
+  {
+   "id": "chat-a",
+   "slots": {
+    "topic": "chat_stall"
+   },
+   "expect": {
+    "action": "chat",
+    "topic": "$topic"
+   },
+   "hinges": [
+    "$topic"
+   ],
+   "pay": 0,
+   "missCost": 0
   },
   {
    "id": "order",
@@ -46,6 +71,46 @@
    ],
    "pay": 8000,
    "missCost": 2000
+  },
+  {
+   "id": "chat-b",
+   "slots": {
+    "topic": "chat_stall"
+   },
+   "expect": {
+    "action": "chat",
+    "topic": "$topic"
+   },
+   "hinges": [
+    "$topic"
+   ],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "chat-c",
+   "slots": {
+    "topic": "chat_stall"
+   },
+   "expect": {
+    "action": "chat",
+    "topic": "$topic"
+   },
+   "hinges": [
+    "$topic"
+   ],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "eat",
+   "slots": {},
+   "expect": {
+    "action": "eat"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
   }
  ]
 }

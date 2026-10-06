@@ -375,6 +375,15 @@
   "forms": {
    "드세요": [
     "deuseyo"
+   ],
+   "먹을까요": [
+    "meogeulkkayo"
+   ],
+   "먹고": [
+    "meokgo"
+   ],
+   "먹으러": [
+    "meogeureo"
    ]
   }
  },
@@ -417,7 +426,12 @@
   "lv": "T1",
   "readings": [
    "ilhaeyo"
-  ]
+  ],
+  "forms": {
+   "일합시다": [
+    "ilhapsida"
+   ]
+  }
  },
  {
   "id": "ko-gachi",
@@ -650,7 +664,12 @@
   "lv": "T1",
   "readings": [
    "dasi"
-  ]
+  ],
+  "forms": {
+   "다시요": [
+    "dasiyo"
+   ]
+  }
  },
  {
   "id": "ko-malhaeyo",
@@ -727,7 +746,15 @@
   "lv": "T1",
   "readings": [
    "masisseoyo"
-  ]
+  ],
+  "forms": {
+   "맛있죠": [
+    "masitjyo"
+   ],
+   "맛있네요": [
+    "masinneyo"
+   ]
+  }
  },
  {
   "id": "ko-sa",
@@ -754,6 +781,42 @@
   ]
  },
  {
+  "id": "ko-hago",
+  "w": "하고",
+  "lv": "T1",
+  "readings": [
+   "hago"
+  ],
+  "attach": true
+ },
+ {
+  "id": "ko-sipeoyo",
+  "w": "싶어요",
+  "lv": "T1",
+  "readings": [
+   "sipeoyo"
+  ]
+ },
+ {
+  "id": "ko-ui",
+  "w": "의",
+  "lv": "T1",
+  "readings": [
+   "ui",
+   "e"
+  ],
+  "attach": true
+ },
+ {
+  "id": "ko-jjeum",
+  "w": "쯤",
+  "lv": "T1",
+  "readings": [
+   "jjeum"
+  ],
+  "attach": true
+ },
+ {
   "id": "ko-pyeonji",
   "w": "편지",
   "lv": "T2",
@@ -772,7 +835,7 @@
  {
   "id": "ko-eseo",
   "w": "에서",
-  "lv": "T2",
+  "lv": "T1",
   "readings": [
    "eseo"
   ],
@@ -798,7 +861,7 @@
  {
   "id": "ko-an",
   "w": "안",
-  "lv": "T2",
+  "lv": "T1",
   "readings": [
    "an"
   ]
@@ -872,7 +935,7 @@
  {
   "id": "ko-anieyo",
   "w": "아니에요",
-  "lv": "T2",
+  "lv": "T1",
   "readings": [
    "anieyo"
   ]

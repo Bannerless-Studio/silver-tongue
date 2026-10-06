@@ -89,6 +89,21 @@
    "missCost": 0
   },
   {
+   "id": "chat-d",
+   "slots": {
+    "topic": "chat_copy"
+   },
+   "expect": {
+    "action": "chat",
+    "topic": "$topic"
+   },
+   "hinges": [
+    "$topic"
+   ],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
    "id": "thanks",
    "slots": {},
    "expect": {

@@ -8,21 +8,11 @@
   "repeatable": true,
   "trustGain": 1,
   "exchanges": [
-    {
-      "id": "carry",
-      "slots": { "amount": "numbers_3_10", "item": "furniture" },
-      "expect": { "action": "carry", "amount": "$amount", "item": "$item" },
-      "hinges": ["$amount", "$item"],
-      "pay": 7,
-      "missCost": 1
-    },
-    {
-      "id": "pick",
-      "slots": { "size": "sizes", "item": "furniture" },
-      "expect": { "action": "pick", "size": "$size", "item": "$item" },
-      "hinges": ["$size", "$item"],
-      "pay": 3,
-      "missCost": 1
-    }
+    { "id": "carry", "slots": { "amount": "numbers_3_10", "item": "furniture" }, "expect": { "action": "carry", "amount": "$amount", "item": "$item" }, "hinges": ["$amount", "$item"], "pay": 7, "missCost": 1 },
+    { "id": "pick", "slots": { "size": "sizes", "item": "furniture" }, "expect": { "action": "pick", "size": "$size", "item": "$item" }, "hinges": ["$size", "$item"], "pay": 3, "missCost": 1 },
+    { "id": "chat-d", "slots": { "topic": "chat_ware" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
+    { "id": "chat-a", "slots": { "topic": "chat_ware" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
+    { "id": "chat-b", "slots": { "topic": "chat_ware" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
+    { "id": "chat-c", "slots": { "topic": "chat_ware" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 }
   ]
 }

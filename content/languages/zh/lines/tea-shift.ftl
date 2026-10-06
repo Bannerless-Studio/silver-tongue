@@ -12,3 +12,15 @@ busy = 那个小姐想喝茶！
 busy-reply = 好！茶！
 busy-alt1 = 我饿了。
 busy-alt2 = 我喝水。
+
+chat-a = { -topic }
+chat-a-reply = { -topic(form: "reply") }
+
+chat-b = { -topic }
+chat-b-reply = { -topic(form: "reply") }
+
+chat-c = { -topic }
+chat-c-reply = { -topic(form: "reply") }
+
+chat-d = { -topic }
+chat-d-reply = { -topic(form: "reply") }

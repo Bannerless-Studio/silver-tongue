@@ -84,6 +84,10 @@ ko-masisseoyo = tasty; delicious
 ko-sa = four (Sino-Korean, for prices and dates)
 ko-mianhaeyo = sorry
 ko-waeyo = why?; what is it?
+ko-hago = and; with (after a noun: 떡볶이하고 김밥, tteokbokki and gimbap)
+ko-sipeoyo = to want to (after a verb's -고: 먹고 싶어요, I want to eat)
+ko-ui = 's; of (after a noun: 할아버지의 신문, Grandpa's newspaper)
+ko-jjeum = about; around (after an amount: 삼천 원쯤, about three thousand won)
 
 # Stage 2.
 ko-naeil = tomorrow

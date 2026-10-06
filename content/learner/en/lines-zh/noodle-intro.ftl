@@ -15,21 +15,20 @@ names-alt2 = Hello!
 names-alt2-intent = Say hello
 
 count = { $number ->
-    [2] How many cups? One...
-    [3] How many cups? One, two...
-    [4] How many cups? One, two, three...
-   *[5] How many cups? One, two, three, four...
+    [3] Cups! One, two...
+    [4] Cups! One, two, three...
+   *[5] Cups! One, two, three, four...
 }
-count-reply = { -number }!
-count-reply-intent = Say the next number
+count-reply = { -number } cups!
+count-reply-intent = Say how many cups
 count-alt1 = Fine!
 count-alt1-intent = Say fine
 count-alt2 = I'm hungry.
 count-alt2-intent = Say you're hungry
 
 like = Do you like noodles?
-like-reply = I do! I like noodles.
-like-reply-intent = Say you like them
+like-reply = I do! Can I come and work here?
+like-reply-intent = Say yes, and ask for work
 like-alt1 = Three cups!
 like-alt1-intent = Say three cups
 like-alt2 = Goodbye!

@@ -454,6 +454,10 @@
    "食べませんでした": [
     "たべませんでした",
     "tabemasen deshita"
+   ],
+   "食べたい": [
+    "たべたい",
+    "tabetai"
    ]
   }
  },
@@ -522,6 +526,309 @@
   "lv": "N5",
   "readings": [
    "sore"
+  ]
+ },
+ {
+  "id": "ja-yo",
+  "w": "よ",
+  "lv": "N5",
+  "readings": [
+   "yo"
+  ]
+ },
+ {
+  "id": "ja-kyo",
+  "w": "今日",
+  "lv": "N5",
+  "readings": [
+   "きょう",
+   "kyō"
+  ]
+ },
+ {
+  "id": "ja-ame",
+  "w": "雨",
+  "lv": "N5",
+  "readings": [
+   "あめ",
+   "ame"
+  ]
+ },
+ {
+  "id": "ja-furimasu",
+  "w": "降ります",
+  "lv": "N5",
+  "readings": [
+   "ふります",
+   "furimasu"
+  ],
+  "forms": {
+   "降っています": [
+    "ふっています",
+    "futte imasu"
+   ],
+   "降っていません": [
+    "ふっていません",
+    "futte imasen"
+   ]
+  }
+ },
+ {
+  "id": "ja-samui",
+  "w": "寒い",
+  "lv": "N5",
+  "readings": [
+   "さむい",
+   "samui"
+  ]
+ },
+ {
+  "id": "ja-kasa",
+  "w": "傘",
+  "lv": "N5",
+  "readings": [
+   "かさ",
+   "kasa"
+  ]
+ },
+ {
+  "id": "ja-oishii",
+  "w": "おいしい",
+  "lv": "N5",
+  "readings": [
+   "oishii"
+  ]
+ },
+ {
+  "id": "ja-takai",
+  "w": "高い",
+  "lv": "N5",
+  "readings": [
+   "たかい",
+   "takai"
+  ],
+  "forms": {
+   "高くない": [
+    "たかくない",
+    "takakunai"
+   ]
+  }
+ },
+ {
+  "id": "ja-yasui",
+  "w": "安い",
+  "lv": "N5",
+  "readings": [
+   "やすい",
+   "yasui"
+  ]
+ },
+ {
+  "id": "ja-nomimasu",
+  "w": "飲みます",
+  "lv": "N5",
+  "readings": [
+   "のみます",
+   "nomimasu"
+  ],
+  "forms": {
+   "飲みません": [
+    "のみません",
+    "nomimasen"
+   ],
+   "飲みました": [
+    "のみました",
+    "nomimashita"
+   ]
+  }
+ },
+ {
+  "id": "ja-ohayogozaimasu",
+  "w": "おはようございます",
+  "lv": "N5",
+  "readings": [
+   "ohayō gozaimasu"
+  ]
+ },
+ {
+  "id": "ja-shigoto",
+  "w": "仕事",
+  "lv": "N5",
+  "readings": [
+   "しごと",
+   "shigoto"
+  ]
+ },
+ {
+  "id": "ja-ji",
+  "w": "時",
+  "lv": "N5",
+  "readings": [
+   "じ",
+   "ji"
+  ]
+ },
+ {
+  "id": "ja-kara",
+  "w": "から",
+  "lv": "N5",
+  "readings": [
+   "kara"
+  ]
+ },
+ {
+  "id": "ja-made",
+  "w": "まで",
+  "lv": "N5",
+  "readings": [
+   "made"
+  ]
+ },
+ {
+  "id": "ja-mainichi",
+  "w": "毎日",
+  "lv": "N5",
+  "readings": [
+   "まいにち",
+   "mainichi"
+  ]
+ },
+ {
+  "id": "ja-nani",
+  "w": "何",
+  "lv": "N5",
+  "readings": [
+   "なに",
+   "nani"
+  ]
+ },
+ {
+  "id": "ja-kaimasu",
+  "w": "買います",
+  "lv": "N5",
+  "readings": [
+   "かいます",
+   "kaimasu"
+  ],
+  "forms": {
+   "買って": [
+    "かって",
+    "katte"
+   ]
+  }
+ },
+ {
+  "id": "ja-to",
+  "w": "と",
+  "lv": "N5",
+  "readings": [
+   "to"
+  ]
+ },
+ {
+  "id": "ja-jaarimasen",
+  "w": "じゃありません",
+  "lv": "N5",
+  "readings": [
+   "ja arimasen"
+  ]
+ },
+ {
+  "id": "ja-sumimasen",
+  "w": "すみません",
+  "lv": "N5",
+  "readings": [
+   "sumimasen"
+  ]
+ },
+ {
+  "id": "ja-kimasu",
+  "w": "来ます",
+  "lv": "N5",
+  "readings": [
+   "きます",
+   "kimasu"
+  ],
+  "forms": {
+   "来て": [
+    "きて",
+    "kite"
+   ]
+  }
+ },
+ {
+  "id": "ja-he",
+  "w": "へ",
+  "lv": "N5",
+  "readings": [
+   "e"
+  ],
+  "say": "え"
+ },
+ {
+  "id": "ja-ikimasu",
+  "w": "行きます",
+  "lv": "N5",
+  "readings": [
+   "いきます",
+   "ikimasu"
+  ],
+  "forms": {
+   "行きましょう": [
+    "いきましょう",
+    "ikimashō"
+   ],
+   "行きました": [
+    "いきました",
+    "ikimashita"
+   ]
+  }
+ },
+ {
+  "id": "ja-konbini",
+  "w": "コンビニ",
+  "lv": "N5",
+  "readings": [
+   "konbini"
+  ]
+ },
+ {
+  "id": "ja-issho",
+  "w": "いっしょ",
+  "lv": "N5",
+  "readings": [
+   "issho"
+  ]
+ },
+ {
+  "id": "ja-ni",
+  "w": "に",
+  "lv": "N5",
+  "readings": [
+   "ni"
+  ]
+ },
+ {
+  "id": "ja-kaerimasu",
+  "w": "帰ります",
+  "lv": "N5",
+  "readings": [
+   "かえります",
+   "kaerimasu"
+  ],
+  "forms": {
+   "帰りましょう": [
+    "かえりましょう",
+    "kaerimashō"
+   ]
+  }
+ },
+ {
+  "id": "ja-doko",
+  "w": "どこ",
+  "lv": "N5",
+  "readings": [
+   "doko"
   ]
  }
 ]

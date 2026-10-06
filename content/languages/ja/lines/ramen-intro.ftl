@@ -5,6 +5,11 @@ welcome = いらっしゃいませ！
 welcome-reply = こんにちは。
 welcome-alt1 = さようなら。
 
+place = ここはラーメン屋です。
+place-reply = ラーメン屋ですか。
+place-alt1 = おやすみなさい。
+place-alt2 = わたしの部屋です。
+
 ate = ラーメン、食べましたか？
 ate-reply = いいえ、食べませんでした。
 ate-alt1 = はい、また。

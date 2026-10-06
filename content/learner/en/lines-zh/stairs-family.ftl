@@ -1,20 +1,20 @@
-photo = We live here. This is our family.
-photo-reply = Your son's in it!
-photo-reply-intent = Spot her son
+photo = This is my family.
+photo-reply = How many people are in your family?
+photo-reply-intent = Ask how many there are
 photo-alt1 = I work in a restaurant.
 photo-alt1-intent = Say where you work
 photo-alt2 = He's eight.
 photo-alt2-intent = Say his age
 
-people = There are six people in my family.
-people-reply = Six people!
-people-reply-intent = Say six people
+people = Six people!
+people-reply = Six people! Very good!
+people-reply-intent = Say six is good
 people-alt1 = Five kuai!
 people-alt1-intent = Say five kuai
 people-alt2 = Your son's lovely!
 people-alt2-intent = Praise her son
 
-parents = This is my dad and my mum.
+parents = This is my dad, and this is my mum.
 parents-reply = Your mum and dad look nice!
 parents-reply-intent = Praise her parents
 parents-alt1 = Six people!
@@ -38,9 +38,9 @@ daughter-alt1-intent = Praise her parents
 daughter-alt2 = Six people!
 daughter-alt2-intent = Say six people
 
-pretty = She's ten. Is she pretty?
-pretty-reply = Very pretty!
-pretty-reply-intent = Say it's pretty
+pretty = She's ten.
+pretty-reply = She's very pretty!
+pretty-reply-intent = Say she's pretty
 pretty-alt1 = Ten kuai!
 pretty-alt1-intent = Say ten kuai
 pretty-alt2 = A doctor! Very good!
