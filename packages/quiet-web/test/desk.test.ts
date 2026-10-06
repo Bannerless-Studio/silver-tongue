@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { comboKey, createCore, mulberry32, newGame, type Course } from "@silver-tongue/core";
 import { fixtureWithText } from "@silver-tongue/view/testing";
-import { deskOn, placeName, type CourseExtra, type DeskPaper, type DeskProgress } from "@silver-tongue/view";
+import { deskReady, deskOn, placeName, type CourseExtra, type DeskPaper, type DeskProgress } from "@silver-tongue/view";
 import { readFileSync } from "node:fs";
 import { createQuiet, type PaperStore } from "../src/quiet";
 
@@ -65,6 +65,24 @@ describe("the desk", () => {
     expect(q.readPapers().has("idcard")).toBe(true);
     const q2 = createQuiet({ course, core: createCore(course, state, { now: () => T0, rng: mulberry32(1) }), now: () => T0, papers: memory(["idcard", "bill"]) });
     expect(q2.view().desk).toBeUndefined();
+  });
+
+  it("goes on after only idcard.name, retaining unfinished paper progress", () => {
+    const { q, papers } = setup((c) => {
+      withPapers(c);
+      (c as CourseExtra).papers![0].required = ["name"];
+      (c as CourseExtra).papers![1].required = [];
+    });
+    q.setName("Ana");
+    q.setDeskAt("idcard", 3);
+    q.readPaperLine("idcard", "name");
+    expect(q.readPapers().has("idcard")).toBe(false);
+    expect(q.readPapers().has("bill")).toBe(false);
+    expect(deskReady((q.course as CourseExtra).papers!, q.readPapers())).toBe(true);
+    q.leaveDesk();
+    expect(q.view().desk).toBeUndefined();
+    expect(q.deskAt("idcard")).toBe(3);
+    expect(papers.ids).toEqual(["idcard.name"]);
   });
 
   it("a new game starts with the desk unread, whatever an old game read", () => {

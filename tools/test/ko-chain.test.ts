@@ -23,6 +23,8 @@ const CONTENT = fileURLToPath(new URL("../../content", import.meta.url));
 const CHAIN = [
   "room-wake",
   "street-hello",
+  "stall-lead",
+  "street-introductions",
   "street-again",
   "street-what",
   "street-hungry",
@@ -140,10 +142,44 @@ describe("ko-seoul's stage-1 chain", () => {
     expect(course!.scenes.filter((s) => s.repeatable).map((s) => s.id).sort()).toEqual(["copy-shift", "shop-buy", "stall-shift"]);
   });
 
+  it("teaches the farewell for Park staying while the player leaves", () => {
+    const scene = course!.scenes.find((s) => s.id === "street-introductions")!;
+    const v = Object.values(scene.exchanges.find((e) => e.id === "bye")!.variants)[0];
+    expect(v.npc.text).toBe("안녕히 가세요.");
+    expect(v.reply.text).toBe("안녕히 계세요.");
+    expect(v.reply.intent).toBe("Say goodbye to Park as you leave");
+    expect(v.alts?.map((l) => l.text)).toEqual(["네, 알아요.", "아니요, 몰라요."]);
+  });
+
+  it("keeps the fast-question narration to observable speed and gestures", () => {
+    const t = makeText(course!.learnerFtl, course!.learner);
+    for (const id of ["scene-street-again-start", "scene-street-introductions-end"]) {
+      const direction = t(id);
+      expect(direction).not.toMatch(/where.*going/i);
+      expect(direction).toMatch(/quick|fast/i);
+    }
+  });
+
+  it("opens the stall directly after the greeting with no new vocabulary", () => {
+    const s = course!.scenes.find((s) => s.id === "stall-lead")!;
+    expect(s.after).toEqual(["street-hello"]);
+    expect(course!.world.places.stall.after).toEqual(["street-hello"]);
+    const opening = new Set(course!.scenes.filter((s) => ["room-wake", "street-hello"].includes(s.id)).flatMap((s) => s.exchanges.flatMap((ex) => Object.values(ex.variants).flatMap((v) => [v.npc, v.reply].flatMap((l) => l.tokens.map((t) => t.word))))));
+    for (const v of s.exchanges.flatMap((ex) => Object.values(ex.variants))) for (const l of [v.npc, v.reply, ...(v.alts ?? [])]) for (const tk of l.tokens) expect(opening.has(tk.word), l.text).toBe(true);
+  });
+
+  it("keeps the door to exactly three exchanges and at most seven new lexical items", () => {
+    const door = course!.scenes.find((s) => s.id === "room-wake")!;
+    expect(door.exchanges.map((e) => e.id)).toEqual(["call", "friend", "missing"]);
+    const words = new Set(door.exchanges.flatMap((ex) => Object.values(ex.variants).flatMap((v) => [v.npc, v.reply, ...(v.alts ?? [])].flatMap((l) => l.tokens.map((t) => t.word)))));
+    const nonNames = [...words].filter((id) => course!.words[id].w !== "민준");
+    expect(nonNames.length).toBeLessThanOrEqual(7);
+  });
+
   it("a new player plays it in order: each scene opens only after the one before, never blocked", () => {
     const { state, wallet } = playChain(course!, 0);
     expect(Math.min(...wallet)).toBeGreaterThan(0);
-    expect(state.day).toBeLessThanOrEqual(4);
+    expect(state.day).toBeLessThanOrEqual(5);
   });
 
   it("no story scene before the first job costs money, so a player who spent every won is never stuck", () => {
@@ -167,21 +203,24 @@ describe("ko-seoul's stage-1 chain", () => {
     expect(anchorRow(course!, { ...short, scenesDone: state.scenesDone }, t).rent).toBeDefined();
     expect(npcLabel(course!, state, t, "oldman")).toBe("Grandpa Park");
     const fresh = newGame(course!);
+    expect(npcLabel(course!, { ...fresh, scenesDone: { "street-hello": 1, "stall-lead": 1 } }, t, "oldman")).toBe("The old man");
+    expect(npcLabel(course!, { ...fresh, scenesDone: { "street-hello": 1, "stall-lead": 1 } }, t, "jiwoo")).toBe(t("npc-jiwoo-unmet"));
     expect(npcLabel(course!, fresh, t, "oldman")).toBe("The old man");
     expect(npcLabel(course!, fresh, t, "landlady")).toBe("The landlady");
   });
 
-  it("a wrong reply always looks wrong: never a reply the scene wants, never a request to hear it again", () => {
-    // A miss repeats the line, slower. A written wrong reply that the scene also takes as right, or
-    // that asks to hear the line again, gets what looks like an answer, and can be picked forever.
+  it("wrong replies differ from this exchange's reply; accepted story choices advance", () => {
+    // Repetition requests look like valid progress during a miss. Other exchanges may legitimately
+    // want the same word; only this exchange determines whether it is an accepted story choice.
     const repeatRequests = ["네?", "다시 말해 주세요.", "천천히 말해 주세요."];
     for (const s of course!.scenes) {
       const variants = s.exchanges.flatMap((ex) => Object.values(ex.variants));
-      const right = new Set(variants.map((v) => v.reply.text));
       for (const ex of s.exchanges)
         for (const v of Object.values(ex.variants))
-          for (const alt of v.alts ?? []) {
-            expect(right.has(alt.text), `${s.id}/${ex.id}: ${alt.text}`).toBe(false);
+          for (const [i, alt] of (v.alts ?? []).entries()) {
+            if (v.altOutcomes?.[i + 1]?.accept) continue;
+            // Reusing a valid word can be an invalid response to a different question.
+            expect(alt.text, `${s.id}/${ex.id}`).not.toBe(v.reply.text);
             expect(repeatRequests, `${s.id}/${ex.id}`).not.toContain(alt.text);
             expect(alt.meaning && alt.intent, `${s.id}/${ex.id}: ${alt.text}`).toBeTruthy();
           }
@@ -199,7 +238,6 @@ describe("ko-seoul's stage-1 chain", () => {
       "campus-labmate: 민준 씨는 삼월부터 안 왔어요.",
       "room-creditor: 다음 주에 또 올게요.",
       "room-rent: 민준 씨는 삼월까지 냈어요.",
-      "room-wake: 민준 씨 친구예요?",
       "stall-family: 동생이에요. 지금 없어요.",
     ]);
   });

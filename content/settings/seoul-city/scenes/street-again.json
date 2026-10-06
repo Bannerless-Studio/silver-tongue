@@ -4,7 +4,7 @@
  "npc": "oldman",
  "stage": 1,
  "after": [
-  "street-hello"
+  "street-introductions"
  ],
  "requires": {},
  "repeatable": false,

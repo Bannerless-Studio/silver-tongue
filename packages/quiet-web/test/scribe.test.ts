@@ -1,9 +1,12 @@
-import { readFileSync } from "node:fs";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { createCore, mulberry32, newGame, PLAYER_MARK, type Course, type GameEvent, type RenderedLine } from "@silver-tongue/core";
+import { fileURLToPath } from "node:url";
+import { buildCourse } from "../../../tools/src/build-course";
+import { notebookDocuments } from "../src/notebook";
+import { createQuiet } from "../src/quiet";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createCore, mulberry32, newGame, personalize, PLAYER_MARK, type Course, type GameEvent, type RenderedLine } from "@silver-tongue/core";
 import { fixtureWithText } from "@silver-tongue/view/testing";
-import { bestMeaning, freshOnReply, freshOnTheirLine, meaningMatches, SCRIBE_SCENES, scribeAccepts, scribeCountKey, type CourseExtra } from "@silver-tongue/view";
-import { scribeOn, scribeRound, updateRound, writeCount } from "../src/scribe";
+import { bestMeaning, normalizeMeaning, SCRIBE_ACCEPTS, freshOnReply, freshOnTheirLine, meaningMatches, SCRIBE_SCENES, scribeAccepts, scribeReplyId, scribeCountKey, type CourseExtra } from "@silver-tongue/view";
+import { resolveScribeReply, openingStore, scribeOn, scribeRound, updateRound, writeCount } from "../src/scribe";
 
 /** A course with or without the desk (papers to read by romanising). */
 const course = (desk: boolean) => {
@@ -43,6 +46,16 @@ describe("rounds", () => {
   });
   afterEach(() => void delete (globalThis as { localStorage?: Storage }).localStorage);
 
+  it("persists both friendship choices across recreated stores, isolated by saved game", () => {
+    for (const friend of [true, false]) {
+      openingStore("ko-seoul", "a").save(friend);
+      expect(openingStore("ko-seoul", "a").load()).toBe(friend);
+      expect(openingStore("ko-seoul", "b").load()).toBeUndefined();
+    }
+    openingStore("ko-seoul", "a").save(undefined);
+    expect(openingStore("ko-seoul", "a").load()).toBeUndefined();
+  });
+
   const quiet = () => ({}) as object; // a Quiet is only an owner key here
   it("count the exchanges a course has begun, once each, and keep that between visits", () => {
     const q = quiet();
@@ -53,6 +66,17 @@ describe("rounds", () => {
     expect(scribeRound(quiet(), "ko-seoul", 9).index).toBe(2); // a new visit
     expect(scribeRound(q, "other", 1).index).toBe(0);
   });
+  it("asks for the tied slips rather than saying the first, scoped to this exchange", () => {
+    const slips = [{ meaning: "Goodbye.", intent: "Leave" }, { meaning: "Goodbye.", intent: "Stay" }, { meaning: "Hello." }];
+    const match = resolveScribeReply("bye", slips);
+    expect(match).toEqual({ kind: "choose", indices: [0, 1] });
+    const q = quiet();
+    if (match.kind === "choose") updateRound(q, "ko-seoul", 1, { ties: match.indices });
+    expect(scribeRound(q, "ko-seoul", 1).ties.map((i) => slips[i].intent)).toEqual(["Leave", "Stay"]);
+    expect(scribeRound(q, "ko-seoul", 2).ties).toEqual([]);
+    expect(resolveScribeReply("hello", slips)).toEqual({ kind: "say", index: 2 });
+  });
+
   it("change by patch and keep the rest", () => {
     const q = quiet();
     scribeRound(q, "ko-seoul", 1);
@@ -79,7 +103,7 @@ describe("rounds", () => {
 });
 
 describe("the real scribe scenes (ko-seoul build)", () => {
-  const built = JSON.parse(readFileSync(new URL("../../../dist/courses/ko-seoul/en.json", import.meta.url), "utf8")) as { scenes: { id: string; exchanges: { id: string; variants: Record<string, { npc: RenderedLine; reply: RenderedLine; alts?: RenderedLine[] }> }[] }[] };
+  const built = buildCourse(fileURLToPath(new URL("../../../content", import.meta.url)), "ko-seoul").course!;
   const name = (s?: string) => s?.split(PLAYER_MARK).join("Alex") ?? "";
   const scenes = SCRIBE_SCENES.map((id) => built.scenes.find((s) => s.id === id)!);
 
@@ -95,22 +119,43 @@ describe("the real scribe scenes (ko-seoul build)", () => {
           const sibling = Object.entries(ex.variants).filter(([k]) => k !== key).map(([, o]) => o.reply).slice(0, 2);
           const slips = [v.reply, ...(v.alts ?? []), ...sibling];
           const typed = name(v.reply.meaning);
-          const at = bestMeaning(typed, slips.map((l) => ({ meaning: name(l.meaning), accepts: scribeAccepts(l.meaning ?? "") })));
+          const at = bestMeaning(typed, slips.map((l) => ({ meaning: name(l.meaning), accepts: scribeAccepts(s.id, scribeReplyId(built, s.id, ex.id, personalize(l, "Alex"), "Alex"), "Alex") })));
           expect(slips[at]?.text, `${s.id}/${ex.id}[${key}] typing "${typed}"`).toBe(v.reply.text);
         }
       }
     }
   });
 
-  it("accept their line's own meaning", () => {
+  it("sweeps EVERY scribe line: exact meanings, visible fragments, opposite negation, live keys", () => {
+    const current = new Map<string, string>();
     for (const s of scenes) for (const ex of s.exchanges) for (const v of Object.values(ex.variants)) {
-      expect(meaningMatches(name(v.npc.meaning), name(v.npc.meaning), scribeAccepts(v.npc.meaning ?? ""))).toBe(true);
+      const lines: [string, RenderedLine][] = [[ex.id, v.npc], [`${ex.id}-reply`, v.reply], ...(v.alts ?? []).map((l, i): [string, RenderedLine] => [`${ex.id}-alt${i + 1}`, l]), ...Object.entries(v.altOutcomes ?? {}).flatMap(([i, outcome]): [string, RenderedLine][] => outcome.reaction ? [[`${ex.id}-alt${i}-answer`, outcome.reaction]] : [])];
+      for (const [id, l] of lines) {
+        const key = `${s.id}:${id}`;
+        const meaning = name(l.meaning);
+        current.set(key, meaning);
+        const fragments = scribeAccepts(s.id, id, "Alex");
+        if (id !== ex.id && !id.endsWith("-answer")) expect(scribeReplyId(built, s.id, ex.id, personalize(l, "Alex"), "Alex"), key).toBe(id);
+        expect(fragments.length, key).toBeGreaterThan(0);
+        expect(meaningMatches(meaning, meaning, fragments), key).toBe(true);
+        for (const fragment of fragments) {
+          expect(meaningMatches(fragment, meaning, fragments), `${key}: ${fragment}`).toBe(true);
+          const norm = normalizeMeaning(fragment);
+          const hasNeg = /\b(no|not|never|nothing|none)\b/.test(norm);
+          const flip = hasNeg ? norm.replace(/\b(no|not|never|nothing|none)\b/g, "").trim() || "yes" : `not ${fragment}`;
+          expect(meaningMatches(flip, meaning, fragments), `${key}: flipped ${fragment}`).toBe(false);
+        }
+      }
+    }
+    expect([...current.keys()].sort()).toEqual(Object.keys(SCRIBE_ACCEPTS).sort());
+    for (const [key, rule] of Object.entries(SCRIBE_ACCEPTS)) {
+      expect(current.get(key), key).toBe(rule.meaning.replace("{ $player }", "Alex"));
     }
   });
 });
 
 describe("first-time glosses (real ko-seoul room-wake)", () => {
-  const c = JSON.parse(readFileSync(new URL("../../../dist/courses/ko-seoul/en.json", import.meta.url), "utf8")) as Course;
+  const c = buildCourse(fileURLToPath(new URL("../../../content", import.meta.url)), "ko-seoul").course!;
   const play = () => {
     let clock = 0;
     const core = createCore(c, newGame(c), { now: () => clock, rng: mulberry32(1) });
@@ -156,5 +201,90 @@ describe("first-time glosses (real ko-seoul room-wake)", () => {
     expect(freshOnTheirLine(l, { w: { first: { line: "x" }, right: 0 } } as never).size).toBe(1);
     expect(freshOnTheirLine(l, {}).size).toBe(1);
     expect(core).toBeTruthy();
+  });
+});
+
+
+describe("the photograph consequence", () => {
+  const c = buildCourse(fileURLToPath(new URL("../../../content", import.meta.url)), "ko-seoul").course!;
+  it.each([true, false])("accepted friend choice %s survives reload, changes narration and stall action", (friend) => {
+    let clock = 0;
+    let saved: boolean | undefined;
+    const store = { load: () => saved, save: (v: boolean | undefined) => { saved = v; } };
+    const core = createCore(c, { ...newGame(c), player: "Alex" }, { now: () => clock, rng: mulberry32(1) });
+    const advance = () => { clock += 5000; };
+    core.send({ type: "startScene", scene: "room-wake" });
+    // Resume the run through Quiet so its real input and event path handles the consequence.
+    const resumed = createQuiet({ course: c, core, now: () => clock, lab: true, openingChoice: store });
+    const chooseText = (text: string) => {
+      advance();
+      const p = resumed.view().phase;
+      expect(p.kind).toBe("pick");
+      if (p.kind === "pick") resumed.choose(p.options.findIndex((o) => o.text === text));
+    };
+    chooseText("아니요.");
+    chooseText(friend ? "네." : "아니요.");
+    expect(resumed.friendClaim()).toBe(friend);
+    expect(notebookDocuments(resumed, clock).photo).toBe(friend);
+    expect(saved).toBe(friend);
+    expect(resumed.view().backlog.some((b) => b.text?.includes(friend ? "into your hand" : "She keeps it"))).toBe(true);
+    const reload = createQuiet({ course: c, core: createCore(c, core.state, { now: () => clock, rng: mulberry32(1) }), now: () => clock, lab: true, openingChoice: store });
+    expect(reload.friendClaim()).toBe(friend);
+    // Core's five-talk retention is irrelevant to the saved item.
+    const stall = createQuiet({ course: c, core: createCore(c, { ...core.state, run: null, place: "stall", talks: [], scenesDone: { "room-wake": 1, "street-hello": 1 } }, { now: () => clock, rng: mulberry32(1) }), now: () => clock, lab: true, openingChoice: store });
+    const menu = stall.view().phase;
+    expect(menu).toMatchObject({ kind: "explore", menu: expect.arrayContaining([expect.objectContaining({ scene: "stall-lead", label: friend ? "Show the photograph" : "Ask about Min-jun" })]) });
+    advance();
+    if (menu.kind === "explore") stall.choose(menu.menu.findIndex((m) => m.kind === "talk" && m.scene === "stall-lead"));
+    expect(stall.view().backlog.some((b) => b.text?.includes(friend ? "She stops serving" : "finishing the customer's order"))).toBe(true);
+  });
+});
+
+
+describe("non-lab photo isolation", () => {
+  const c = buildCourse(fileURLToPath(new URL("../../../content", import.meta.url)), "ko-seoul").course!;
+  it.each([true, false])("friend choice %s never accesses photo state or changes the name-only path", (friend) => {
+    let clock = 0;
+    const store = { load: vi.fn(() => true), save: vi.fn() };
+    const options = { course: c, now: () => clock, lab: false, openingChoice: store };
+    const core = createCore(c, newGame(c), { now: () => clock, rng: mulberry32(1) });
+    const naming = createQuiet({ ...options, core });
+    naming.setName("Alex"); // Starting a new game must not even clear experiment state.
+    core.send({ type: "startScene", scene: "room-wake" });
+    const q = createQuiet({ ...options, core });
+    const chooseText = (text: string) => {
+      clock += 5000;
+      const phase = q.view().phase;
+      expect(phase.kind).toBe("pick");
+      if (phase.kind === "pick") q.choose(phase.options.findIndex((o) => o.text === text));
+    };
+    chooseText("아니요.");
+    chooseText(friend ? "네." : "아니요.");
+    chooseText("몰라요.");
+    const reload = createQuiet({ ...options, core: createCore(c, core.state, { now: () => clock, rng: mulberry32(1) }) });
+    for (const game of [q, reload]) {
+      expect(game.friendClaim()).toBeUndefined();
+      expect(notebookDocuments(game, clock).photo).toBe(false);
+      expect(game.view().backlog.some((b) => /photograph/i.test(b.text ?? ""))).toBe(false);
+    }
+    // Seed a reached stall, deliberately retaining the injected stale lab photo store.
+    const stallState = { ...core.state, run: null, place: "stall", scenesDone: { "room-wake": 1, "street-hello": 1 } };
+    const visit = () => {
+      const stall = createQuiet({ ...options, core: createCore(c, stallState, { now: () => clock, rng: mulberry32(1) }) });
+      const menu = stall.view().phase;
+      expect(menu.kind).toBe("explore");
+      if (menu.kind === "explore") {
+        const i = menu.menu.findIndex((m) => m.kind === "talk" && m.scene === "stall-lead");
+        expect(menu.menu[i].label).not.toMatch(/photograph/i);
+        clock += 5000;
+        stall.choose(i);
+      }
+      expect(stall.friendClaim()).toBeUndefined();
+      expect(stall.view().backlog.some((b) => /photograph|stops serving/i.test(b.text ?? ""))).toBe(false);
+      return stall.view().backlog.filter((b) => b.text).map((b) => b.text);
+    };
+    expect(visit()).toEqual(visit());
+    expect(store.load).not.toHaveBeenCalled();
+    expect(store.save).not.toHaveBeenCalled();
   });
 });

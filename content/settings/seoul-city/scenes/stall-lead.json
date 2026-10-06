@@ -1,0 +1,24 @@
+{
+ "id": "stall-lead",
+ "place": "stall",
+ "npc": "jiwoo",
+ "stage": 1,
+ "after": [
+  "street-hello"
+ ],
+ "requires": {},
+ "repeatable": false,
+ "trustGain": 1,
+ "exchanges": [
+  {
+   "id": "recognition",
+   "slots": {},
+   "expect": {
+    "action": "recognition"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  }
+ ]
+}

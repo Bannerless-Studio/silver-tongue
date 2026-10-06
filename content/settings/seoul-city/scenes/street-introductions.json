@@ -1,0 +1,75 @@
+{
+ "id": "street-introductions",
+ "place": "street",
+ "npc": "oldman",
+ "stage": 1,
+ "after": [
+  "stall-lead",
+  "street-hello"
+ ],
+ "requires": {},
+ "repeatable": false,
+ "trustGain": 1,
+ "exchanges": [
+  {
+   "id": "park",
+   "slots": {},
+   "expect": {
+    "action": "park"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "who",
+   "slots": {},
+   "expect": {
+    "action": "who"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "ask",
+   "slots": {},
+   "expect": {
+    "action": "ask"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "sit",
+   "slots": {},
+   "expect": {
+    "action": "sit"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "understand",
+   "slots": {},
+   "expect": {
+    "action": "understand"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "bye",
+   "slots": {},
+   "expect": {
+    "action": "bye"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  }
+ ]
+}

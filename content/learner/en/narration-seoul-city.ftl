@@ -6,7 +6,7 @@ intro-3 = Voices pass under the window. You can't understand a word.
 # After the last paper on the desk is read (the quiet page's desk).
 desk-done = Someone is knocking.
 # What each paper lets the player tell once it is read (the quiet page's desk): `paper-<id>-learned`.
-paper-idcard-learned = A name: gim min-jun, which he'd spell Kim Min-jun. Not yours. This must be his room.
+paper-idcard-learned = A name: gim min-jun, which he'd spell Kim Min-jun. Not yours.
 paper-newspaper-learned = A newspaper from Seoul. The date on it: the year 2000.
 paper-bill-learned = A bill. 50,000 won, unpaid.
 
@@ -48,13 +48,13 @@ npc-creditor = A man in a suit
 # Scene names for the menu; scene-<id>-start and scene-<id>-end are optional narration.
 scene-room-wake = Answer the door
 scene-room-wake-start = You open the door. A woman in slippers, keys in hand, looks past you into the room.
-scene-room-wake-end = She glances at the unpaid bill on the desk, looks you up and down, and goes back downstairs without another word. Below the window, an old man on a bench is looking up at you.
+scene-room-wake-end = She points down the alley toward a food stall. Below your window, an old man sits on a bench.
 
 scene-street-hello = Say hello to the old man
 scene-street-hello-start = The old man on the bench looks up as you come out, and says something to you.
-scene-street-hello-end = Grandpa Park nods, satisfied. You stand to go, and he asks you something, fast.
+scene-street-hello-end = You hold out the ID. He recognises the name and points down the alley to the food stall.
 scene-street-again = Catch what he said
-scene-street-again-start = He says it again, just as fast. You catch nothing.
+scene-street-again-start = Back at the bench, he speaks quickly, too fast to catch.
 scene-street-again-end = He laughs, pulls you back down onto the bench, and nods at the textbook in your hand.
 scene-street-what = Show him your textbook
 scene-street-what-start = Grandpa Park taps the book's cover.
@@ -202,3 +202,23 @@ notebook-topic-numbers_2_5 = Numbers
 notebook-topic-counts = Numbers
 notebook-topic-goods = Things
 notebook-topic-papers = Things
+
+scene-room-wake-photo-given = She unfolds a photograph into your hand: the face on the ID beside a woman at a food stall. You tuck it into the Book.
+scene-room-wake-photo-held = She holds up a photograph: the face on the ID beside a woman at a food stall. She keeps it; you still have his name.
+scene-street-hello-idcard = You show him the ID card.
+scene-stall-lead = Follow the lead to the stall
+scene-stall-lead-start = A woman is serving an order at the food stall. You ask, “민준 씨?” She nods while finishing the customer’s order.
+scene-stall-lead-photo = You show her the photograph. She stops serving and turns her full attention to you.
+scene-stall-lead-name = You ask, “민준 씨?” She nods while finishing the customer's order.
+scene-stall-lead-end = She recognises the name. Her connection to Min-jun is still a question. The old man waves you back to the bench.
+scene-street-introductions = Return to the old man's bench
+scene-street-introductions-start = You return from the stall. The old man makes room on the bench and introduces himself.
+scene-street-introductions-end = Grandpa Park nods at your textbook. As you stand, he gestures toward the alley and speaks in a quick rush.
+
+asked-idcard = The old man recognised Min-jun on the ID.
+asked-recognition = The woman acknowledged Min-jun.
+
+# Door lab only: the main page follows the name without a photograph.
+scene-room-wake-lab-end = She points down the alley toward a food stall. The woman in the photograph is there. Below your window, an old man sits on a bench.
+scene-stall-lead-lab-start = The woman from the photograph is serving an order at the food stall.
+scene-stall-lead-lab-end = She is the woman from the photograph. Her connection to Min-jun is still a question. The old man waves you back to the bench.

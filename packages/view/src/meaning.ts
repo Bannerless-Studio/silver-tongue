@@ -7,6 +7,7 @@ const SYNONYMS: [RegExp, string][] = [
   [/\bgood bye\b|\bbye\b|\bbyebye\b/g, "goodbye"],
   [/\bhi\b|\bhey\b|\bhiya\b/g, "hello"],
   [/\bnope\b/g, "no"],
+  [/\bdunno\b/g, "do not know"],
   [/\byeah\b|\byep\b|\byup\b/g, "yes"],
 ];
 
@@ -59,6 +60,8 @@ export function meaningScore(typed: string, meaning: string, accepts: readonly s
   const t = normalizeMeaning(typed);
   if (!t) return undefined;
   const m = normalizeMeaning(meaning);
+  const negative = (s: string) => contentWords(s).some((w) => NEG.has(w));
+  if (negative(t) !== negative(m)) return undefined;
   if (t === m || accepts.some((a) => normalizeMeaning(a) === t)) return 0;
   // "min jun" for "min-jun", and a word said twice once
   const squash = (x: string) => [...new Set(x.split(" "))].join("");
@@ -82,13 +85,21 @@ export function meaningMatches(typed: string, meaning: string, accepts: readonly
   return meaningScore(typed, meaning, accepts) !== undefined;
 }
 
-/** The candidate the typed text says best, or -1. A tie goes to the earlier candidate (give them in the order to prefer). */
-export function bestMeaning(typed: string, candidates: readonly { meaning: string; accepts?: readonly string[] }[]): number {
-  let best = -1;
+/** All equally best candidates. A player must choose when more than one meaning ties. */
+export function bestMeanings(typed: string, candidates: readonly { meaning: string; accepts?: readonly string[] }[]): number[] {
+  let best: number[] = [];
   let score = Infinity;
   candidates.forEach((c, i) => {
     const s = meaningScore(typed, c.meaning, c.accepts);
-    if (s !== undefined && s < score) (best = i), (score = s);
+    if (s === undefined) return;
+    if (s < score) { best = [i]; score = s; }
+    else if (s === score) best.push(i);
   });
   return best;
+}
+
+/** A unique best candidate, or -1 for no match or ambiguity. */
+export function bestMeaning(typed: string, candidates: readonly { meaning: string; accepts?: readonly string[] }[]): number {
+  const best = bestMeanings(typed, candidates);
+  return best.length === 1 ? best[0] : -1;
 }

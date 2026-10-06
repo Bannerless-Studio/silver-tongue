@@ -1,11 +1,11 @@
 // Scribe mode (lab): in the first conversations the player reads their line in Latin letters and types what it means,
 // then says a reply by typing its meaning. Pure rules and wording here; the page draws it (quiet-web/src/ui/Scribe.tsx).
-import type { RenderedLine, WordId } from "@silver-tongue/core";
+import { personalize, type RenderedLine, type WordId } from "@silver-tongue/core";
 import { romanize } from "./desk";
-import { normalizeMeaning } from "./meaning";
+
 
 /** The scenes played in scribe mode; every later scene keeps the normal flow. */
-export const SCRIBE_SCENES: readonly string[] = ["room-wake", "street-hello"];
+export const SCRIBE_SCENES: readonly string[] = ["room-wake", "street-hello", "stall-lead", "street-introductions"];
 
 export const isScribeScene = (scene: string | undefined): boolean => !!scene && SCRIBE_SCENES.includes(scene);
 
@@ -20,30 +20,74 @@ export const scribeShowsExample = (index: number): boolean => index === 0;
 /** Where the page keeps how many scribe exchanges a course has begun (the worked example is the first's alone). */
 export const scribeCountKey = (course: string): string => `silver-tongue:scribe-count:${course}`;
 
-/**
- * Other ways to say a meaning, for the lines of the scribe scenes (matched whole, after the same tidying as the meaning).
- * Keyed by the meaning as written in content/learner/en/lines-ko. Spellings like "thanks" and "bye" are already
- * handled by the matcher. Core's rendered lines carry no such field, so the list lives here, not in the .ftl files.
+/** Authored visible-word fragments and essential distinctions, keyed by scene and source line.
+ * `meaning` is checked against current content to catch stale rules. No global pronoun removal.
  */
-export const SCRIBE_ACCEPTS: Record<string, string[]> = {
-  "Who is it?": ["who is there", "who is that", "who is this"],
-  "I don't know.": ["no idea", "dunno", "i have no idea"],
-  "Yes, I do.": ["yes", "i do", "yes i know korean"],
-  "Yes, thank you.": ["yes thank you very much"],
-  "Thank you.": ["thank you very much", "thanks a lot"],
-  "Hello.": ["good morning", "good day"],
-  "Goodbye.": ["see you", "farewell"],
-  "Well… goodbye.": ["well goodbye"],
-  "Sit here.": ["sit down", "sit down here", "have a seat", "have a seat here", "take a seat", "take a seat here", "please sit", "sit", "sit down please"],
-  "Do you know Korean?": ["do you speak korean", "can you speak korean", "you know korean", "you speak korean", "know korean", "speak korean", "do you understand korean", "can you understand korean"],
-  "I'm Grandpa Park.": ["grandfather park", "i am grandfather park", "he is park", "he is grandpa park", "he is grandfather park", "my name is park", "i am park"],
-  "Hello, Grandpa Park.": ["hello", "hello grandfather park", "hello grandpa", "hello park", "hello grandfather"],
-  "What's your name?": ["your name", "what are you called", "may i ask your name"],
-  "No, I don't.": ["no", "i do not", "no i do not know korean", "i do not know korean", "i do not speak korean", "no i do not speak korean"],
+export const SCRIBE_ACCEPTS: Record<string, { meaning: string; fragments: string[] }> = {
+  "room-wake:call": {"meaning": "Min-jun?", "fragments": ["minjun", "min jun"]},
+  "room-wake:call-reply": {"meaning": "No.", "fragments": ["no"]},
+  "room-wake:call-alt1": {"meaning": "Min-jun?", "fragments": ["minjun", "min jun"]},
+  "room-wake:friend": {"meaning": "Are you Min-jun's friend?", "fragments": ["minjun friend", "min-jun's friend?", "are you a friend of min-jun"]},
+  "room-wake:friend-reply": {"meaning": "Yes.", "fragments": ["yes"]},
+  "room-wake:friend-alt1": {"meaning": "No.", "fragments": ["no"]},
+  "room-wake:friend-alt2": {"meaning": "Min-jun?", "fragments": ["minjun", "min jun"]},
+  "room-wake:missing": {"meaning": "Where's Min-jun?", "fragments": ["where minjun", "where is min jun"]},
+  "room-wake:missing-reply": {"meaning": "I don't know.", "fragments": ["not know", "no idea", "dunno"]},
+  "room-wake:missing-alt1": {"meaning": "I'm Min-jun's friend.", "fragments": ["minjun friend", "friend"]},
+  "room-wake:missing-alt2": {"meaning": "Yes.", "fragments": ["yes"]},
+  "street-hello:hello": {"meaning": "Hello.", "fragments": ["hello", "good morning", "good day"]},
+  "street-hello:hello-reply": {"meaning": "Hello.", "fragments": ["hello", "good morning", "good day"]},
+  "street-hello:hello-alt1": {"meaning": "No.", "fragments": ["no"]},
+  "street-hello:hello-alt2": {"meaning": "Min-jun?", "fragments": ["minjun", "min jun"]},
+  "street-hello:idcard": {"meaning": "Min-jun?", "fragments": ["minjun", "min jun"]},
+  "street-hello:idcard-reply": {"meaning": "Yes.", "fragments": ["yes"]},
+  "street-hello:idcard-alt1": {"meaning": "No.", "fragments": ["no"]},
+  "street-hello:idcard-alt2": {"meaning": "I don't know.", "fragments": ["not know", "no idea", "dunno"]},
+  "stall-lead:recognition": {"meaning": "Yes.", "fragments": ["yes"]},
+  "stall-lead:recognition-reply": {"meaning": "Yes.", "fragments": ["yes"]},
+  "stall-lead:recognition-alt1": {"meaning": "No.", "fragments": ["no"]},
+  "stall-lead:recognition-alt2": {"meaning": "I don't know.", "fragments": ["not know", "no idea", "dunno"]},
+  "street-introductions:park": {"meaning": "I'm Grandpa Park.", "fragments": ["park grandpa", "grandfather park", "i am grandfather park", "he is park", "i am park"]},
+  "street-introductions:park-reply": {"meaning": "Hello, Grandpa Park.", "fragments": ["hello", "hello grandfather park", "hello grandpa", "hello park"]},
+  "street-introductions:park-alt1": {"meaning": "Min-jun?", "fragments": ["minjun", "min jun"]},
+  "street-introductions:park-alt2": {"meaning": "No.", "fragments": ["no"]},
+  "street-introductions:who": {"meaning": "Who are you?", "fragments": ["who", "who is it", "who is there"]},
+  "street-introductions:who-reply": {"meaning": "I'm { $player }.", "fragments": ["{player}"]},
+  "street-introductions:who-alt1": {"meaning": "I'm Min-jun.", "fragments": ["minjun", "min jun"]},
+  "street-introductions:who-alt2": {"meaning": "Are you Min-jun's friend?", "fragments": ["minjun friend", "min-jun's friend?", "are you a friend of min-jun"]},
+  "street-introductions:ask": {"meaning": "What's your name?", "fragments": ["name what", "your name", "what are you called"]},
+  "street-introductions:ask-reply": {"meaning": "I'm { $player }.", "fragments": ["{player}"]},
+  "street-introductions:ask-alt1": {"meaning": "I'm Min-jun.", "fragments": ["minjun", "min jun"]},
+  "street-introductions:ask-alt2": {"meaning": "I'm Min-jun's friend.", "fragments": ["minjun friend", "friend"]},
+  "street-introductions:sit": {"meaning": "Have a seat.", "fragments": ["sit", "sit down", "sit down here", "have a seat", "take a seat", "please sit"]},
+  "street-introductions:sit-reply": {"meaning": "Thank you.", "fragments": ["thank you", "thank you very much", "thanks a lot", "thank you so much"]},
+  "street-introductions:sit-alt1": {"meaning": "Min-jun?", "fragments": ["minjun", "min jun"]},
+  "street-introductions:sit-alt2": {"meaning": "Who is it?", "fragments": ["who", "who is there"]},
+  "street-introductions:understand": {"meaning": "Do you know Korean?", "fragments": ["know korean", "speak korean", "do you speak korean", "can you speak korean", "do you understand korean"]},
+  "street-introductions:understand-reply": {"meaning": "No, I don't.", "fragments": ["no", "not know", "i do not speak korean"]},
+  "street-introductions:understand-alt1": {"meaning": "Yes, I do.", "fragments": ["yes", "i do", "yes i speak korean"]},
+  "street-introductions:understand-alt2": {"meaning": "Yes, thank you.", "fragments": ["yes thank you"]},
+  "street-introductions:bye": {"meaning": "Goodbye.", "fragments": ["goodbye", "see you", "farewell"]},
+  "street-introductions:bye-reply": {"meaning": "Goodbye.", "fragments": ["goodbye", "see you", "farewell"]},
+  "street-introductions:bye-alt1": {"meaning": "Yes, I do.", "fragments": ["yes", "i do", "yes i speak korean"]},
+  "street-introductions:bye-alt2": {"meaning": "No, I don't.", "fragments": ["no", "not know", "i do not speak korean"]},
 };
-const ACCEPTS = new Map(Object.entries(SCRIBE_ACCEPTS).map(([k, v]) => [normalizeMeaning(k), v]));
-/** The other accepted ways to say a line's meaning. */
-export const scribeAccepts = (meaning: string): string[] => ACCEPTS.get(normalizeMeaning(meaning)) ?? [];
+
+export function scribeAccepts(scene: string, line: string, player = "?"): string[] {
+  return (SCRIBE_ACCEPTS[`${scene}:${line}`]?.fragments ?? []).map((s) => s.replaceAll("{player}", player));
+}
+
+/** Map a rendered reply back to its source ID, independent of shuffled slip order. */
+export function scribeReplyId(course: import("@silver-tongue/core").Course, scene: string, exchange: string, line: RenderedLine, player = "?"): string {
+  const ex = course.scenes.find((s) => s.id === scene)?.exchanges.find((e) => e.id === exchange);
+  for (const v of Object.values(ex?.variants ?? {})) {
+    // Player names may have been personalised by core; the other lines are fixed.
+    if (personalize(v.reply, player).text === line.text && v.reply.intent === line.intent) return `${exchange}-reply`;
+    const i = v.alts?.findIndex((l) => personalize(l, player).text === line.text && l.intent === line.intent) ?? -1;
+    if (i >= 0) return `${exchange}-alt${i + 1}`;
+  }
+  return `${exchange}-reply`;
+}
 
 /** A piece of a line in Latin letters: a word (with its id, so a tap can look it up) or what lies between words. */
 export interface RomanSeg {
@@ -51,6 +95,8 @@ export interface RomanSeg {
   word?: WordId;
   /** the word as written in Hangul, for its look-up card */
   surface?: string;
+  /** Index into the original tokens, shared with soundedTokens. */
+  token?: number;
 }
 
 const isHangul = (ch: string | undefined): boolean => !!ch && /[\uac00-\ud7a3]/.test(ch);
@@ -71,6 +117,7 @@ export function romanSegments(line: RenderedLine): RomanSeg[] {
   for (const tk of [...line.tokens].sort((a, b) => a.start - b.start)) {
     if (tk.start > at) push(at, tk.start);
     push(tk.start, tk.end, tk.word);
+    out[out.length - 1].token = line.tokens.indexOf(tk);
     at = tk.end;
   }
   if (at < text.length) push(at, text.length);

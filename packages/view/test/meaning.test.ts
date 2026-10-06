@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { bestMeaning, contentWords, meaningMatches, meaningScore, normalizeMeaning } from "../src/meaning";
-import { scribeAccepts } from "../src/scribe";
+import { bestMeaning, bestMeanings, contentWords, meaningMatches, meaningScore, normalizeMeaning } from "../src/meaning";
+import { SCRIBE_ACCEPTS, scribeAccepts } from "../src/scribe";
 
 /** The real meanings of room-wake and street-hello, with the accepts the page uses. */
-const ok = (typed: string, meaning: string) => meaningMatches(typed, meaning, scribeAccepts(meaning));
+const ok = (typed: string, meaning: string) => {
+  const key = Object.keys(SCRIBE_ACCEPTS).find((k) => normalizeMeaning(SCRIBE_ACCEPTS[k].meaning) === normalizeMeaning(meaning));
+  const [scene, line] = key?.split(":") ?? [];
+  return meaningMatches(typed, meaning, scene ? scribeAccepts(scene, line) : []);
+};
 
 describe("normalizeMeaning", () => {
   it("lowercases, strips accents and punctuation, spells out contractions", () => {
@@ -79,8 +83,9 @@ describe("bestMeaning", () => {
     expect(bestMeaning("who are you", opts)).toBe(2);
     expect(bestMeaning("goodbye", opts)).toBe(-1);
   });
-  it("breaks a tie by order", () => {
-    expect(bestMeaning("goodbye", [{ meaning: "Goodbye." }, { meaning: "Goodbye." }])).toBe(0);
+  it("requires a choice when the best replies tie", () => {
+    expect(bestMeaning("goodbye", [{ meaning: "Goodbye." }, { meaning: "Goodbye." }])).toBe(-1);
+    expect(bestMeanings("goodbye", [{ meaning: "Goodbye." }, { meaning: "Goodbye." }])).toEqual([0, 1]);
   });
   it("scores exact matches below loose ones", () => {
     expect(meaningScore("hello", "Hello.")).toBe(0);
@@ -106,16 +111,16 @@ describe("a negation in the meaning", () => {
 
 describe("natural phrasing of the scribe scenes' lines", () => {
   const cases: [string, string[]][] = [
-    ["Sit here.", ["sit down", "have a seat", "please sit", "sit", "sit down here", "take a seat"]],
+    ["Have a seat.", ["sit down", "have a seat", "please sit", "sit", "sit down here", "take a seat"]],
     ["Do you know Korean?", ["do you speak korean", "can you speak korean", "you know korean", "do you understand korean"]],
     ["I'm Grandpa Park.", ["grandfather park", "i am grandfather park", "he is park", "i am grandpa park"]],
     ["Hello, Grandpa Park.", ["hello", "hi", "hi grandpa park", "hello grandfather park"]],
-    ["What's your name?", ["what is your name", "whats your name", "your name", "what are you called"]],
+    ["What's your name?", ["name what", "what is your name", "whats your name", "your name", "what are you called"]],
     ["Are you Min-jun's friend?", ["are you min jun's friend", "are you minjun's friend", "are you a friend of min-jun"]],
     ["Where's Min-jun?", ["where is min jun", "wheres minjun", "where is min-jun"]],
     ["I'm Min-jun.", ["i am min jun", "im minjun"]],
     ["I'm Min-jun's friend.", ["i am min jun's friend", "im a friend of minjun"]],
-    ["Who are you?", ["who are you", "Who are you?"]],
+    ["Who are you?", ["who", "who are you", "Who is it?"]],
     ["No, I don't.", ["no", "no i don't speak korean", "i don't speak korean"]],
     ["Yes, I do.", ["yes", "yes i speak korean", "i do"]],
     ["Thank you.", ["thanks", "thank you so much", "thank you grandpa"]],

@@ -1,5 +1,5 @@
 // Forked from packages/vn-web/src/main.tsx: the same loading and saves, drawn as a quiet terminal.
-import { installPageStorage } from "./storage";
+import { DOOR_LAB_PREFIX, installPageStorage } from "./storage";
 import { render } from "preact";
 import { createCore, mulberry32, newGame, type CatalogEntry, type Course, type GameState } from "@silver-tongue/core";
 import { courseLabels, decodeSave, DEFAULT_RUBY, DEFAULT_SPEED, encodeSave, learnerFor, deskKey, emptyProgress, lookupHintKey, makeText, papersKey, parseProgress, playbackRate, sessionLines, type RubySetting, type SpeechSpeed, type Text } from "@silver-tongue/view";
@@ -10,7 +10,7 @@ import {
 import { App, type Page } from "./ui/App";
 import { DevBadge } from "./ui/DevBadge";
 import { DEV_GAME, devClock, driveTo, lastScreen, maxScreen, setSkipCrawl } from "./dev";
-import { writeCount } from "./scribe";
+import { doorExperimentOn, openingStore, writeCount } from "./scribe";
 import { Title } from "./ui/Title";
 import { createQuiet, type PaperStore, type Quiet } from "./quiet";
 import { opensOnStory } from "./opening";
@@ -38,7 +38,7 @@ try {
 }
 // Lab page only: all storage under its own prefix (the page shares an origin with the real game).
 const lab = labMode();
-if (lab) kv = labKeyValue(kv);
+if (lab) kv = labKeyValue(kv, DOOR_LAB_PREFIX);
 installPageStorage(kv);
 
 interface Loaded { course: Course; t: Text; sessions: WebSessions; audio: ReturnType<typeof createWebAudio> }
@@ -143,6 +143,8 @@ function play(opened: Opened, prepare?: (q: Quiet) => void) {
     course: l.course, core, now: lab ? devClock.now : Date.now, audio: l.audio, notice: opened.notice,
     save: opened.readOnly ? undefined : (s) => store.save(opened.id, s),
     papers: paperStore(kv, l.course.id),
+    lab,
+    openingChoice: doorExperimentOn(l.course, lab) ? openingStore(l.course.id, opened.id) : undefined,
   });
   prepare?.(quiet);
   current = { id: opened.id, readOnly: opened.readOnly, state: () => core.state };

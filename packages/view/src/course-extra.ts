@@ -60,6 +60,8 @@ export type ExchangeExtra = Exchange & { pin?: boolean };
 export type SceneExtra = Omit<Scene, "exchanges"> & { exchanges: ExchangeExtra[]; rent?: boolean };
 
 export type CourseExtra = Omit<Course, "words" | "language" | "scenes"> & {
+  /** Early encounters may precede a person giving their name. */
+  world: Course["world"] & { npcs: Record<string, Course["world"]["npcs"][string] & { introducedAfter?: string }> };
   words: Record<WordId, WordExtra>;
   language: LanguageExtra;
   scenes: SceneExtra[];

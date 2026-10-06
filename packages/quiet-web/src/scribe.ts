@@ -2,10 +2,14 @@
 // Whether it is on, and the little state it keeps: per exchange (misses, help) and per course (how many it has begun).
 import { pageStorage } from "./storage";
 import type { Course } from "@silver-tongue/core";
-import { deskPapers, isScribeScene, scribeCountKey } from "@silver-tongue/view";
+import { bestMeanings, deskPapers, isScribeScene, scribeCountKey } from "@silver-tongue/view";
 import { labMode } from "@silver-tongue/web-common";
 
 const inLab = (): boolean => typeof document !== "undefined" && labMode();
+
+/** One boundary for the door experiment's runtime and persistence. */
+export const doorExperimentOn = (course: Course, lab = inLab()): boolean =>
+  lab && deskPapers(course).length > 0 && course.scenes.some((s) => s.id === "room-wake");
 
 /**
  * Whether the conversation on stage is played in scribe mode: the lab page, a course read by romanising (the one with the
@@ -28,6 +32,8 @@ export interface Round {
   /** the same for the reply: wrong tries, and whether each slip's meaning is shown */
   rMisses: number;
   rHelp: boolean;
+  /** Option indexes that require the player to disambiguate; isolated per exchange. */
+  ties: number[];
 }
 
 /** Rounds belong to the Quiet (one game on screen): a new game or a lab jump starts with none. */
@@ -64,7 +70,7 @@ export function scribeRound(owner: object, course: string, exchange: string | nu
   if (!r) {
     const index = readCount(course);
     writeCount(course, index + 1);
-    r = { index, solved: false, misses: 0, help: 0, rMisses: 0, rHelp: false };
+    r = { index, solved: false, misses: 0, help: 0, rMisses: 0, rHelp: false, ties: [] };
     all.set(key, r);
   }
   return r;
@@ -87,4 +93,36 @@ export function freshOnce(owner: object, key: string, compute: () => Set<string>
   let f = m.get(key);
   if (!f) m.set(key, (f = compute()));
   return f;
+}
+
+/** Durable opening possession: core keeps accepted alts only in the run and five recent talks.
+ * Page storage is already lab-prefixed; the key also names lab explicitly and isolates saved games.
+ */
+export interface OpeningStore {
+  load(): boolean | undefined;
+  save(friend: boolean | undefined): void;
+}
+export const openingKey = (course: string, game: string): string => `silver-tongue:lab:opening:${course}:${game}`;
+export function openingStore(course: string, game: string): OpeningStore {
+  const key = openingKey(course, game);
+  let fallback: boolean | undefined;
+  return {
+    load() {
+      try {
+        const raw = pageStorage().getItem(key);
+        return raw === "true" ? true : raw === "false" ? false : fallback;
+      } catch { return fallback; }
+    },
+    save(friend) {
+      fallback = friend;
+      try { pageStorage().setItem(key, JSON.stringify(friend ?? null)); } catch { /* Keep this visit playable. */ }
+    },
+  };
+}
+
+/** A typed reply either fails, says one slip, or asks for an explicit choice among tied slips. */
+export function resolveScribeReply(typed: string, slips: readonly { meaning: string; accepts?: readonly string[] }[]):
+  { kind: "miss" } | { kind: "say"; index: number } | { kind: "choose"; indices: number[] } {
+  const indices = bestMeanings(typed, slips);
+  return !indices.length ? { kind: "miss" } : indices.length === 1 ? { kind: "say", index: indices[0] } : { kind: "choose", indices };
 }

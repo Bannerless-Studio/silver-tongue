@@ -5,10 +5,12 @@
 // be revealed.
 import { describeRun, normalizeTyped, wordState, type Core, type Course, type GameEvent, type GameState, type Input, type RenderedLine, type WordId } from "@silver-tongue/core";
 import {
-  bookOn, deskOn, deskPapers, emptyProgress, freshMarks, heardCount, lettersFollowDesk, metLetters, onboarding, paperSyllables, placeName,
+  bookOn, deskOn, deskReady, deskPapers, emptyProgress, freshMarks, heardCount, lettersFollowDesk, metLetters, onboarding, paperSyllables, placeName,
   actionNarration, bedHint, bedPlace, introLines, isBedtime, likelyOrder, npcLabel, primaryItem, joinTilesForDisplay, makeText, placeMenu, sentenceCard, tileEcho, typePrompt, waitingForMoney, wordCard,
   type AudioOut, type DeskPaper, type DeskProgress, type MenuItem, type SentenceCard, type Speech, type Text, type WordCard,
 } from "@silver-tongue/view";
+
+import { doorExperimentOn, type OpeningStore } from "./scribe";
 
 export interface Beat {
   id: number;
@@ -102,6 +104,9 @@ export interface QuietOptions {
   notice?: string;
   /** the desk's read papers; left out, they are forgotten on reload */
   papers?: PaperStore;
+  /** Page's labMode flag; defaults to the page metadata where available. */
+  lab?: boolean;
+  openingChoice?: OpeningStore;
 }
 export interface Quiet {
   readonly t: Text;
@@ -124,8 +129,11 @@ export interface Quiet {
   setName(name: string): boolean;
   /** the desk's papers read so far */
   readPapers(): ReadonlySet<string>;
+  /** Photograph possession from the accepted friendship choice. */
+  friendClaim(): boolean | undefined;
   /** a paper on the desk has been read out, every line */
   readPaper(id: string): void;
+  readPaperLine(paper: string, line: string): void;
   /** syllables of a paper read so far (all of them once it is read) */
   deskAt(id: string): number;
   setDeskAt(id: string, n: number): void;
@@ -165,6 +173,7 @@ export const CONFUSED = "...";
  */
 export function createQuiet(opts: QuietOptions): Quiet {
   const { course, core } = opts;
+  const experiment = doorExperimentOn(course, opts.lab);
   const t = makeText(course.learnerFtl, course.learner);
   const npcName = (npc: string) => npcLabel(course, core.state, t, npc);
   const money = (delta: number, reason: string) =>
@@ -181,6 +190,8 @@ export function createQuiet(opts: QuietOptions): Quiet {
   let toasts: Toast[] = [];
   let naming = course.needsName && !core.state.player;
   // A new game starts with the desk unread (the list is kept per course; it is saved again once named).
+  let friend = experiment && !naming ? opts.openingChoice?.load() : undefined;
+  if (experiment && naming) opts.openingChoice?.save(undefined);
   const read = new Set(naming ? [] : (opts.papers?.load() ?? []));
   let progress = naming ? emptyProgress() : (opts.papers?.loadProgress?.() ?? emptyProgress());
   const saveProgress = () => opts.papers?.saveProgress?.(progress);
@@ -301,9 +312,14 @@ export function createQuiet(opts: QuietOptions): Quiet {
           scene = e.scene;
           reply = undefined;
           sceneFrom = nextId;
-          if (!resuming && t.has(`scene-${e.scene}-start`)) push({ text: t(`scene-${e.scene}-start`), tone: "narr" });
+          {
+            const start = experiment && e.scene === "stall-lead" ? "scene-stall-lead-lab-start" : `scene-${e.scene}-start`;
+            if (!resuming && t.has(start)) push({ text: t(start), tone: "narr" });
+          }
+          if (experiment && !resuming && e.scene === "stall-lead") push({ text: t(friend ? "scene-stall-lead-photo" : "scene-stall-lead-name"), tone: "narr" });
           break;
         case "lineSpoken":
+          if (!resuming && scene === "street-hello" && Object.values(course.scenes.find((s) => s.id === scene)?.exchanges.find((ex) => ex.id === "idcard")?.variants ?? {}).some((v) => v.npc.text === e.line.text)) push({ text: t("scene-street-hello-idcard"), tone: "narr" });
           lastLine = e.line;
           lastSpeech = speech(e.line.audio);
           push({ speaker: e.npc, line: e.line, fresh: freshIn(e.line) }, lastSpeech);
@@ -324,6 +340,12 @@ export function createQuiet(opts: QuietOptions): Quiet {
           placed = [];
           break;
         case "actionPerformed": {
+          if (experiment && scene === "room-wake" && e.expected.action === "friend" && e.matched) {
+            // Core reports alternate indexes from zero; source alt1 is index 0.
+            friend = e.alt !== 0;
+            opts.openingChoice?.save(friend);
+            push({ text: t(friend ? "scene-room-wake-photo-given" : "scene-room-wake-photo-held"), tone: "narr" });
+          }
           const said = actionNarration(course, t, e, scene && npcName(course.scenes.find((s) => s.id === scene)?.npc ?? ""));
           // A miss is one narration line: what the player did and what was asked, together.
           if (!e.matched && said.length) push({ text: said.map((n) => n.text).join(" "), tone: "react" });
@@ -363,7 +385,10 @@ export function createQuiet(opts: QuietOptions): Quiet {
             const what = title.includes(who) ? title : t("quiet-scene-with", { scene: title, npc: who });
             finished = { from: sceneFrom, to: nextId, text: t("quiet-scene-done", { scene: what, currency: course.world.currency, earned: e.earned }) };
           }
-          if (t.has(`scene-${e.scene}-end`)) push({ text: t(`scene-${e.scene}-end`), tone: "narr" });
+          {
+            const end = experiment && ["room-wake", "stall-lead"].includes(e.scene) ? `scene-${e.scene}-lab-end` : `scene-${e.scene}-end`;
+            if (t.has(end)) push({ text: t(end), tone: "narr" });
+          }
           closing = { from: finished.to, to: nextId };
           break;
         // With the Book the story's own lines say where to go next and the one bright control goes there:
@@ -461,7 +486,8 @@ export function createQuiet(opts: QuietOptions): Quiet {
     if (reply?.mode === "pick") return { kind: "pick", options: reply.options, confused: !!core.state.run && core.state.run.misses < 2 };
     if (reply?.mode === "tiles") return { kind: "tiles", tiles: reply.tiles, placed, answer: joinTilesForDisplay(course, placed.map((i) => (reply as { tiles: string[] }).tiles[i])) };
     if (reply?.mode === "type") return { kind: "type", prompt: typePrompt(t), confused: !!core.state.run && core.state.run.misses < 2 };
-    const menu = placeMenu(course, core.state, t, placeLabel);
+    const menu = placeMenu(course, core.state, t, placeLabel).map((m) =>
+      experiment && m.kind === "talk" && m.scene === "stall-lead" ? { ...m, label: t(friend ? "lab-show-photo" : "lab-ask-minjun") } : m);
     if (!book) return { kind: "explore", menu, waiting: [...waitingForMoney(course, core.state, t), ...bedHint(course, core.state, t)] };
     // With the Book: what can't be done now is not offered, and the way to bed says why it's the way.
     const open = menu.filter((m) => !("disabled" in m && m.disabled));
@@ -597,6 +623,7 @@ export function createQuiet(opts: QuietOptions): Quiet {
       return true;
     },
     readPapers: () => read,
+    friendClaim: () => experiment ? friend : undefined,
     deskAt(id) {
       const p = deskPapers(course).find((x) => x.id === id);
       const all = p ? paperSyllables(p).length : 0;
@@ -615,6 +642,12 @@ export function createQuiet(opts: QuietOptions): Quiet {
       saveProgress();
       changed();
     },
+    readPaperLine(paper, line) {
+      if (!deskPapers(course).find((p) => p.id === paper)?.lines.some((l) => l.id === line)) return;
+      read.add(`${paper}.${line}`);
+      opts.papers?.save([...read]);
+      changed();
+    },
     readPaper(id) {
       if (read.has(id) || !deskPapers(course).some((p) => p.id === id)) return;
       read.add(id);
@@ -622,7 +655,7 @@ export function createQuiet(opts: QuietOptions): Quiet {
       changed();
     },
     leaveDesk() {
-      if (!atDesk || naming || deskPapers(course).some((p) => !read.has(p.id))) return;
+      if (!atDesk || naming || !deskReady(deskPapers(course), read)) return;
       atDesk = false;
       if (!scene) {
         // The knock screen said someone is at the door: the transcript opens on the scene it starts, not on a

@@ -67,6 +67,9 @@ describe("soundedTokens", () => {
   it("marks a word whose text is inside a line of a paper already read", () => {
     expect([...soundedTokens(course, new Set(["idcard"]), line)]).toEqual([0]);
   });
+  it("recognises the name when only that line was read", () => {
+    expect([...soundedTokens(course, new Set(["idcard.name"]), line)]).toEqual([0]);
+  });
   it("marks nothing before the paper is read", () => {
     expect(soundedTokens(course, new Set(), line).size).toBe(0);
   });

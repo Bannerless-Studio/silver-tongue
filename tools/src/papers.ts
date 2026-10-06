@@ -4,7 +4,7 @@ import { lineClips, type Clip, type Voices } from "./voices";
 /** Ids end up in storage and clip lookups, so they stay simple. */
 const NAME = /^[A-Za-z0-9_-]+$/;
 const KINDS = new Set(["card", "masthead", "bill"]);
-const PAPER_KEYS = new Set(["id", "kind", "names", "lines"]);
+const PAPER_KEYS = new Set(["id", "kind", "names", "lines", "required"]);
 const LINE_KEYS = new Set(["id", "text", "say"]);
 /** What a paper may say: Hangul syllables, digits, spaces and punctuation. No English, ever. */
 const PAPER_TEXT = /^[가-힣0-9\s.,:\-/()·~]+$/u;
@@ -29,6 +29,7 @@ export function paperProblems(json: unknown, places: string[]): string[] {
       errors.push(`${where}: "lines" must be a non-empty list`);
       return;
     }
+    if (p.required !== undefined && (!Array.isArray(p.required) || p.required.some((id) => typeof id !== "string" || !(p.lines as { id: string }[]).some((l) => l.id === id)))) errors.push(`${where}: required must name existing lines`);
     const lineIds = new Set<string>();
     for (const l of p.lines as Record<string, unknown>[]) {
       const lid = typeof l?.id === "string" ? l.id : "";

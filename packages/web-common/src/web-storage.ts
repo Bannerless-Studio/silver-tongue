@@ -24,15 +24,16 @@ export const LAB_PREFIX = "silver-tongue-lab:";
 
 /**
  * The lab page shares localStorage with the main site (same origin): its keys live under LAB_PREFIX
- * instead, so a jump never touches the real saves, settings or desk progress. Keys outside STORAGE_PREFIX pass through.
+ * instead, so a jump never touches the real saves, settings or desk progress. An experiment may supply its own
+ * prefix to isolate reordered content from other labs. Keys outside STORAGE_PREFIX pass through.
  */
-export function labKeyValue(kv: KeyValue): KeyValue {
-  const to = (k: string) => (k.startsWith(STORAGE_PREFIX) ? LAB_PREFIX + k.slice(STORAGE_PREFIX.length) : k);
+export function labKeyValue(kv: KeyValue, prefix = LAB_PREFIX): KeyValue {
+  const to = (k: string) => (k.startsWith(STORAGE_PREFIX) ? prefix + k.slice(STORAGE_PREFIX.length) : k);
   return {
     getItem: (k) => kv.getItem(to(k)),
     setItem: (k, v) => kv.setItem(to(k), v),
     removeItem: (k) => kv.removeItem(to(k)),
-    keys: () => kv.keys().filter((k) => k.startsWith(LAB_PREFIX)).map((k) => STORAGE_PREFIX + k.slice(LAB_PREFIX.length)),
+    keys: () => kv.keys().filter((k) => k.startsWith(prefix)).map((k) => STORAGE_PREFIX + k.slice(prefix.length)),
   };
 }
 

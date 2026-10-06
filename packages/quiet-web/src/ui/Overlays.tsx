@@ -1,12 +1,14 @@
 import { useState } from "preact/hooks";
 import type { CatalogEntry, RenderedLine, WordState } from "@silver-tongue/core";
 import {
-  bookOn, dayPart, guideView, hasLetters, hudValues, letterCount, lettersView, nextRuby, nextSpeed, notebookDefault, notebookEntries, paperGlosses, papers, peopleList, quietRuby, rentDueInDays, settingsRows,
+  bookOn, deskPapers, dayPart, romanize, guideView, hasLetters, hudValues, letterCount, lettersView, nextRuby, nextSpeed, notebookDefault, notebookEntries, paperGlosses, peopleList, quietRuby, rentDueInDays, settingsRows,
   type Paper, type SettingsScreen,
 } from "@silver-tongue/view";
 import type { Quiet } from "../quiet";
+import { notebookDocuments } from "../notebook";
 import type { Page } from "./App";
 import { partLabel } from "./Anchor";
+import { PaperView } from "./Desk";
 import { Line } from "./Line";
 import { Person, trustBar } from "./Person";
 
@@ -46,6 +48,7 @@ export function Notebook({ q, onClose, first }: { q: Quiet; onClose: () => void;
     return VIEWS.find((v) => v !== "all" && counts[v] > 0) ?? "all";
   });
   const [open, setOpen] = useState<number | null>(null);
+  const [deskPaper, setDeskPaper] = useState<string | null>(null);
   const { t, course, core } = q;
   const now = Date.now();
   const nb = notebookDefault(course, core.state, now);
@@ -54,7 +57,8 @@ export function Notebook({ q, onClose, first }: { q: Quiet; onClose: () => void;
   const words = tab !== "letters" && tab !== "papers";
   const full = !words || tab === "shaky" ? undefined : notebookEntries(course, core.state, t, now);
   const keep = (s: WordState) => tab === "all" || s === tab;
-  const kept = tab === "papers" ? papers(course, core.state, t, now) : [];
+  const documents = tab === "papers" ? notebookDocuments(q, now) : undefined;
+  const kept = documents?.kept ?? [];
   const pick = (v: NotebookView) => (setTab(v), setOpen(null));
   const book = bookOn(course);
   const tabButton = (v: NotebookView, label: string) => (
@@ -72,6 +76,8 @@ export function Notebook({ q, onClose, first }: { q: Quiet; onClose: () => void;
   const guide = tab === "letters" ? guideView(course, t, met) : [];
   const chart = tab === "letters" ? lettersView(course, t, met) : [];
   const count = met ? letterCount(course, met) : undefined;
+  const document = deskPapers(course).find((p) => p.id === deskPaper);
+  if (document) return <Overlay q={q} title={t("notebook-papers")} onClose={() => setDeskPaper(null)}><PaperView q={q} paper={document} done={q.readPapers().has(document.id)} covered={false} onBook={() => setDeskPaper(null)} onBack={() => setDeskPaper(null)} /></Overlay>;
   return (
     <Overlay q={q} title={t(book ? "quiet-book" : "quiet-notebook")} head={tabs} onClose={onClose}>
       {tab === "letters" && count && (
@@ -108,6 +114,13 @@ export function Notebook({ q, onClose, first }: { q: Quiet; onClose: () => void;
           </div>
         </section>
       ))}
+      {tab === "papers" && <>
+        {documents?.desk.map((p) => <section class="paper-row" key={p.id}>
+          <button type="button" class="nb-paper" onClick={() => setDeskPaper(p.id)}>{p.lines[0]?.text} · {p.lines.find((l) => l.id === "name")?.text}</button>
+          {p.lines.map((l) => <p key={l.id}>{l.text} <span class="dim">{romanize(l.text)}</span></p>)}
+        </section>)}
+        {documents?.photo && <section class="paper-row"><p>{t("lab-photo-title")}</p><p>{t("lab-photo-description")}</p></section>}
+      </>}
       {tab === "papers" && (kept.length ? kept.map((p, i) => (
         <section key={`${p.scene}/${p.exchange}`} class="paper-row">
           <button type="button" class="nb-paper" aria-expanded={open === i} onClick={() => setOpen(open === i ? null : i)}>
@@ -124,7 +137,7 @@ export function Notebook({ q, onClose, first }: { q: Quiet; onClose: () => void;
             </div>
           )}
         </section>
-      )) : <p class="dim">{t("notebook-papers-empty")}</p>)}
+      )) : documents?.empty && <p class="dim">{t("notebook-papers-empty")}</p>)}
       {tab === "shaky" && (nb.shaky.length ? (
         <div class="nb-grid">
           {nb.shaky.map((w) => (

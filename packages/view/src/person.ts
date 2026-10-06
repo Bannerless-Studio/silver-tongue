@@ -1,4 +1,5 @@
 import { isAvailable, personalize, placeKnown, sceneCost, wordState, type Course, type GameState, type Scene, type WordId } from "@silver-tongue/core";
+import { extra } from "./course-extra";
 import { wordLine, type WordLine } from "./assist";
 import { playerName } from "./help";
 import { dayPart, type DayPart } from "./hud";
@@ -25,7 +26,9 @@ const met = (course: Course, state: GameState, npc: string) => course.scenes.som
  * before they have introduced themselves.
  */
 export function npcLabel(course: Course, state: GameState, t: Text, npc: string): string {
-  return !met(course, state, npc) && t.has(`npc-${npc}-unmet`) ? t(`npc-${npc}-unmet`) : t(`npc-${npc}`);
+  const introduction = extra(course).world.npcs[npc]?.introducedAfter;
+  const named = introduction ? (state.scenesDone[introduction] ?? 0) > 0 : met(course, state, npc);
+  return !named && t.has(`npc-${npc}-unmet`) ? t(`npc-${npc}-unmet`) : t(`npc-${npc}`);
 }
 
 /** How far into the story a scene is: the longest chain of scenes that must come before it. */

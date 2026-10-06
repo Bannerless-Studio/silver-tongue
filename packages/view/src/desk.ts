@@ -19,6 +19,8 @@ export interface DeskPaper {
   kind: DeskPaperKind;
   /** a place whose name becomes `place-<place>-known` once this paper is read */
   names?: string;
+  /** Lines required before the knock; omitted means the whole paper, [] means optional. */
+  required?: string[];
   lines: DeskPaperLine[];
 }
 
@@ -29,8 +31,12 @@ export function deskOn(course: Course, state: GameState, read: ReadonlySet<strin
   const ps = deskPapers(course);
   if (!ps.length) return false;
   if (Object.values(state.scenesDone).some((n) => n > 0)) return false;
-  return ps.some((p) => !read.has(p.id));
+  return !deskReady(ps, read);
 }
+
+/** Required discovery is complete; optional documents remain available in the Book. */
+export const deskReady = (papers: DeskPaper[], read: ReadonlySet<string>): boolean => papers.every((p) =>
+  read.has(p.id) || (p.required !== undefined && p.required.every((id) => read.has(`${p.id}.${id}`))));
 
 /** The paper to read next on the desk: the first one not read yet. */
 export const firstUnread = (papers: DeskPaper[], read: ReadonlySet<string>): string | undefined => papers.find((p) => !read.has(p.id))?.id;
@@ -52,7 +58,7 @@ const SOUNDED_MIN = 2;
  * inside a line of a paper they have read (the name on the ID card). Indexes into `line.tokens`.
  */
 export function soundedTokens(course: Course, read: ReadonlySet<string>, line: RenderedLine): Set<number> {
-  const seen = deskPapers(course).filter((p) => read.has(p.id)).flatMap((p) => p.lines.map((l) => l.text));
+  const seen = deskPapers(course).flatMap((p) => p.lines.filter((l) => read.has(p.id) || read.has(`${p.id}.${l.id}`)).map((l) => l.text));
   const out = new Set<number>();
   line.tokens.forEach((tk, i) => {
     const text = line.text.slice(tk.start, tk.end);
@@ -63,7 +69,7 @@ export function soundedTokens(course: Course, read: ReadonlySet<string>, line: R
 
 /** A place's name for the quiet page: once a paper that names it is read, `place-<id>-known`. */
 export function placeName(course: Course, state: GameState | { place: string }, read: ReadonlySet<string>, t: Text, place = state.place): string {
-  const known = deskPapers(course).some((p) => p.names === place && read.has(p.id));
+  const known = deskPapers(course).some((p) => p.names === place && (read.has(p.id) || p.required?.some((id) => read.has(`${p.id}.${id}`))));
   return t(known ? `place-${place}-known` : `place-${place}`);
 }
 

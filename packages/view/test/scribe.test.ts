@@ -6,7 +6,7 @@ const line = (text: string, spans: [number, number][]): RenderedLine => ({ text,
 
 describe("scribe scenes", () => {
   it("are the first two", () => {
-    expect(SCRIBE_SCENES).toEqual(["room-wake", "street-hello"]);
+    expect(SCRIBE_SCENES).toEqual(["room-wake", "street-hello", "stall-lead", "street-introductions"]);
     expect(isScribeScene("room-wake")).toBe(true);
     expect(isScribeScene("street-again")).toBe(false);
     expect(isScribeScene(undefined)).toBe(false);
@@ -23,10 +23,11 @@ describe("the fading", () => {
 });
 
 describe("accepts", () => {
-  it("are found by meaning, however it is spelled", () => {
-    expect(scribeAccepts("Who is it?")).toContain("who is there");
-    expect(scribeAccepts("who is it")).toContain("who is there");
-    expect(scribeAccepts("Something else.")).toEqual([]);
+  it("belong to a source line, with no unrelated pronoun exceptions", () => {
+    expect(scribeAccepts("street-introductions", "who")).toContain("who");
+    expect(scribeAccepts("room-wake", "friend")).toContain("minjun friend");
+    expect(scribeAccepts("street-introductions", "ask")).toContain("name what");
+    expect(scribeAccepts("unknown", "who")).toEqual([]);
   });
 });
 

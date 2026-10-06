@@ -1,7 +1,7 @@
 {
  "start": "room",
  "home": "room",
- "currency": "₩",
+ "currency": "\u20a9",
  "slotsPerDay": 4,
  "homeScene": "room-wake",
  "startWallet": 20000,
@@ -26,7 +26,7 @@
     "street"
    ],
    "after": [
-    "shop-count"
+    "street-hello"
    ]
   },
   "shop": {
@@ -61,10 +61,12 @@
    "place": "room"
   },
   "oldman": {
-   "place": "street"
+   "place": "street",
+   "introducedAfter": "street-introductions"
   },
   "jiwoo": {
-   "place": "stall"
+   "place": "stall",
+   "introducedAfter": "stall-intro"
   },
   "clerk": {
    "place": "shop"

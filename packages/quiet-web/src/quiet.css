@@ -554,6 +554,8 @@ textarea { width: 100%; background: var(--bg); border: 1px solid var(--line); bo
 .scribe-slips .slip-text .sw-g { color: var(--ink-2); font-weight: 400; }
 .scribe-slips .say-nothing { align-self: flex-end; }
 .scribe-slip { animation: none; cursor: default; }
+.scribe-slip.selectable { cursor: pointer; width: 100%; }
+.book .scribe-say .roman { display: block; font-size: var(--fs-md); }
 .scribe-slip:focus-visible { outline: 1px solid var(--cyan); outline-offset: 2px; }
 @media (hover: hover) { .scribe-slip:hover { box-shadow: 0 1px 0 #0005; } }
 .scribe-slip:active { transform: none; }

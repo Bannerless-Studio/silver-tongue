@@ -1,6 +1,6 @@
 import { Fragment } from "preact";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "preact/hooks";
-import { canOpenPaper, firstUnread, letterChart, lineRead, paperSyllables, readsSyllable, romanize, sumTiles, type DeskPaper, type SumTile } from "@silver-tongue/view";
+import { canOpenPaper, deskReady, firstUnread, letterChart, lineRead, paperSyllables, readsSyllable, romanize, sumTiles, type DeskPaper, type SumTile } from "@silver-tongue/view";
 import type { Quiet } from "../quiet";
 import { DeskArt } from "./desk-art";
 
@@ -25,7 +25,7 @@ export function Desk({ q, papers, covered, onBook, onSettings }: { q: Quiet; pap
   const read = q.readPapers();
   const [paper, setPaper] = useState<string | null>(null);
   const [leaving, setLeaving] = useState<"fade" | "knock" | null>(null);
-  const allRead = papers.every((p) => read.has(p.id));
+  const allRead = deskReady(papers, read);
   const still = matches("(prefers-reduced-motion: reduce)");
   const touch = matches("(pointer: coarse)");
 
@@ -60,7 +60,7 @@ export function Desk({ q, papers, covered, onBook, onSettings }: { q: Quiet; pap
     );
   }
   const open = paper ? papers.find((p) => p.id === paper) : undefined;
-  if (open) return <PaperView q={q} paper={open} done={read.has(open.id)} covered={covered} onBook={onBook} onBack={() => setPaper(null)} />;
+  if (open) return <PaperView opening q={q} paper={open} done={read.has(open.id)} covered={covered} onBook={onBook} onBack={() => setPaper(null)} />;
   // One card is bright: the next to read, labelled. The rest are dimmed; a read one says so and stays tappable; later ones wait their turn.
   const next = firstUnread(papers, read);
   return (
@@ -106,7 +106,7 @@ function Tile({ q, tile, shown, onShow }: { q: Quiet; tile: SumTile; shown: bool
 
 /** One paper, laid out like the document, read one syllable at a time: the syllable being read is taken out of the card
  * and shown large, over the letters it is made of; its reading is typed under it. */
-function PaperView({ q, paper, done, covered, onBook, onBack }: { q: Quiet; paper: DeskPaper; done: boolean; covered: boolean; onBook: () => void; onBack: () => void }) {
+export function PaperView({ q, paper, done, covered, onBook, onBack, opening = false }: { q: Quiet; paper: DeskPaper; done: boolean; covered: boolean; onBook: () => void; onBack: () => void; opening?: boolean }) {
   const t = q.t;
   const chart = useMemo(() => letterChart(q.course), [q.course]);
   const syls = useMemo(() => paperSyllables(paper), [paper]);
@@ -122,8 +122,9 @@ function PaperView({ q, paper, done, covered, onBook, onBack }: { q: Quiet; pape
   const stage = useRef<HTMLDivElement>(null);
   const card = useRef<HTMLDivElement>(null);
   const big = useRef<HTMLDivElement>(null);
-  const finished = at >= syls.length;
-  const cur = syls[at];
+  const requiredRead = !!paper.required?.length && paper.required.every((id) => lineRead(syls, paper.lines.findIndex((l) => l.id === id), at));
+  const finished = at >= syls.length || (opening && requiredRead);
+  const cur = finished ? undefined : syls[at];
   const key = `${paper.id}:${at}`;
   // The letters met before this syllable, taken once as it comes up (it then meets its own).
   const snap = useRef<{ key: string; before: ReadonlySet<string> }>();
@@ -171,7 +172,8 @@ function PaperView({ q, paper, done, covered, onBook, onBack }: { q: Quiet; pape
   useEffect(() => {
     if (!finished) return;
     doneAt.current = Date.now();
-    if (!done) q.readPaper(paper.id);
+    if (at >= syls.length && !done) q.readPaper(paper.id);
+    else if (requiredRead) for (const id of paper.required ?? []) q.readPaperLine(paper.id, id);
   }, [finished]);
   useEffect(() => {
     if (!finished || covered) return;

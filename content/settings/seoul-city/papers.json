@@ -1,30 +1,57 @@
 {
-  "papers": [
+ "papers": [
+  {
+   "id": "idcard",
+   "kind": "card",
+   "names": "room",
+   "lines": [
     {
-      "id": "idcard",
-      "kind": "card",
-      "names": "room",
-      "lines": [
-        { "id": "title", "text": "주민등록증" },
-        { "id": "name", "text": "김민준" },
-        { "id": "born", "text": "760314", "say": "칠육공삼일사" }
-      ]
+     "id": "title",
+     "text": "주민등록증"
     },
     {
-      "id": "newspaper",
-      "kind": "masthead",
-      "lines": [
-        { "id": "title", "text": "서울신문" },
-        { "id": "date", "text": "2000년 9월 30일" }
-      ]
+     "id": "name",
+     "text": "김민준"
     },
     {
-      "id": "bill",
-      "kind": "bill",
-      "lines": [
-        { "id": "title", "text": "월세 고지서" },
-        { "id": "amount", "text": "50,000원" }
-      ]
+     "id": "born",
+     "text": "760314",
+     "say": "칠육공삼일사"
     }
-  ]
+   ],
+   "required": [
+    "name"
+   ]
+  },
+  {
+   "id": "newspaper",
+   "kind": "masthead",
+   "lines": [
+    {
+     "id": "title",
+     "text": "서울신문"
+    },
+    {
+     "id": "date",
+     "text": "2000년 9월 30일"
+    }
+   ],
+   "required": []
+  },
+  {
+   "id": "bill",
+   "kind": "bill",
+   "lines": [
+    {
+     "id": "title",
+     "text": "월세 고지서"
+    },
+    {
+     "id": "amount",
+     "text": "50,000원"
+    }
+   ],
+   "required": []
+  }
+ ]
 }

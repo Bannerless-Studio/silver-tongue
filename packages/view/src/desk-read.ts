@@ -37,7 +37,9 @@ export interface PaperSyllable {
 }
 /** Every syllable of a paper, in reading order. Everything else in its lines passes through unasked. */
 export function paperSyllables(paper: DeskPaper): PaperSyllable[] {
-  return paper.lines.flatMap((l, line) => [...l.text].flatMap((ch, index) => (isSyllable(ch) ? [{ line, index, ch }] : [])));
+  const lines = paper.lines.map((l, line) => ({ l, line }));
+  if (paper.required?.length) lines.sort((a, b) => Number(paper.required!.includes(b.l.id)) - Number(paper.required!.includes(a.l.id)));
+  return lines.flatMap(({ l, line }) => [...l.text].flatMap((ch, index) => (isSyllable(ch) ? [{ line, index, ch }] : [])));
 }
 
 /** Whether a line has been read out: it has syllables and all of them are behind `at` (a line with none is never "read"). */
@@ -109,7 +111,7 @@ export const textLetterKeys = (chart: LetterGroup[], text: string): string[] => 
 export function metLetters(course: Course, progress: DeskProgress, read: ReadonlySet<string>): Set<string> {
   const chart = letterChart(course);
   const met = new Set(progress.met);
-  for (const p of deskPapers(course)) if (read.has(p.id)) for (const l of p.lines) for (const k of textLetterKeys(chart, l.text)) met.add(k);
+  for (const p of deskPapers(course)) for (const l of p.lines) if (read.has(p.id) || read.has(`${p.id}.${l.id}`)) for (const k of textLetterKeys(chart, l.text)) met.add(k);
   return met;
 }
 

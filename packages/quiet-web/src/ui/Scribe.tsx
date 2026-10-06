@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { RenderedLine, WordId } from "@silver-tongue/core";
-import { bestMeaning, displayGloss, freshOnReply, freshOnTheirLine, lineMeaning, meaningMatches, romanLine, romanSegments, scribeAccepts, scribeHelpAfter, scribeShowsExample } from "@silver-tongue/view";
+import { displayGloss, freshOnReply, freshOnTheirLine, lineMeaning, meaningMatches, romanLine, romanSegments, scribeAccepts, scribeReplyId, soundedTokens, scribeHelpAfter, scribeShowsExample } from "@silver-tongue/view";
+import { Line } from "./Line";
 import type { Quiet, QuietView } from "../quiet";
 import { replyOrder, type Exchange } from "../stage";
-import { freshOnce, scribeRound, subscribeRounds, updateRound, type Round } from "../scribe";
+import { resolveScribeReply, freshOnce, scribeRound, subscribeRounds, updateRound, type Round } from "../scribe";
 
 /*
  * Scribe mode (lab only, the first conversations): their line in Latin letters with a field for what it means, your
- * replies as bare Latin slips with one field for the meaning of the one you want. Wrong tries shake the field; its help
+ * replies as Korean slips, with direct selection at the door and a meaning field afterwards. Wrong tries shake the field; its help
  * button lights after a few and then gives the words, then the meaning. Rules and wording: view/src/scribe.ts.
  */
 
@@ -57,8 +58,8 @@ function Field({ placeholder, onTry, onHelp, hot, helpLabel, children }: {
 }
 
 /**
- * Their line on stage in Latin letters, one tappable button per word, and under it the field for its meaning; once typed
- * right the meaning stays under the line. Replaces the Hangul line, its readings and its meaning row.
+ * Their Korean line and its romanisation, with tappable words and a field for its meaning; once typed
+ * right the meaning stays under the line. The shared Line preserves recognised-name highlighting.
  */
 export function ScribeTheir({ q, ex, held, onWord, children }: {
   q: Quiet; ex: Exchange; held: boolean; onWord: (w: WordId, surface: string, el: HTMLElement) => void; children?: preact.ComponentChildren;
@@ -69,8 +70,11 @@ export function ScribeTheir({ q, ex, held, onWord, children }: {
   const meaning = lineMeaning(line);
   const solved = round.solved || !meaning;
   const segs = romanSegments(line);
-  const accepts = scribeAccepts(meaning);
-  const glosses = !solved && round.help >= 1;
+  const run = q.core.state.run!;
+  const source = course.scenes.find((s) => s.id === run.scene)!.exchanges[run.exchange].id;
+  const accepts = scribeAccepts(run.scene, source, q.core.state.player);
+  const sounded = soundedTokens(course, q.readPapers(), line);
+  const glosses = run.scene === "room-wake" || (!solved && round.help >= 1);
   // Help first, hands off later: a word never met shows its gloss, a met one only when help asks.
   const fresh = freshOnce(q, `${course.id}:${ex.line.id}:line`, () => freshOnTheirLine(ex.shown, q.core.state.words, ex.line.line ?? ex.shown));
   const set = (change: Partial<Round>) => updateRound(q, course.id, ex.line.id, change);
@@ -83,13 +87,14 @@ export function ScribeTheir({ q, ex, held, onWord, children }: {
   return (
     <>
       <div class={`say scribe-say${ex.again ? " again" : " enter"}`} key={`${ex.line.id}:${ex.again}`}>
+        <p class="say-text" lang={course.language.locale}><Line line={line} now={Date.now()} book sounded={sounded} onWord={onWord} /></p>
         <span class="say-text roman" lang={latin}>
           {segs.map((s, i) =>
             s.word === undefined ? (
               <span key={i}>{s.text}</span>
             ) : (
               <span key={i} class="sw">
-                <button type="button" class="w" onClick={(e) => (e.stopPropagation(), onWord(s.word!, s.surface ?? s.text, e.currentTarget))}>{s.text}</button>
+                <button type="button" class={`w${s.token !== undefined && sounded.has(s.token) ? " sounded" : ""}`} onClick={(e) => (e.stopPropagation(), onWord(s.word!, s.surface ?? s.text, e.currentTarget))}>{s.text}</button>
                 {(glosses || fresh.has(s.word)) && <span class="sw-g">{displayGloss(course.words[s.word])}</span>}
               </span>
             ),
@@ -100,7 +105,7 @@ export function ScribeTheir({ q, ex, held, onWord, children }: {
         meaning && <p class="say-mean">{meaning}</p>
       ) : (
         !held && (
-          <Field placeholder={t("quiet-scribe-hear")} onTry={onTry} hot={round.misses >= scribeHelpAfter(round.index)} helpLabel={t("quiet-read-help")}
+          <Field placeholder={t(run.scene === "room-wake" ? "quiet-scribe-hear-door" : "quiet-scribe-hear")} onTry={onTry} hot={round.misses >= scribeHelpAfter(round.index)} helpLabel={t("quiet-read-help")}
             onHelp={() => set({ help: Math.min(2, round.help + 1) as Round["help"] })}>
             {scribeShowsExample(round.index) && <p class="example">{t("quiet-scribe-example", { line: romanLine(line), meaning })}</p>}
             {round.help >= 2 && <p class="rh-full">{t("quiet-scribe-full", { meaning })}</p>}
@@ -136,8 +141,8 @@ export function ScribeKeys({ held = false }: { held?: boolean }) {
 const meaningOf = (o: RenderedLine): string => lineMeaning(o);
 
 /**
- * The reply slips in Latin letters only, not tappable (focusable, for a screen reader), and one field under them: the
- * meaning of the reply you want. The slip it matches is said. Shown once their line has been understood.
+ * Korean reply slips with romanisation. Select a slip at the door; later type its meaning or choose tied slips.
+ * Shown once their line has been understood.
  */
 export function ScribeSlips({ q, view, ex }: { q: Quiet; view: QuietView; ex?: Exchange }) {
   const { t } = q;
@@ -145,13 +150,19 @@ export function ScribeSlips({ q, view, ex }: { q: Quiet; view: QuietView; ex?: E
   const p = view.phase;
   if (p.kind !== "pick" || !ex || !round) return null;
   if (!round.solved && lineMeaning(ex.shown)) return null;
+  const run = q.core.state.run!;
+  const source = q.course.scenes.find((s) => s.id === run.scene)!.exchanges[run.exchange].id;
+  const accepts = (o: RenderedLine) => scribeAccepts(run.scene, scribeReplyId(q.course, run.scene, source, o, q.core.state.player), q.core.state.player);
+  const ties = round.ties;
+  const setTies = (ties: number[]) => updateRound(q, q.course.id, ex.line.id, { ties });
   const order = replyOrder(p.options, ex.missed);
   const set = (change: Partial<Round>) => updateRound(q, q.course.id, ex.line.id, change);
   const onTry = (typed: string) => {
-    // The closest meaning, a reply not yet tried first; a tie goes to the earlier slip.
-    const at = bestMeaning(typed, order.map((i) => ({ meaning: meaningOf(p.options[i]), accepts: scribeAccepts(meaningOf(p.options[i])) })));
-    if (at < 0) return set({ rMisses: round.rMisses + 1 }), false;
-    q.choose(order[at]);
+    const match = resolveScribeReply(typed, order.map((i) => ({ meaning: meaningOf(p.options[i]), accepts: accepts(p.options[i]) })));
+    if (match.kind === "miss") return setTies([]), set({ rMisses: round.rMisses + 1 }), false;
+    if (match.kind === "choose") return setTies(match.indices.map((i) => order[i])), true;
+    setTies([]);
+    q.choose(order[match.index]);
     return true;
   };
   const tried = new Set(ex.missed.map((m) => m.line?.text));
@@ -161,23 +172,34 @@ export function ScribeSlips({ q, view, ex }: { q: Quiet; view: QuietView; ex?: E
       <div class="scribe-list" role="list">
         {order.map((i) => {
           const o = p.options[i];
-          return (
-            <div key={o.text} role="listitem" tabIndex={0} class={`slip scribe-slip${tried.has(o.text) ? " tried" : ""}`}>
-              <span class="slip-text" lang={`${q.course.language.code}-Latn`}>
-                {romanSegments(o).map((sg, k) =>
-                  sg.word !== undefined && fresh.has(sg.word) ? (
-                    <span key={k} class="sw"><span>{sg.text}</span><span class="sw-g">{displayGloss(q.course.words[sg.word])}</span></span>
-                  ) : (
-                    <span key={k}>{sg.text}</span>
-                  ),
-                )}
-              </span>
-              {round.rHelp && <span class="slip-mean">{meaningOf(o)}</span>}
-            </div>
+          const content = <>
+            <span class="slip-text" lang={q.course.language.locale}>{o.text}</span>
+            <span class="slip-text" lang={`${q.course.language.code}-Latn`}>
+              {romanSegments(o).map((sg, k) =>
+                sg.word !== undefined && (run.scene === "room-wake" || fresh.has(sg.word)) ? (
+                  <span key={k} class="sw"><span>{sg.text}</span><span class="sw-g">{displayGloss(q.course.words[sg.word])}</span></span>
+                ) : (
+                  <span key={k}>{sg.text}</span>
+                ),
+              )}
+            </span>
+            {(round.rHelp || run.scene === "room-wake") && <span class="slip-mean">{meaningOf(o)}</span>}
+            {run.scene === "room-wake" && <span class="slip-mean">{o.intent}</span>}
+          </>;
+          const cls = `slip scribe-slip${tried.has(o.text) ? " tried" : ""}`;
+          return run.scene === "room-wake" ? (
+            <div key={i} role="listitem"><button type="button" class={`${cls} selectable`} onClick={() => q.choose(i)}>{content}</button></div>
+          ) : (
+            <div key={i} role="listitem" tabIndex={0} class={cls}>{content}</div>
           );
         })}
       </div>
-      <Field placeholder={t("quiet-scribe-say")} onTry={onTry} hot={round.rMisses >= scribeHelpAfter(round.index)} helpLabel={t("quiet-read-help")} onHelp={() => set({ rHelp: true })} />
+      {run.scene !== "room-wake" && (ties.length ? (
+        <div role="group" aria-label={t("quiet-scribe-choose")}>
+          <p>{t("quiet-scribe-choose")}</p>
+          {ties.map((i) => <button type="button" class="slip" onClick={() => { setTies([]); q.choose(i); }}>{p.options[i].text} · {p.options[i].intent ?? meaningOf(p.options[i])}</button>)}
+        </div>
+      ) : <Field placeholder={t("quiet-scribe-say")} onTry={onTry} hot={round.rMisses >= scribeHelpAfter(round.index)} helpLabel={t("quiet-read-help")} onHelp={() => set({ rHelp: true })} />)}
       {p.confused && (
         <button type="button" class="say-nothing" onClick={() => q.choose(p.options.length)}>… {t("quiet-say-nothing")}</button>
       )}
