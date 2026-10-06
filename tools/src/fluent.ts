@@ -16,11 +16,21 @@ import {
 
 const parser = new FluentParser({ withSpans: false });
 
+/**
+ * Parsed sources, by text: a build renders every slot combination against the same terms and lines
+ * files, and parsing them again for each one made a course with much small talk take minutes.
+ * Callers only read the result (bindSlots clones the terms it renames).
+ */
+const parsed = new Map<string, Resource>();
+
 /** Parses Fluent source, failing on any syntax error. */
 export function parseFtl(src: string, name: string): Resource {
+  const cached = parsed.get(src);
+  if (cached) return cached;
   const res = parser.parse(src);
   const junk = res.body.find((e) => e.type === "Junk");
   if (junk) throw new Error(`${name}: Fluent syntax error near: ${JSON.stringify((junk as { content: string }).content.slice(0, 60))}`);
+  parsed.set(src, res);
   return res;
 }
 
@@ -67,8 +77,12 @@ interface FormRef {
   form: string | number;
 }
 
+const refsBySrc = new Map<string, FormRef[]>();
+
 /** Every `-term(form: ...)` in the source. */
 function formRefs(src: string, name: string): FormRef[] {
+  const cached = refsBySrc.get(src);
+  if (cached) return cached;
   const refs: FormRef[] = [];
   class Collect extends Visitor {
     visitTermReference(node: TermReference) {
@@ -81,6 +95,7 @@ function formRefs(src: string, name: string): FormRef[] {
     }
   }
   new Collect().visit(parseFtl(src, name));
+  refsBySrc.set(src, refs);
   return refs;
 }
 
@@ -131,6 +146,9 @@ export function bindSlots(
 /** A Fluent source and the name its errors are reported under. */
 export type FtlSource = [name: string, src: string];
 
+/** Runtime resources, by text, for the same reason as `parsed`. */
+const resources = new Map<string, FluentResource>();
+
 export class Renderer {
   private bundle: FluentBundle;
 
@@ -139,7 +157,9 @@ export class Renderer {
     this.bundle = new FluentBundle(locale, { useIsolating: false });
     for (const [name, src] of sources) {
       parseFtl(src, name);
-      const errors = this.bundle.addResource(new FluentResource(src));
+      let resource = resources.get(src);
+      if (!resource) resources.set(src, (resource = new FluentResource(src)));
+      const errors = this.bundle.addResource(resource);
       if (errors.length) throw new Error(`${name}: ${errors[0].message}`);
     }
   }

@@ -12,6 +12,9 @@
     { "id": "three-four", "slots": {}, "expect": { "action": "numbers" }, "hinges": [], "pay": 0, "missCost": 0 },
     { "id": "five", "slots": {}, "expect": { "action": "numbers" }, "hinges": [], "pay": 0, "missCost": 0 },
     { "id": "next-a", "slots": { "number": "numbers_2_5" }, "expect": { "action": "next", "number": "$number" }, "hinges": ["$number"], "pay": 0, "missCost": 0 },
-    { "id": "next-b", "slots": { "number": "numbers_2_5" }, "expect": { "action": "next", "number": "$number" }, "hinges": ["$number"], "pay": 0, "missCost": 0 }
+    { "id": "next-b", "slots": { "number": "numbers_2_5" }, "expect": { "action": "next", "number": "$number" }, "hinges": ["$number"], "pay": 0, "missCost": 0 },
+    { "id": "praise", "slots": {}, "expect": { "action": "praise" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "welcome", "slots": {}, "expect": { "action": "welcome" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "forgive", "slots": {}, "expect": { "action": "forgive" }, "hinges": [], "pay": 0, "missCost": 0 }
   ]
 }

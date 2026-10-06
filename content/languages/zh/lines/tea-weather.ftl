@@ -1,12 +1,12 @@
 # Small talk: the weather, and the time.
 
-cold = 今天很冷！
-cold-reply = 很冷！
-cold-alt1 = 很好！
+cold = 今天怎么样？
+cold-reply = 今天很冷！
+cold-alt1 = 我去北京！
 cold-alt2 = 我饿了。
 
-weather = 天气怎么样？
-weather-reply = 天气很冷。
+weather = 是！很冷！
+weather-reply = 天气不好！
 weather-alt1 = 我很高兴！
 weather-alt2 = 谢谢！
 
@@ -34,3 +34,9 @@ minutes = 坐下，喝茶，十分钟。
 minutes-reply = 好，十分钟。
 minutes-alt1 = 中午来。
 minutes-alt2 = 天气很冷。
+
+chat = { -topic }
+chat-reply = { -topic(form: "reply") }
+
+chat-2 = { -topic }
+chat-2-reply = { -topic(form: "reply") }

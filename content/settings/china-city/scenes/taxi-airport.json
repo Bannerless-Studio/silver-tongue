@@ -1,0 +1,22 @@
+{
+  "id": "taxi-airport",
+  "place": "station",
+  "npc": "driver",
+  "stage": 2,
+  "after": ["noodle-busy", "taxi-visitor"],
+  "requires": {},
+  "repeatable": false,
+  "trustGain": 1,
+  "exchanges": [
+    { "id": "where", "slots": {}, "expect": { "action": "airport" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "far", "slots": {}, "expect": { "action": "howfar" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "long", "slots": {}, "expect": { "action": "howlong" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "hour", "slots": {}, "expect": { "action": "fromto" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "go", "slots": {}, "expect": { "action": "setoff" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "beijing", "slots": {}, "expect": { "action": "goingwhere" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "slow", "slots": {}, "expect": { "action": "slowdown" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "nearly", "slots": {}, "expect": { "action": "nearly" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "pay", "slots": {}, "expect": { "action": "howmuch" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "price", "slots": {}, "expect": { "action": "tooexpensive" }, "hinges": [], "pay": 0, "missCost": 0 }
+  ]
+}

@@ -35,7 +35,13 @@ film-reply = 好，我不说话。
 film-alt1 = 看见了！很大！
 film-alt2 = 你妈妈好吗？
 
-bye = 你明天什么时候来？几点？
-bye-reply = 三点来！
+bye = 你什么时候来？几点？
+bye-reply = 明天三点来！
 bye-alt1 = 电影！
 bye-alt2 = 今天很冷！
+
+chat = { -topic }
+chat-reply = { -topic(form: "reply") }
+
+chat-2 = { -topic }
+chat-2-reply = { -topic(form: "reply") }

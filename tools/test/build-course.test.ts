@@ -59,7 +59,7 @@ describe("build-course (real content)", () => {
 
   it("builds zh-china with no errors", () => {
     expect(errors).toEqual([]);
-    expect(course!.scenes.map((s) => s.id)).toEqual(["class-break", "class-first", "class-read", "class-write", "delivery-hospital", "delivery-intro", "delivery-pickup", "delivery-school", "delivery-station", "hospital-checkup", "noodle-bowl", "noodle-intro", "noodle-kitchen", "noodle-lunch", "noodle-shift", "room-hello", "room-phone", "room-rent", "shop-buy", "shop-intro", "stairs-family", "stairs-meet", "stairs-pets", "street-hello", "street-hungry", "street-numbers", "street-practice", "taxi-luggage", "taxi-visitor", "taxi-way", "tea-intro", "tea-shift", "tea-tv", "tea-weather", "warehouse-intro", "warehouse-shift"]);
+    expect(course!.scenes.map((s) => s.id)).toEqual(["class-break", "class-first", "class-help", "class-read", "class-write", "delivery-hospital", "delivery-intro", "delivery-pickup", "delivery-school", "delivery-station", "hospital-checkup", "noodle-bowl", "noodle-busy", "noodle-intro", "noodle-kitchen", "noodle-lunch", "noodle-shift", "room-hello", "room-phone", "room-rent", "shop-buy", "shop-intro", "stairs-family", "stairs-help", "stairs-meet", "stairs-pets", "stairs-sick", "street-hello", "street-hungry", "street-numbers", "street-practice", "taxi-airport", "taxi-luggage", "taxi-visitor", "taxi-way", "tea-birthday", "tea-intro", "tea-shift", "tea-tv", "tea-weather", "warehouse-intro", "warehouse-shift"]);
   });
 
   it("renders every slot combination and tags its words", () => {
@@ -126,13 +126,15 @@ describe("build-course (real content)", () => {
     expect(carry.slots).toEqual({ amount: "numbers_3_10", item: "furniture" });
     // English says "{amount} {item}s", so no amount may be one or two.
     expect(course!.groups.numbers_3_10).toEqual(["three", "four", "five", "six", "seven", "eight", "nine", "ten"]);
-    expect(shift.exchanges.every((ex) => ex.pay > 0)).toBe(true);
+    // Every job in the shift pays; small talk between them doesn't.
+    expect(shift.exchanges.filter((ex) => ex.expect.action !== "chat").every((ex) => ex.pay > 0)).toBe(true);
   });
 
   it("Big Liu counts you from six to ten, after you can count to five", () => {
     const intro = course!.scenes.find((s) => s.id === "warehouse-intro")!;
     expect(intro.after).toEqual(["street-numbers"]);
-    const heard = intro.exchanges.flatMap((ex) => ex.variants[""].npc.tokens.map((t) => course!.words[t.word].w));
+    // He starts the count and you carry it on, so the new numbers come in your replies.
+    const heard = intro.exchanges.flatMap((ex) => [ex.variants[""].npc, ex.variants[""].reply].flatMap((l) => l.tokens.map((t) => course!.words[t.word].w)));
     for (const n of ["六", "七", "八", "九", "十"]) expect(heard).toContain(n);
   });
 
@@ -155,9 +157,20 @@ describe("build-course (real content)", () => {
     expect(JSON.parse(readFileSync(join(CONTENT, "courses/zh-china.json"), "utf8")).checks.audio).toBe(true);
   });
 
-  it("turns the HSK 1 coverage check on", () => {
-    const cfg = JSON.parse(readFileSync(join(CONTENT, "courses", "zh-china.json"), "utf8"));
-    expect(cfg.checks.coverage).toBe(true);
+  it("puts every HSK 1 word in at least 3 scenes", () => {
+    // The build's coverage check is off while stage 2 (HSK 2) is still being written, as in ko-seoul;
+    // stage 1 keeps its guarantee here.
+    const scenesOf = new Map<string, Set<string>>();
+    for (const sc of course!.scenes)
+      for (const ex of sc.exchanges)
+        for (const v of Object.values(ex.variants))
+          for (const l of [v.npc, v.reply, ...(v.rephrase ? [v.rephrase] : [])])
+            for (const t of l.tokens) {
+              if (!scenesOf.has(t.word)) scenesOf.set(t.word, new Set());
+              scenesOf.get(t.word)!.add(sc.id);
+            }
+    const thin = course!.stageWords["1"].filter((w) => (scenesOf.get(w)?.size ?? 0) < 3).map((w) => course!.words[w].w);
+    expect(thin).toEqual([]);
   });
 
   it("adds the tea house off Station Road and the stairwell off your room", () => {
@@ -243,8 +256,8 @@ describe("build-course (real content)", () => {
 
   it("ships only the words the course uses", () => {
     const ids = Object.keys(course!.words);
-    // The pack has over a thousand words; stage 1 content uses a small part of HSK 1.
-    expect(ids.length).toBeLessThan(200);
+    // The pack has over a thousand words; the content uses HSK 1 and the start of HSK 2.
+    expect(ids.length).toBeLessThan(260);
     expect(ids).toContain("w0133");
     expect(course!.words.w0800).toBeUndefined(); // 对, HSK 4
   });

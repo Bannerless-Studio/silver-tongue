@@ -6,23 +6,23 @@ greet-alt1-intent = Say you're hungry
 greet-alt2 = Goodbye!
 greet-alt2-intent = Say goodbye
 
-money = Do you have money?
-money-reply = Yes, I have work.
-money-reply-intent = Say you have work
+money = Do you have work?
+money-reply = Yes! I have money.
+money-reply-intent = Say you have money
 money-alt1 = I like noodles.
 money-alt1-intent = Say you like noodles
 money-alt2 = My name is { $player }.
 money-alt2-intent = Say your name
 
-week = One week…
-week-reply = How much?
-week-reply-intent = Ask the price
+week = Very good!
+week-reply = How much is it a week?
+week-reply-intent = Ask the weekly price
 week-alt1 = Ten chairs.
 week-alt1-intent = Say ten chairs
 week-alt2 = How are you?
 week-alt2-intent = Ask how they are
 
-price = Fifty kuai.
+price = Fifty!
 price-reply = OK, fifty kuai.
 price-reply-intent = Agree to fifty kuai
 price-alt1 = Five tables.

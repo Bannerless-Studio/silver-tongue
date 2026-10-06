@@ -20,7 +20,7 @@ years-reply = 十年！
 years-alt1 = 十块！
 years-alt2 = 我家是二零八。
 
-son = 我和我儿子回家。
+son = 这是我儿子。
 son-reply = 你儿子很好！
 son-alt1 = 我住这里。
 son-alt2 = 多少钱？
@@ -30,12 +30,12 @@ age-reply = 八岁！很小！
 age-alt1 = 八块！
 age-alt2 = 十年！
 
-work = 你做什么工作？
+work = 你在哪里工作？
 work-reply = 我在饭馆里工作。
 work-alt1 = 他八岁。
 work-alt2 = 十年！
 
-bye = 认识你很高兴！再见！
-bye-reply = 再见，林太太！
+bye = 好，再见！
+bye-reply = 认识你很高兴！
 bye-alt1 = 你好，林太太！
 bye-alt2 = 他八岁。

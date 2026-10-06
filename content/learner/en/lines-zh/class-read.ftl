@@ -1,6 +1,6 @@
-read = Books open, everyone! Read this book, for ten minutes.
-read-reply = OK, I'll read.
-read-reply-intent = Agree to read
+read = Books open, everyone! Read this book.
+read-reply = OK, I'll read for ten minutes.
+read-reply-intent = Agree to read for ten minutes
 read-alt1 = I don't have a book.
 read-alt1-intent = Say you have no book
 read-alt2 = The twenty-sixth of September.
@@ -53,3 +53,11 @@ bye-alt1 = My classmate is!
 bye-alt1-intent = Point at your classmate
 bye-alt2 = That's all right!
 bye-alt2-intent = Say it's fine
+
+chat = { -topic }
+chat-reply = { -topic(form: "reply") }
+chat-reply-intent = Answer the teacher
+
+chat-2 = { -topic }
+chat-2-reply = { -topic(form: "reply") }
+chat-2-reply-intent = Answer the teacher

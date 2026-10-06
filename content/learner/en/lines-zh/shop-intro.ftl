@@ -45,3 +45,11 @@ bye-alt1 = What are you buying?
 bye-alt1-intent = Ask what they're buying
 bye-alt2 = I'm just looking.
 bye-alt2-intent = Say you're only looking
+
+chat = { -topic }
+chat-reply = { -topic(form: "reply") }
+chat-reply-intent = Answer the shopkeeper
+
+chat-2 = { -topic }
+chat-2-reply = { -topic(form: "reply") }
+chat-2-reply-intent = Answer the shopkeeper
