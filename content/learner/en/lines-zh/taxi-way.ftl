@@ -61,3 +61,11 @@ bye-alt1 = I'm going to Beijing!
 bye-alt1-intent = Say you're going to Beijing
 bye-alt2 = How much?
 bye-alt2-intent = Ask the price
+
+chat = { -topic }
+chat-reply = { -topic(form: "reply") }
+chat-reply-intent = Answer Old Ma
+
+chat-2 = { -topic }
+chat-2-reply = { -topic(form: "reply") }
+chat-2-reply-intent = Answer Old Ma

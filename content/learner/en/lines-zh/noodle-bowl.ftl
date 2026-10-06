@@ -22,7 +22,7 @@ noodles-alt1-intent = Say your name
 noodles-alt2 = Goodbye!
 noodles-alt2-intent = Say goodbye
 
-like = Do you like noodles?
+like = You're welcome! Do you like noodles?
 like-reply = I do! I like them a lot.
 like-reply-intent = Say you like them
 like-alt1 = Old Wang is my friend.

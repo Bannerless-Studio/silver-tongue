@@ -22,8 +22,8 @@ seat-alt1-intent = Say you study Chinese
 seat-alt2 = Hello, teacher!
 seat-alt2-intent = Greet the teacher
 
-listen = Please listen!
-listen-reply = OK, I'm listening.
+listen = You're welcome! Let's study Chinese!
+listen-reply = OK, I'm listening!
 listen-reply-intent = Say you're listening
 listen-alt1 = Hello, teacher!
 listen-alt1-intent = Greet the teacher
@@ -46,15 +46,15 @@ write-alt1-intent = Say you can read it
 write-alt2 = Thank you, teacher!
 write-alt2-intent = Thank the teacher
 
-mate = David is your classmate.
-mate-reply = Hello, David!
-mate-reply-intent = Greet David
+mate = This is David.
+mate-reply = Hello, classmate!
+mate-reply-intent = Greet your classmate
 mate-alt1 = Hello, teacher!
 mate-alt1-intent = Greet the teacher
 mate-alt2 = I study Chinese.
 mate-alt2-intent = Say you study Chinese
 
-come = Can you come to school?
+come = Are you coming to school on Saturday?
 come-reply = Yes! I can come.
 come-reply-intent = Say you can come
 come-alt1 = Hello, David!

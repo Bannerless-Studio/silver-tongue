@@ -39,3 +39,9 @@ bye = 好！我明天打电话。再见！
 bye-reply = 再见，李先生！
 bye-alt1 = 不，我明天工作。
 bye-alt2 = 喂？
+
+chat = { -topic }
+chat-reply = { -topic(form: "reply") }
+
+chat-2 = { -topic }
+chat-2-reply = { -topic(form: "reply") }

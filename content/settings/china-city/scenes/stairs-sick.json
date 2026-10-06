@@ -1,0 +1,21 @@
+{
+  "id": "stairs-sick",
+  "place": "stairs",
+  "npc": "neighbour",
+  "stage": 2,
+  "after": ["noodle-busy", "stairs-pets"],
+  "requires": {},
+  "repeatable": false,
+  "trustGain": 1,
+  "exchanges": [
+    { "id": "son", "slots": {}, "expect": { "action": "sickson" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "sleep", "slots": {}, "expect": { "action": "letrest" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "hospital", "slots": {}, "expect": { "action": "findhospital" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "go", "slots": {}, "expect": { "action": "medicine" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "back", "slots": {}, "expect": { "action": "back" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "better", "slots": {}, "expect": { "action": "doingnow" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "tv", "slots": {}, "expect": { "action": "wearing" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "cold", "slots": {}, "expect": { "action": "thinks" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "bye", "slots": {}, "expect": { "action": "thanksbye" }, "hinges": [], "pay": 0, "missCost": 0 }
+  ]
+}

@@ -16,3 +16,6 @@ bye = 再见！
 bye-reply = 再见！
 bye-alt1 = 你是谁？
 bye-alt2 = 我饿了。
+
+chat = { -topic }
+chat-reply = { -topic(form: "reply") }

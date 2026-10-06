@@ -29,3 +29,9 @@ bye = 谢谢！再见！
 bye-reply = 再见！
 bye-alt1 = 你买什么？
 bye-alt2 = 我看看。
+
+chat = { -topic }
+chat-reply = { -topic(form: "reply") }
+
+chat-2 = { -topic }
+chat-2-reply = { -topic(form: "reply") }
