@@ -6,7 +6,7 @@ import { createQuiet } from "../src/quiet";
 import { notebookDocuments } from "../src/notebook";
 
 /** Real core-kept papers plus the two frontend document sources the Book draws. */
-function documents(desk: boolean, kept: boolean, photo: boolean) {
+function documents(desk: boolean, kept: boolean, reward: boolean) {
   const course = fixtureWithText();
   const extra = course as CourseExtra;
   extra.language.book = true;
@@ -14,12 +14,12 @@ function documents(desk: boolean, kept: boolean, photo: boolean) {
   extra.scenes[0].exchanges[0].pin = true;
   const state = { ...newGame(course), scenesDone: kept ? { [course.scenes[0].id]: 1 } : {} };
   const q = createQuiet({ course, core: createCore(course, state, { now: () => 1000, rng: mulberry32(1) }), now: () => 1000, lab: false });
-  return notebookDocuments({ ...q, friendClaim: () => photo ? true : undefined }, 1000);
+  return notebookDocuments({ ...q, bookPapers: () => [...q.bookPapers(), ...(reward ? [{ id: "stall-card", kind: "card" as const, reward: "friend" as const, lines: [{ id: "heading", text: "지우네" }] }] : [])] }, 1000);
 }
 
 describe("the Book's document empty state", () => {
   it("says nothing yet only when every displayed source is empty", () => {
-    expect(documents(false, false, false)).toMatchObject({ desk: [], kept: [], photo: false, empty: true });
+    expect(documents(false, false, false)).toMatchObject({ desk: [], kept: [], empty: true });
   });
   it("retains unread desk papers before any core-kept paper exists", () => {
     const result = documents(true, false, false);
@@ -27,14 +27,13 @@ describe("the Book's document empty state", () => {
     expect(result.kept).toEqual([]);
     expect(result.empty).toBe(false);
   });
-  it("counts the photograph even when it is the only document", () => {
-    expect(documents(false, false, true)).toMatchObject({ desk: [], kept: [], photo: true, empty: false });
+  it("counts an earned decodable card even when it is the only document", () => {
+    expect(documents(false, false, true)).toMatchObject({ desk: [expect.objectContaining({ id: "stall-card" })], kept: [], empty: false });
   });
-  it("counts core-kept papers without desk papers or a photograph", () => {
+  it("counts core-kept papers without desk papers or a reward", () => {
     const result = documents(false, true, false);
     expect(result.kept).toHaveLength(1);
     expect(result.desk).toEqual([]);
-    expect(result.photo).toBe(false);
     expect(result.empty).toBe(false);
   });
 });

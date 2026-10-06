@@ -53,6 +53,18 @@ describe("engine and front ends are free of any particular language", () => {
     expect(hits).toEqual([]);
   });
 
+  it("embeds no opening setting’s scene, paper or NPC ids", () => {
+    const dir = join(REPO, "content", "settings", "seoul-city");
+    const ids = [
+      ...readdirSync(join(dir, "scenes")).map((f) => JSON.parse(readFileSync(join(dir, "scenes", f), "utf8")).id as string),
+      JSON.parse(readFileSync(join(dir, "opening.json"), "utf8")).reward.paper,
+      ...Object.keys(JSON.parse(readFileSync(join(dir, "world.json"), "utf8")).npcs),
+    ];
+    const literal = new RegExp(`(["'\`])(${ids.join("|")})(?:[:][^"'\`]+)?\\1`);
+    const hits = files.flatMap((f) => readFileSync(f, "utf8").split("\n").flatMap((line, i) => literal.test(line) ? [`${relative(REPO, f)}:${i + 1}: ${line.trim()}`] : []));
+    expect(hits).toEqual([]);
+  });
+
   it("names no language code", () => {
     const hits = files.flatMap((f) =>
       readFileSync(f, "utf8").split("\n").flatMap((l, i) => (CODE.test(l) ? [`${relative(REPO, f)}:${i + 1}: ${l.trim()}`] : [])),

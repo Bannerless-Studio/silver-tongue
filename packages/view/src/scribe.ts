@@ -2,12 +2,13 @@
 // then says a reply by typing its meaning. Pure rules and wording here; the page draws it (quiet-web/src/ui/Scribe.tsx).
 import { personalize, type RenderedLine, type WordId } from "@silver-tongue/core";
 import { romanize } from "./desk";
+import { extra } from "./course-extra";
 
 
-/** The scenes played in scribe mode; every later scene keeps the normal flow. */
-export const SCRIBE_SCENES: readonly string[] = ["room-wake", "street-hello", "stall-lead", "street-introductions"];
-
-export const isScribeScene = (scene: string | undefined): boolean => !!scene && SCRIBE_SCENES.includes(scene);
+/** Scribe scenes and their presentation are declared by the course’s experiment profile. */
+export const scribeScenes = (course: import("@silver-tongue/core").Course): string[] => Object.keys(extra(course).labOpening?.scenes ?? {});
+export const scribeScene = (course: import("@silver-tongue/core").Course, scene?: string) => scene ? extra(course).labOpening?.scenes[scene] : undefined;
+export const isScribeScene = (course: import("@silver-tongue/core").Course, scene: string | undefined): boolean => !!scribeScene(course, scene);
 
 /** The hands-off arc, in one place: the first exchanges light the help button at the first miss, the later ones after SCRIBE_HELP_LATE. */
 export const SCRIBE_EARLY_EXCHANGES = 2;
@@ -20,61 +21,10 @@ export const scribeShowsExample = (index: number): boolean => index === 0;
 /** Where the page keeps how many scribe exchanges a course has begun (the worked example is the first's alone). */
 export const scribeCountKey = (course: string): string => `silver-tongue:scribe-count:${course}`;
 
-/** Authored visible-word fragments and essential distinctions, keyed by scene and source line.
- * `meaning` is checked against current content to catch stale rules. No global pronoun removal.
- */
-export const SCRIBE_ACCEPTS: Record<string, { meaning: string; fragments: string[] }> = {
-  "room-wake:call": {"meaning": "Min-jun?", "fragments": ["minjun", "min jun"]},
-  "room-wake:call-reply": {"meaning": "No.", "fragments": ["no"]},
-  "room-wake:call-alt1": {"meaning": "Min-jun?", "fragments": ["minjun", "min jun"]},
-  "room-wake:friend": {"meaning": "Are you Min-jun's friend?", "fragments": ["minjun friend", "min-jun's friend?", "are you a friend of min-jun"]},
-  "room-wake:friend-reply": {"meaning": "Yes.", "fragments": ["yes"]},
-  "room-wake:friend-alt1": {"meaning": "No.", "fragments": ["no"]},
-  "room-wake:friend-alt2": {"meaning": "Min-jun?", "fragments": ["minjun", "min jun"]},
-  "room-wake:missing": {"meaning": "Where's Min-jun?", "fragments": ["where minjun", "where is min jun"]},
-  "room-wake:missing-reply": {"meaning": "I don't know.", "fragments": ["not know", "no idea", "dunno"]},
-  "room-wake:missing-alt1": {"meaning": "I'm Min-jun's friend.", "fragments": ["minjun friend", "friend"]},
-  "room-wake:missing-alt2": {"meaning": "Yes.", "fragments": ["yes"]},
-  "street-hello:hello": {"meaning": "Hello.", "fragments": ["hello", "good morning", "good day"]},
-  "street-hello:hello-reply": {"meaning": "Hello.", "fragments": ["hello", "good morning", "good day"]},
-  "street-hello:hello-alt1": {"meaning": "No.", "fragments": ["no"]},
-  "street-hello:hello-alt2": {"meaning": "Min-jun?", "fragments": ["minjun", "min jun"]},
-  "street-hello:idcard": {"meaning": "Min-jun?", "fragments": ["minjun", "min jun"]},
-  "street-hello:idcard-reply": {"meaning": "Yes.", "fragments": ["yes"]},
-  "street-hello:idcard-alt1": {"meaning": "No.", "fragments": ["no"]},
-  "street-hello:idcard-alt2": {"meaning": "I don't know.", "fragments": ["not know", "no idea", "dunno"]},
-  "stall-lead:recognition": {"meaning": "Yes.", "fragments": ["yes"]},
-  "stall-lead:recognition-reply": {"meaning": "Yes.", "fragments": ["yes"]},
-  "stall-lead:recognition-alt1": {"meaning": "No.", "fragments": ["no"]},
-  "stall-lead:recognition-alt2": {"meaning": "I don't know.", "fragments": ["not know", "no idea", "dunno"]},
-  "street-introductions:park": {"meaning": "I'm Grandpa Park.", "fragments": ["park grandpa", "grandfather park", "i am grandfather park", "he is park", "i am park"]},
-  "street-introductions:park-reply": {"meaning": "Hello, Grandpa Park.", "fragments": ["hello", "hello grandfather park", "hello grandpa", "hello park"]},
-  "street-introductions:park-alt1": {"meaning": "Min-jun?", "fragments": ["minjun", "min jun"]},
-  "street-introductions:park-alt2": {"meaning": "No.", "fragments": ["no"]},
-  "street-introductions:who": {"meaning": "Who are you?", "fragments": ["who", "who is it", "who is there"]},
-  "street-introductions:who-reply": {"meaning": "I'm { $player }.", "fragments": ["{player}"]},
-  "street-introductions:who-alt1": {"meaning": "I'm Min-jun.", "fragments": ["minjun", "min jun"]},
-  "street-introductions:who-alt2": {"meaning": "Are you Min-jun's friend?", "fragments": ["minjun friend", "min-jun's friend?", "are you a friend of min-jun"]},
-  "street-introductions:ask": {"meaning": "What's your name?", "fragments": ["name what", "your name", "what are you called"]},
-  "street-introductions:ask-reply": {"meaning": "I'm { $player }.", "fragments": ["{player}"]},
-  "street-introductions:ask-alt1": {"meaning": "I'm Min-jun.", "fragments": ["minjun", "min jun"]},
-  "street-introductions:ask-alt2": {"meaning": "I'm Min-jun's friend.", "fragments": ["minjun friend", "friend"]},
-  "street-introductions:sit": {"meaning": "Have a seat.", "fragments": ["sit", "sit down", "sit down here", "have a seat", "take a seat", "please sit"]},
-  "street-introductions:sit-reply": {"meaning": "Thank you.", "fragments": ["thank you", "thank you very much", "thanks a lot", "thank you so much"]},
-  "street-introductions:sit-alt1": {"meaning": "Min-jun?", "fragments": ["minjun", "min jun"]},
-  "street-introductions:sit-alt2": {"meaning": "Who is it?", "fragments": ["who", "who is there"]},
-  "street-introductions:understand": {"meaning": "Do you know Korean?", "fragments": ["know korean", "speak korean", "do you speak korean", "can you speak korean", "do you understand korean"]},
-  "street-introductions:understand-reply": {"meaning": "No, I don't.", "fragments": ["no", "not know", "i do not speak korean"]},
-  "street-introductions:understand-alt1": {"meaning": "Yes, I do.", "fragments": ["yes", "i do", "yes i speak korean"]},
-  "street-introductions:understand-alt2": {"meaning": "Yes, thank you.", "fragments": ["yes thank you"]},
-  "street-introductions:bye": {"meaning": "Goodbye.", "fragments": ["goodbye", "see you", "farewell"]},
-  "street-introductions:bye-reply": {"meaning": "Goodbye.", "fragments": ["goodbye", "see you", "farewell"]},
-  "street-introductions:bye-alt1": {"meaning": "Yes, I do.", "fragments": ["yes", "i do", "yes i speak korean"]},
-  "street-introductions:bye-alt2": {"meaning": "No, I don't.", "fragments": ["no", "not know", "i do not speak korean"]},
-};
-
-export function scribeAccepts(scene: string, line: string, player = "?"): string[] {
-  return (SCRIBE_ACCEPTS[`${scene}:${line}`]?.fragments ?? []).map((s) => s.replaceAll("{player}", player));
+/** Authored visible-word fragments and essential distinctions come from learner content. */
+export const scribeRules = (course: import("@silver-tongue/core").Course) => extra(course).scribeAccepts ?? {};
+export function scribeAccepts(course: import("@silver-tongue/core").Course, scene: string, line: string, player = "?"): string[] {
+  return (scribeRules(course)[`${scene}:${line}`]?.fragments ?? []).map((s) => s.replaceAll("{player}", player));
 }
 
 /** Map a rendered reply back to its source ID, independent of shuffled slip order. */

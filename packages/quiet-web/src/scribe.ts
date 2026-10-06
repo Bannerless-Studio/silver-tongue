@@ -1,5 +1,6 @@
 // Scribe mode (lab only): the first conversations read in Latin letters and answered by typing meanings.
 // Whether it is on, and the little state it keeps: per exchange (misses, help) and per course (how many it has begun).
+import { emptyOpeningChoices, parseOpeningChoices, type OpeningChoices } from "./door-choices";
 import { pageStorage } from "./storage";
 import type { Course } from "@silver-tongue/core";
 import { bestMeanings, deskPapers, isScribeScene, scribeCountKey } from "@silver-tongue/view";
@@ -7,17 +8,15 @@ import { labMode } from "@silver-tongue/web-common";
 
 const inLab = (): boolean => typeof document !== "undefined" && labMode();
 
-/** One boundary for the door experiment's runtime and persistence. */
-export const doorExperimentOn = (course: Course, lab = inLab()): boolean =>
-  lab && deskPapers(course).length > 0 && course.scenes.some((s) => s.id === "room-wake");
+export { doorExperimentOn } from "./door-choices";
 
 /**
  * Whether the conversation on stage is played in scribe mode: the lab page, a course read by romanising (the one with the
- * desk, see deskPapers), and one of the first scenes (SCRIBE_SCENES). Anywhere else the page is exactly as it was.
+ * desk, see deskPapers), and one of the course’s scribe scenes. Anywhere else the page is exactly as it was.
  * `lab`: the lab page flag (the page's meta by default; off where there is no page).
  */
 export function scribeOn(view: { scene?: string }, course: Course, lab: boolean = inLab()): boolean {
-  return lab && deskPapers(course).length > 0 && isScribeScene(view.scene);
+  return lab && deskPapers(course).length > 0 && isScribeScene(course, view.scene);
 }
 
 /** What one exchange's two fields have seen so far. */
@@ -95,27 +94,23 @@ export function freshOnce(owner: object, key: string, compute: () => Set<string>
   return f;
 }
 
-/** Durable opening possession: core keeps accepted alts only in the run and five recent talks.
- * Page storage is already lab-prefixed; the key also names lab explicitly and isolates saved games.
- */
+/** Durable opening decisions, isolated per saved lab game. Core retains only five recent talks. */
 export interface OpeningStore {
-  load(): boolean | undefined;
-  save(friend: boolean | undefined): void;
+  load(): OpeningChoices;
+  save(choices: OpeningChoices): void;
 }
-export const openingKey = (course: string, game: string): string => `silver-tongue:lab:opening:${course}:${game}`;
-export function openingStore(course: string, game: string): OpeningStore {
-  const key = openingKey(course, game);
-  let fallback: boolean | undefined;
+export const openingKey = (course: string, game: string): string => `silver-tongue:lab:opening-choices:v1:${course}:${game}`;
+export function openingStore(course: Course, game: string): OpeningStore {
+  const key = openingKey(course.id, game);
+  let fallback = emptyOpeningChoices();
   return {
     load() {
-      try {
-        const raw = pageStorage().getItem(key);
-        return raw === "true" ? true : raw === "false" ? false : fallback;
-      } catch { return fallback; }
+      try { return parseOpeningChoices(JSON.parse(pageStorage().getItem(key) ?? "null"), course); }
+      catch { return parseOpeningChoices(fallback, course); }
     },
-    save(friend) {
-      fallback = friend;
-      try { pageStorage().setItem(key, JSON.stringify(friend ?? null)); } catch { /* Keep this visit playable. */ }
+    save(choices) {
+      fallback = parseOpeningChoices(choices, course);
+      try { pageStorage().setItem(key, JSON.stringify(fallback)); } catch { /* Keep this visit playable. */ }
     },
   };
 }

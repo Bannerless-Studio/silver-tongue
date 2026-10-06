@@ -1,0 +1,318 @@
+{
+ "scenes": {
+  "room-wake": {
+   "glosses": true,
+   "select": true,
+   "prompt": "quiet-scribe-hear-door"
+  },
+  "street-hello": {},
+  "stall-lead": {},
+  "street-introductions": {}
+ },
+ "choices": {
+  "room-wake:call": {
+   "reply": {
+    "reaction": "door-room-wake-call-reply-reaction",
+    "consequence": "door-room-wake-call-reply-later",
+    "at": "room-wake"
+   },
+   "alt1": {
+    "reaction": "door-room-wake-call-alt1-reaction",
+    "consequence": "door-room-wake-call-alt1-later",
+    "at": "room-wake"
+   },
+   "silence": {
+    "reaction": "door-room-wake-call-silence-reaction",
+    "consequence": "door-room-wake-call-silence-later",
+    "at": "room-wake"
+   }
+  },
+  "room-wake:friend": {
+   "reply": {
+    "reaction": "door-room-wake-friend-reply-reaction",
+    "consequence": "door-room-wake-friend-reply-later",
+    "at": "room-wake"
+   },
+   "alt1": {
+    "reaction": "door-room-wake-friend-alt1-reaction",
+    "consequence": "door-room-wake-friend-alt1-later",
+    "at": "room-wake",
+    "audioWords": [
+     "ko-jiu",
+     "ko-ssi"
+    ]
+   },
+   "alt2": {
+    "reaction": "door-room-wake-friend-alt2-reaction",
+    "consequence": "door-room-wake-friend-alt2-later",
+    "at": "room-wake"
+   },
+   "silence": {
+    "reaction": "door-room-wake-friend-silence-reaction",
+    "consequence": "door-room-wake-friend-silence-later",
+    "at": "room-wake"
+   }
+  },
+  "room-wake:missing": {
+   "reply": {
+    "reaction": "door-room-wake-missing-reply-reaction",
+    "consequence": "door-room-wake-missing-reply-later",
+    "at": "room-wake"
+   },
+   "alt1": {
+    "reaction": "door-room-wake-missing-alt1-reaction",
+    "consequence": "door-room-wake-missing-alt1-later",
+    "at": "room-wake"
+   },
+   "alt2": {
+    "reaction": "door-room-wake-missing-alt2-reaction",
+    "consequence": "door-room-wake-missing-alt2-later",
+    "at": "room-wake"
+   },
+   "silence": {
+    "reaction": "door-room-wake-missing-silence-reaction",
+    "consequence": "door-room-wake-missing-silence-later",
+    "at": "room-wake"
+   }
+  },
+  "street-hello:hello": {
+   "reply": {
+    "reaction": "door-street-hello-hello-reply-reaction",
+    "consequence": "door-street-hello-hello-reply-later",
+    "at": "street-hello"
+   },
+   "alt1": {
+    "reaction": "door-street-hello-hello-alt1-reaction",
+    "consequence": "door-street-hello-hello-alt1-later",
+    "at": "street-hello"
+   },
+   "alt2": {
+    "reaction": "door-street-hello-hello-alt2-reaction",
+    "consequence": "door-street-hello-hello-alt2-later",
+    "at": "street-hello"
+   },
+   "silence": {
+    "reaction": "door-street-hello-hello-silence-reaction",
+    "consequence": "door-street-hello-hello-silence-later",
+    "at": "street-hello"
+   }
+  },
+  "street-hello:idcard": {
+   "reply": {
+    "reaction": "door-street-hello-idcard-reply-reaction",
+    "consequence": "door-street-hello-idcard-reply-later",
+    "at": "street-hello"
+   },
+   "alt1": {
+    "reaction": "door-street-hello-idcard-alt1-reaction",
+    "consequence": "door-street-hello-idcard-alt1-later",
+    "at": "street-hello"
+   },
+   "alt2": {
+    "reaction": "door-street-hello-idcard-alt2-reaction",
+    "consequence": "door-street-hello-idcard-alt2-later",
+    "at": "street-hello"
+   },
+   "silence": {
+    "reaction": "door-street-hello-idcard-silence-reaction",
+    "consequence": "door-street-hello-idcard-silence-later",
+    "at": "street-hello"
+   }
+  },
+  "stall-lead:recognition": {
+   "reply": {
+    "reaction": "door-stall-lead-recognition-reply-reaction",
+    "consequence": "door-stall-lead-recognition-reply-later",
+    "at": "stall-lead"
+   },
+   "alt1": {
+    "reaction": "door-stall-lead-recognition-alt1-reaction",
+    "consequence": "door-stall-lead-recognition-alt1-later",
+    "at": "stall-lead"
+   },
+   "alt2": {
+    "reaction": "door-stall-lead-recognition-alt2-reaction",
+    "consequence": "door-stall-lead-recognition-alt2-later",
+    "at": "stall-lead"
+   },
+   "silence": {
+    "reaction": "door-stall-lead-recognition-silence-reaction",
+    "consequence": "door-stall-lead-recognition-silence-later",
+    "at": "stall-lead"
+   }
+  },
+  "street-introductions:park": {
+   "reply": {
+    "reaction": "door-street-introductions-park-reply-reaction",
+    "consequence": "door-street-introductions-park-reply-later",
+    "at": "street-introductions"
+   },
+   "alt1": {
+    "reaction": "door-street-introductions-park-alt1-reaction",
+    "consequence": "door-street-introductions-park-alt1-later",
+    "at": "street-introductions"
+   },
+   "alt2": {
+    "reaction": "door-street-introductions-park-alt2-reaction",
+    "consequence": "door-street-introductions-park-alt2-later",
+    "at": "street-introductions"
+   },
+   "silence": {
+    "reaction": "door-street-introductions-park-silence-reaction",
+    "consequence": "door-street-introductions-park-silence-later",
+    "at": "street-introductions"
+   }
+  },
+  "street-introductions:who": {
+   "reply": {
+    "reaction": "door-street-introductions-who-reply-reaction",
+    "consequence": "door-street-introductions-who-reply-later",
+    "at": "street-introductions"
+   },
+   "alt1": {
+    "reaction": "door-street-introductions-who-alt1-reaction",
+    "consequence": "door-street-introductions-who-alt1-later",
+    "at": "street-introductions"
+   },
+   "alt2": {
+    "reaction": "door-street-introductions-who-alt2-reaction",
+    "consequence": "door-street-introductions-who-alt2-later",
+    "at": "street-introductions"
+   },
+   "silence": {
+    "reaction": "door-street-introductions-who-silence-reaction",
+    "consequence": "door-street-introductions-who-silence-later",
+    "at": "street-introductions"
+   }
+  },
+  "street-introductions:ask": {
+   "reply": {
+    "reaction": "door-street-introductions-ask-reply-reaction",
+    "consequence": "door-street-introductions-ask-reply-later",
+    "at": "street-introductions"
+   },
+   "alt1": {
+    "reaction": "door-street-introductions-ask-alt1-reaction",
+    "consequence": "door-street-introductions-ask-alt1-later",
+    "at": "street-introductions"
+   },
+   "alt2": {
+    "reaction": "door-street-introductions-ask-alt2-reaction",
+    "consequence": "door-street-introductions-ask-alt2-later",
+    "at": "street-introductions"
+   },
+   "silence": {
+    "reaction": "door-street-introductions-ask-silence-reaction",
+    "consequence": "door-street-introductions-ask-silence-later",
+    "at": "street-introductions"
+   }
+  },
+  "street-introductions:sit": {
+   "reply": {
+    "reaction": "door-street-introductions-sit-reply-reaction",
+    "consequence": "door-street-introductions-sit-reply-later",
+    "at": "street-introductions"
+   },
+   "alt1": {
+    "reaction": "door-street-introductions-sit-alt1-reaction",
+    "consequence": "door-street-introductions-sit-alt1-later",
+    "at": "street-introductions"
+   },
+   "alt2": {
+    "reaction": "door-street-introductions-sit-alt2-reaction",
+    "consequence": "door-street-introductions-sit-alt2-later",
+    "at": "street-introductions"
+   },
+   "silence": {
+    "reaction": "door-street-introductions-sit-silence-reaction",
+    "consequence": "door-street-introductions-sit-silence-later",
+    "at": "street-introductions"
+   }
+  },
+  "street-introductions:understand": {
+   "reply": {
+    "reaction": "door-street-introductions-understand-reply-reaction",
+    "consequence": "door-street-introductions-understand-reply-later",
+    "at": "street-introductions"
+   },
+   "alt1": {
+    "reaction": "door-street-introductions-understand-alt1-reaction",
+    "consequence": "door-street-introductions-understand-alt1-later",
+    "at": "street-introductions"
+   },
+   "alt2": {
+    "reaction": "door-street-introductions-understand-alt2-reaction",
+    "consequence": "door-street-introductions-understand-alt2-later",
+    "at": "street-introductions"
+   },
+   "silence": {
+    "reaction": "door-street-introductions-understand-silence-reaction",
+    "consequence": "door-street-introductions-understand-silence-later",
+    "at": "street-introductions"
+   }
+  },
+  "street-introductions:bye": {
+   "reply": {
+    "reaction": "door-street-introductions-bye-reply-reaction",
+    "consequence": "door-street-introductions-bye-reply-later",
+    "at": "street-introductions"
+   },
+   "alt1": {
+    "reaction": "door-street-introductions-bye-alt1-reaction",
+    "consequence": "door-street-introductions-bye-alt1-later",
+    "at": "street-introductions"
+   },
+   "alt2": {
+    "reaction": "door-street-introductions-bye-alt2-reaction",
+    "consequence": "door-street-introductions-bye-alt2-later",
+    "at": "street-introductions"
+   },
+   "silence": {
+    "reaction": "door-street-introductions-bye-silence-reaction",
+    "consequence": "door-street-introductions-bye-silence-later",
+    "at": "street-introductions"
+   }
+  }
+ },
+ "reward": {
+  "choice": "room-wake:friend",
+  "option": "reply",
+  "paper": "stall-card",
+  "place": "stall",
+  "decoded": "scene-stall-lead-decoded"
+ },
+ "arrival": {
+  "scene": "stall-lead",
+  "choice": "room-wake:friend",
+  "branches": {
+   "reply": {
+    "text": "scene-stall-lead-card-unread",
+    "decodedText": "scene-stall-lead-card-read",
+    "menu": "lab-stall-card"
+   },
+   "alt1": {
+    "text": "scene-stall-lead-heard-name",
+    "menu": "lab-ask-jiwoo",
+    "audioWords": [
+     "ko-jiu",
+     "ko-ssi"
+    ]
+   },
+   "alt2": {
+    "text": "scene-stall-lead-id-name",
+    "menu": "lab-ask-minjun"
+   },
+   "silence": {
+    "text": "scene-stall-lead-quiet-route",
+    "menu": "lab-ask-minjun"
+   }
+  },
+  "fallback": {
+   "text": "scene-stall-lead-id-name",
+   "menu": "lab-ask-minjun"
+  }
+ },
+ "directions": {
+  "street-hello:idcard": "scene-street-hello-idcard"
+ }
+}

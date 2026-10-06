@@ -52,6 +52,19 @@
     }
    ],
    "required": []
+  },
+  {
+   "id": "stall-card",
+   "kind": "card",
+   "names": "stall",
+   "reward": "friend",
+   "required": [],
+   "lines": [
+    {
+     "id": "heading",
+     "text": "지우네"
+    }
+   ]
   }
  ]
 }

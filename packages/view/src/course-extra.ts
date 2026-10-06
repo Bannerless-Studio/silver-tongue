@@ -59,6 +59,31 @@ export type ExchangeExtra = Exchange & { pin?: boolean };
 /** `rent`: the scene where rent is first raised; a course with the Book keeps rent off the anchor row until it is done. */
 export type SceneExtra = Omit<Scene, "exchanges"> & { exchanges: ExchangeExtra[]; rent?: boolean };
 
+export type OpeningOption = "reply" | "alt1" | "alt2" | "silence";
+export interface OpeningEffect {
+  reaction: string;
+  consequence: string;
+  at: string;
+  /** Resolved from content-declared word references by the builder. */
+  audio?: string[];
+}
+export interface OpeningArrival {
+  text: string;
+  decodedText?: string;
+  menu: string;
+  audio?: string[];
+}
+export interface OpeningSceneStyle { glosses?: boolean; select?: boolean; prompt?: string }
+/** Optional experiment data: settings supply story references; learner content supplies acceptance rules. */
+export interface OpeningProfile {
+  scenes: Record<string, OpeningSceneStyle>;
+  choices: Record<string, Partial<Record<OpeningOption, OpeningEffect>>>;
+  reward: { choice: string; option: OpeningOption; paper: string; place: string; decoded: string };
+  arrival: { scene: string; choice: string; branches: Partial<Record<OpeningOption, OpeningArrival>>; fallback: OpeningArrival };
+  directions: Record<string, string>;
+}
+export type ScribeAccepts = Record<string, { meaning: string; fragments: string[] }>;
+
 export type CourseExtra = Omit<Course, "words" | "language" | "scenes"> & {
   /** Early encounters may precede a person giving their name. */
   world: Course["world"] & { npcs: Record<string, Course["world"]["npcs"][string] & { introducedAfter?: string }> };
@@ -66,6 +91,8 @@ export type CourseExtra = Omit<Course, "words" | "language" | "scenes"> & {
   language: LanguageExtra;
   scenes: SceneExtra[];
   letters?: LetterChart;
+  labOpening?: OpeningProfile;
+  scribeAccepts?: ScribeAccepts;
   /** content/settings/<setting>/papers.json: the papers on the desk when the story opens (book courses) */
   papers?: DeskPaper[];
 };

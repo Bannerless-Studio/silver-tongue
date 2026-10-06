@@ -3,14 +3,15 @@
 // line (a reply's cost rides on the reply; food is silent; wages ride on the one line a finished scene
 // folds into), trust is silent, the scene being played is exposed for the review tell, and any line can
 // be revealed.
-import { describeRun, normalizeTyped, wordState, type Core, type Course, type GameEvent, type GameState, type Input, type RenderedLine, type WordId } from "@silver-tongue/core";
+import { describeRun, normalizeTyped, typedMatches, wordState, type Core, type Course, type GameEvent, type GameState, type Input, type RenderedLine, type WordId } from "@silver-tongue/core";
 import {
-  bookOn, deskOn, deskReady, deskPapers, emptyProgress, freshMarks, heardCount, lettersFollowDesk, metLetters, onboarding, paperSyllables, placeName,
+  extra, bookOn, deskOn, deskReady, deskPapers, emptyProgress, freshMarks, heardCount, lettersFollowDesk, metLetters, onboarding, paperSyllables, placeName,
   actionNarration, bedHint, bedPlace, introLines, isBedtime, likelyOrder, npcLabel, primaryItem, joinTilesForDisplay, makeText, placeMenu, sentenceCard, tileEcho, typePrompt, waitingForMoney, wordCard,
   type AudioOut, type DeskPaper, type DeskProgress, type MenuItem, type SentenceCard, type Speech, type Text, type WordCard,
 } from "@silver-tongue/view";
 
 import { doorExperimentOn, type OpeningStore } from "./scribe";
+import { emptyOpeningChoices, openingArrival, openingEffects, openingProfile, openingInput, openingOption, openingRound, openingSlips, parseOpeningChoices, type OpeningChoices, type OpeningOption } from "./door-choices";
 
 export interface Beat {
   id: number;
@@ -26,6 +27,8 @@ export interface Beat {
    * (the opening story, a scene's framing, what the player did, where a resumed game is, a new day).
    * good / warn / plain: outcomes (wages, money). done: a finished conversation, folded to one line. */
   tone?: "plain" | "warn" | "good" | "react" | "narr" | "done";
+  /** Lab choice response: keep it visible beside the next exchange’s context. */
+  openingReaction?: boolean;
   /** words new to the player when this line was said: heard for the first time, or never heard at all
    * (a reaction line is not counted as hearing), and not glossed yet in this transcript. The only words
    * that gloss themselves; each word glosses once per game session. None on a course with the Book (see freshMarks). */
@@ -129,8 +132,10 @@ export interface Quiet {
   setName(name: string): boolean;
   /** the desk's papers read so far */
   readPapers(): ReadonlySet<string>;
-  /** Photograph possession from the accepted friendship choice. */
-  friendClaim(): boolean | undefined;
+  /** Actual lab decisions; main-site games have no experiment record. */
+  openingChoices(): OpeningChoices | undefined;
+  /** Desk documents plus earned decodable papers, never an unearned reward. */
+  bookPapers(): DeskPaper[];
   /** a paper on the desk has been read out, every line */
   readPaper(id: string): void;
   readPaperLine(paper: string, line: string): void;
@@ -174,6 +179,9 @@ export const CONFUSED = "...";
 export function createQuiet(opts: QuietOptions): Quiet {
   const { course, core } = opts;
   const experiment = doorExperimentOn(course, opts.lab);
+  const profile = openingProfile(course);
+  const reward = profile?.reward;
+  const effects = openingEffects(course);
   const t = makeText(course.learnerFtl, course.learner);
   const npcName = (npc: string) => npcLabel(course, core.state, t, npc);
   const money = (delta: number, reason: string) =>
@@ -190,9 +198,16 @@ export function createQuiet(opts: QuietOptions): Quiet {
   let toasts: Toast[] = [];
   let naming = course.needsName && !core.state.player;
   // A new game starts with the desk unread (the list is kept per course; it is saved again once named).
-  let friend = experiment && !naming ? opts.openingChoice?.load() : undefined;
-  if (experiment && naming) opts.openingChoice?.save(undefined);
+  let choices = experiment && !naming ? parseOpeningChoices(opts.openingChoice?.load(), course) : emptyOpeningChoices();
+  if (experiment && naming) opts.openingChoice?.save(choices);
+  const saveChoices = () => { if (experiment) opts.openingChoice?.save(choices); };
+  let pendingChoice: { key: string; option: OpeningOption } | undefined;
+  let inputTies: RenderedLine[] | undefined;
+  const bookPapers = () => [...deskPapers(course), ...(experiment && reward && choices.options[reward.choice] === reward.option ? (extra(course).papers ?? []).filter((p) => p.id === reward.paper) : [])];
   const read = new Set(naming ? [] : (opts.papers?.load() ?? []));
+  // The reward belongs to this game, even though legacy desk progress is stored per course.
+  if (reward) read.delete(reward.paper);
+  if (experiment && reward && choices.cardRead) read.add(reward.paper);
   let progress = naming ? emptyProgress() : (opts.papers?.loadProgress?.() ?? emptyProgress());
   const saveProgress = () => opts.papers?.saveProgress?.(progress);
   /** the desk is up (after the name screen): a new book course with papers, not all of them read */
@@ -204,7 +219,7 @@ export function createQuiet(opts: QuietOptions): Quiet {
     lookupDone = true;
     opts.papers?.saveLookupDone?.();
   };
-  const placeLabel = (place = core.state.place) => placeName(course, core.state, read, t, place);
+  const placeLabel = (place = core.state.place) => experiment && reward && place === reward.place && choices.cardRead ? t(`place-${place}-known`) : placeName(course, core.state, read, t, place);
   let resuming = false;
   let nextId = 1;
   /** news that arrived mid-scene, held until the scene is over so it never lands between a line and its replies */
@@ -304,6 +319,7 @@ export function createQuiet(opts: QuietOptions): Quiet {
     const revealed: string[] = [];
     /** reactions that restate the request; only kept when the replies come back after them */
     const reacted: Beat[] = [];
+    let choiceFrom: number | undefined;
     // With the Book the night's food is said with the day's end (and only when it cost something).
     const food = events.reduce((sum, e) => sum + (e.type === "walletChanged" && e.reason === "food" ? e.delta : 0), 0);
     for (const e of events) {
@@ -313,13 +329,20 @@ export function createQuiet(opts: QuietOptions): Quiet {
           reply = undefined;
           sceneFrom = nextId;
           {
-            const start = experiment && e.scene === "stall-lead" ? "scene-stall-lead-lab-start" : `scene-${e.scene}-start`;
-            if (!resuming && t.has(start)) push({ text: t(start), tone: "narr" });
+            const start = `scene-${e.scene}-start`;
+            if (!resuming && !(experiment && e.scene === profile?.arrival.scene) && t.has(start)) push({ text: t(start), tone: "narr" });
           }
-          if (experiment && !resuming && e.scene === "stall-lead") push({ text: t(friend ? "scene-stall-lead-photo" : "scene-stall-lead-name"), tone: "narr" });
+          if (experiment && !resuming && e.scene === profile?.arrival.scene) {
+            const arrival = openingArrival(course, choices)!;
+            push({ text: t(choices.cardRead && arrival.decodedText ? arrival.decodedText : arrival.text), tone: "narr" }, speech(arrival.audio));
+          }
           break;
         case "lineSpoken":
-          if (!resuming && scene === "street-hello" && Object.values(course.scenes.find((s) => s.id === scene)?.exchanges.find((ex) => ex.id === "idcard")?.variants ?? {}).some((v) => v.npc.text === e.line.text)) push({ text: t("scene-street-hello-idcard"), tone: "narr" });
+          if (!resuming && profile && scene) {
+            const ex = course.scenes.find((s) => s.id === scene)?.exchanges.find((ex) => Object.values(ex.variants).some((v) => v.npc.text === e.line.text));
+            const direction = ex && profile.directions[`${scene}:${ex.id}`];
+            if (direction) push({ text: t(direction), tone: "narr" });
+          }
           lastLine = e.line;
           lastSpeech = speech(e.line.audio);
           push({ speaker: e.npc, line: e.line, fresh: freshIn(e.line) }, lastSpeech);
@@ -340,11 +363,14 @@ export function createQuiet(opts: QuietOptions): Quiet {
           placed = [];
           break;
         case "actionPerformed": {
-          if (experiment && scene === "room-wake" && e.expected.action === "friend" && e.matched) {
-            // Core reports alternate indexes from zero; source alt1 is index 0.
-            friend = e.alt !== 0;
-            opts.openingChoice?.save(friend);
-            push({ text: t(friend ? "scene-room-wake-photo-given" : "scene-room-wake-photo-held"), tone: "narr" });
+          if (pendingChoice) {
+            const { key, option } = pendingChoice;
+            const effect = effects[key][option]!;
+            choiceFrom = nextId;
+            push({ text: t(effect.reaction), tone: "narr", openingReaction: true });
+            const heard = speech(effect.audio);
+            if (heard) speeches.push(heard);
+            break;
           }
           const said = actionNarration(course, t, e, scene && npcName(course.scenes.find((s) => s.id === scene)?.npc ?? ""));
           // A miss is one narration line: what the player did and what was asked, together.
@@ -383,11 +409,15 @@ export function createQuiet(opts: QuietOptions): Quiet {
             const who = npcName(course.scenes.find((s) => s.id === e.scene)?.npc ?? "");
             // "Meet Old Wang" already says who. The line carries the wages too.
             const what = title.includes(who) ? title : t("quiet-scene-with", { scene: title, npc: who });
-            finished = { from: sceneFrom, to: nextId, text: t("quiet-scene-done", { scene: what, currency: course.world.currency, earned: e.earned }) };
+            finished = { from: sceneFrom, to: choiceFrom ?? nextId, text: t("quiet-scene-done", { scene: what, currency: course.world.currency, earned: e.earned }) };
           }
           {
-            const end = experiment && ["room-wake", "stall-lead"].includes(e.scene) ? `scene-${e.scene}-lab-end` : `scene-${e.scene}-end`;
+            const end = `scene-${e.scene}-end`;
             if (t.has(end)) push({ text: t(end), tone: "narr" });
+          }
+          if (experiment) for (const [key, option] of Object.entries(choices.options)) {
+            const effect = effects[key]?.[option];
+            if (effect?.at === e.scene) push({ text: t(effect.consequence), tone: "narr" });
           }
           closing = { from: finished.to, to: nextId };
           break;
@@ -470,11 +500,32 @@ export function createQuiet(opts: QuietOptions): Quiet {
 
   /** Sends an input; the player's own line (echo) is shown first, and only if the input was taken. */
   function send(input: Input, echo?: Omit<Beat, "id">, echoSpeech?: Speech, settle = true): boolean {
+    const round = experiment && openingRound(course, core.state);
+    const typed = input.type === "replyText" ? input.text : undefined;
+    const typedSlips = round && typed ? openingSlips(course, core.state)?.filter((line) => typedMatches(course, line, core.state.player ?? "?", normalizeTyped(typed))) : undefined;
+    if (!echo?.line && typedSlips && typedSlips.length > 1) {
+      inputTies = typedSlips;
+      push({ text: t("quiet-scribe-choose"), tone: "narr" });
+      flush(false);
+      changed();
+      return false;
+    }
+    const selectedLine = echo?.line ?? typedSlips?.[0];
+    const choosing = round && (input.type === "confused" || !!selectedLine);
+    const selection = choosing ? { key: round.key, option: openingOption(course, core.state, selectedLine) } : undefined;
+    if (selection) input = openingInput(course, core.state, selection.option);
     const events = core.send(input);
     const taken = !events.some((e) => e.type === "inputRejected");
     if (taken) moveOn();
     if (echo && taken) push(echo, echoSpeech);
+    if (selection && taken) {
+      inputTies = undefined;
+      choices = { ...choices, options: { ...choices.options, [selection.key]: selection.option } };
+      saveChoices();
+      pendingChoice = selection;
+    }
     apply(events);
+    pendingChoice = undefined;
     if (taken) persist();
     flush(settle);
     changed();
@@ -483,11 +534,13 @@ export function createQuiet(opts: QuietOptions): Quiet {
 
   function phase(): Phase {
     if (naming) return { kind: "name" };
+    const slips = experiment && (inputTies ?? openingSlips(course, core.state));
+    if (slips) return { kind: "pick", options: slips, confused: true };
     if (reply?.mode === "pick") return { kind: "pick", options: reply.options, confused: !!core.state.run && core.state.run.misses < 2 };
     if (reply?.mode === "tiles") return { kind: "tiles", tiles: reply.tiles, placed, answer: joinTilesForDisplay(course, placed.map((i) => (reply as { tiles: string[] }).tiles[i])) };
     if (reply?.mode === "type") return { kind: "type", prompt: typePrompt(t), confused: !!core.state.run && core.state.run.misses < 2 };
     const menu = placeMenu(course, core.state, t, placeLabel).map((m) =>
-      experiment && m.kind === "talk" && m.scene === "stall-lead" ? { ...m, label: t(friend ? "lab-show-photo" : "lab-ask-minjun") } : m);
+      experiment && m.kind === "talk" && m.scene === profile?.arrival.scene ? { ...m, label: t(openingArrival(course, choices)!.menu) } : m);
     if (!book) return { kind: "explore", menu, waiting: [...waitingForMoney(course, core.state, t), ...bedHint(course, core.state, t)] };
     // With the Book: what can't be done now is not offered, and the way to bed says why it's the way.
     const open = menu.filter((m) => !("disabled" in m && m.disabled));
@@ -623,13 +676,21 @@ export function createQuiet(opts: QuietOptions): Quiet {
       return true;
     },
     readPapers: () => read,
-    friendClaim: () => experiment ? friend : undefined,
+    openingChoices: () => experiment ? parseOpeningChoices(choices, course) : undefined,
+    bookPapers,
     deskAt(id) {
-      const p = deskPapers(course).find((x) => x.id === id);
+      const p = bookPapers().find((x) => x.id === id);
       const all = p ? paperSyllables(p).length : 0;
-      return read.has(id) ? all : Math.min(progress.at[id] ?? 0, all);
+      return read.has(id) ? all : Math.min(id === reward?.paper && experiment ? choices.cardAt : progress.at[id] ?? 0, all);
     },
     setDeskAt(id, n) {
+      if (id === reward?.paper) {
+        if (!experiment || !bookPapers().some((p) => p.id === id)) return;
+        if (choices.cardAt === n) return;
+        choices = { ...choices, cardAt: n };
+        saveChoices();
+        return;
+      }
       if (progress.at[id] === n) return;
       progress = { ...progress, at: { ...progress.at, [id]: n } };
       saveProgress();
@@ -643,13 +704,21 @@ export function createQuiet(opts: QuietOptions): Quiet {
       changed();
     },
     readPaperLine(paper, line) {
-      if (!deskPapers(course).find((p) => p.id === paper)?.lines.some((l) => l.id === line)) return;
+      if (!bookPapers().find((p) => p.id === paper)?.lines.some((l) => l.id === line)) return;
       read.add(`${paper}.${line}`);
       opts.papers?.save([...read]);
       changed();
     },
     readPaper(id) {
-      if (read.has(id) || !deskPapers(course).some((p) => p.id === id)) return;
+      if (read.has(id) || !bookPapers().some((p) => p.id === id)) return;
+      if (experiment && id === reward?.paper) {
+        choices = { ...choices, cardRead: true, cardAt: paperSyllables(bookPapers().find((p) => p.id === id)!).length };
+        saveChoices();
+        if (reward && core.state.place === reward.place) {
+          push({ text: t(reward.decoded), tone: "narr" });
+          flush(false);
+        }
+      }
       read.add(id);
       opts.papers?.save([...read]);
       changed();

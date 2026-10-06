@@ -1,0 +1,346 @@
+{
+  "room-wake:call": {
+    "meaning": "Min-jun?",
+    "fragments": [
+      "minjun",
+      "min jun"
+    ]
+  },
+  "room-wake:call-reply": {
+    "meaning": "No.",
+    "fragments": [
+      "no"
+    ]
+  },
+  "room-wake:call-alt1": {
+    "meaning": "Min-jun?",
+    "fragments": [
+      "minjun",
+      "min jun"
+    ]
+  },
+  "room-wake:friend": {
+    "meaning": "Are you Min-jun's friend?",
+    "fragments": [
+      "minjun friend",
+      "min-jun's friend?",
+      "are you a friend of min-jun"
+    ]
+  },
+  "room-wake:friend-reply": {
+    "meaning": "Yes.",
+    "fragments": [
+      "yes"
+    ]
+  },
+  "room-wake:friend-alt1": {
+    "meaning": "No.",
+    "fragments": [
+      "no"
+    ]
+  },
+  "room-wake:friend-alt2": {
+    "meaning": "Min-jun?",
+    "fragments": [
+      "minjun",
+      "min jun"
+    ]
+  },
+  "room-wake:missing": {
+    "meaning": "Where's Min-jun?",
+    "fragments": [
+      "where minjun",
+      "where is min jun"
+    ]
+  },
+  "room-wake:missing-reply": {
+    "meaning": "I don't know.",
+    "fragments": [
+      "not know",
+      "no idea",
+      "dunno"
+    ]
+  },
+  "room-wake:missing-alt1": {
+    "meaning": "I'm Min-jun's friend.",
+    "fragments": [
+      "minjun friend",
+      "friend"
+    ]
+  },
+  "room-wake:missing-alt2": {
+    "meaning": "Yes.",
+    "fragments": [
+      "yes"
+    ]
+  },
+  "street-hello:hello": {
+    "meaning": "Hello.",
+    "fragments": [
+      "hello",
+      "good morning",
+      "good day"
+    ]
+  },
+  "street-hello:hello-reply": {
+    "meaning": "Hello.",
+    "fragments": [
+      "hello",
+      "good morning",
+      "good day"
+    ]
+  },
+  "street-hello:hello-alt1": {
+    "meaning": "No.",
+    "fragments": [
+      "no"
+    ]
+  },
+  "street-hello:hello-alt2": {
+    "meaning": "Min-jun?",
+    "fragments": [
+      "minjun",
+      "min jun"
+    ]
+  },
+  "street-hello:idcard": {
+    "meaning": "Min-jun?",
+    "fragments": [
+      "minjun",
+      "min jun"
+    ]
+  },
+  "street-hello:idcard-reply": {
+    "meaning": "Yes.",
+    "fragments": [
+      "yes"
+    ]
+  },
+  "street-hello:idcard-alt1": {
+    "meaning": "No.",
+    "fragments": [
+      "no"
+    ]
+  },
+  "street-hello:idcard-alt2": {
+    "meaning": "I don't know.",
+    "fragments": [
+      "not know",
+      "no idea",
+      "dunno"
+    ]
+  },
+  "stall-lead:recognition": {
+    "meaning": "Yes.",
+    "fragments": [
+      "yes"
+    ]
+  },
+  "stall-lead:recognition-reply": {
+    "meaning": "Yes.",
+    "fragments": [
+      "yes"
+    ]
+  },
+  "stall-lead:recognition-alt1": {
+    "meaning": "No.",
+    "fragments": [
+      "no"
+    ]
+  },
+  "stall-lead:recognition-alt2": {
+    "meaning": "I don't know.",
+    "fragments": [
+      "not know",
+      "no idea",
+      "dunno"
+    ]
+  },
+  "street-introductions:park": {
+    "meaning": "I'm Grandpa Park.",
+    "fragments": [
+      "park grandpa",
+      "grandfather park",
+      "i am grandfather park",
+      "he is park",
+      "i am park"
+    ]
+  },
+  "street-introductions:park-reply": {
+    "meaning": "Hello, Grandpa Park.",
+    "fragments": [
+      "hello",
+      "hello grandfather park",
+      "hello grandpa",
+      "hello park"
+    ]
+  },
+  "street-introductions:park-alt1": {
+    "meaning": "Min-jun?",
+    "fragments": [
+      "minjun",
+      "min jun"
+    ]
+  },
+  "street-introductions:park-alt2": {
+    "meaning": "No.",
+    "fragments": [
+      "no"
+    ]
+  },
+  "street-introductions:who": {
+    "meaning": "Who are you?",
+    "fragments": [
+      "who",
+      "who is it",
+      "who is there"
+    ]
+  },
+  "street-introductions:who-reply": {
+    "meaning": "I'm { $player }.",
+    "fragments": [
+      "{player}"
+    ]
+  },
+  "street-introductions:who-alt1": {
+    "meaning": "I'm Min-jun.",
+    "fragments": [
+      "minjun",
+      "min jun"
+    ]
+  },
+  "street-introductions:who-alt2": {
+    "meaning": "Are you Min-jun's friend?",
+    "fragments": [
+      "minjun friend",
+      "min-jun's friend?",
+      "are you a friend of min-jun"
+    ]
+  },
+  "street-introductions:ask": {
+    "meaning": "What's your name?",
+    "fragments": [
+      "name what",
+      "your name",
+      "what are you called"
+    ]
+  },
+  "street-introductions:ask-reply": {
+    "meaning": "I'm { $player }.",
+    "fragments": [
+      "{player}"
+    ]
+  },
+  "street-introductions:ask-alt1": {
+    "meaning": "I'm Min-jun.",
+    "fragments": [
+      "minjun",
+      "min jun"
+    ]
+  },
+  "street-introductions:ask-alt2": {
+    "meaning": "I'm Min-jun's friend.",
+    "fragments": [
+      "minjun friend",
+      "friend"
+    ]
+  },
+  "street-introductions:sit": {
+    "meaning": "Have a seat.",
+    "fragments": [
+      "sit",
+      "sit down",
+      "sit down here",
+      "have a seat",
+      "take a seat",
+      "please sit"
+    ]
+  },
+  "street-introductions:sit-reply": {
+    "meaning": "Thank you.",
+    "fragments": [
+      "thank you",
+      "thank you very much",
+      "thanks a lot",
+      "thank you so much"
+    ]
+  },
+  "street-introductions:sit-alt1": {
+    "meaning": "Min-jun?",
+    "fragments": [
+      "minjun",
+      "min jun"
+    ]
+  },
+  "street-introductions:sit-alt2": {
+    "meaning": "Who is it?",
+    "fragments": [
+      "who",
+      "who is there"
+    ]
+  },
+  "street-introductions:understand": {
+    "meaning": "Do you know Korean?",
+    "fragments": [
+      "know korean",
+      "speak korean",
+      "do you speak korean",
+      "can you speak korean",
+      "do you understand korean"
+    ]
+  },
+  "street-introductions:understand-reply": {
+    "meaning": "No, I don't.",
+    "fragments": [
+      "no",
+      "not know",
+      "i do not speak korean"
+    ]
+  },
+  "street-introductions:understand-alt1": {
+    "meaning": "Yes, I do.",
+    "fragments": [
+      "yes",
+      "i do",
+      "yes i speak korean"
+    ]
+  },
+  "street-introductions:understand-alt2": {
+    "meaning": "Yes, thank you.",
+    "fragments": [
+      "yes thank you"
+    ]
+  },
+  "street-introductions:bye": {
+    "meaning": "Goodbye.",
+    "fragments": [
+      "goodbye",
+      "see you",
+      "farewell"
+    ]
+  },
+  "street-introductions:bye-reply": {
+    "meaning": "Goodbye.",
+    "fragments": [
+      "goodbye",
+      "see you",
+      "farewell"
+    ]
+  },
+  "street-introductions:bye-alt1": {
+    "meaning": "Yes, I do.",
+    "fragments": [
+      "yes",
+      "i do",
+      "yes i speak korean"
+    ]
+  },
+  "street-introductions:bye-alt2": {
+    "meaning": "No, I don't.",
+    "fragments": [
+      "no",
+      "not know",
+      "i do not speak korean"
+    ]
+  }
+}

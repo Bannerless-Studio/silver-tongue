@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "preact/ho
 import type { RenderedLine, WordId } from "@silver-tongue/core";
 import { npcLabel, quietRuby, replyMeanings, romanLine, sentenceCard, soundedTokens, speakerHue, speakerNamed, type RubySetting, type SentenceCard } from "@silver-tongue/view";
 import { CONFUSED, type Beat, type Quiet, type QuietView } from "../quiet";
-import { replyOrder, stageView, type Exchange, type HistoryRow, type StageView } from "../stage";
+import { replyOrder, stageDirections, stageView, type Exchange, type HistoryRow, type StageView } from "../stage";
 import { scribeOn } from "../scribe";
 import { Line } from "./Line";
 import { ScribeKeys, ScribeSlips, ScribeTheir } from "./Scribe";
@@ -185,7 +185,7 @@ export function Stage({ q, view, shown, ruby, reveal, onWord, onReveal, onClose,
   if (shown.hold === "intro") {
     return (
       <section class="stage-now" ref={ref}>
-        <div class="direction-row"><Direction beats={ex.direction.slice(-1)} /></div>
+        <div class="direction-row"><Direction beats={stageDirections(ex)} /></div>
       </section>
     );
   }
@@ -217,7 +217,7 @@ export function Stage({ q, view, shown, ruby, reveal, onWord, onReveal, onClose,
   const readAll = !spans.length;
   return (
     <section class="stage-now" ref={ref}>
-      <div class="direction-row">{shown.hold !== "picked" && <Direction beats={ex.direction.slice(-1)} />}</div>
+      <div class="direction-row">{shown.hold !== "picked" && <Direction beats={stageDirections(ex)} />}</div>
       <div class={`their ${hue(q, ex.line)}`}>
         <p class="who">
           {named.get(ex.line.id) && <span>{npcLabel(course, core.state, t, ex.line.speaker!)}</span>}

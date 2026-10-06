@@ -19,12 +19,14 @@ export interface DeskPaper {
   kind: DeskPaperKind;
   /** a place whose name becomes `place-<place>-known` once this paper is read */
   names?: string;
+  /** Lab reward source; omitted papers are on the opening desk. */
+  reward?: string;
   /** Lines required before the knock; omitted means the whole paper, [] means optional. */
   required?: string[];
   lines: DeskPaperLine[];
 }
 
-export const deskPapers = (course: Course): DeskPaper[] => (bookOn(course) ? (extra(course).papers ?? []) : []);
+export const deskPapers = (course: Course): DeskPaper[] => (bookOn(course) ? (extra(course).papers ?? []).filter((p) => !p.reward) : []);
 
 /** Whether the desk comes up for this game: a book course with papers, no scene done yet, some paper unread. */
 export function deskOn(course: Course, state: GameState, read: ReadonlySet<string>): boolean {

@@ -1,7 +1,7 @@
 import { useState } from "preact/hooks";
 import type { CatalogEntry, RenderedLine, WordState } from "@silver-tongue/core";
 import {
-  bookOn, deskPapers, dayPart, romanize, guideView, hasLetters, hudValues, letterCount, lettersView, nextRuby, nextSpeed, notebookDefault, notebookEntries, paperGlosses, peopleList, quietRuby, rentDueInDays, settingsRows,
+  bookOn, dayPart, romanize, guideView, hasLetters, hudValues, letterCount, lettersView, nextRuby, nextSpeed, notebookDefault, notebookEntries, paperGlosses, peopleList, quietRuby, rentDueInDays, settingsRows,
   type Paper, type SettingsScreen,
 } from "@silver-tongue/view";
 import type { Quiet } from "../quiet";
@@ -76,7 +76,7 @@ export function Notebook({ q, onClose, first }: { q: Quiet; onClose: () => void;
   const guide = tab === "letters" ? guideView(course, t, met) : [];
   const chart = tab === "letters" ? lettersView(course, t, met) : [];
   const count = met ? letterCount(course, met) : undefined;
-  const document = deskPapers(course).find((p) => p.id === deskPaper);
+  const document = q.bookPapers().find((p) => p.id === deskPaper);
   if (document) return <Overlay q={q} title={t("notebook-papers")} onClose={() => setDeskPaper(null)}><PaperView q={q} paper={document} done={q.readPapers().has(document.id)} covered={false} onBook={() => setDeskPaper(null)} onBack={() => setDeskPaper(null)} /></Overlay>;
   return (
     <Overlay q={q} title={t(book ? "quiet-book" : "quiet-notebook")} head={tabs} onClose={onClose}>
@@ -116,10 +116,9 @@ export function Notebook({ q, onClose, first }: { q: Quiet; onClose: () => void;
       ))}
       {tab === "papers" && <>
         {documents?.desk.map((p) => <section class="paper-row" key={p.id}>
-          <button type="button" class="nb-paper" onClick={() => setDeskPaper(p.id)}>{p.lines[0]?.text} · {p.lines.find((l) => l.id === "name")?.text}</button>
-          {p.lines.map((l) => <p key={l.id}>{l.text} <span class="dim">{romanize(l.text)}</span></p>)}
+          <button type="button" class="nb-paper" onClick={() => setDeskPaper(p.id)}>{[p.lines[0]?.text, p.lines.find((l) => l.id === "name")?.text].filter(Boolean).join(" · ")}</button>
+          {p.lines.map((l) => <p key={l.id}>{l.text} {!p.reward && <span class="dim">{romanize(l.text)}</span>}</p>)}
         </section>)}
-        {documents?.photo && <section class="paper-row"><p>{t("lab-photo-title")}</p><p>{t("lab-photo-description")}</p></section>}
       </>}
       {tab === "papers" && (kept.length ? kept.map((p, i) => (
         <section key={`${p.scene}/${p.exchange}`} class="paper-row">

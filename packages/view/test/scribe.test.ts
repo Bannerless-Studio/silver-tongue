@@ -1,15 +1,19 @@
+import { fileURLToPath } from "node:url";
+import { buildCourse } from "../../../tools/src/build-course";
 import type { RenderedLine } from "@silver-tongue/core";
 import { describe, expect, it } from "vitest";
-import { isScribeScene, romanLine, romanSegments, SCRIBE_SCENES, scribeAccepts, scribeHelpAfter, scribeShowsExample } from "../src/scribe";
+import { isScribeScene, romanLine, romanSegments, scribeScenes, scribeAccepts, scribeHelpAfter, scribeShowsExample } from "../src/scribe";
+
+const course = buildCourse(fileURLToPath(new URL("../../../content", import.meta.url)), "ko-seoul").course!;
 
 const line = (text: string, spans: [number, number][]): RenderedLine => ({ text, tokens: spans.map(([start, end], i) => ({ start, end, word: `w${i}` })) });
 
 describe("scribe scenes", () => {
   it("are the first two", () => {
-    expect(SCRIBE_SCENES).toEqual(["room-wake", "street-hello", "stall-lead", "street-introductions"]);
-    expect(isScribeScene("room-wake")).toBe(true);
-    expect(isScribeScene("street-again")).toBe(false);
-    expect(isScribeScene(undefined)).toBe(false);
+    expect(scribeScenes(course)).toEqual(["room-wake", "street-hello", "stall-lead", "street-introductions"]);
+    expect(isScribeScene(course, "room-wake")).toBe(true);
+    expect(isScribeScene(course, "street-again")).toBe(false);
+    expect(isScribeScene(course, undefined)).toBe(false);
   });
 });
 
@@ -24,10 +28,10 @@ describe("the fading", () => {
 
 describe("accepts", () => {
   it("belong to a source line, with no unrelated pronoun exceptions", () => {
-    expect(scribeAccepts("street-introductions", "who")).toContain("who");
-    expect(scribeAccepts("room-wake", "friend")).toContain("minjun friend");
-    expect(scribeAccepts("street-introductions", "ask")).toContain("name what");
-    expect(scribeAccepts("unknown", "who")).toEqual([]);
+    expect(scribeAccepts(course, "street-introductions", "who")).toContain("who");
+    expect(scribeAccepts(course, "room-wake", "friend")).toContain("minjun friend");
+    expect(scribeAccepts(course, "street-introductions", "ask")).toContain("name what");
+    expect(scribeAccepts(course, "unknown", "who")).toEqual([]);
   });
 });
 

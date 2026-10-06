@@ -1,6 +1,6 @@
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { extra, readsAs, romanize } from "@silver-tongue/view";
+import { deskPapers, extra, readsAs, romanize } from "@silver-tongue/view";
 import { buildCourse } from "../src/build-course";
 import { paperMessageIds, paperProblems } from "../src/papers";
 
@@ -8,6 +8,11 @@ const CONTENT = fileURLToPath(new URL("../../content", import.meta.url));
 const ok = { papers: [{ id: "idcard", kind: "card", names: "room", lines: [{ id: "name", text: "김민준" }, { id: "born", text: "760314", say: "칠육공삼일사" }] }] };
 
 describe("papers.json", () => {
+  it("accepts a friend reward and rejects invalid reward ids", () => {
+    expect(paperProblems({ papers: [{ ...ok.papers[0], reward: "friend" }] }, ["room"])).toEqual([]);
+    expect(paperProblems({ papers: [{ ...ok.papers[0], reward: "a b" }] }, ["room"]).join("\n")).toContain("reward must be a simple id");
+  });
+
   it("accepts a well-formed desk", () => expect(paperProblems(ok, ["room"])).toEqual([]));
 
   it.each([
@@ -31,7 +36,8 @@ describe("ko-seoul's desk", () => {
 
   it("builds without errors, three papers, each line with a clip", () => {
     expect(errors).toEqual([]);
-    expect(papers.map((p) => p.id)).toEqual(["idcard", "newspaper", "bill"]);
+    expect(deskPapers(course!).map((p) => p.id)).toEqual(["idcard", "newspaper", "bill"]);
+    expect(papers.map((p) => p.id)).toEqual(["idcard", "newspaper", "bill", "stall-card"]);
     for (const l of papers.flatMap((p) => p.lines)) expect(l.audio?.length).toBeGreaterThan(0);
   });
 

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { RenderedLine, WordId } from "@silver-tongue/core";
-import { displayGloss, freshOnReply, freshOnTheirLine, lineMeaning, meaningMatches, romanLine, romanSegments, scribeAccepts, scribeReplyId, soundedTokens, scribeHelpAfter, scribeShowsExample } from "@silver-tongue/view";
+import { displayGloss, freshOnReply, freshOnTheirLine, lineMeaning, meaningMatches, romanLine, romanSegments, scribeAccepts, scribeScene, scribeReplyId, soundedTokens, scribeHelpAfter, scribeShowsExample } from "@silver-tongue/view";
 import { Line } from "./Line";
 import type { Quiet, QuietView } from "../quiet";
 import { replyOrder, type Exchange } from "../stage";
@@ -72,9 +72,9 @@ export function ScribeTheir({ q, ex, held, onWord, children }: {
   const segs = romanSegments(line);
   const run = q.core.state.run!;
   const source = course.scenes.find((s) => s.id === run.scene)!.exchanges[run.exchange].id;
-  const accepts = scribeAccepts(run.scene, source, q.core.state.player);
+  const accepts = scribeAccepts(course, run.scene, source, q.core.state.player);
   const sounded = soundedTokens(course, q.readPapers(), line);
-  const glosses = run.scene === "room-wake" || (!solved && round.help >= 1);
+  const glosses = scribeScene(q.course, run.scene)?.glosses || (!solved && round.help >= 1);
   // Help first, hands off later: a word never met shows its gloss, a met one only when help asks.
   const fresh = freshOnce(q, `${course.id}:${ex.line.id}:line`, () => freshOnTheirLine(ex.shown, q.core.state.words, ex.line.line ?? ex.shown));
   const set = (change: Partial<Round>) => updateRound(q, course.id, ex.line.id, change);
@@ -105,7 +105,7 @@ export function ScribeTheir({ q, ex, held, onWord, children }: {
         meaning && <p class="say-mean">{meaning}</p>
       ) : (
         !held && (
-          <Field placeholder={t(run.scene === "room-wake" ? "quiet-scribe-hear-door" : "quiet-scribe-hear")} onTry={onTry} hot={round.misses >= scribeHelpAfter(round.index)} helpLabel={t("quiet-read-help")}
+          <Field placeholder={t(scribeScene(q.course, run.scene)?.prompt ?? "quiet-scribe-hear")} onTry={onTry} hot={round.misses >= scribeHelpAfter(round.index)} helpLabel={t("quiet-read-help")}
             onHelp={() => set({ help: Math.min(2, round.help + 1) as Round["help"] })}>
             {scribeShowsExample(round.index) && <p class="example">{t("quiet-scribe-example", { line: romanLine(line), meaning })}</p>}
             {round.help >= 2 && <p class="rh-full">{t("quiet-scribe-full", { meaning })}</p>}
@@ -152,7 +152,7 @@ export function ScribeSlips({ q, view, ex }: { q: Quiet; view: QuietView; ex?: E
   if (!round.solved && lineMeaning(ex.shown)) return null;
   const run = q.core.state.run!;
   const source = q.course.scenes.find((s) => s.id === run.scene)!.exchanges[run.exchange].id;
-  const accepts = (o: RenderedLine) => scribeAccepts(run.scene, scribeReplyId(q.course, run.scene, source, o, q.core.state.player), q.core.state.player);
+  const accepts = (o: RenderedLine) => scribeAccepts(q.course, run.scene, scribeReplyId(q.course, run.scene, source, o, q.core.state.player), q.core.state.player);
   const ties = round.ties;
   const setTies = (ties: number[]) => updateRound(q, q.course.id, ex.line.id, { ties });
   const order = replyOrder(p.options, ex.missed);
@@ -176,25 +176,25 @@ export function ScribeSlips({ q, view, ex }: { q: Quiet; view: QuietView; ex?: E
             <span class="slip-text" lang={q.course.language.locale}>{o.text}</span>
             <span class="slip-text" lang={`${q.course.language.code}-Latn`}>
               {romanSegments(o).map((sg, k) =>
-                sg.word !== undefined && (run.scene === "room-wake" || fresh.has(sg.word)) ? (
+                sg.word !== undefined && (scribeScene(q.course, run.scene)?.glosses || fresh.has(sg.word)) ? (
                   <span key={k} class="sw"><span>{sg.text}</span><span class="sw-g">{displayGloss(q.course.words[sg.word])}</span></span>
                 ) : (
                   <span key={k}>{sg.text}</span>
                 ),
               )}
             </span>
-            {(round.rHelp || run.scene === "room-wake") && <span class="slip-mean">{meaningOf(o)}</span>}
-            {run.scene === "room-wake" && <span class="slip-mean">{o.intent}</span>}
+            {(round.rHelp || scribeScene(q.course, run.scene)?.glosses) && <span class="slip-mean">{meaningOf(o)}</span>}
+            {scribeScene(q.course, run.scene)?.glosses && <span class="slip-mean">{o.intent}</span>}
           </>;
           const cls = `slip scribe-slip${tried.has(o.text) ? " tried" : ""}`;
-          return run.scene === "room-wake" ? (
+          return scribeScene(q.course, run.scene)?.select ? (
             <div key={i} role="listitem"><button type="button" class={`${cls} selectable`} onClick={() => q.choose(i)}>{content}</button></div>
           ) : (
             <div key={i} role="listitem" tabIndex={0} class={cls}>{content}</div>
           );
         })}
       </div>
-      {run.scene !== "room-wake" && (ties.length ? (
+      {!scribeScene(q.course, run.scene)?.select && (ties.length ? (
         <div role="group" aria-label={t("quiet-scribe-choose")}>
           <p>{t("quiet-scribe-choose")}</p>
           {ties.map((i) => <button type="button" class="slip" onClick={() => { setTies([]); q.choose(i); }}>{p.options[i].text} · {p.options[i].intent ?? meaningOf(p.options[i])}</button>)}

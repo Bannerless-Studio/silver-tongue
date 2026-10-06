@@ -5,6 +5,7 @@ import { fromLocalStorage, labKeyValue, LAB_PREFIX, WebSessions } from "@silver-
 import { deskKey, lookupHintKey, papersKey, scribeCountKey } from "@silver-tongue/view";
 import { DOOR_LAB_PREFIX, installPageStorage, pageStorage } from "../src/storage";
 import { finishTilesHint, tilesHintDone } from "../src/ui/Stage";
+import { emptyOpeningChoices } from "../src/door-choices";
 import { openingKey, openingStore, scribeRound } from "../src/scribe";
 
 function fakeLocalStorage(): Storage & { map: Map<string, string> } {
@@ -50,7 +51,7 @@ describe("page storage under the lab wrapper", () => {
     expect(keys).toEqual([scribeCountKey("ko-seoul").replace("silver-tongue:", DOOR_LAB_PREFIX)]);
   });
 
-  it("isolates old sessions, settings, paper positions, counters and photo state on the same origin", () => {
+  it("isolates old sessions, settings, paper positions, counters and opening choices on the same origin", () => {
     const course = fixtureWithText();
     const old = labKeyValue(fromLocalStorage(ls));
     const sessions = new WebSessions(old, course, () => 1000);
@@ -62,7 +63,7 @@ describe("page storage under the lab wrapper", () => {
     expect(fresh.list()).toEqual([]);
     expect(fresh.continueLast().state).toEqual(newGame(course));
     for (const k of keys) expect(pageStorage().getItem(k), k).toBeNull();
-    expect(openingStore(course.id, "legacy").load()).toBeUndefined();
+    expect(openingStore(course, "legacy").load()).toEqual(emptyOpeningChoices());
     fresh.save("door", { ...newGame(course), day: 2 });
     for (const k of keys) pageStorage().setItem(k, "door value");
     expect(new WebSessions(labKeyValue(fromLocalStorage(ls), DOOR_LAB_PREFIX), course, () => 3000).continueLast().state.day).toBe(2);

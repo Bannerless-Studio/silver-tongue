@@ -13,6 +13,7 @@ import { DEV_GAME, devClock, driveTo, lastScreen, maxScreen, setSkipCrawl } from
 import { doorExperimentOn, openingStore, writeCount } from "./scribe";
 import { Title } from "./ui/Title";
 import { createQuiet, type PaperStore, type Quiet } from "./quiet";
+import { prepareDoorCourse } from "./door-choices";
 import { opensOnStory } from "./opening";
 
 /** The game's version (packages/tui-node/package.json), put in by the build. */
@@ -52,7 +53,7 @@ let ruby: RubySetting = DEFAULT_RUBY;
 
 /** Fetches a course file and its sound, and moves its old games. */
 async function load(entry: CatalogEntry, learner: string): Promise<Loaded> {
-  const course = await fetchJson<Course>(`${base}${entry.id}/${learner}.json`);
+  const course = prepareDoorCourse(await fetchJson<Course>(`${base}${entry.id}/${learner}.json`), lab);
   migrateWebAliases(kv, course);
   return {
     course,
@@ -144,7 +145,7 @@ function play(opened: Opened, prepare?: (q: Quiet) => void) {
     save: opened.readOnly ? undefined : (s) => store.save(opened.id, s),
     papers: paperStore(kv, l.course.id),
     lab,
-    openingChoice: doorExperimentOn(l.course, lab) ? openingStore(l.course.id, opened.id) : undefined,
+    openingChoice: doorExperimentOn(l.course, lab) ? openingStore(l.course, opened.id) : undefined,
   });
   prepare?.(quiet);
   current = { id: opened.id, readOnly: opened.readOnly, state: () => core.state };

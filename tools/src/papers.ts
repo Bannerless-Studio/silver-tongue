@@ -4,7 +4,7 @@ import { lineClips, type Clip, type Voices } from "./voices";
 /** Ids end up in storage and clip lookups, so they stay simple. */
 const NAME = /^[A-Za-z0-9_-]+$/;
 const KINDS = new Set(["card", "masthead", "bill"]);
-const PAPER_KEYS = new Set(["id", "kind", "names", "lines", "required"]);
+const PAPER_KEYS = new Set(["id", "kind", "names", "lines", "required", "reward"]);
 const LINE_KEYS = new Set(["id", "text", "say"]);
 /** What a paper may say: Hangul syllables, digits, spaces and punctuation. No English, ever. */
 const PAPER_TEXT = /^[가-힣0-9\s.,:\-/()·~]+$/u;
@@ -24,6 +24,7 @@ export function paperProblems(json: unknown, places: string[]): string[] {
     ids.add(id);
     for (const k of Object.keys(p ?? {})) if (!PAPER_KEYS.has(k)) errors.push(`${where}: unknown field "${k}"`);
     if (typeof p?.kind !== "string" || !KINDS.has(p.kind)) errors.push(`${where}: kind must be one of ${[...KINDS].join(", ")}`);
+    if (p?.reward !== undefined && (typeof p.reward !== "string" || !NAME.test(p.reward))) errors.push(`${where}: reward must be a simple id`);
     if (p?.names !== undefined && (typeof p.names !== "string" || !places.includes(p.names))) errors.push(`${where}: names "${String(p.names)}" is not a place`);
     if (!Array.isArray(p?.lines) || p.lines.length === 0) {
       errors.push(`${where}: "lines" must be a non-empty list`);
