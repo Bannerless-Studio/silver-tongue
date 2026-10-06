@@ -955,86 +955,158 @@
 }
 # End of Chinese small talk.
 
-# Korean small talk at the copy shop (ko-seoul stage 2).
--cc-photo = { $form ->
-    [reply] Yes, it's a photo.
-   *[base] Is this a photo?
+# Korean small talk at the snack stall (ko-seoul stage 1).
+-cs-grandpa = { $form ->
+    [reply] Yes, it's Grandpa Park. He's a friend.
+   *[base] Who's the old man over there? Do you know his name?
 }
+-cs-paper = { $form ->
+    [reply] No, it's Grandpa's newspaper.
+   *[base] What's that? Grandpa's book?
+}
+-cs-korean = { $form ->
+    [reply] No, I don't. Please speak slowly.
+   *[base] Do you know Korean?
+}
+-cs-fast = { $form ->
+    [reply] Sorry? Please say it again.
+   *[base] Twogimbapthreefishcakefourtteokbokki!
+}
+-cs-again = { $form ->
+    [reply] Please say it slowly.
+   *[base] Fivefishcakefourgimbap!
+}
+-cs-sorry = { $form ->
+    [reply] I'm fine. Sorry.
+   *[base] What's wrong? Are you all right? Sit down.
+}
+-cs-sit = { $form ->
+    [reply] Thank you. Let's eat together.
+   *[base] Sit here. Shall we eat together?
+}
+-cs-want = { $form ->
+    [reply] I want tteokbokki.
+   *[base] What shall we eat?
+}
+-cs-fishcake = { $form ->
+    [reply] No, I won't. Sorry.
+   *[base] Will you have some tteokbokki? It's good.
+}
+-cs-tasty = { $form ->
+    [reply] Yes, it's really good! I want to eat here.
+   *[base] The tteokbokki's good, isn't it?
+}
+-cs-money = { $form ->
+    [reply] About three thousand won.
+   *[base] Have you got money? How much?
+}
+-cs-shop = { $form ->
+    [reply] No, there's milk and bread too.
+   *[base] Is there no milk at the shop over there?
+}
+-cs-notfish = { $form ->
+    [reply] No, it's not gimbap. It's tteokbokki.
+   *[base] Is that gimbap?
+}
+
+# Korean small talk at the shop (ko-seoul stage 1).
+-ch-grandpa = { $form ->
+    [reply] Yes, I'm his friend.
+   *[base] Are you Grandpa Park's friend?
+}
+-ch-where = { $form ->
+    [reply] Yes, to the snack stall.
+   *[base] Where are you off to? The snack stall?
+}
+-ch-paper = { $form ->
+    [reply] OK, the newspaper too, please.
+   *[base] There's a newspaper too. Grandpa's paper.
+}
+-ch-sorry = { $form ->
+    [reply] Yes, it's all right.
+   *[base] Sorry. Are we all right?
+}
+-ch-why = { $form ->
+    [reply] No, I have money. Here you go.
+   *[base] What's wrong? No money?
+}
+-ch-again = { $form ->
+    [reply] Sorry? Please say it again.
+   *[base] Milkthousandbreadthousand!
+}
+-ch-book = { $form ->
+    [reply] Yes, it's a Korean book.
+   *[base] Is this a Korean book? Good!
+}
+-ch-hungry = { $form ->
+    [reply] No, I'm fine.
+   *[base] Hungry? We have bread.
+}
+
+# Korean small talk at the copy shop (ko-seoul stage 2).
 -cc-brother = { $form ->
-    [reply] No, I don't.
-   *[base] Do you have a little brother or sister?
+    [reply] Yes, it's Min-jun. He's not around now.
+   *[base] Do you know Ji-woo's little brother?
 }
 -cc-rent = { $form ->
-    [reply] Yes, I have.
-   *[base] Have you paid your rent?
-}
--cc-week = { $form ->
-    [reply] Yes, fifty thousand a week.
-   *[base] Is the rent fifty thousand won a week?
-}
--cc-now = { $form ->
-    [reply] No, I'm fine for now.
-   *[base] Are you hungry now?
-}
--cc-letter = { $form ->
-    [reply] Whose letter is it?
-   *[base] Look at this. It's a letter.
-}
--cc-student = { $form ->
-    [reply] Yes, a university student.
-   *[base] Is Min-jun a student?
-}
--cc-school = { $form ->
-    [reply] No, I came from the snack stall.
-   *[base] Did you come from the university?
+    [reply] Yes, fifty thousand won a week.
+   *[base] Have you paid your rent? How much a week?
 }
 -cc-march = { $form ->
     [reply] Yes, until March.
-   *[base] Are you working until March?
-}
--cc-sujin = { $form ->
-    [reply] She's at the university.
-   *[base] Where is Su-jin?
-}
--cc-sit = { $form ->
-    [reply] Thank you.
-   *[base] Sit here.
-}
--cc-book = { $form ->
-    [reply] Yes, books too.
-   *[base] Do you copy books?
-}
--cc-copy = { $form ->
-    [reply] No, I'm copying a photo.
-   *[base] Are you copying a letter?
-}
--cc-room = { $form ->
-    [reply] I'm in Min-jun's room.
-   *[base] Have you got a room?
-}
--cc-stall = { $form ->
-    [reply] Yes, it's Ji-woo's.
-   *[base] Do you know the snack stall?
+   *[base] Did Min-jun pay his rent until March?
 }
 -cc-since = { $form ->
     [reply] No, not since March.
-   *[base] Min-jun hasn't come in since March?
+   *[base] Min-jun hasn't been coming to the university?
 }
 -cc-took = { $form ->
     [reply] Yes, Min-jun took them.
-   *[base] Did Min-jun take the books?
+   *[base] Did Min-jun take his books?
 }
 -cc-debt = { $form ->
     [reply] Yes, a hundred thousand won.
-   *[base] Did Min-jun borrow money?
+   *[base] Did Min-jun borrow money? How much?
 }
 -cc-when = { $form ->
-    [reply] I'll come again next week.
-   *[base] When are you coming again?
+    [reply] No, I'll come again tomorrow.
+   *[base] When are you coming in again? Next week?
+}
+-cc-copy = { $form ->
+    [reply] No, I'm copying a letter.
+   *[base] What are you copying? A photo?
 }
 -cc-notstudent = { $form ->
     [reply] No, I'm not a student.
-   *[base] Are you a student?
+   *[base] Are you a student? At the university?
+}
+-cc-shop = { $form ->
+    [reply] Yes, I do! I'll be back tomorrow.
+   *[base] Do you like it here at the copy shop?
+}
+-cc-room = { $form ->
+    [reply] I'm in Min-jun's room.
+   *[base] Where are you staying now?
+}
+-cc-photo = { $form ->
+    [reply] It's a photo of Min-jun.
+   *[base] Look at this. Whose photo is it?
+}
+-cc-letter = { $form ->
+    [reply] Yes, it's Min-jun's letter.
+   *[base] Whose letter is it? Did it come from the university?
+}
+-cc-stall = { $form ->
+    [reply] Yes, it's good! Let's go and eat there.
+   *[base] Do you know Ji-woo's snack stall? The tteokbokki's good, isn't it?
+}
+-cc-sujin = { $form ->
+    [reply] Yes, she's at the university.
+   *[base] Do you know Su-jin? Where is she now?
+}
+-cc-hungry = { $form ->
+    [reply] No, I'm fine. I ate gimbap before I came.
+   *[base] Are you hungry now? Shall we have some gimbap?
 }
 
 -letter = { $form ->

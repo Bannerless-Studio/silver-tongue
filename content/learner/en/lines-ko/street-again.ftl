@@ -7,7 +7,7 @@ fast-alt2 = Thank you.
 fast-alt2-intent = Thank him
 
 again = Whereareyougoing? Where?
-again-reply = Please say it again.
+again-reply = Sorry? Again?
 again-reply-intent = Ask him to repeat it
 again-alt1 = No.
 again-alt1-intent = Say no
