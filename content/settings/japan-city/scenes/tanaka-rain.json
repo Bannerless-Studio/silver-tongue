@@ -1,0 +1,74 @@
+{
+ "id": "tanaka-rain",
+ "place": "shotengai",
+ "npc": "tanaka",
+ "stage": 1,
+ "after": [
+  "ramen-shift"
+ ],
+ "requires": {},
+ "repeatable": false,
+ "trustGain": 1,
+ "exchanges": [
+  {
+   "id": "today",
+   "slots": {},
+   "expect": {
+    "action": "today"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "falling",
+   "slots": {},
+   "expect": {
+    "action": "falling"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "cold",
+   "slots": {},
+   "expect": {
+    "action": "cold"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "umbrella",
+   "slots": {},
+   "expect": {
+    "action": "umbrella"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "lend",
+   "slots": {},
+   "expect": {
+    "action": "lend"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "bye",
+   "slots": {},
+   "expect": {
+    "action": "bye"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  }
+ ]
+}

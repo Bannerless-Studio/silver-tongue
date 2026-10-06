@@ -4,6 +4,14 @@ welcome-reply-intent = Say hello
 welcome-alt1 = Goodbye.
 welcome-alt1-intent = Say goodbye
 
+place = This is a ramen shop.
+place-reply = A ramen shop?
+place-reply-intent = Repeat what it is
+place-alt1 = Good night.
+place-alt1-intent = Say good night
+place-alt2 = It's my room.
+place-alt2-intent = Say it's your room
+
 ate = Have you eaten ramen?
 ate-reply = No, I haven't.
 ate-reply-intent = Say no

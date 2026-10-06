@@ -18,6 +18,161 @@
    *[base] Goodbye
 }
 
+
+
+
+
+
+# Japanese small talk at the ramen shop and the convenience store (ja-japan).
+-rt-nihongo = { $form ->
+    [reply] Yes, I understand Japanese!
+   *[base] Do you understand Japanese?
+}
+-rt-namae = { $form ->
+    [reply] No, I don't know your name.
+   *[base] Do you know my name?
+}
+-rt-ooya = { $form ->
+    [reply] I don't know the landlady's name.
+   *[base] Do you know the landlady's name?
+}
+-rt-heya = { $form ->
+    [reply] Yes, the landlady's room.
+   *[base] Do you have a room?
+}
+-rt-kagi = { $form ->
+    [reply] Yes, here. It's the room key.
+   *[base] Do you have your room key?
+}
+-rt-kore = { $form ->
+    [reply] Yes, it's my room key.
+   *[base] Is this a key?
+}
+-rt-yachin = { $form ->
+    [reply] Yes, five thousand yen every week.
+   *[base] The rent is five thousand yen a week, isn't it.
+}
+-rt-sen = { $form ->
+    [reply] No, five thousand.
+   *[base] Is the rent a thousand yen?
+}
+-rt-okane = { $form ->
+    [reply] Yes, I have money.
+   *[base] Have you got money? The rent is every week, you know.
+}
+-rt-ramen = { $form ->
+    [reply] Yes, I have!
+   *[base] Have you eaten the ramen-shop ramen?
+}
+-rt-ashita = { $form ->
+    [reply] Yes, I'll work tomorrow too.
+   *[base] Will you work here tomorrow too?
+}
+-rt-sore = { $form ->
+    [reply] No, that's tea.
+   *[base] Is that water?
+}
+-rt-sayonara = { $form ->
+    [reply] Goodbye, Mr Tanaka. See you tomorrow!
+   *[base] Goodbye, Mr Tanaka!
+}
+-rt-yo = { $form ->
+    [reply] Yes, I know.
+   *[base] There's water, and tea too.
+}
+-rt-oyasumi = { $form ->
+    [reply] Good night. See you tomorrow.
+   *[base] Well, till tomorrow. Good night.
+}
+-rt-yoroshiku = { $form ->
+    [reply] Yes, let's.
+   *[base] Let's work well together tomorrow too.
+}
+-kt-ame = { $form ->
+    [reply] Yes, it's raining. It's cold.
+   *[base] Rain again today. It's cold, isn't it.
+}
+-kt-furu = { $form ->
+    [reply] No, it isn't raining.
+   *[base] Is it raining?
+}
+-kt-kasa = { $form ->
+    [reply] Yes, I have Mr Tanaka's umbrella.
+   *[base] Do you have an umbrella?
+}
+-kt-kara = { $form ->
+    [reply] From five until ten.
+   *[base] What time does your work start?
+}
+-kt-mizu = { $form ->
+    [reply] No, it isn't water. It's tea.
+   *[base] Is this water?
+}
+-kt-made = { $form ->
+    [reply] Yes, until ten.
+   *[base] Does your work go until ten?
+}
+-kt-mainichi = { $form ->
+    [reply] Yes, I work every day.
+   *[base] Do you work every day?
+}
+-kt-oishii = { $form ->
+    [reply] Yes, it's cheap, but it's good.
+   *[base] Is the ramen at the ramen shop good?
+}
+-kt-takai = { $form ->
+    [reply] No, they're not expensive. They're cheap.
+   *[base] Are rice balls expensive?
+}
+-kt-yasui = { $form ->
+    [reply] Yes, they're not expensive. They're good.
+   *[base] The store's rice balls are cheap, aren't they.
+}
+-kt-nomu = { $form ->
+    [reply] Yes, I'll have some tea.
+   *[base] It's cold, isn't it. Won't you have some tea?
+}
+-kt-doko = { $form ->
+    [reply] I'm going to the ramen shop.
+   *[base] Where are you going?
+}
+-kt-asu = { $form ->
+    [reply] Tomorrow I come from five too.
+   *[base] What time are you coming tomorrow?
+}
+-kt-nanji = { $form ->
+    [reply] I'm going home at ten.
+   *[base] What time are you going home today?
+}
+-kt-issho = { $form ->
+    [reply] Yes, we went together.
+   *[base] Did you go with Mr Tanaka?
+}
+-kt-kau = { $form ->
+    [reply] I'll buy bread and tea.
+   *[base] What will you buy?
+}
+-kt-ja = { $form ->
+    [reply] Sorry. It's not tea, is it.
+   *[base] That's not tea, you know.
+}
+-kt-tabetai = { $form ->
+    [reply] I want to eat ramen.
+   *[base] What do you want to eat?
+}
+-kt-konbini = { $form ->
+    [reply] Yes, I come to the store every day.
+   *[base] Do you come to the convenience store every day?
+}
+-kt-kimasu = { $form ->
+    [reply] Yes, I'm coming tomorrow too.
+   *[base] Are you coming tomorrow too?
+}
+-umbrella = { $form ->
+    [cap] Umbrella
+   *[base] umbrella
+}
+
 -tea = { $form ->
     [cap] Tea
    *[base] tea
