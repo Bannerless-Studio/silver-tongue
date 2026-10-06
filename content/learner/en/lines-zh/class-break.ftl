@@ -22,8 +22,8 @@ pets-alt1-intent = Say that's great
 pets-alt2 = This book is good!
 pets-alt2-intent = Praise the book
 
-films = I love films! You?
-films-reply = I love films!
+films = What do you love watching?
+films-reply = I love watching films!
 films-reply-intent = Say you love films
 films-alt1 = I don't have a cat.
 films-alt1-intent = Say you have no cat
@@ -46,10 +46,18 @@ fruit-alt1-intent = Say you have no cat
 fruit-alt2 = I love films!
 fruit-alt2-intent = Say you love films
 
-bye = The teacher's back! Write!
+bye = You're welcome! The teacher's back! Write!
 bye-reply = OK, writing!
 bye-reply-intent = Get writing
 bye-alt1 = I love films!
 bye-alt1-intent = Say you love films
 bye-alt2 = Thanks!
 bye-alt2-intent = Thank him
+
+chat = { -topic }
+chat-reply = { -topic(form: "reply") }
+chat-reply-intent = Answer David
+
+chat-2 = { -topic }
+chat-2-reply = { -topic(form: "reply") }
+chat-2-reply-intent = Answer David

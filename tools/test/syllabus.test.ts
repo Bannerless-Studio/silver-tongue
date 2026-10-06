@@ -49,6 +49,13 @@ describe("grammar detectors", () => {
     expect(has("어디에 갑니까?", "because-nikka")).toBe(false);
   });
 
+  it("honorific -(으)시-, but not let's -(으)ㅂ시다", () => {
+    expect(has("할아버지가 오셨어요.", "honorific")).toBe(true);
+    expect(has("같이 일합시다!", "honorific")).toBe(false);
+    expect(has("같이 일합시다!", "lets")).toBe(true);
+    expect(has("네? 다시요.", "honorific")).toBe(false);
+  });
+
   it("-기 as a noun, but not 여기가", () => {
     expect(has("요리하기가 어려워요.", "nominal-gi")).toBe(true);
     expect(has("여기가 어디예요?", "nominal-gi")).toBe(false);

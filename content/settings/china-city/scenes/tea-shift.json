@@ -9,7 +9,11 @@
   "trustGain": 1,
   "exchanges": [
     { "id": "pour", "slots": { "amount": "numbers_3_10", "drink": "drinks" }, "expect": { "action": "pour", "amount": "$amount", "drink": "$drink" }, "hinges": ["$amount", "$drink"], "pay": 6, "missCost": 1 },
+    { "id": "chat-d", "slots": { "topic": "chat_tea" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
+    { "id": "chat-a", "slots": { "topic": "chat_tea" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
     { "id": "table", "slots": { "people": "numbers_3_5" }, "expect": { "action": "seat", "people": "$people" }, "hinges": ["$people"], "pay": 2, "missCost": 1 },
-    { "id": "busy", "slots": {}, "expect": { "action": "busy" }, "hinges": [], "pay": 2, "missCost": 0 }
+    { "id": "chat-b", "slots": { "topic": "chat_tea" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
+    { "id": "chat-c", "slots": { "topic": "chat_tea" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
+    { "id": "busy", "slots": { }, "expect": { "action": "busy" }, "hinges": [], "pay": 2, "missCost": 0 }
   ]
 }

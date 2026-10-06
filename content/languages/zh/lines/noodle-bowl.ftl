@@ -17,7 +17,7 @@ noodles-reply = 好！谢谢！
 noodles-alt1 = 我叫{ $player }。
 noodles-alt2 = 再见！
 
-like = 你喜欢面条吗？
+like = 不客气！你喜欢面条吗？
 like-reply = 喜欢！我很喜欢。
 like-alt1 = 老王是我朋友。
 like-alt2 = 你好吗？

@@ -19,6 +19,16 @@
    "missCost": 0
   },
   {
+   "id": "mistaken",
+   "slots": {},
+   "expect": {
+    "action": "mistaken"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
    "id": "friend",
    "slots": {},
    "expect": {
@@ -41,6 +51,16 @@
    "slots": {},
    "expect": {
     "action": "who"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "name",
+   "slots": {},
+   "expect": {
+    "action": "name"
    },
    "hinges": [],
    "pay": 0,
