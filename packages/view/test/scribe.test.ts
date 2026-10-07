@@ -28,8 +28,8 @@ describe("the fading", () => {
 
 describe("accepts", () => {
   it("belong to a source line, with no unrelated pronoun exceptions", () => {
-    expect(scribeAccepts(course, "street-introductions", "who")).toContain("who");
-    expect(scribeAccepts(course, "room-wake", "friend")).toContain("minjun friend");
+    expect(scribeAccepts(course, "room-wake", "who")).toContain("who");
+    expect(scribeAccepts(course, "room-wake", "missing")).toContain("where minjun");
     expect(scribeAccepts(course, "street-introductions", "ask")).toContain("name what");
     expect(scribeAccepts(course, "unknown", "who")).toEqual([]);
   });

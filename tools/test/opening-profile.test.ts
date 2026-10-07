@@ -11,13 +11,13 @@ function fixture() {
   const options = Object.fromEntries(["reply", "alt1", "alt2", "silence"].map((option) => [option, { reaction: `reaction-${option}`, consequence: `later-${option}`, at: "intro" }]));
   const source: OpeningSource = {
     scenes: { intro: { glosses: true, prompt: "prompt" } },
-    choices: { "intro:greet": options },
+    choices: { "intro:greet": options, "intro:menu": { reply: { reaction: "menu-reply" }, silence: { reaction: "menu-silence" } } },
     reward: { choice: "intro:greet", option: "reply", paper: "kept-card", place: "street", decoded: "decoded" },
     arrival: { scene: "intro", choice: "intro:greet", branches: { alt1: { text: "arrive", menu: "menu", audioWords: ["w_ni", "w_hao"] } }, fallback: { text: "arrive", menu: "menu" } },
     directions: { "intro:greet": "before" },
   };
   source.choices["intro:greet"].alt1.audioWords = ["w_ni", "w_hao"];
-  const messages = new Set(["prompt", "decoded", "arrive", "menu", "before", ...Object.values(options).flatMap((effect) => [effect.reaction, effect.consequence])]);
+  const messages = new Set(["prompt", "decoded", "arrive", "menu", "before", ...Object.values(options).flatMap((effect) => [effect.reaction, effect.consequence]), "menu-reply", "menu-silence"]);
   return { course, source, messages };
 }
 
@@ -39,6 +39,14 @@ describe("content-declared opening profile", () => {
     if (kind === "paper") source.reward.paper = "missing";
     if (kind === "message") messages.delete("before");
     expect(compileOpening(source, course, messages).errors.length).toBeGreaterThan(0);
+  });
+  it("rejects an opening option with no reaction, and an arrival branch that is not an option", () => {
+    const missing = fixture();
+    delete (missing.source.choices["intro:menu"] as Record<string, unknown>).silence;
+    expect(compileOpening(missing.source, missing.course, missing.messages).errors).toContain('opening.json: no reaction for "intro:menu/silence"');
+    const stray = fixture();
+    (stray.source.arrival.branches as Record<string, unknown>).alt3 = { text: "arrive", menu: "menu" };
+    expect(compileOpening(stray.source, stray.course, stray.messages).errors).toContain('opening.json: arrival branch "alt3" is not an option of "intro:greet"');
   });
   it("accepts current learner fragments and rejects removed lines or stale meanings", () => {
     const { course } = fixture();

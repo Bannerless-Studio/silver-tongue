@@ -1,10 +1,8 @@
-# You greet him, then show the ID.
+# The old man on the bench heard the landlady. If you greet him, he gives you the stall's card.
+
 hello = 안녕하세요.
 hello-reply = 안녕하세요.
-hello-alt1 = 아니요.
-hello-alt2 = 민준 씨?
 
-idcard = 민준 씨?
-idcard-reply = 네.
-idcard-alt1 = 아니요.
-idcard-alt2 = 몰라요.
+rent = 방세?
+rent-reply = 네.
+rent-alt1 = 아니요.

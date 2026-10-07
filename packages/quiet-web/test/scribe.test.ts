@@ -49,9 +49,9 @@ describe("rounds", () => {
   });
   afterEach(() => void delete (globalThis as { localStorage?: Storage }).localStorage);
 
-  it("persists both friendship choices across recreated stores, isolated by saved game", () => {
-    for (const friend of ["reply", "alt1"] as const) {
-      const choices: OpeningChoices = { options: { "room-wake:friend": friend, "street-hello:hello": "silence" }, cardAt: 0, cardRead: friend === "reply" };
+  it("persists the old man's card choice either way across recreated stores, isolated by saved game", () => {
+    for (const hello of ["reply", "silence"] as const) {
+      const choices: OpeningChoices = { options: { "room-wake:rent": "alt1", "street-hello:hello": hello }, cardAt: 0, cardRead: hello === "reply" };
       openingStore(realCourse, "a").save(choices);
       expect(openingStore(realCourse, "a").load()).toEqual(choices);
       expect(openingStore(realCourse, "b").load()).toEqual(emptyOpeningChoices());
@@ -134,7 +134,7 @@ describe("the real scribe scenes (ko-seoul build)", () => {
   it("sweeps EVERY scribe line: exact meanings, visible fragments, opposite negation, live keys", () => {
     const current = new Map<string, string>();
     for (const s of scenes) for (const ex of s.exchanges) for (const v of Object.values(ex.variants)) {
-      const lines: [string, RenderedLine][] = [[ex.id, v.npc], [`${ex.id}-reply`, v.reply], ...(v.alts ?? []).map((l, i): [string, RenderedLine] => [`${ex.id}-alt${i + 1}`, l]), ...Object.entries(v.altOutcomes ?? {}).flatMap(([i, outcome]): [string, RenderedLine][] => outcome.reaction ? [[`${ex.id}-alt${i}-answer`, outcome.reaction]] : [])];
+      const lines: [string, RenderedLine][] = [[ex.id, v.npc], [`${ex.id}-reply`, v.reply], ...(v.alts ?? []).map((l, i): [string, RenderedLine] => [`${ex.id}-alt${i + 1}`, l]), ...Object.entries(v.altOutcomes ?? {}).flatMap(([i, outcome]): [string, RenderedLine][] => outcome.reaction ? [[`${ex.id}-alt${Number(i) + 1}-answer`, outcome.reaction]] : [])];
       for (const [id, l] of lines) {
         const key = `${s.id}:${id}`;
         const meaning = name(l.meaning);

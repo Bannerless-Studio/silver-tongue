@@ -28,7 +28,7 @@ export function prepareDoorCourse(course: Course, lab: boolean): Course {
   return { ...course, scenes: course.scenes.map((scene) => ({ ...scene, exchanges: scene.exchanges.map((ex) => {
     if (!openingEffects(course)[`${scene.id}:${ex.id}`]) return ex;
     return { ...ex, variants: Object.fromEntries(Object.entries(ex.variants).map(([key, v]) => [key, {
-      ...v, altOutcomes: Object.fromEntries((v.alts ?? []).map((_, i) => [i, { accept: true, pay: 0, loss: 0 }])),
+      ...v, altOutcomes: Object.fromEntries((v.alts ?? []).map((_, i) => [i, { ...v.altOutcomes?.[i], accept: true, pay: 0, loss: 0 }])),
     }])) };
   }) })) };
 }

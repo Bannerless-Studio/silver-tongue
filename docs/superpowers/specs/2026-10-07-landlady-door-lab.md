@@ -1,3 +1,7 @@
+> **Superseded for the story (2026-10-07 evening):** the opening's lines, choices and rewards now follow
+> `2026-10-07-landlady-door-script.md`. The friend question, the 지우네 card from the landlady and the heard-name reward
+> below are gone; the card now comes from the old man when you greet him. Mechanics (lab boundary, storage, checker) still apply.
+
 # Landlady door lab experiment
 
 The tutorial’s job is to make “the world opens through something I did” happen within about three minutes for a beginner who wants to learn but struggles to focus. These are pacing targets, not measured results.

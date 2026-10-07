@@ -21,14 +21,21 @@
    "missCost": 0
   },
   {
-   "id": "idcard",
+   "id": "rent",
    "slots": {},
    "expect": {
-    "action": "idcard"
+    "action": "rent"
    },
    "hinges": [],
    "pay": 0,
-   "missCost": 0
+   "missCost": 0,
+   "alts": {
+    "1": {
+     "accept": true,
+     "pay": 0,
+     "loss": 0
+    }
+   }
   }
  ]
 }

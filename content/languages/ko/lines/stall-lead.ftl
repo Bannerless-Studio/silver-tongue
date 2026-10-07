@@ -1,5 +1,9 @@
-# The player's stall card, heard name, or ID precedes this acknowledgement.
-recognition = 네.
-recognition-reply = 네.
-recognition-alt1 = 아니요.
-recognition-alt2 = 몰라요.
+# The woman at the food stall feeds you, then sees the face on the ID.
+
+gimbap = 김밥?
+gimbap-reply = 네.
+gimbap-alt1 = 아니요.
+
+tasty = 맛있어요?
+tasty-reply = 맛있어요.
+tasty-alt1 = 네.

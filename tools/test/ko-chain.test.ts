@@ -148,7 +148,7 @@ describe("ko-seoul's stage-1 chain", () => {
     expect(v.npc.text).toBe("안녕히 가세요.");
     expect(v.reply.text).toBe("안녕히 계세요.");
     expect(v.reply.intent).toBe("Say goodbye to Park as you leave");
-    expect(v.alts?.map((l) => l.text)).toEqual(["네, 알아요.", "아니요, 몰라요."]);
+    expect(v.alts?.map((l) => l.text)).toEqual(["감사합니다."]);
   });
 
   it("keeps the fast-question narration to observable speed and gestures", () => {
@@ -160,20 +160,26 @@ describe("ko-seoul's stage-1 chain", () => {
     }
   });
 
-  it("opens the stall directly after the greeting with no new vocabulary", () => {
+  it("opens the stall directly after the greeting; it brings only its two food words, and replies use words heard first", () => {
     const s = course!.scenes.find((s) => s.id === "stall-lead")!;
     expect(s.after).toEqual(["street-hello"]);
     expect(course!.world.places.stall.after).toEqual(["street-hello"]);
     const opening = new Set(course!.scenes.filter((s) => ["room-wake", "street-hello"].includes(s.id)).flatMap((s) => s.exchanges.flatMap((ex) => Object.values(ex.variants).flatMap((v) => [v.npc, v.reply].flatMap((l) => l.tokens.map((t) => t.word))))));
-    for (const v of s.exchanges.flatMap((ex) => Object.values(ex.variants))) for (const l of [v.npc, v.reply, ...(v.alts ?? [])]) for (const tk of l.tokens) expect(opening.has(tk.word), l.text).toBe(true);
+    const heard = new Set(opening);
+    const fresh = new Set<string>();
+    for (const v of s.exchanges.flatMap((ex) => Object.values(ex.variants))) {
+      for (const tk of v.npc.tokens) { if (!heard.has(tk.word)) fresh.add(course!.words[tk.word].w); heard.add(tk.word); }
+      for (const l of [v.reply, ...(v.alts ?? [])]) for (const tk of l.tokens) expect(heard.has(tk.word), l.text).toBe(true);
+    }
+    expect([...fresh].sort()).toEqual(["김밥", "맛있어요"]);
   });
 
-  it("keeps the door to exactly three exchanges and at most seven new lexical items", () => {
+  it("keeps the door to the script's four exchanges and at most nine new lexical items", () => {
     const door = course!.scenes.find((s) => s.id === "room-wake")!;
-    expect(door.exchanges.map((e) => e.id)).toEqual(["call", "friend", "missing"]);
+    expect(door.exchanges.map((e) => e.id)).toEqual(["call", "missing", "who", "rent"]);
     const words = new Set(door.exchanges.flatMap((ex) => Object.values(ex.variants).flatMap((v) => [v.npc, v.reply, ...(v.alts ?? [])].flatMap((l) => l.tokens.map((t) => t.word)))));
     const nonNames = [...words].filter((id) => course!.words[id].w !== "민준");
-    expect(nonNames.length).toBeLessThanOrEqual(7);
+    expect(nonNames.length).toBeLessThanOrEqual(9);
   });
 
   it("a new player plays it in order: each scene opens only after the one before, never blocked", () => {

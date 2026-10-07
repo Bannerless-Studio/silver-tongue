@@ -417,7 +417,7 @@ export function createQuiet(opts: QuietOptions): Quiet {
           }
           if (experiment) for (const [key, option] of Object.entries(choices.options)) {
             const effect = effects[key]?.[option];
-            if (effect?.at === e.scene) push({ text: t(effect.consequence), tone: "narr" });
+            if (effect?.consequence && effect.at === e.scene) push({ text: t(effect.consequence), tone: "narr" });
           }
           closing = { from: finished.to, to: nextId };
           break;

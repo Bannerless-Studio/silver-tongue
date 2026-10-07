@@ -57,7 +57,7 @@
    "id": "stall-card",
    "kind": "card",
    "names": "stall",
-   "reward": "friend",
+   "reward": "park",
    "required": [],
    "lines": [
     {

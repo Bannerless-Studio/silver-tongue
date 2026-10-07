@@ -19,17 +19,14 @@
    },
    "hinges": [],
    "pay": 0,
-   "missCost": 0
-  },
-  {
-   "id": "who",
-   "slots": {},
-   "expect": {
-    "action": "who"
-   },
-   "hinges": [],
-   "pay": 0,
-   "missCost": 0
+   "missCost": 0,
+   "alts": {
+    "1": {
+     "accept": true,
+     "pay": 0,
+     "loss": 0
+    }
+   }
   },
   {
    "id": "ask",
@@ -39,7 +36,14 @@
    },
    "hinges": [],
    "pay": 0,
-   "missCost": 0
+   "missCost": 0,
+   "alts": {
+    "1": {
+     "accept": true,
+     "pay": 0,
+     "loss": 0
+    }
+   }
   },
   {
    "id": "sit",
@@ -49,7 +53,14 @@
    },
    "hinges": [],
    "pay": 0,
-   "missCost": 0
+   "missCost": 0,
+   "alts": {
+    "1": {
+     "accept": true,
+     "pay": 0,
+     "loss": 0
+    }
+   }
   },
   {
    "id": "understand",
@@ -59,7 +70,14 @@
    },
    "hinges": [],
    "pay": 0,
-   "missCost": 0
+   "missCost": 0,
+   "alts": {
+    "1": {
+     "accept": true,
+     "pay": 0,
+     "loss": 0
+    }
+   }
   },
   {
    "id": "bye",
@@ -69,7 +87,14 @@
    },
    "hinges": [],
    "pay": 0,
-   "missCost": 0
+   "missCost": 0,
+   "alts": {
+    "1": {
+     "accept": true,
+     "pay": 0,
+     "loss": 0
+    }
+   }
   }
  ]
 }

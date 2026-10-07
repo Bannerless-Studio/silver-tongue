@@ -11,14 +11,38 @@
  "trustGain": 1,
  "exchanges": [
   {
-   "id": "recognition",
+   "id": "gimbap",
    "slots": {},
    "expect": {
-    "action": "recognition"
+    "action": "gimbap"
    },
    "hinges": [],
    "pay": 0,
-   "missCost": 0
+   "missCost": 0,
+   "alts": {
+    "1": {
+     "accept": true,
+     "pay": 0,
+     "loss": 0
+    }
+   }
+  },
+  {
+   "id": "tasty",
+   "slots": {},
+   "expect": {
+    "action": "tasty"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0,
+   "alts": {
+    "1": {
+     "accept": true,
+     "pay": 0,
+     "loss": 0
+    }
+   }
   }
  ]
 }

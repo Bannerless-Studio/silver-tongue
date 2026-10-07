@@ -50,18 +50,17 @@ describe("every opening action has an effect", () => {
     expect(checked.errors).toEqual([]);
   });
   it("enumerates the complete map with no stale exchanges or unhandled options", () => {
-    expect(sites).toHaveLength(47);
+    expect(sites).toHaveLength(36);
     expect(sites.map((s) => `${s.key}/${s.option}`).sort()).toEqual(Object.entries(OPENING_CHOICES).flatMap(([key, opts]) => Object.keys(opts).map((opt) => `${key}/${opt}`)).sort());
     for (const [key, opts] of Object.entries(OPENING_CHOICES)) {
       expect(new Set(Object.values(opts).map((e) => e!.reaction)).size, key).toBe(Object.keys(opts).length);
-      expect(new Set(Object.values(opts).map((e) => e!.consequence)).size, key).toBe(Object.keys(opts).length);
     }
   });
-  it.each(sites)("$key/$option reacts, advances, persists, and pays off visibly", ({ scene, index, key, option }) => {
+  it.each(sites)("$key/$option reacts, advances, persists, and any later line shows", ({ scene, index, key, option }) => {
     const { q, store } = start(scene, index);
     const effect = OPENING_CHOICES[key][option]!;
     expect(q.t.has(effect.reaction)).toBe(true);
-    expect(q.t.has(effect.consequence)).toBe(true);
+    if (effect.consequence) expect(q.t.has(effect.consequence)).toBe(true);
     choose(q, option);
     expect(texts(q)).toContain(q.t(effect.reaction));
     const stage = stageView(q.view().backlog, q.view().stageFrom);
@@ -75,16 +74,17 @@ describe("every opening action has an effect", () => {
     // A final choice has already ended the scene; otherwise the callback is emitted after reload.
     complete(reloaded);
     const visible = [...texts(q), ...texts(reloaded)];
-    expect(visible).toContain(q.t(effect.consequence));
+    if (effect.consequence) expect(visible).toContain(q.t(effect.consequence));
     expect(q.core.state.scenesDone[scene] || reloaded.core.state.scenesDone[scene]).toBe(1);
   });
 
-  it("walks every permutation through door → Park → stall; each completes and has distinct downstream text", () => {
+  it("walks every permutation through door → Park → stall; each completes and shows text no other path shows", () => {
     const steps = opening.flatMap((scene) => course.scenes.find((s) => s.id === scene)!.exchanges.map((ex) => ({ scene, key: `${scene}:${ex.id}`, options: Object.keys(OPENING_CHOICES[`${scene}:${ex.id}`]) as OpeningOption[] })));
     const permutations = steps.reduce<OpeningOption[][]>((paths, step) => paths.flatMap((path) => step.options.map((option) => [...path, option])), [[]]);
-    expect(permutations).toHaveLength(3072);
-    const variants = permutations.flatMap((path) => path[1] === "reply" ? [{ path, decode: false }, { path, decode: true }] : [{ path, decode: false }]);
-    expect(variants).toHaveLength(3840);
+    expect(permutations).toHaveLength(1944);
+    const hello = steps.findIndex((step) => step.key === "street-hello:hello");
+    const variants = permutations.flatMap((path) => path[hello] === "reply" ? [{ path, decode: false }, { path, decode: true }] : [{ path, decode: false }]);
+    expect(variants).toHaveLength(2916);
     const signatures = new Set<string>();
     for (const { path, decode } of variants) {
       const { q } = start("room-wake");
@@ -103,37 +103,39 @@ describe("every opening action has an effect", () => {
           if (phase.kind !== "explore") throw new Error("Travel did not complete");
           q.choose(phase.menu.findIndex((m) => m.kind === "talk" && m.scene === scene));
           if (scene === "stall-lead") {
-            const friend = q.openingChoices()!.options["room-wake:friend"];
-            const branch = friend === "reply" ? (decode ? "card-read" : "card-unread") : friend === "alt1" ? "heard-name" : friend === "silence" ? "quiet-route" : "id-name";
+            const greeted = q.openingChoices()!.options["street-hello:hello"];
+            const branch = greeted === "reply" ? (decode ? "card-read" : "card-unread") : "pointed";
             const arrival = q.t(`scene-stall-lead-${branch}`);
             expect(texts(q)).toContain(arrival);
             downstream.push(arrival);
           }
         }
         const sceneSteps = steps.filter((step) => step.scene === scene);
-        for (const _ of sceneSteps) choose(q, path[at++]);
+        for (const step of sceneSteps) {
+          const option = path[at++];
+          choose(q, option);
+          const reaction = q.t(OPENING_CHOICES[step.key][option]!.reaction);
+          expect(texts(q)).toContain(reaction);
+          downstream.push(reaction);
+        }
         expect(q.core.state.run).toBeNull();
         expect(q.core.state.scenesDone[scene]).toBe(1);
         for (const step of sceneSteps) {
-          const option = q.openingChoices()!.options[step.key];
-          const text = q.t(OPENING_CHOICES[step.key][option]!.consequence);
-          expect(texts(q)).toContain(text);
-          downstream.push(text);
+          const later = OPENING_CHOICES[step.key][q.openingChoices()!.options[step.key]]!.consequence;
+          if (later) { expect(texts(q)).toContain(q.t(later)); downstream.push(q.t(later)); }
         }
       }
-      expect(Object.keys(q.openingChoices()!.options)).toHaveLength(6);
+      expect(Object.keys(q.openingChoices()!.options)).toHaveLength(8);
       signatures.add(downstream.join("\n"));
     }
     expect(signatures.size).toBe(variants.length);
   }, 120_000);
 });
 
-describe("card and heard-name rewards", () => {
-  it.each(["reply", "alt1", "alt2", "silence"] as const)("friend %s survives reload and changes the stall welcome", (option) => {
-    const { q, store } = start("room-wake");
-    choose(q, "reply"); choose(q, option);
-    if (option === "alt1") expect(texts(q).some((text) => text.includes("지우 씨."))).toBe(true);
-    choose(q, "reply");
+describe("the old man's card", () => {
+  it.each(["reply", "silence"] as const)("greeting %s survives reload and changes the stall welcome", (option) => {
+    const { q, store } = start("street-hello");
+    choose(q, option); choose(q, "reply");
     const reward = q.bookPapers().find((p) => p.id === "stall-card");
     expect(!!reward).toBe(option === "reply");
     if (option === "reply") {
@@ -155,13 +157,11 @@ describe("card and heard-name rewards", () => {
     const menu = visit.view().phase;
     if (menu.kind !== "explore") throw new Error("No stall menu");
     visit.choose(menu.menu.findIndex((m) => m.kind === "talk" && m.scene === "stall-lead"));
-    const branch = option === "reply" ? "card-read" : option === "alt1" ? "heard-name" : option === "silence" ? "quiet-route" : "id-name";
-    expect(texts(visit)).toContain(visit.t(`scene-stall-lead-${branch}`));
-    if (option === "alt1") expect(texts(visit).some((text) => text.includes("지우 씨?"))).toBe(true);
+    expect(texts(visit)).toContain(visit.t(`scene-stall-lead-${option === "reply" ? "card-read" : "pointed"}`));
   });
   it("keeps partial card decoding per game across reload instead of inheriting another game’s desk position", () => {
     const store = memory();
-    store.save({ ...emptyOpeningChoices(), options: { "room-wake:friend": "reply" } });
+    store.save({ ...emptyOpeningChoices(), options: { "street-hello:hello": "reply" } });
     const { q } = start("stall-lead", 0, true, store);
     q.setDeskAt("stall-card", 1);
     const reload = createQuiet({ course, core: createCore(course, q.core.state, { now, rng: mulberry32(1) }), now, lab: true, openingChoice: store, papers: { load: () => ["stall-card"], save: () => {}, loadProgress: () => ({ at: { "stall-card": 3 }, met: [] }) } });
@@ -170,30 +170,20 @@ describe("card and heard-name rewards", () => {
     expect(reload.openingChoices()?.cardRead).toBe(false);
     expect(start("stall-lead").q.bookPapers().some((p) => p.reward)).toBe(false);
   });
-  it("plays the heard key using existing name and honorific clips", () => {
-    const { q: seed } = start("room-wake", 1);
-    const play = vi.fn();
-    const q = createQuiet({ course, core: createCore(course, seed.core.state, { now, rng: mulberry32(1) }), now, lab: true, audio: { available: true, play, stop: () => {} } });
-    choose(q, "alt1");
-    const name = Object.values(course.words).find((w) => w.w === "지우")!;
-    const honorific = Object.values(course.words).find((w) => w.w === "씨")!;
-    const clips = [...name.audio!, ...honorific.audio!];
-    expect(clips.length).toBeGreaterThan(0);
-    expect(play.mock.calls.flatMap(([speeches]) => speeches).some((speech) => JSON.stringify(speech.clips) === JSON.stringify(clips))).toBe(true);
-  });
-  it("plays content-declared clips for both the immediate key and the arrival without word lookup", () => {
+  it("plays content-declared clips for both the immediate reaction and the arrival without word lookup", () => {
     const changed = structuredClone(course);
     const profile = openingProfile(changed)!;
-    const effect = profile.choices[profile.arrival.choice].alt1!;
+    const effect = profile.choices[profile.arrival.choice].reply!;
     effect.audio = ["declared-key-a", "declared-key-b"];
-    profile.arrival.branches.alt1!.audio = ["declared-arrival"];
-    const { q: seed } = start("room-wake", 1);
+    profile.arrival.branches.reply!.audio = ["declared-arrival"];
+    const { q: seed } = start("street-hello");
     const store = memory();
     const play = vi.fn();
     const audio = { available: true, play, stop: () => {} };
     const q = createQuiet({ course: changed, core: createCore(changed, seed.core.state, { now, rng: mulberry32(1) }), now, lab: true, audio, openingChoice: store });
-    choose(q, "alt1");
+    choose(q, "reply");
     expect(play.mock.calls.flatMap(([speeches]) => speeches).some((speech) => JSON.stringify(speech.clips) === JSON.stringify(effect.audio))).toBe(true);
+    choose(q, "reply");
     const arrivalScene = changed.scenes.find((scene) => scene.id === profile.arrival.scene)!;
     const state = { ...q.core.state, run: null, slot: 0, place: arrivalScene.place, scenesDone: { ...q.core.state.scenesDone, ...Object.fromEntries((arrivalScene.after ?? []).map((id) => [id, 1])) } };
     const visit = createQuiet({ course: changed, core: createCore(changed, state, { now, rng: mulberry32(1) }), now, lab: true, audio, openingChoice: store });
@@ -205,7 +195,7 @@ describe("card and heard-name rewards", () => {
   });
   it("decoding at the stall has an immediate recognition payoff", () => {
     const store = memory();
-    store.save({ options: { "room-wake:friend": "reply" }, cardAt: 0, cardRead: false });
+    store.save({ options: { "street-hello:hello": "reply" }, cardAt: 0, cardRead: false });
     const { q } = start("stall-lead", 0, true, store);
     expect(q.deskAt("stall-card")).toBe(0);
     q.readPaper("stall-card");
@@ -222,13 +212,16 @@ describe("experiment boundary and durable choice format", () => {
       for (const [i] of (v.alts ?? []).entries()) expect(v.altOutcomes?.[i].accept).toBe(true);
     }
     expect(built.scenes.find((s) => s.id === "room-wake")!.exchanges[0].variants[""].altOutcomes?.[0]?.accept).not.toBe(true);
+    // Accepting a wrong reply in the lab keeps the NPC's authored answer: refusing the rent still gets "방세!" again.
+    const rent = Object.values(course.scenes.find((s) => s.id === "room-wake")!.exchanges.find((e) => e.id === "rent")!.variants)[0];
+    expect(rent.altOutcomes?.[0]?.reaction?.text).toBe("방세!");
   });
   it("never reads, clears, or writes opening choices on the non-lab page, and never earns a card", () => {
-    const store = { load: vi.fn(() => ({ options: { "room-wake:friend": "reply" as const }, cardAt: 0, cardRead: true })), save: vi.fn() };
+    const store = { load: vi.fn(() => ({ options: { "street-hello:hello": "reply" as const }, cardAt: 0, cardRead: true })), save: vi.fn() };
     const naming = createQuiet({ course: built, core: createCore(built, newGame(built), { now, rng: mulberry32(1) }), now, lab: false, openingChoice: store });
     naming.setName("Alex");
     const { q } = start("room-wake", 0, false, store);
-    for (const text of ["아니요.", "네.", "몰라요."]) {
+    for (const text of ["아니요.", "몰라요.", "몰라요.", "네."]) {
       clock += 1000;
       const phase = q.view().phase;
       if (phase.kind !== "pick") throw new Error("Expected core pick");
@@ -269,23 +262,27 @@ describe("experiment boundary and durable choice format", () => {
     expect(parseOpeningChoices({ options: { "removed:exchange": "reply", "room-wake:call": "alt99" }, cardAt: 0, cardRead: true }, course)).toEqual(emptyOpeningChoices());
   });
   it("an exact Korean replyText in a saved type run records the selected slip rather than silence", () => {
-    const { q } = start("street-hello");
+    const { q } = start("street-introductions", 2);
     const state = structuredClone(q.core.state);
     state.run!.mode = "type";
     const game = createQuiet({ course, core: createCore(course, state, { now, rng: mulberry32(1) }), now, lab: true });
     game.sendText("아니요.");
-    expect(game.openingChoices()?.options["street-hello:hello"]).toBe("alt1");
-    expect(game.core.state.run?.exchange).toBe(1);
+    expect(game.openingChoices()?.options["street-introductions:sit"]).toBe("alt1");
+    expect(game.core.state.run?.exchange).toBe(3);
   });
   it("keeps equally matching typed slips tied until explicitly chosen", () => {
+    // Content has no tie today, so make one: the wrong reply duplicates the right one.
+    const tied = structuredClone(course);
+    const ask = Object.values(tied.scenes.find((s) => s.id === "street-introductions")!.exchanges[1].variants)[0];
+    ask.alts![0] = { ...ask.alts![0], text: ask.reply.text, tokens: structuredClone(ask.reply.tokens) };
     const { q } = start("street-introductions", 1);
     const state = structuredClone(q.core.state);
     state.player = "민준";
     state.run!.mode = "type";
-    const game = createQuiet({ course, core: createCore(course, state, { now, rng: mulberry32(1) }), now, lab: true });
-    game.sendText("민준입니다.");
+    const game = createQuiet({ course: tied, core: createCore(tied, state, { now, rng: mulberry32(1) }), now, lab: true });
+    game.sendText("저는 민준입니다.");
     expect(game.core.state.run?.exchange).toBe(1);
-    expect(game.openingChoices()?.options["street-introductions:who"]).toBeUndefined();
+    expect(game.openingChoices()?.options["street-introductions:ask"]).toBeUndefined();
     const phase = game.view().phase;
     expect(phase).toMatchObject({ kind: "pick", options: expect.any(Array) });
     if (phase.kind !== "pick") throw new Error("No tied slips");
@@ -293,12 +290,12 @@ describe("experiment boundary and durable choice format", () => {
     expect(texts(game)).toContain(game.t("quiet-scribe-choose"));
     clock += 1000;
     game.choose(1);
-    expect(game.openingChoices()?.options["street-introductions:who"]).toBe("alt1");
+    expect(game.openingChoices()?.options["street-introductions:ask"]).toBe("alt1");
     expect(game.core.state.run?.exchange).toBe(2);
   });
   it.each(["pick", "tiles", "type"] as const)("silence and every slip advance when core mode is %s", (mode) => {
-    for (const option of ["reply", "alt1", "alt2", "silence"] as const) {
-      const { q } = start("street-hello");
+    for (const option of ["reply", "alt1", "silence"] as const) {
+      const { q } = start("street-introductions");
       const run = q.core.state.run!;
       const v = openingRound(course, q.core.state)!.variant;
       // Supply a valid saved run for each core exercise mode.
@@ -308,7 +305,7 @@ describe("experiment boundary and durable choice format", () => {
       const game = createQuiet({ course, core: createCore(course, state, { now, rng: mulberry32(1) }), now, lab: true });
       choose(game, option);
       expect(game.core.state.run?.exchange).toBe(run.exchange + 1);
-      expect(game.openingChoices()?.options["street-hello:hello"]).toBe(option);
+      expect(game.openingChoices()?.options["street-introductions:park"]).toBe(option);
     }
   });
 });
