@@ -2,6 +2,16 @@
 
 Every release of Silver Tongue, newest first.
 
+## 0.20.0 (2026-10-07)
+
+- The site is one page now, at the address you already have. On your first visit it asks what you want to learn: Korean, Chinese or Japanese. Your choice is kept, and you can switch in settings at any time. The visual novel and the separate text pages are gone.
+- Chinese and Japanese now talk the way Korean does: the other person's line large in the middle with its reading under it, your replies as paper slips at the bottom, and the Book for your words. Readings show only under words you don't know yet. Both start with a short story and your name.
+- Korean starts at the desk: an ID card, a newspaper and a rent bill. You sound them out one block at a time, and the Book teaches you the letters you meet, so the first name you hear at the door is one you've already read.
+- Korean goes on past the stall: a letter for Min-jun arrives, his lab-mate says he stopped coming in March, a man he owes money knocks, and the copy shop by the university gate gives you work.
+- Chinese gains a second stage: a busy lunch rush, Old Chen's birthday, a taxi to the airport and a sick boy upstairs, with new HSK 2 words.
+- Japanese gains six conversations (rain with Mr Tanaka, a walk, mornings at the apartment, lunch at the convenience store) and a second paid job at the convenience store till.
+- In all three languages, conversations bring in at most two new words at a time, and people make small talk between orders that brings back the words you're shakiest on, so most of what you hear is already familiar.
+
 ## 0.19.0 (2026-10-01)
 
 - A new course: Korean in Seoul, 2000. You fall asleep over a Korean textbook and wake in a stranger's rented room with his ID card on the desk. Ten conversations to start: the landlady at the door, Grandpa Park on his bench, Ji-woo's snack stall and the corner shop, about 70 words.
