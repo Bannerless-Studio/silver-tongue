@@ -1,6 +1,6 @@
 import { wordState, type Course, type GameState, type RenderedLine } from "@silver-tongue/core";
-import { bookOn, extra, type Liaison } from "./course-extra";
-import { inForm, readingsOf } from "./help";
+import { bookOn } from "./course-extra";
+import { groupReading, inForm, readingGroups } from "./help";
 
 /** When a word's reading is written over it: while it isn't known yet ("auto"), always, or never. */
 export type RubySetting = "auto" | "on" | "off";
@@ -22,7 +22,8 @@ export interface RubySpan {
  * attach to it (their `attach`, written right after it with no space: a noun and its particle) share one
  * reading covering the whole group, their readings run together ("ireumi", by joinReadings). In a language
  * that writes spaces between words (a `tileGap`), any words written together are one group: a number and
- * the number after it ("samcheon"). Each word is read by its
+ * the number after it ("samcheon"); in Japanese, a run of kanji numerals is one number ("hyakugojū", see
+ * readingGroups). Each word is read by its
  * plainest reading as it is written in the line; a word with no reading, or whose reading is just its
  * own spelling, adds none, and a group none of whose words adds one gets none. "auto" gives a group its reading while any
  * word in it isn't known yet, or while any word in it is written in a changed form (du for dul: the game counts
@@ -31,47 +32,16 @@ export interface RubySpan {
  */
 export function rubyRow(course: Course, line: RenderedLine, words: GameState["words"], now: number, ruby: RubySetting = DEFAULT_RUBY): RubySpan[] {
   if (ruby === "off" || !bookOn(course)) return [];
-  const { words: extraWords, language } = extra(course);
-  const groups: RenderedLine["tokens"][] = [];
-  for (const tk of line.tokens) {
-    const last = groups.at(-1)?.at(-1);
-    if (last && last.end === tk.start && (language.tileGap || extraWords[tk.word]?.attach === true)) groups.at(-1)!.push(tk);
-    else groups.push([tk]);
-  }
-  return groups.flatMap((g) => {
+  return readingGroups(course, line).flatMap((g) => {
     if (ruby === "auto" && g.every((tk) => wordState(words[tk.word], now) === "known" && !inForm(course, line, tk))) return [];
     const start = g[0].start;
     const end = g.at(-1)!.end;
-    const text = joinReadings(
-      g.map((tk) => {
-        const surface = line.text.slice(tk.start, tk.end);
-        const reading = readingsOf(course.words[tk.word], surface).at(-1);
-        return reading && reading !== surface ? reading : "";
-      }),
-      language.liaison,
-    );
+    const text = groupReading(course, line, g, true);
     if (!text) return [];
     return [{ start, end, text }];
   });
 }
 
-/**
- * The readings of one written word's parts run together. With the language's `liaison`, a part ending in
- * a key of `finals` (the longest that fits) takes its value instead when the next part starts with one of
- * `before`: a final consonant carried over to the syllable after it ("chaek" + "ieyo" -> "chaegieyo").
- */
-export function joinReadings(parts: string[], liaison?: Liaison): string {
-  if (!liaison) return parts.join("");
-  const finals = Object.keys(liaison.finals).sort((a, b) => b.length - a.length);
-  return parts
-    .map((part, i) => {
-      const next = parts[i + 1];
-      if (!part || !next || !liaison.before.includes(next[0])) return part;
-      const end = finals.find((f) => part.endsWith(f));
-      return end === undefined ? part : part.slice(0, part.length - end.length) + liaison.finals[end];
-    })
-    .join("");
-}
 
 /** While fewer words than this have been heard, an NPC's line on a course with the Book comes with its reading and meaning. */
 export const ONBOARDING_WORDS = 10;

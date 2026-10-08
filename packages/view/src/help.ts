@@ -1,5 +1,6 @@
 import { PLAYER_MARK, wordState, type Course, type GameState, type RenderedLine, type Word, type WordId } from "@silver-tongue/core";
-import { bookOn } from "./course-extra";
+import { bookOn, extra, type Liaison } from "./course-extra";
+import { isJaNumeral, jaNumeralRomaji } from "./numerals";
 
 export interface WordCard {
   word: WordId;
@@ -164,9 +165,72 @@ export function wordExample(course: Course, id: WordId, except?: string): Senten
   return best && sentenceCard(course, best);
 }
 
-/** Each word's last (plainest) reading, as written in the line, space-separated; "" when none has one. */
+type Tokens = RenderedLine["tokens"];
+
+/**
+ * A line's words in the groups read as one: a word and the words after it that attach to it (their
+ * `attach`, written right after it: a noun and its particle); in a language that writes spaces between
+ * words (a `tileGap`), any words written together (a number and the number after it); in Japanese, a run
+ * of kanji numerals written together (百 五 十: one number).
+ */
+export function readingGroups(course: Course, line: RenderedLine): Tokens[] {
+  const { words: extraWords, language } = extra(course);
+  const numeral = (tk: Tokens[number]) => course.language.code === "ja" && isJaNumeral(line.text.slice(tk.start, tk.end));
+  const groups: Tokens[] = [];
+  for (const tk of line.tokens) {
+    const last = groups.at(-1)?.at(-1);
+    const together = () => language.tileGap || extraWords[tk.word]?.attach === true || (numeral(tk) && groups.at(-1)!.every(numeral));
+    if (last && last.end === tk.start && together()) groups.at(-1)!.push(tk);
+    else groups.push([tk]);
+  }
+  return groups;
+}
+
+/**
+ * A group's reading (see readingGroups): each word's last (plainest) reading as written in the line, run
+ * together (joinReadings); a Japanese number read whole. `skipSpelled`: a word whose reading is just its own
+ * spelling adds none (over a line, where it would only repeat it). "" when no word adds one.
+ */
+export function groupReading(course: Course, line: RenderedLine, group: Tokens, skipSpelled = false): string {
+  const surface = line.text.slice(group[0].start, group.at(-1)!.end);
+  if (group.length > 1 && course.language.code === "ja") {
+    const number = jaNumeralRomaji(surface);
+    if (number) return number;
+  }
+  return joinReadings(
+    group.map((tk) => {
+      const own = line.text.slice(tk.start, tk.end);
+      const reading = readingsOf(course.words[tk.word], own).at(-1) ?? "";
+      return skipSpelled && reading === own ? "" : reading;
+    }),
+    extra(course).language.liaison,
+  );
+}
+
+/**
+ * The readings of one written word's parts run together. With the language's `liaison`, a part ending in
+ * a key of `finals` (the longest that fits) takes its value instead when the next part starts with one of
+ * `before`: a final consonant carried over to the syllable after it ("chaek" + "ieyo" -> "chaegieyo").
+ */
+export function joinReadings(parts: string[], liaison?: Liaison): string {
+  if (!liaison) return parts.join("");
+  const finals = Object.keys(liaison.finals).sort((a, b) => b.length - a.length);
+  return parts
+    .map((part, i) => {
+      const next = parts[i + 1];
+      if (!part || !next || !liaison.before.includes(next[0])) return part;
+      const end = finals.find((f) => part.endsWith(f));
+      return end === undefined ? part : part.slice(0, part.length - end.length) + liaison.finals[end];
+    })
+    .join("");
+}
+
+/** The line's reading: each group's (see readingGroups), space-separated; "" when none has one. */
 function lineReading(course: Course, line: RenderedLine): string {
-  return line.tokens.flatMap((tk) => readingsOf(course.words[tk.word], line.text.slice(tk.start, tk.end)).at(-1) ?? []).join(" ");
+  return readingGroups(course, line)
+    .map((g) => groupReading(course, line, g))
+    .filter(Boolean)
+    .join(" ");
 }
 
 /** What asking about a whole line shows; undefined when the line has no meaning written. */
