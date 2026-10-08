@@ -2,6 +2,14 @@
 
 Every release of Silver Tongue, newest first.
 
+## 0.21.0 (2026-10-08)
+
+- When a new part of the story opens, one line says who trusts you and where the way goes on: "Ji-woo and The landlady trust you. The way on: Take the letter (The Room)."
+- Japanese prices read as one number: 百五十円 is "hyakugojū en", not "hyaku go jū en", and 三千 is "sanzen".
+- Looking up a word in another form (働きました, 二つ, a Korean contraction) now plays that form, not silence.
+- At Ji-woo's stall a customer may ask for "떡볶이만": 만 "only", a word spelled like 만 "ten thousand".
+- Games you played on the old /lab/ page now show up among your games on the main page. Settings no longer link to the removed visual novel and text pages.
+
 ## 0.20.0 (2026-10-07)
 
 - The site is one page now, at the address you already have. On your first visit it asks what you want to learn: Korean, Chinese or Japanese. Your choice is kept, and you can switch in settings at any time. The visual novel and the separate text pages are gone.
