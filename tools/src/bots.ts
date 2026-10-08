@@ -211,14 +211,17 @@ export interface RunOptions {
    * `days` is then only a cap, for a course whose last scenes the bot can't reach.
    */
   untilDone?: { after: number; minDays: number };
+  /** Play on from this game (a loaded save) instead of a new one. */
+  from?: GameState;
   /** Called after every input with the state just before it (a copy) and the events it caused. */
   observe?: (step: { input: Input; events: GameEvent[]; before: GameState; after: GameState; now: number }) => void;
 }
 
 export function runBot(course: Course, bot: Bot, opts: RunOptions): BotReport {
-  let clock = 0;
+  // A loaded game resumes on the morning of its day, as for a player who plays one game day a day.
+  let clock = opts.from && opts.dayMs ? (opts.from.day - 1) * opts.dayMs : 0;
   const rng = mulberry32(opts.seed);
-  const core = createCore(course, newGame(course), { now: () => clock, rng: mulberry32(opts.seed + 1) });
+  const core = createCore(course, opts.from ?? newGame(course), { now: () => clock, rng: mulberry32(opts.seed + 1) });
   const report: BotReport = {
     firstDone: {},
     days: 0,
@@ -245,10 +248,11 @@ export function runBot(course: Course, bot: Bot, opts: RunOptions): BotReport {
   };
   let dayChecked = 0;
   let reviewedDay = 0;
-  if (course.needsName) core.send({ type: "setName", name: "Bot" });
+  if (course.needsName && !opts.from) core.send({ type: "setName", name: "Bot" });
 
   const oneOff = course.scenes.filter((x) => !x.repeatable).map((x) => x.id);
-  for (let steps = 0; core.state.day <= opts.days && steps < 1_000_000; steps++) {
+  const lastDay = core.state.day - 1 + opts.days;
+  for (let steps = 0; core.state.day <= lastDay && steps < 1_000_000; steps++) {
     const s = core.state;
     if (dayChecked !== s.day) {
       dayChecked = s.day;
@@ -316,7 +320,7 @@ export function runBot(course: Course, bot: Bot, opts: RunOptions): BotReport {
   }
   const end = core.state;
   // The loop ends on the morning after the last day played, unless an input was refused mid-day.
-  report.days = Math.min(report.rejected ? end.day : end.day - 1, opts.days);
+  report.days = Math.min((report.rejected ? end.day : end.day - 1) - (lastDay - opts.days), opts.days);
   report.notesRead = end.notes.read.length;
   report.wordsHeard = Object.keys(end.words).length;
   report.wordsKnown = Object.values(end.words).filter((r) => wordState(r, clock) === "known").length;

@@ -12,6 +12,7 @@
     "bots": "tsx tools/src/bots.ts",
     "learning": "tsx tools/src/learning.ts",
     "report:goal3": "tsx tools/src/goal3.ts",
+    "saves": "tsx tools/src/saves.ts",
     "import:syllabus": "tsx tools/src/syllabus.ts",
     "playtest": "tsx tools/src/playtest.ts",
     "audio": "tsx tools/src/audio.ts",
