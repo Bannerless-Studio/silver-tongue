@@ -59,6 +59,7 @@ ko-bangse = rent (for a room)
 ko-naeyo = to pay
 ko-o = five (Sino-Korean, for prices and dates)
 ko-man = ten thousand
+ko-only = only, just
 ko-won = won (money)
 ko-iljuil = one week
 ko-e = at; in; per

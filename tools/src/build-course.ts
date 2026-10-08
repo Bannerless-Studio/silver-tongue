@@ -23,7 +23,7 @@ import { bindSlots, duplicateIds, messageIds, parseFtl, Renderer, termNames, typ
 import type { PackMeta, PackWord } from "./pack";
 import { assignLetterAudio, letterMessageIds, letterProblems } from "./letters";
 import { assignPaperAudio, paperMessageIds, paperProblems } from "./papers";
-import { buildLexicon, segment, type Lexicon } from "./segment";
+import { buildLexicon, segmentMarked, type Lexicon } from "./segment";
 import { learningCheck } from "./learning";
 import { taggingLines, taggingPath } from "./tagging";
 import { assignAudio, voiceProblems, type Clip, type Voices } from "./voices";
@@ -136,8 +136,9 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
   const lex: Lexicon | undefined = packWords && attempt("words", () => buildLexicon(packWords));
   if (!packWords || !lex) return stop();
 
-  const toLine = (text: string, where: string): RenderedLine => {
-    const { tokens, unknown } = segment(text, lex);
+  const toLine = (marked: string, where: string): RenderedLine => {
+    const { text, tokens, unknown, problems } = segmentMarked(marked, lex);
+    for (const p of problems) errors.push(`${where}: "${marked}": ${p}`);
     if (unknown.length) errors.push(`${where}: "${text}" has characters outside the word list: ${unknown.map((u) => u.char).join(" ")}`);
     for (const tk of tokens) if (leaveOut.has(tk.word)) errors.push(`${where}: "${text}" uses ${text.slice(tk.start, tk.end)}, which settings/${cfg.setting}/leave-out.json leaves out`);
     return { text, tokens };

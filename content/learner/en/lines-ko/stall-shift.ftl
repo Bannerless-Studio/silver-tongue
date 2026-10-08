@@ -2,7 +2,7 @@ welcome = Come on in! Let's get to work!
 welcome-reply = Yes, great! Let's work!
 welcome-reply-intent = Get to work
 
-fetch = { -item(form: "cap") }, please!
+fetch = Just { -item }, please!
 fetch-reply = Yes, here's the { -item }.
 fetch-reply-intent = Bring the order
 

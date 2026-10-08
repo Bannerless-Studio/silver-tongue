@@ -552,11 +552,11 @@ stall-shift/chat-c[topic=cs-want]/npc: 뭐|먹을까요|?
 stall-shift/chat-c[topic=cs-want]/reply: 떡볶이|먹고|싶어요|.
 stall-shift/eat/npc: 배고파요|?|드세요|!
 stall-shift/eat/reply: 감사합니다|.|떡볶이|하고|김밥|맛있어요|!
-stall-shift/fetch[item=eomuk]/npc: 어묵|주세요|!
+stall-shift/fetch[item=eomuk]/npc: 어묵|만|주세요|!
 stall-shift/fetch[item=eomuk]/reply: 네|,|어묵|여기|있어요|.
-stall-shift/fetch[item=gimbap]/npc: 김밥|주세요|!
+stall-shift/fetch[item=gimbap]/npc: 김밥|만|주세요|!
 stall-shift/fetch[item=gimbap]/reply: 네|,|김밥|여기|있어요|.
-stall-shift/fetch[item=tteokbokki]/npc: 떡볶이|주세요|!
+stall-shift/fetch[item=tteokbokki]/npc: 떡볶이|만|주세요|!
 stall-shift/fetch[item=tteokbokki]/reply: 네|,|떡볶이|여기|있어요|.
 stall-shift/order[count=five|item=eomuk]/npc: 어묵|다섯|개|주세요|!
 stall-shift/order[count=five|item=eomuk]/rephrase: 어묵|.|다섯|개|.

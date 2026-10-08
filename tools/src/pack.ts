@@ -47,6 +47,11 @@ export interface PackWord {
   say?: string;
   pos?: string;
   bonus?: boolean;
+  /**
+   * spelled like another word (만 "only" and 만 "ten thousand"): the tagger never picks it on its own,
+   * only where a line marks it, `<spelling>[<id>]` (하나만[ko-only])
+   */
+  homograph?: boolean;
   /** a particle or ending written glued to the word before it (display only) */
   attach?: boolean;
   /** a person's name: counted as a word, never as new vocabulary (the learning report's new-word cap) */
