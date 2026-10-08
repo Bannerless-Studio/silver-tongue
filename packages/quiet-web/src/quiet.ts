@@ -3,10 +3,10 @@
 // line (a reply's cost rides on the reply; food is silent; wages ride on the one line a finished scene
 // folds into), trust is silent, the scene being played is exposed for the review tell, and any line can
 // be revealed.
-import { describeRun, normalizeTyped, wordState, type Core, type Course, type GameEvent, type GameState, type Input, type RenderedLine, type WordId } from "@silver-tongue/core";
+import { availableSceneIds, describeRun, normalizeTyped, wordState, type Core, type Course, type GameEvent, type GameState, type Input, type RenderedLine, type WordId } from "@silver-tongue/core";
 import {
   bookOn, deskOn, deskPapers, emptyProgress, freshMarks, heardCount, lettersFollowDesk, metLetters, onboarding, paperSyllables, placeName,
-  actionNarration, bedHint, bedPlace, introLines, isBedtime, likelyOrder, npcLabel, primaryItem, joinTilesForDisplay, makeText, placeMenu, sentenceCard, tileEcho, typePrompt, waitingForMoney, wordCard,
+  actionNarration, bedHint, bedPlace, introLines, isBedtime, likelyOrder, npcLabel, primaryItem, joinTilesForDisplay, makeText, placeMenu, sentenceCard, stageGate, stageGateText, tileEcho, typePrompt, waitingForMoney, wordCard,
   type AudioOut, type DeskPaper, type DeskProgress, type MenuItem, type SentenceCard, type Speech, type Text, type WordCard,
 } from "@silver-tongue/view";
 
@@ -293,6 +293,8 @@ export function createQuiet(opts: QuietOptions): Quiet {
     const revealed: string[] = [];
     /** reactions that restate the request; only kept when the replies come back after them */
     const reacted: Beat[] = [];
+    /** scenes these events unlocked: a new stage's first one is the only news a Book course gives of them */
+    const unlocked: string[] = [];
     // With the Book the night's food is said with the day's end (and only when it cost something).
     const food = events.reduce((sum, e) => sum + (e.type === "walletChanged" && e.reason === "food" ? e.delta : 0), 0);
     for (const e of events) {
@@ -369,6 +371,7 @@ export function createQuiet(opts: QuietOptions): Quiet {
         // With the Book the story's own lines say where to go next and the one bright control goes there:
         // news of a scene or place would name what the player hasn't met yet.
         case "unlocked":
+          unlocked.push(e.scene);
           if (!book) news(t("unlocked", { scene: t(`scene-${e.scene}`) }), "good");
           break;
         case "placeRevealed":
@@ -416,6 +419,8 @@ export function createQuiet(opts: QuietOptions): Quiet {
     }
     if (revealed.length) news(t("place-revealed", { count: revealed.length, places: revealed.join(", ") }), "good");
     // No replies after the reaction (the scene ended): nothing to answer, so the request isn't said again.
+    const gate = stageGate(course, core.state, unlocked, availableSceneIds(course, core.state));
+    if (gate) news(stageGateText(course, t, gate), "good");
     if (!events.some((e) => e.type === "replyOptions")) for (const r of reacted) if (!r.restate?.rephrase) delete r.restate;
     // With the Book the request comes back on the stage as said again, slower: so it is, after the reaction.
     if (book) for (const r of reacted) if (r.restate && !r.restate.rephrase) {

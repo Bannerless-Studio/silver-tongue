@@ -127,6 +127,11 @@ place-revealed = { $count ->
 errand-started = You're carrying a parcel.
 errand-ended = You hand over the parcel.
 rank-up = You're now: { $rank }
+quiet-stage-gate = { $count ->
+    [0] The way on: { $scene } ({ $place }).
+    [one] { $people } trusts you. The way on: { $scene } ({ $place }).
+   *[other] { $people } trust you. The way on: { $scene } ({ $place }).
+  }
 day-ended = Day { $day } is over. You sleep.
 day-ended-rough = Day { $day } is over. You sleep rough by the road.
 reject-unknown-scene = There's nobody here for that.

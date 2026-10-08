@@ -181,3 +181,38 @@ export function replyMeanings(options: RenderedLine[], words: GameState["words"]
   if (!missed && !states.includes("unseen")) return undefined;
   return options.map((o) => o.intent ?? o.meaning ?? "");
 }
+
+/** A stage boundary crossed: the people who trust you there, and the scene that opened the new stage. */
+export interface StageGate {
+  stage: number;
+  npcs: string[];
+  scene: string;
+}
+
+/**
+ * Whether scenes just unlocked open a new stage, on a course with the Book (story spec 4c: a stage gate
+ * says only who trusts you and what road opened). The first unlocked scene of a stage none of whose scenes
+ * is done or was open before counts; the people are those its `requires.trust` names and those of the
+ * scenes it comes `after`, each only once they trust you at all. Undefined when no stage opened.
+ */
+export function stageGate(course: Course, state: GameState, unlocked: string[], available: string[]): StageGate | undefined {
+  if (!bookOn(course)) return undefined;
+  const scenes = new Map(course.scenes.map((s) => [s.id, s]));
+  for (const id of unlocked) {
+    const s = scenes.get(id);
+    if (!s || s.stage <= Math.min(...course.scenes.map((x) => x.stage))) continue;
+    const sameStage = course.scenes.filter((x) => x.stage === s.stage).map((x) => x.id);
+    if (sameStage.some((x) => (state.scenesDone[x] ?? 0) > 0 || (available.includes(x) && !unlocked.includes(x)))) continue;
+    const npcs = [...Object.keys(s.requires?.trust ?? {}), ...(s.after ?? []).map((a) => scenes.get(a)?.npc ?? "")];
+    return { stage: s.stage, npcs: [...new Set(npcs)].filter((n) => n && (state.trust[n] ?? 0) > 0), scene: id };
+  }
+  return undefined;
+}
+
+/** A stage gate's one line: "Ji-woo trusts you. The way on: Take the letter (Your Room)." */
+export function stageGateText(course: Course, t: Text, gate: StageGate): string {
+  const names = gate.npcs.map((n) => t(`npc-${n}`));
+  const people = new Intl.ListFormat(course.learner, { type: "conjunction" }).format(names);
+  const place = course.scenes.find((s) => s.id === gate.scene)!.place;
+  return t("quiet-stage-gate", { people, count: names.length, scene: t(`scene-${gate.scene}`), place: t(`place-${place}`) });
+}

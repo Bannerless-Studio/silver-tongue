@@ -278,6 +278,7 @@ export const QUIET_UI_KEYS: Record<string, string[]> = {
   "quiet-st-parcel": [],
   "quiet-st-no-parcel": [],
   "quiet-no-save": [],
+  "quiet-stage-gate": ["people", "count", "scene", "place"],
   // ids from the removed visual novel page, kept as they were
   "vn-tagline": [],
   "vn-continue": [],
