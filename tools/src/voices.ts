@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { PLAYER_MARK, type Course, type RenderedLine, type Scene, type WordId, type World } from "@silver-tongue/core";
+import type { WordExtra } from "@silver-tongue/view";
 
 /** A text-to-speech voice, optionally lower/higher (edge-tts pitch "-10Hz") or slower/faster (rate "-10%"). */
 export type Voice = string | { voice: string; pitch?: string; rate?: string };
@@ -96,10 +97,22 @@ export function assignAudio(course: Course, voices: Voices, words: Iterable<Word
       }
     }
   }
-  for (const id of words) {
+  const wanted = new Set(words);
+  for (const id of wanted) {
     const w = course.words[id];
     if (w) w.audio = speak(say[id] ?? w.w, voices.words);
   }
+  // A form a line uses (働きました for 働きます) gets a clip of its own, for its word card.
+  const lines = course.scenes.flatMap((s) =>
+    s.exchanges.flatMap((ex) => Object.values(ex.variants).flatMap((v) => [v.npc, v.reply, v.rephrase, ...(v.alts ?? []), ...Object.values(v.altOutcomes ?? {}).map((o) => o.reaction)])),
+  );
+  for (const l of [...lines, ...Object.values(course.reactions)])
+    for (const tk of l?.tokens ?? []) {
+      const w = course.words[tk.word] as WordExtra | undefined;
+      const surface = l!.text.slice(tk.start, tk.end);
+      if (!w || !wanted.has(tk.word) || surface === w.w || !w.forms?.[surface] || w.formAudio?.[surface]) continue;
+      (w.formAudio ??= {})[surface] = speak(surface, voices.words);
+    }
   const speakers = [...new Set(course.scenes.map((s) => s.npc))].sort();
   course.reactionAudio = Object.fromEntries(
     Object.entries(course.reactions).map(([id, l]) => [id, Object.fromEntries(speakers.map((npc) => [npc, speak(l.text, voices.npcs[npc])]))]),

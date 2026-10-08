@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { PLAYER_MARK } from "@silver-tongue/core";
 import { fixtureCourse } from "@silver-tongue/core/testing";
+import type { WordExtra } from "@silver-tongue/view";
 import { assignAudio, clipId, lineClips, voiceProblems, type Voices } from "../src/voices";
 
 const V: Voices = { engine: "edge-tts", player: "P", words: "W", npcs: { cook: "C" } };
@@ -60,6 +61,17 @@ describe("assignAudio", () => {
     expect(new Set(ids).size).toBe(ids.length);
     expect(ids).toEqual([...ids].sort());
     expect(ids).toContain(clipId("W", "你"));
+  });
+
+  it("gives a form a line uses its own clip, said by the words voice", () => {
+    const c = fixtureCourse();
+    const v = c.scenes[0].exchanges[0].variants[""];
+    const tk = v.npc.tokens[0];
+    const surface = v.npc.text.slice(tk.start, tk.end);
+    c.words[tk.word] = { ...c.words[tk.word], w: "base-spelling", forms: { [surface]: ["r"] } };
+    const clips = assignAudio(c, V, Object.keys(c.words));
+    expect((c.words[tk.word] as WordExtra).formAudio).toEqual({ [surface]: [clipId("W", surface)] });
+    expect(clips.map((x) => x.id)).toContain(clipId("W", surface));
   });
 
   it("gives words audio only to the words asked for", () => {

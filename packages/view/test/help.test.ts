@@ -94,10 +94,12 @@ describe("other forms of a word", () => {
     expect(wordCard(c, id).base).toBeUndefined();
   });
 
-  it("the word card of a form plays no clip, since the word's clip says the dictionary form", () => {
+  it("the word card of a form plays the form's own clip, never the word's, which says the dictionary form", () => {
     const withAudio = { ...c, words: { ...c.words, [id]: { ...word, audio: ["clip-of-w"] } } };
     expect(wordCard(withAudio, id, form).clips).toEqual([]);
     expect(wordCard(withAudio, id, word.w).clips).toEqual(["clip-of-w"]);
+    const withForm = { ...c, words: { ...c.words, [id]: { ...word, audio: ["clip-of-w"], formAudio: { [form]: ["clip-of-form"] } } } };
+    expect(wordCard(withForm, id, form).clips).toEqual(["clip-of-form"]);
   });
 
   it("the reading row under a line reads the form that is in the line", () => {

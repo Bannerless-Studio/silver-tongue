@@ -149,7 +149,10 @@ function audioProblems(course: Course, files: Set<string>): string[] {
   for (const id of Object.keys(course.reactions)) {
     for (const npc of speakers) need(course.reactionAudio?.[id]?.[npc], `reaction ${id}: no audio for ${npc}`);
   }
-  for (const w of [...usedWords(course)].sort()) need(course.words[w]?.audio, `word ${w} "${course.words[w]?.w ?? ""}": no audio`);
+  for (const w of [...usedWords(course)].sort()) {
+    need(course.words[w]?.audio, `word ${w} "${course.words[w]?.w ?? ""}": no audio`);
+    for (const [form, ids] of Object.entries(extra(course).words[w]?.formAudio ?? {})) need(ids, `word ${w} form "${form}": no audio`);
+  }
   for (const g of extra(course).letters?.groups ?? []) for (const l of g.letters) need(l.audio, `letters ${g.id} "${l.ch}": no audio`);
   for (const p of extra(course).papers ?? []) for (const l of p.lines) need(l.audio, `papers ${p.id}/${l.id} "${l.text}": no audio`);
   for (const id of [...clips].sort()) if (!files.has(id)) errors.push(`audio: no file for clip ${id}`);

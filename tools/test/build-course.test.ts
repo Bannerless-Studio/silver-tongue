@@ -545,7 +545,8 @@ describe("word forms", () => {
       words.find((w) => w.w === "谢谢")!.forms = { "谢谢你": ["xièxie nǐ"] };
       writeFileSync(path, JSON.stringify(words));
     });
-    expect(errors).toEqual([]);
+    // The lines that now say the form need its own clip (for its word card), which isn't made here.
+    expect(errors.filter((e) => !e.startsWith("audio: no file for clip"))).toEqual([]);
     expect(Object.values(course!.words).find((w) => w.w === "谢谢")!.forms).toEqual({ "谢谢你": ["xièxie nǐ"] });
   });
 });

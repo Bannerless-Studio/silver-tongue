@@ -37,9 +37,10 @@ export interface LetterChart {
 
 /**
  * `attach`: a particle or ending written glued to the word before it. An attaching word also keeps
- * its other spellings (`alt`), so a reply tile spelled that way is found.
+ * its other spellings (`alt`), so a reply tile spelled that way is found. `formAudio`: the clips of
+ * each form a line uses (a conjugation), said on its own for its word card.
  */
-export type WordExtra = Word & { attach?: boolean; alt?: string[] };
+export type WordExtra = Word & { attach?: boolean; alt?: string[]; formAudio?: Record<string, string[]> };
 /**
  * `tileGap`: what goes between two reply tiles of a language whose tiles aren't `spaced`; "" when unset.
  * `book`: the course uses the Book (readings under words, the Letters and Papers tabs); unset, the
