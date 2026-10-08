@@ -3,7 +3,7 @@ import { render } from "preact";
 import { createCore, mulberry32, type CatalogEntry, type Course, type GameState } from "@silver-tongue/core";
 import { courseLabels, decodeSave, DEFAULT_RUBY, DEFAULT_SPEED, encodeSave, learnerFor, deskKey, emptyProgress, lookupHintKey, makeText, papersKey, parseProgress, playbackRate, sessionLines, type RubySetting, type SpeechSpeed, type Text } from "@silver-tongue/view";
 import {
-  coursesBase, createWebAudio, fetchJson, fromLocalStorage, loadWebSettings, metaContent, migrateWebAliases, pageStart, updateWebSettings, WebSessions,
+  adoptLabGames, coursesBase, createWebAudio, fetchJson, fromLocalStorage, loadWebSettings, metaContent, migrateWebAliases, pageStart, updateWebSettings, WebSessions,
   type KeyValue, type Opened,
 } from "@silver-tongue/web-common";
 import { App, type Page } from "./ui/App";
@@ -42,10 +42,11 @@ let speed: SpeechSpeed = DEFAULT_SPEED;
 /** When readings are written under words: the player's own setting, shared with the other pages. */
 let ruby: RubySetting = DEFAULT_RUBY;
 
-/** Fetches a course file and its sound, and moves its old games. */
+/** Fetches a course file and its sound, and moves its old games (earlier ids, the removed /lab/ page). */
 async function load(entry: CatalogEntry, learner: string): Promise<Loaded> {
   const course = await fetchJson<Course>(`${base}${entry.id}/${learner}.json`);
   migrateWebAliases(kv, course);
+  adoptLabGames(kv, course);
   return {
     course,
     t: makeText(course.learnerFtl, course.learner),

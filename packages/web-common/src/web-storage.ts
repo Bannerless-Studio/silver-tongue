@@ -189,45 +189,56 @@ function readMeta(kv: KeyValue, key: string): Meta {
  * backups, and which game was played last and when. If storage refuses, what couldn't move stays.
  */
 export function migrateWebAliases(kv: KeyValue, course: { id: string; aliases?: string[] }): void {
-  const to = `silver-tongue:${course.id}:`;
-  for (const alias of course.aliases ?? []) {
-    const from = `silver-tongue:${alias}:`;
-    try {
-      const keys = kv.keys().filter((k) => k.startsWith(from));
-      if (!keys.length) continue;
-      const oldMeta = readMeta(kv, `${from}meta`);
-      const meta = readMeta(kv, `${to}meta`);
-      // Whichever game was played last, under either id, stays the one played last.
-      const at = (m: Meta, id?: string) => (id === undefined ? -1 : (m.played[id] ?? 0));
-      const lastWins = oldMeta.last !== undefined && at(oldMeta, oldMeta.last) >= at(meta, meta.last);
-      for (const key of keys) {
-        const rest = key.slice(from.length);
-        if (rest === "meta") continue;
-        let target = `${to}${rest}`;
-        if (rest.startsWith("session:")) {
-          const id = rest.slice("session:".length);
-          let newId = id;
-          for (let n = 2; kv.getItem(`${to}session:${newId}`) !== null; n++) newId = `${id}-${n}`;
-          target = `${to}session:${newId}`;
-          kv.setItem(target, kv.getItem(key) ?? "");
-          // The new meta is written with each game, so storage filling up midway loses no play times.
-          if (oldMeta.played[id] !== undefined) meta.played[newId] = oldMeta.played[id];
-          if (lastWins && id === oldMeta.last) meta.last = newId;
-          try {
-            kv.setItem(`${to}meta`, JSON.stringify(meta));
-          } catch (e) {
-            kv.removeItem(target); // not moved after all: it stays under the old id for next time
-            throw e;
-          }
-        } else {
-          for (let n = 2; kv.getItem(target) !== null; n++) target = `${to}${rest}-${n}`;
-          kv.setItem(target, kv.getItem(key) ?? "");
+  for (const alias of course.aliases ?? []) moveGames(kv, `silver-tongue:${alias}:`, `silver-tongue:${course.id}:`);
+}
+
+/** Where the /lab/ page (built from the lab branch until 2026-10-04) kept everything it stored. */
+export const LAB_PREFIX = "silver-tongue-lab:";
+
+/**
+ * Games played on the removed /lab/ pages move to the site's own, the same way (see migrateWebAliases):
+ * same origin, so they sit in this storage under LAB_PREFIX.
+ */
+export function adoptLabGames(kv: KeyValue, course: { id: string }): void {
+  moveGames(kv, `${LAB_PREFIX}${course.id}:`, `silver-tongue:${course.id}:`);
+}
+
+function moveGames(kv: KeyValue, from: string, to: string): void {
+  try {
+    const keys = kv.keys().filter((k) => k.startsWith(from));
+    if (!keys.length) return;
+    const oldMeta = readMeta(kv, `${from}meta`);
+    const meta = readMeta(kv, `${to}meta`);
+    // Whichever game was played last, under either id, stays the one played last.
+    const at = (m: Meta, id?: string) => (id === undefined ? -1 : (m.played[id] ?? 0));
+    const lastWins = oldMeta.last !== undefined && at(oldMeta, oldMeta.last) >= at(meta, meta.last);
+    for (const key of keys) {
+      const rest = key.slice(from.length);
+      if (rest === "meta") continue;
+      let target = `${to}${rest}`;
+      if (rest.startsWith("session:")) {
+        const id = rest.slice("session:".length);
+        let newId = id;
+        for (let n = 2; kv.getItem(`${to}session:${newId}`) !== null; n++) newId = `${id}-${n}`;
+        target = `${to}session:${newId}`;
+        kv.setItem(target, kv.getItem(key) ?? "");
+        // The new meta is written with each game, so storage filling up midway loses no play times.
+        if (oldMeta.played[id] !== undefined) meta.played[newId] = oldMeta.played[id];
+        if (lastWins && id === oldMeta.last) meta.last = newId;
+        try {
+          kv.setItem(`${to}meta`, JSON.stringify(meta));
+        } catch (e) {
+          kv.removeItem(target); // not moved after all: it stays under the old id for next time
+          throw e;
         }
-        kv.removeItem(key);
+      } else {
+        for (let n = 2; kv.getItem(target) !== null; n++) target = `${to}${rest}-${n}`;
+        kv.setItem(target, kv.getItem(key) ?? "");
       }
-      kv.removeItem(`${from}meta`);
-    } catch {
-      // storage refused: the old games stay where they are and move next time
+      kv.removeItem(key);
     }
+    kv.removeItem(`${from}meta`);
+  } catch {
+    // storage refused: the old games stay where they are and move next time
   }
 }

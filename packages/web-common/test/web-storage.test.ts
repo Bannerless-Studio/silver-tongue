@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { newGame, serialize } from "@silver-tongue/core";
 import { fixtureCourse } from "@silver-tongue/core/testing";
-import { loadWebSettings, migrateWebAliases, saveWebSettings, SETTINGS_KEY, updateWebSettings, WebSessions, type KeyValue } from "../src/web-storage";
+import { adoptLabGames, LAB_PREFIX, loadWebSettings, migrateWebAliases, saveWebSettings, SETTINGS_KEY, updateWebSettings, WebSessions, type KeyValue } from "../src/web-storage";
 
 /** An in-memory localStorage. */
 class FakeStorage implements KeyValue {
@@ -169,5 +169,21 @@ describe("settings and old course ids", () => {
     kv.setItem(`silver-tongue:${aliased.id}:meta`, JSON.stringify({ last: "n", played: { n: 9 } }));
     migrateWebAliases(kv, aliased);
     expect(new WebSessions(kv, aliased, () => 10).continueLast().id).toBe("n");
+  });
+
+  it("adopts games played on the removed /lab/ page, next to the site's own", () => {
+    const kv = new FakeStorage();
+    const course = fixtureCourse();
+    kv.setItem(`${LAB_PREFIX}${course.id}:session:a`, serialize(newGame(course)));
+    kv.setItem(`${LAB_PREFIX}${course.id}:meta`, JSON.stringify({ last: "a", played: { a: 9 } }));
+    kv.setItem(`${LAB_PREFIX}settings`, "{}");
+    kv.setItem(`silver-tongue:${course.id}:session:a`, serialize(newGame(course)));
+    kv.setItem(`silver-tongue:${course.id}:meta`, JSON.stringify({ last: "a", played: { a: 5 } }));
+    adoptLabGames(kv, course);
+    expect(kv.keys().filter((k) => k.startsWith(`${LAB_PREFIX}${course.id}:`))).toEqual([]);
+    expect(kv.getItem(`${LAB_PREFIX}settings`)).toBe("{}"); // only the course's games move
+    const sessions = new WebSessions(kv, course, () => 10);
+    expect(sessions.list().map((x) => [x.id, x.lastPlayed])).toEqual([["a-2", 9], ["a", 5]]);
+    expect(sessions.continueLast().id).toBe("a-2");
   });
 });
