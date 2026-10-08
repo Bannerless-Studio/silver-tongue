@@ -14,5 +14,9 @@
  },
  "typing": { "input": "romaji" },
  "spaced": false,
- "book": true
+ "book": true,
+ "numerals": {
+  "chars": "一二三四五六七八九十百千万",
+  "pairs": { "三百": "sanbyaku", "六百": "roppyaku", "八百": "happyaku", "三千": "sanzen", "八千": "hassen" }
+ }
 }

@@ -1,38 +1,34 @@
 import { describe, expect, it } from "vitest";
 import type { RenderedLine } from "@silver-tongue/core";
 import { fixtureWithText } from "../src/testing";
-import { jaNumeralRomaji, rubyRow, sentenceCard } from "../src/index";
+import { extra, rubyRow, sentenceCard } from "../src/index";
 
-describe("Japanese numbers", () => {
-  it("reads a kanji numeral as one number, with its sound changes", () => {
-    const cases: Record<string, string> = {
-      百五十: "hyakugojū",
-      三百: "sanbyaku",
-      六百: "roppyaku",
-      八百: "happyaku",
-      三千: "sanzen",
-      八千: "hassen",
-      十一: "jūichi",
-      二十五: "nijūgo",
-      一万: "ichiman",
-      三万五千: "sanmangosen",
-    };
-    for (const [text, reading] of Object.entries(cases)) expect(jaNumeralRomaji(text), text).toBe(reading);
-    expect(jaNumeralRomaji("十十")).toBeUndefined();
-    expect(jaNumeralRomaji("円")).toBeUndefined();
+describe("numerals written together", () => {
+  const course = fixtureWithText();
+  extra(course).language = { ...extra(course).language, book: true, numerals: { chars: "123", pairs: { "13": "onethree" } } };
+  const word = (id: string, w: string, reading: string) => (course.words[id] = { id, w, lv: "1", gloss: id, readings: [reading] });
+  word("one", "1", "one");
+  word("two", "2", "two");
+  word("three", "3", "three");
+  word("yen", "y", "yen");
+  const line = (text: string): RenderedLine => ({
+    text,
+    tokens: [...text].map((ch, i) => ({ start: i, end: i + 1, word: { "1": "one", "2": "two", "3": "three", y: "yen" }[ch]! })),
+    meaning: "a price",
   });
 
-  it("a line reads a number written as several words as one", () => {
-    const course = fixtureWithText();
-    course.language = { ...course.language, code: "ja", book: true } as typeof course.language;
-    const word = (id: string, w: string, romaji: string) => (course.words[id] = { id, w, lv: "1", gloss: id, readings: [romaji] });
-    word("hyaku", "百", "hyaku");
-    word("go", "五", "go");
-    word("ju", "十", "jū");
-    word("en", "円", "en");
-    const text = "百五十円";
-    const line: RenderedLine = { text, tokens: [...text].map((_, i) => ({ start: i, end: i + 1, word: ["hyaku", "go", "ju", "en"][i] })), meaning: "150 yen" };
-    expect(sentenceCard(course, line)!.reading).toBe("hyakugojū en");
-    expect(rubyRow(course, line, {}, 0, "on").map((r) => [line.text.slice(r.start, r.end), r.text])).toEqual([["百五十", "hyakugojū"], ["円", "en"]]);
+  it("read as one number, then the next word", () => {
+    expect(sentenceCard(course, line("12y"))!.reading).toBe("onetwo yen");
+    expect(rubyRow(course, line("12y"), {}, 0, "on").map((r) => r.text)).toEqual(["onetwo", "yen"]);
+  });
+
+  it("a pair that reads its own way replaces both readings", () => {
+    expect(sentenceCard(course, line("213y"))!.reading).toBe("twoonethree yen");
+  });
+
+  it("without numerals, each is read on its own", () => {
+    const plain = structuredClone(course);
+    delete extra(plain).language.numerals;
+    expect(sentenceCard(plain, line("12y"))!.reading).toBe("one two yen");
   });
 });

@@ -20,4 +20,3 @@ export * from "./letters";
 export * from "./papers";
 export * from "./desk";
 export * from "./desk-read";
-export * from "./numerals";

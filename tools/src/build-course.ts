@@ -19,7 +19,7 @@ import { heuristicGloss, narrationProblems, uiTextProblems } from "@silver-tongu
 import type { CourseExtra, DeskPaper, LetterChart, WordExtra } from "@silver-tongue/view";
 import { checkCourse, usedWords } from "./check";
 import { bindSlots, duplicateIds, messageIds, parseFtl, Renderer, termNames, type FtlSource } from "./fluent";
-import type { PackMeta, PackWord } from "./pack";
+import type { Numerals, PackMeta, PackWord } from "./pack";
 import { assignLetterAudio, letterMessageIds, letterProblems } from "./letters";
 import { assignPaperAudio, paperMessageIds, paperProblems } from "./papers";
 import { buildLexicon, segmentMarked, type Lexicon } from "./segment";
@@ -396,12 +396,15 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
   if (meta.book !== undefined && typeof meta.book !== "boolean") errors.push(`pack.json: "book" must be true or false, got ${JSON.stringify(meta.book)}`);
   const liaisonOk = (l: unknown) =>
     !!l && typeof l === "object" && typeof (l as { before?: unknown }).before === "string" && Object.values((l as { finals?: object }).finals ?? { x: 0 }).every((v) => typeof v === "string");
+  const numeralsOk = (n: unknown) =>
+    typeof n === "object" && n !== null && typeof (n as Numerals).chars === "string" && typeof (n as Numerals).pairs === "object" && Object.values((n as Numerals).pairs ?? {}).every((v) => typeof v === "string");
+  if (meta.numerals !== undefined && !numeralsOk(meta.numerals)) errors.push(`pack.json: "numerals" must be { "chars": text, "pairs": { text: text } }, got ${JSON.stringify(meta.numerals)}`);
   if (meta.liaison !== undefined && !liaisonOk(meta.liaison)) errors.push(`pack.json: "liaison" must be { "before": text, "finals": { text: text } }, got ${JSON.stringify(meta.liaison)}`);
   const course: CourseExtra = {
     id: cfg.id,
     learner,
     ...(cfg.aliases?.length ? { aliases: cfg.aliases } : {}),
-    language: { code: meta.key, locale: meta.locale, tts: meta.tts, spaced: meta.spaced, ...(typeof meta.tileGap === "string" && meta.tileGap ? { tileGap: meta.tileGap } : {}), ...(meta.book === true ? { book: true } : {}), ...(meta.liaison && liaisonOk(meta.liaison) ? { liaison: meta.liaison } : {}) },
+    language: { code: meta.key, locale: meta.locale, tts: meta.tts, spaced: meta.spaced, ...(typeof meta.tileGap === "string" && meta.tileGap ? { tileGap: meta.tileGap } : {}), ...(meta.book === true ? { book: true } : {}), ...(meta.liaison && liaisonOk(meta.liaison) ? { liaison: meta.liaison } : {}), ...(meta.numerals && numeralsOk(meta.numerals) ? { numerals: meta.numerals } : {}) },
     typing: meta.typing !== null,
     words,
     concepts,

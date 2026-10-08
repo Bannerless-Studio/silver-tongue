@@ -1,6 +1,5 @@
 import { PLAYER_MARK, wordState, type Course, type GameState, type RenderedLine, type Word, type WordId } from "@silver-tongue/core";
 import { bookOn, extra, type Liaison } from "./course-extra";
-import { isJaNumeral, jaNumeralRomaji } from "./numerals";
 
 export interface WordCard {
   word: WordId;
@@ -170,12 +169,12 @@ type Tokens = RenderedLine["tokens"];
 /**
  * A line's words in the groups read as one: a word and the words after it that attach to it (their
  * `attach`, written right after it: a noun and its particle); in a language that writes spaces between
- * words (a `tileGap`), any words written together (a number and the number after it); in Japanese, a run
- * of kanji numerals written together (百 五 十: one number).
+ * words (a `tileGap`), any words written together (a number and the number after it); with the language's
+ * `numerals`, a run of numerals written together (one number).
  */
 export function readingGroups(course: Course, line: RenderedLine): Tokens[] {
   const { words: extraWords, language } = extra(course);
-  const numeral = (tk: Tokens[number]) => course.language.code === "ja" && isJaNumeral(line.text.slice(tk.start, tk.end));
+  const numeral = (tk: Tokens[number]) => !!language.numerals && [...line.text.slice(tk.start, tk.end)].every((ch) => language.numerals!.chars.includes(ch));
   const groups: Tokens[] = [];
   for (const tk of line.tokens) {
     const last = groups.at(-1)?.at(-1);
@@ -188,23 +187,23 @@ export function readingGroups(course: Course, line: RenderedLine): Tokens[] {
 
 /**
  * A group's reading (see readingGroups): each word's last (plainest) reading as written in the line, run
- * together (joinReadings); a Japanese number read whole. `skipSpelled`: a word whose reading is just its own
+ * together (joinReadings), or for a number (see Numerals) with its `pairs` read their way. `skipSpelled`: a word whose reading is just its own
  * spelling adds none (over a line, where it would only repeat it). "" when no word adds one.
  */
 export function groupReading(course: Course, line: RenderedLine, group: Tokens, skipSpelled = false): string {
-  const surface = line.text.slice(group[0].start, group.at(-1)!.end);
-  if (group.length > 1 && course.language.code === "ja") {
-    const number = jaNumeralRomaji(surface);
-    if (number) return number;
+  const { liaison, numerals } = extra(course).language;
+  const own = (tk: Tokens[number]) => line.text.slice(tk.start, tk.end);
+  const parts = group.map((tk) => {
+    const reading = readingsOf(course.words[tk.word], own(tk)).at(-1) ?? "";
+    return skipSpelled && reading === own(tk) ? "" : reading;
+  });
+  // A pair of numerals that reads its own way (3 and 100 as "sanbyaku") replaces both readings.
+  const pairs = numerals?.pairs ?? {};
+  for (let i = 0; i + 1 < group.length; i++) {
+    const pair = pairs[own(group[i]) + own(group[i + 1])];
+    if (pair !== undefined && group[i].end === group[i + 1].start) [parts[i], parts[i + 1]] = [pair, ""];
   }
-  return joinReadings(
-    group.map((tk) => {
-      const own = line.text.slice(tk.start, tk.end);
-      const reading = readingsOf(course.words[tk.word], own).at(-1) ?? "";
-      return skipSpelled && reading === own ? "" : reading;
-    }),
-    extra(course).language.liaison,
-  );
+  return joinReadings(parts, liaison);
 }
 
 /**

@@ -26,6 +26,14 @@ export interface PackMeta {
    * (a final consonant carried over to the next syllable). Absent: readings are joined as they are.
    */
   liaison?: Liaison;
+  /** how numerals written together are read as one number (see the view's Numerals) */
+  numerals?: Numerals;
+}
+
+/** Numerals written together read as one number: their characters, and the pairs that read their own way. */
+export interface Numerals {
+  chars: string;
+  pairs: Record<string, string>;
 }
 
 export interface Liaison {

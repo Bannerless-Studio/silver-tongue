@@ -45,7 +45,7 @@ export type WordExtra = Word & { attach?: boolean; alt?: string[] };
  * `book`: the course uses the Book (readings under words, the Letters and Papers tabs); unset, the
  * notebook stays as it was.
  */
-export type LanguageExtra = LanguageProfile & { tileGap?: string; book?: boolean; liaison?: Liaison };
+export type LanguageExtra = LanguageProfile & { tileGap?: string; book?: boolean; liaison?: Liaison; numerals?: Numerals };
 /**
  * `liaison`: how readings run together inside one written word (see joinReadings): when the next reading
  * starts with one of `before`, a reading ending in a key of `finals` ends in its value instead.
@@ -53,6 +53,15 @@ export type LanguageExtra = LanguageProfile & { tileGap?: string; book?: boolean
 export interface Liaison {
   before: string;
   finals: Record<string, string>;
+}
+/**
+ * `numerals`: number words written together are read as one number (150 as "hyakugojū", not "hyaku go jū").
+ * `chars`: the characters numerals are written in; `pairs`: two numerals written together that read
+ * otherwise than their readings run together (a sound change, or a 1 left unsaid), with that reading.
+ */
+export interface Numerals {
+  chars: string;
+  pairs: Record<string, string>;
 }
 /** `pin`: the NPC's line is a paper (a notice, a form) kept in the Book once the scene is done. */
 export type ExchangeExtra = Exchange & { pin?: boolean };
