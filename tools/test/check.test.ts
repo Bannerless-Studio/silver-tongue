@@ -142,6 +142,12 @@ describe("checkCourse", () => {
     expect(errors).toContain('learner text: missing "hud"');
   });
 
+  it("checks coverage only on the stages listed as finished", () => {
+    expect(checkCourse(input({ checks: { coverage: [1], audio: false } }))).toContain('coverage: "你" (stage 1) is in 1 scenes; needs 3');
+    expect(checkCourse(input({ checks: { coverage: [2], audio: false } })).filter((e) => e.startsWith("coverage"))).toEqual([]);
+    expect(checkCourse(input({ checks: { coverage: [], audio: false } })).filter((e) => e.startsWith("coverage"))).toEqual([]);
+  });
+
   it("enforces coverage when the course turns it on", () => {
     const errors = checkCourse(input({ checks: { coverage: true, audio: false } }));
     expect(errors).toContain('coverage: "你" (stage 1) is in 1 scenes; needs 3');

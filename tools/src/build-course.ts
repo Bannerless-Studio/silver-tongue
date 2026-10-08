@@ -36,7 +36,11 @@ export interface CourseConfig {
   learners: string[];
   /** earlier ids whose saves this course loads */
   aliases?: string[];
-  checks: { coverage: boolean; audio: boolean; art?: boolean };
+  /**
+   * coverage: every word of a stage in MIN_SCENES_PER_WORD scenes. `true` checks every stage the
+   * scenes reach, a list only those stages (the finished ones; a stage still being written would fail).
+   */
+  checks: { coverage: boolean | number[]; audio: boolean; art?: boolean };
 }
 
 interface GroupsJson {

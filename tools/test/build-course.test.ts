@@ -157,20 +157,8 @@ describe("build-course (real content)", () => {
     expect(JSON.parse(readFileSync(join(CONTENT, "courses/zh-china.json"), "utf8")).checks.audio).toBe(true);
   });
 
-  it("puts every HSK 1 word in at least 3 scenes", () => {
-    // The build's coverage check is off while stage 2 (HSK 2) is still being written, as in ko-seoul;
-    // stage 1 keeps its guarantee here.
-    const scenesOf = new Map<string, Set<string>>();
-    for (const sc of course!.scenes)
-      for (const ex of sc.exchanges)
-        for (const v of Object.values(ex.variants))
-          for (const l of [v.npc, v.reply, ...(v.rephrase ? [v.rephrase] : [])])
-            for (const t of l.tokens) {
-              if (!scenesOf.has(t.word)) scenesOf.set(t.word, new Set());
-              scenesOf.get(t.word)!.add(sc.id);
-            }
-    const thin = course!.stageWords["1"].filter((w) => (scenesOf.get(w)?.size ?? 0) < 3).map((w) => course!.words[w].w);
-    expect(thin).toEqual([]);
+  it("checks coverage on its finished stage 1 (HSK 1), not on stage 2 still being written", () => {
+    expect(JSON.parse(readFileSync(join(CONTENT, "courses/zh-china.json"), "utf8")).checks.coverage).toEqual([1]);
   });
 
   it("adds the tea house off Station Road and the stairwell off your room", () => {

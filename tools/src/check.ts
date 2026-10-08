@@ -6,7 +6,11 @@ export interface CheckInput {
   course: Course;
   /** stage number -> pack levels it covers */
   stages: Record<string, string[]>;
-  checks: { coverage: boolean; audio: boolean; art?: boolean };
+  /**
+   * coverage: every word of a stage in MIN_SCENES_PER_WORD scenes. `true` checks every stage the
+   * scenes reach, a list only those stages (the finished ones; a stage still being written would fail).
+   */
+  checks: { coverage: boolean | number[]; audio: boolean; art?: boolean };
   /** message ids available in the learner-language files */
   learnerIds: Set<string>;
   /** message ids the front ends need */
@@ -440,7 +444,8 @@ export function checkCourse(input: CheckInput): string[] {
 
   if (checks.coverage) {
     const stagesUsed = new Set(course.scenes.map((s) => String(s.stage)));
-    for (const stage of stagesUsed) {
+    const finished = checks.coverage === true ? stagesUsed : new Set(checks.coverage.map(String));
+    for (const stage of [...stagesUsed].filter((s) => finished.has(s))) {
       const levels = new Set(stages[stage] ?? []);
       for (const word of Object.values(course.words)) {
         if (word.bonus || !levels.has(word.lv)) continue;
