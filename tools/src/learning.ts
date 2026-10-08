@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { DAY_MS, comboKey, wordState, type CatalogEntry, type Course, type GameState, type RenderedLine, type WordId, type WordState } from "@silver-tongue/core";
-import { BOTS, runBot, type Bot } from "./bots";
+import { BOTS, runBot, type Bot, type RunOptions } from "./bots";
 import {
   grammarCoverage,
   grammarDetector,
@@ -60,8 +60,22 @@ export interface Beat {
   newWords: WordId[];
 }
 
+/** How far a run got through one stage: its one-off scenes, and its words used TARGET_EXPOSURES+ times. */
+export interface StagePractice {
+  stage: number;
+  /** the stage's one-off scenes, and how many the run finished */
+  scenes: number;
+  scenesDone: number;
+  /** the day the last of them was first finished, when all were */
+  doneDay?: number;
+  /** the stage's words (names left out), and how many the run used TARGET_EXPOSURES+ times */
+  words: number;
+  practised: number;
+}
+
 export interface LearningReport {
   course: string;
+  /** game days played (fewer than asked when `untilDone` stopped the run) */
   days: number;
   /** words the course's scenes can use */
   courseWords: number;
@@ -86,6 +100,8 @@ export interface LearningReport {
   syllabus?: SyllabusCoverage;
   /** which of the language's grammar points the run's lines used, when it has a grammar list */
   grammar?: GrammarCoverage;
+  /** per stage the course has scenes for, in order */
+  stages: StagePractice[];
 }
 
 /** The words of a line, once each. */
@@ -106,7 +122,7 @@ function sceneWords(course: Course): Set<WordId> {
 export function learningReport(
   course: Course,
   bot: Bot,
-  opts: { days: number; seed: number; dayMs?: number; syllabus?: Syllabus; grammar?: Grammar; names?: Set<WordId> },
+  opts: { days: number; seed: number; dayMs?: number; untilDone?: RunOptions["untilDone"]; syllabus?: Syllabus; grammar?: Grammar; names?: Set<WordId> },
 ): LearningReport {
   const { syllabus, grammar, names = new Set<WordId>(), ...run } = opts;
   const detect = grammar ? grammarDetector(grammar) : undefined;
@@ -130,6 +146,7 @@ export function learningReport(
     familiarAfterOnboarding: 0,
     heavyBeats: [],
     unusedStageWords: [],
+    stages: [],
   };
 
   const use = (word: WordId, day: number, context: string, kind: "heard" | "said") => {
@@ -153,7 +170,7 @@ export function learningReport(
 
   let lastRun = "";
   let end: { state: GameState; now: number } | undefined;
-  report.reviews = runBot(course, bot, {
+  const played = runBot(course, bot, {
     ...run,
     observe: ({ events, before, after, now }) => {
       end = { state: after, now };
@@ -202,7 +219,9 @@ export function learningReport(
       // The reply's words count as used once the player has seen the options.
       if (after.run && events.some((e) => e.type === "replyOptions")) for (const w of wordsOf(variantOf(after).reply)) used.add(w);
     },
-  }).reviews;
+  });
+  report.reviews = played.reviews;
+  report.days = played.days;
 
   for (const [w, u] of uses) {
     const { contextSet, lastUseDay: _, ...rest } = u;
@@ -221,6 +240,20 @@ export function learningReport(
     .filter(([stage]) => stages.has(stage))
     .flatMap(([, ws]) => ws)
     .filter((w) => !uses.has(w));
+  report.stages = [...stages].map(Number).sort((a, b) => a - b).map((stage) => {
+    const oneOff = course.scenes.filter((x) => x.stage === stage && !x.repeatable);
+    const days = oneOff.map((x) => played.firstDone[x.id]).filter((d) => d !== undefined);
+    const words = (course.stageWords[String(stage)] ?? []).filter((w) => !names.has(w));
+    const u = (w: WordId) => (report.words[w] ? report.words[w].heard + report.words[w].said : 0);
+    return {
+      stage,
+      scenes: oneOff.length,
+      scenesDone: days.length,
+      doneDay: days.length === oneOff.length && days.length ? Math.max(...days) : undefined,
+      words: words.length,
+      practised: words.filter((w) => u(w) >= TARGET_EXPOSURES).length,
+    };
+  });
   return report;
 }
 
@@ -290,15 +323,26 @@ export function nameWords(contentDir: string, lang: string): Set<WordId> {
   return out;
 }
 
-/** The run the build checks: the learner bot, two weeks, one game day per real day. */
-export const CHECK_RUN = { bot: "learner", days: 14, seed: 7 } as const;
+/**
+ * The run the build checks: the learner bot, one game day per real day, until every stage's one-off
+ * scenes are done and WINDOW_DAYS more have passed, at least two weeks and at most `days`.
+ */
+export const CHECK_RUN = { bot: "learner", days: 120, minDays: 14, seed: 7 } as const;
+
+/** learningReport's run options for CHECK_RUN. */
+export const checkRunOptions = () => ({
+  days: CHECK_RUN.days,
+  seed: CHECK_RUN.seed,
+  dayMs: DAY_MS,
+  untilDone: { after: WINDOW_DAYS, minDays: CHECK_RUN.minDays },
+});
 
 /** Runs the check run on a built course and returns its warnings (see learningWarnings). */
 export function learningCheck(contentDir: string, course: Course): string[] {
   const lang = course.language.code;
   const { syllabus, grammar } = loadSyllabus(contentDir, lang);
   const names = nameWords(contentDir, lang);
-  const r = learningReport(course, BOTS[CHECK_RUN.bot], { days: CHECK_RUN.days, seed: CHECK_RUN.seed, dayMs: DAY_MS, syllabus, grammar, names });
+  const r = learningReport(course, BOTS[CHECK_RUN.bot], { ...checkRunOptions(), syllabus, grammar, names });
   return learningWarnings(course, r, { names, grammarGaps: grammar ? stageGrammarGaps(course, grammar) : undefined });
 }
 

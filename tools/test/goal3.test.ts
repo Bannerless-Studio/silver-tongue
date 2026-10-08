@@ -20,6 +20,7 @@ describe("goal-3 report", () => {
     expect(md).toContain("### ko-seoul");
     expect(md).toMatch(/\| bot \| A1 \| A2 \| B1 \|/);
     expect(md).toMatch(/\| learner \| \d+ of \d+/);
+    for (const st of report.stages) expect(md).toMatch(new RegExp(`\\| ${st.stage} \\| \\d+ of ${st.scenes} \\|`));
     for (const limit of ["new words per exchange", "familiar lines", "uses in the 7 days", "stage words used", "grammar due"]) expect(md).toContain(limit);
   });
 

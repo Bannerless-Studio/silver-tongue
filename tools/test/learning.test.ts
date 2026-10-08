@@ -46,6 +46,26 @@ describe("learning report (fixture course)", () => {
     for (const b of r.heavyBeats) expect(b.newWords.length).toBeGreaterThan(MAX_NEW_PER_EXCHANGE);
   });
 
+  it("reports each stage: its one-off scenes finished and its words practised", () => {
+    const stages = [...new Set(course.scenes.map((x) => x.stage))].sort((a, b) => a - b);
+    expect(r.stages.map((s) => s.stage)).toEqual(stages);
+    for (const s of r.stages) {
+      expect(s.scenesDone).toBeLessThanOrEqual(s.scenes);
+      expect(s.practised).toBeLessThanOrEqual(s.words);
+      if (s.doneDay !== undefined) expect(s.scenesDone).toBe(s.scenes);
+    }
+  });
+
+  it("until done: stops a week after the last one-off scene, not before the floor, never past the cap", () => {
+    const run = (untilDone: { after: number; minDays: number }, days = 60) => learningReport(course, BOTS.right, { days, seed: 1, dayMs: DAY_MS, untilDone });
+    const r = run({ after: WINDOW_DAYS, minDays: 1 });
+    const last = Math.max(...r.stages.map((s) => s.doneDay!));
+    expect(r.stages.every((s) => s.doneDay !== undefined)).toBe(true);
+    expect(r.days).toBe(last + WINDOW_DAYS);
+    expect(run({ after: WINDOW_DAYS, minDays: 30 }).days).toBe(30);
+    expect(run({ after: WINDOW_DAYS, minDays: 1 }, 3).days).toBe(3);
+  });
+
   it("is repeatable with the same seed", () => {
     expect(learningReport(course, BOTS.learner, { days: 3, seed: 2 })).toEqual(learningReport(course, BOTS.learner, { days: 3, seed: 2 }));
   });

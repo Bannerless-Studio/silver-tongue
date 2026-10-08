@@ -1,10 +1,11 @@
 import { appendFileSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { DAY_MS, type CatalogEntry, type Course } from "@silver-tongue/core";
+import { type CatalogEntry, type Course } from "@silver-tongue/core";
 import { BOTS } from "./bots";
 import {
   CHECK_RUN,
+  checkRunOptions,
   FAMILIAR_SHARE,
   MAX_NEW_PER_EXCHANGE,
   MIN_FAMILIAR_LINES,
@@ -51,7 +52,7 @@ export function goal3Section(c: Goal3Course): string {
   if (s) {
     const levels = s.levels.map((l) => l.level);
     out.push(
-      `Syllabus words practised (used ${TARGET_EXPOSURES}+ times in ${check.days} game days), of each level's words:`,
+      `Syllabus words practised (used ${TARGET_EXPOSURES}+ times in the run), of each level's words:`,
       ``,
       `| bot | ${levels.join(" | ")} |`,
       `|---|${levels.map(() => "---:").join("|")}|`,
@@ -61,6 +62,14 @@ export function goal3Section(c: Goal3Course): string {
       ``,
     );
   }
+  out.push(
+    `Per stage (bot "${runs[0].bot}", ${check.days} game days): one-off scenes finished, and the stage's words used ${TARGET_EXPOSURES}+ times:`,
+    ``,
+    `| stage | scenes | all done by | words practised |`,
+    `|---|---:|---:|---:|`,
+    ...check.stages.map((st) => `| ${st.stage} | ${st.scenesDone} of ${st.scenes} | ${st.doneDay ? `day ${st.doneDay}` : "-"} | ${st.practised} of ${st.words} (${pct(st.practised, st.words)}) |`),
+    ``,
+  );
   if (g)
     out.push(
       `Grammar points some line uses: ${g.levels.map((l) => `${l.level} ${l.used} of ${l.points} (${pct(l.used, l.points)})${l.undetectable ? `, ${l.undetectable} not detectable` : ""}`).join(" · ")}`,
@@ -84,7 +93,7 @@ export function goal3Section(c: Goal3Course): string {
 
 /** The whole report: a heading, then one section per course. */
 export function goal3Markdown(courses: Goal3Course[]): string {
-  const head = [`## Goal 3: finishing reaches A1/A2/B1`, ``, `Learning simulator, ${CHECK_RUN.days} game days, seed ${CHECK_RUN.seed}. Report only: nothing here fails the build.`, ``];
+  const head = [`## Goal 3: finishing reaches A1/A2/B1`, ``, `Learning simulator, seed ${CHECK_RUN.seed}: each bot plays until every stage's scenes are done and ${WINDOW_DAYS} more days have passed (at least ${CHECK_RUN.minDays} days, at most ${CHECK_RUN.days}). Report only: nothing here fails the build.`, ``];
   if (!courses.length) return [...head, `No course has a syllabus yet.`].join("\n");
   return [...head, ...courses.map(goal3Section)].join("\n");
 }
@@ -108,7 +117,7 @@ export function goal3Courses(repo: string): Goal3Course[] {
     const names = nameWords(content, lang);
     const runs = GOAL3_BOTS.map((bot) => ({
       bot,
-      report: learningReport(course, BOTS[bot], { days: CHECK_RUN.days, seed: CHECK_RUN.seed, dayMs: DAY_MS, syllabus, grammar, names }),
+      report: learningReport(course, BOTS[bot], { ...checkRunOptions(), syllabus, grammar, names }),
     }));
     const warnings = learningWarnings(course, runs[0].report, { names, grammarGaps: grammar ? stageGrammarGaps(course, grammar) : undefined });
     out.push({ course, runs, warnings, names });

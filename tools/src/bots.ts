@@ -45,6 +45,8 @@ export const BOTS: Record<string, Bot> = {
 export interface BotReport {
   /** one-off scene -> the day it was first finished */
   firstDone: Record<string, number>;
+  /** game days played: `days`, or fewer when `untilDone` stopped the run early */
+  days: number;
   minWallet: number;
   maxWallet: number;
   /** days that began with no scene available anywhere */
@@ -203,6 +205,12 @@ export interface RunOptions {
    * as for a player who plays one game day per real day. Unset, the clock only ticks an hour a step.
    */
   dayMs?: number;
+  /**
+   * Stop early, at the start of a day, once every one-off scene has been played and `after` more days
+   * have passed (so the last scenes' words get their days of practice), but not before `minDays`:
+   * `days` is then only a cap, for a course whose last scenes the bot can't reach.
+   */
+  untilDone?: { after: number; minDays: number };
   /** Called after every input with the state just before it (a copy) and the events it caused. */
   observe?: (step: { input: Input; events: GameEvent[]; before: GameState; after: GameState; now: number }) => void;
 }
@@ -213,6 +221,7 @@ export function runBot(course: Course, bot: Bot, opts: RunOptions): BotReport {
   const core = createCore(course, newGame(course), { now: () => clock, rng: mulberry32(opts.seed + 1) });
   const report: BotReport = {
     firstDone: {},
+    days: 0,
     minWallet: core.state.wallet,
     maxWallet: core.state.wallet,
     deadEndDays: 0,
@@ -238,10 +247,14 @@ export function runBot(course: Course, bot: Bot, opts: RunOptions): BotReport {
   let reviewedDay = 0;
   if (course.needsName) core.send({ type: "setName", name: "Bot" });
 
-  for (let steps = 0; core.state.day <= opts.days && steps < 100_000; steps++) {
+  const oneOff = course.scenes.filter((x) => !x.repeatable).map((x) => x.id);
+  for (let steps = 0; core.state.day <= opts.days && steps < 1_000_000; steps++) {
     const s = core.state;
     if (dayChecked !== s.day) {
       dayChecked = s.day;
+      const firsts = oneOff.map((id) => report.firstDone[id]);
+      const u = opts.untilDone;
+      if (u && s.day > u.minDays && firsts.every((d) => d !== undefined) && s.day > Math.max(0, ...firsts) + u.after) break;
       if (!availableSceneIds(course, s).length) report.deadEndDays += 1;
     }
     if (s.wallet === 0 && !s.run && !availableSceneIds(course, s).some(paying)) report.brokeWithoutWork += 1;
@@ -302,6 +315,8 @@ export function runBot(course: Course, bot: Bot, opts: RunOptions): BotReport {
     }
   }
   const end = core.state;
+  // The loop ends on the morning after the last day played, unless an input was refused mid-day.
+  report.days = Math.min(report.rejected ? end.day : end.day - 1, opts.days);
   report.notesRead = end.notes.read.length;
   report.wordsHeard = Object.keys(end.words).length;
   report.wordsKnown = Object.values(end.words).filter((r) => wordState(r, clock) === "known").length;
