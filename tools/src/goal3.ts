@@ -39,6 +39,33 @@ export interface Goal3Course {
   names: Set<string>;
 }
 
+/**
+ * When a level counts as finished (gates 1.0): this share of its syllabus words is in the course, this
+ * share is practised (TARGET_EXPOSURES+ uses in the check run), and every detectable grammar point of
+ * the level is used.
+ */
+export const LEVEL_PASS = { inCourse: 0.9, practised: 0.7 } as const;
+
+export interface LevelVerdict {
+  level: string;
+  pass: boolean;
+  /** each criterion the level misses, in words */
+  missed: string[];
+}
+
+/** Pass or fail per syllabus level, judged on one run (the check bot's). */
+export function levelVerdicts(r: LearningReport): LevelVerdict[] {
+  if (!r.syllabus) return [];
+  return r.syllabus.levels.map((l) => {
+    const missed: string[] = [];
+    if (l.inCourse < LEVEL_PASS.inCourse * l.words) missed.push(`${pct(l.inCourse, l.words)} of words in the course, under ${LEVEL_PASS.inCourse * 100}%`);
+    if (l.practised < LEVEL_PASS.practised * l.words) missed.push(`${pct(l.practised, l.words)} practised, under ${LEVEL_PASS.practised * 100}%`);
+    const g = r.grammar?.levels.find((x) => x.level === l.level);
+    if (g && g.used < g.points - g.undetectable) missed.push(`${g.points - g.undetectable - g.used} detectable grammar point(s) unused`);
+    return { level: l.level, pass: !missed.length, missed };
+  });
+}
+
 const pct = (n: number, of: number) => (of ? `${Math.round((100 * n) / of)}%` : "-");
 const ok = (good: boolean) => (good ? "✅" : "⚠️");
 
@@ -49,6 +76,14 @@ export function goal3Section(c: Goal3Course): string {
   const s = check.syllabus;
   const g = check.grammar;
   const out = [`### ${course.id}`, ``];
+  const verdicts = levelVerdicts(check);
+  if (verdicts.length)
+    out.push(
+      `Verdict: ${verdicts.map((v) => `**${v.level} ${v.pass ? "pass ✅" : "not yet ❌"}**`).join(" · ")}`,
+      ``,
+      ...verdicts.filter((v) => !v.pass).map((v) => `- ${v.level}: ${v.missed.join("; ")}`),
+      ``,
+    );
   if (s) {
     const levels = s.levels.map((l) => l.level);
     out.push(
@@ -93,7 +128,7 @@ export function goal3Section(c: Goal3Course): string {
 
 /** The whole report: a heading, then one section per course. */
 export function goal3Markdown(courses: Goal3Course[]): string {
-  const head = [`## Goal 3: finishing reaches A1/A2/B1`, ``, `Learning simulator, seed ${CHECK_RUN.seed}: each bot plays until every stage's scenes are done and ${WINDOW_DAYS} more days have passed (at least ${CHECK_RUN.minDays} days, at most ${CHECK_RUN.days}). Report only: nothing here fails the build.`, ``];
+  const head = [`## Goal 3: finishing reaches A1/A2/B1`, ``, `Learning simulator, seed ${CHECK_RUN.seed}: each bot plays until every stage's scenes are done and ${WINDOW_DAYS} more days have passed (at least ${CHECK_RUN.minDays} days, at most ${CHECK_RUN.days}). A level passes when ${LEVEL_PASS.inCourse * 100}% of its words are in the course, ${LEVEL_PASS.practised * 100}% are practised (${TARGET_EXPOSURES}+ uses) and every detectable grammar point of it is used. Report only: nothing here fails the build.`, ``];
   if (!courses.length) return [...head, `No course has a syllabus yet.`].join("\n");
   return [...head, ...courses.map(goal3Section)].join("\n");
 }

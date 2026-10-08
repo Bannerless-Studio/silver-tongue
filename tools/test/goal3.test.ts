@@ -1,7 +1,7 @@
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { buildCourse } from "../src/build-course";
-import { goal3Markdown, goal3Section, warningAnnotation, type Goal3Course } from "../src/goal3";
+import { LEVEL_PASS, goal3Markdown, goal3Section, levelVerdicts, warningAnnotation, type Goal3Course } from "../src/goal3";
 import { learningReport, learningWarnings, nameWords } from "../src/learning";
 import { BOTS } from "../src/bots";
 import { loadSyllabus } from "../src/syllabus";
@@ -22,6 +22,21 @@ describe("goal-3 report", () => {
     expect(md).toMatch(/\| learner \| \d+ of \d+/);
     for (const st of report.stages) expect(md).toMatch(new RegExp(`\\| ${st.stage} \\| \\d+ of ${st.scenes} \\|`));
     for (const limit of ["new words per exchange", "familiar lines", "uses in the 7 days", "stage words used", "grammar due"]) expect(md).toContain(limit);
+  });
+
+  it("a level passes only when it meets every criterion", () => {
+    const level = { level: "A1", words: 100, inCourse: 90, practised: 70 };
+    const at = (l: Partial<typeof level>, used = 5) =>
+      levelVerdicts({
+        ...report,
+        syllabus: { ...report.syllabus!, levels: [{ ...report.syllabus!.levels[0], ...level, ...l }] },
+        grammar: { ...report.grammar!, levels: [{ level: "A1", points: 6, used, undetectable: 1 }] },
+      })[0];
+    expect(at({})).toEqual({ level: "A1", pass: true, missed: [] });
+    expect(at({ inCourse: LEVEL_PASS.inCourse * 100 - 1 }).missed).toHaveLength(1);
+    expect(at({ practised: 69 }).missed[0]).toContain("practised");
+    expect(at({}, 4).missed).toEqual(["1 detectable grammar point(s) unused"]);
+    expect(goal3Section(c)).toMatch(/Verdict: \*\*A1 /);
   });
 
   it("says so when no course has a syllabus", () => {
