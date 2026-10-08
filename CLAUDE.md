@@ -57,8 +57,7 @@ npm run build:site       # the site as GitHub Pages serves it: the quiet termina
 - Two words may share a spelling when one is flagged `"homograph": true` in the language's word files: the tagger takes the other word unless a line marks it, `<spelling>[<id>]` (`{ -item }만[ko-only] 주세요!`). The mark is taken out of the text.
 - Bonus (off-list) words go in `content/languages/<lang>/extra-words.json` with glosses in `content/learner/<l>/glosses-<lang>-extra.ftl`.
 - Every UI string the TUI uses must be listed in `packages/view/src/text.ts` `UI_KEYS`.
-- Every UI string the quiet terminal uses must be listed in `packages/view/src/text.ts` `QUIET_UI_KEYS` or `VN_UI_KEYS` (strings from the removed visual novel page that it still uses).
-- A new place or NPC needs its drawing (`content/settings/<setting>/art/places|npcs/<id>.svg`) and its `art.json` entry. Characters are faceless silhouettes in `currentColor`; no text in art. Ids inside a drawing start with its file name.
+- Every UI string the quiet terminal uses must be listed in `packages/view/src/text.ts` `QUIET_UI_KEYS` (the `vn-` ids among them are from the removed visual novel page).
 - Code ported from vocab-engine is used with its author's consent; note the origin in a comment.
 - Every release keeps saves of its content: `npm run build:course && npm run saves -- <version>` writes `tools/test/saves/<version>.json`; `tools/test/saves.test.ts` loads every kept release's saves into the current content and plays on.
 - Every release adds its `CHANGELOG.md` entry (newest first, `## <version> (<date>)`, plain words for players) before the `release:` commit.

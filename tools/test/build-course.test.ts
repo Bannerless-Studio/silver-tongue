@@ -149,10 +149,6 @@ describe("build-course (real content)", () => {
     expect(note).toContain("张");
   });
 
-  it("turns the art check on", () => {
-    expect(JSON.parse(readFileSync(join(CONTENT, "courses/zh-china.json"), "utf8")).checks.art).toBe(true);
-  });
-
   it("turns the audio check on", () => {
     expect(JSON.parse(readFileSync(join(CONTENT, "courses/zh-china.json"), "utf8")).checks.audio).toBe(true);
   });
@@ -295,18 +291,6 @@ describe("written wrong replies with their own answers", () => {
 });
 
 describe("build-course (broken content)", () => {
-  it("with art off, ships no art at all, since nothing checked it", () => {
-    const { errors, artDir } = buildChanged((dir) => {
-      const f = join(dir, "courses/zh-china.json");
-      const c = JSON.parse(readFileSync(f, "utf8"));
-      c.checks.art = false;
-      writeFileSync(f, JSON.stringify(c));
-      writeFileSync(join(dir, "settings/china-city/art/npcs/wang.svg"), `<svg viewBox="0 0 400 900"><a href="javascript:x()"/></svg>`);
-    });
-    expect(errors).toEqual([]);
-    expect(artDir).toBeUndefined();
-  });
-
   it("fails when a scene's newWords override isn't a positive integer", () => {
     const f = join("settings/china-city/scenes/street-hello.json");
     const { errors } = buildChanged((dir) => {
@@ -316,11 +300,6 @@ describe("build-course (broken content)", () => {
       writeFileSync(p, JSON.stringify(sk));
     });
     expect(errors.some((e) => e.includes('street-hello: "newWords" must be a positive integer'))).toBe(true);
-  });
-
-  it("with art on, fails on a missing drawing", () => {
-    const { errors } = buildChanged((dir) => unlinkSync(join(dir, "settings/china-city/art/npcs/wang.svg")));
-    expect(errors).toContain("settings/china-city/art/npcs/wang.svg: missing");
   });
 
   it(
@@ -447,16 +426,6 @@ describe("build-course (broken content)", () => {
 });
 
 describe("courses and the catalog", () => {
-  it("copies the setting's art next to the course", () => {
-    const out = mkdtempSync(join(tmpdir(), "st-out-"));
-    temps.push(out);
-    const built = buildAll(CONTENT, "zh-china");
-    writeCourses(out, built.builds, built.catalog, "zh-china");
-    expect(existsSync(join(out, "zh-china/art/art.json"))).toBe(true);
-    expect(existsSync(join(out, "zh-china/art/places/street.svg"))).toBe(true);
-    expect(existsSync(join(out, "zh-china/art/npcs/wang.svg"))).toBe(true);
-  });
-
   it("builds the course for its reading language with its profile and old ids", () => {
     const { course } = buildCourse(CONTENT, "zh-china");
     expect(course!.id).toBe("zh-china");

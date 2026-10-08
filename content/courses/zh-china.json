@@ -4,5 +4,5 @@
   "setting": "china-city",
   "learners": ["en"],
   "aliases": ["zh-china-en"],
-  "checks": { "coverage": [1], "audio": true, "art": true }
+  "checks": { "coverage": [1], "audio": true }
 }

@@ -1,5 +1,4 @@
-import { artProblems } from "./art";
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -40,7 +39,7 @@ export interface CourseConfig {
    * coverage: every word of a stage in MIN_SCENES_PER_WORD scenes. `true` checks every stage the
    * scenes reach, a list only those stages (the finished ones; a stage still being written would fail).
    */
-  checks: { coverage: boolean | number[]; audio: boolean; art?: boolean };
+  checks: { coverage: boolean | number[]; audio: boolean };
 }
 
 interface GroupsJson {
@@ -67,8 +66,6 @@ export interface BuildResult {
   clips: Clip[];
   /** where the clip files live: content/audio/<language> */
   audioDir: string | undefined;
-  /** the setting folder holding art.json and art/, when it has art */
-  artDir: string | undefined;
 }
 
 const readJson = <T>(path: string): T => JSON.parse(readFileSync(path, "utf8")) as T;
@@ -87,7 +84,7 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
       return undefined;
     }
   };
-  const stop = (): BuildResult => ({ course: undefined, errors, warnings, clips: [], audioDir: undefined, artDir: undefined });
+  const stop = (): BuildResult => ({ course: undefined, errors, warnings, clips: [], audioDir: undefined });
 
   const cfg = attempt(`courses/${courseId}.json`, () => readJson<CourseConfig>(join(root, "courses", `${courseId}.json`)));
   if (!cfg) return stop();
@@ -474,13 +471,10 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
     if (name) actions[name] = [...new Set([...(actions[name] ?? []), ...Object.keys(ex.expect).filter((k) => k !== "action"), "npc"])];
   }
   errors.push(...narrationProblems(learnerFtl, learner, actions));
-  if (cfg.checks.art) errors.push(...artProblems(settingDir, world).map((e) => `settings/${cfg.setting}/${e}`));
-  // only checked art ships: the page inlines these drawings
-  const artDir = cfg.checks.art && existsSync(join(settingDir, "art")) ? settingDir : undefined;
   // Ship only the words the course uses: rank is the share of these that are known, and
   // the pack has far more words than one course needs. (The checks above see the whole pack.)
   course.words = Object.fromEntries(Object.entries(words).filter(([id]) => used.has(id)));
-  return { course, errors, warnings, clips, audioDir, artDir };
+  return { course, errors, warnings, clips, audioDir };
 }
 
 const NO_LEARNERS = "learners must list at least one reading language";
@@ -592,10 +586,6 @@ export function writeCourses(out: string, builds: BuiltCourses["builds"], catalo
   for (const { course, learner, result } of builds) {
     mkdirSync(join(out, course), { recursive: true });
     writeFileSync(join(out, course, `${learner}.json`), JSON.stringify(result.course));
-    if (result.artDir) {
-      cpSync(join(result.artDir, "art"), join(out, course, "art"), { recursive: true });
-      cpSync(join(result.artDir, "art.json"), join(out, course, "art", "art.json"));
-    }
     console.log(`built ${course}/${learner}: ${result.course!.scenes.length} scenes`);
   }
   const index = join(out, "index.json");

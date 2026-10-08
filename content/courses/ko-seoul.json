@@ -7,7 +7,6 @@
  ],
  "checks": {
   "coverage": [],
-  "audio": true,
-  "art": false
+  "audio": true
  }
 }

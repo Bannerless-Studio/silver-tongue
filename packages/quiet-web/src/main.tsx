@@ -15,9 +15,6 @@ import { opensOnStory } from "./opening";
 declare const __VERSION__: string;
 const root = document.getElementById("app")!;
 const base = coursesBase(document);
-// The other pages' addresses, set when the pages are served together (tools/src/site.ts).
-const textUrl = metaContent(document, "st-text");
-const vnUrl = metaContent(document, "st-vn");
 
 // Private windows and blocked site data make localStorage throw: play on without saving.
 const noStorage: KeyValue = {
@@ -146,8 +143,6 @@ function play(opened: Opened) {
       updateWebSettings(kv, { ruby: r });
     },
     switchTo: (id, learner) => void switchTo(id, learner),
-    textUrl,
-    vnUrl,
     games: {
       list: () => {
         const list = store.list();

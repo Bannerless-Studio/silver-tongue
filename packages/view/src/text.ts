@@ -204,44 +204,6 @@ export const UI_KEYS: Record<string, string[]> = {
   ...Object.fromEntries(REJECT_REASONS.map((c) => [`reject-${c}`, []])),
 };
 
-/** Message ids the visual novel uses, with their variables; checked like UI_KEYS. */
-export const VN_UI_KEYS: Record<string, string[]> = {
-  "vn-tagline": [],
-  "vn-continue": [],
-  "vn-new-game": [],
-  "vn-tap": [],
-  "vn-notebook": [],
-  "vn-book": [],
-  "vn-backlog": [],
-  "vn-settings": [],
-  "vn-games": [],
-  "vn-menu": [],
-  "vn-play-text": [],
-  "vn-play-visual": [],
-  "vn-play-quiet": [],
-  "vn-replay": [],
-  "vn-slow": [],
-  "vn-meaning": [],
-  "vn-undo": [],
-  "vn-send": [],
-  "vn-hint": [],
-  "vn-name-go": [],
-  "vn-sound": [],
-  "vn-speed": ["speed"],
-  "vn-speed-slow": [],
-  "vn-speed-normal": [],
-  "vn-speed-fast": [],
-  "vn-advance": ["mode"],
-  "vn-advance-auto": [],
-  "vn-advance-tap": [],
-  "vn-day": ["day"],
-  "vn-parcel": [],
-  "vn-rent-late": [],
-  "vn-turn-phone": [],
-  "vn-dismiss": [],
-  "vn-play-word": [],
-};
-
 /** Message ids the quiet terminal page uses, with their variables; checked like UI_KEYS. */
 export const QUIET_UI_KEYS: Record<string, string[]> = {
   "quiet-anchor": ["place", "day", "part"],
@@ -316,6 +278,21 @@ export const QUIET_UI_KEYS: Record<string, string[]> = {
   "quiet-st-parcel": [],
   "quiet-st-no-parcel": [],
   "quiet-no-save": [],
+  // ids from the removed visual novel page, kept as they were
+  "vn-tagline": [],
+  "vn-continue": [],
+  "vn-new-game": [],
+  "vn-tap": [],
+  "vn-settings": [],
+  "vn-games": [],
+  "vn-undo": [],
+  "vn-send": [],
+  "vn-name-go": [],
+  "vn-speed": ["speed"],
+  "vn-speed-slow": [],
+  "vn-speed-normal": [],
+  "vn-speed-fast": [],
+  "vn-play-word": [],
 };
 
 /** Every UI message that is missing or can't be formatted with the variables the TUI passes. */
@@ -323,7 +300,7 @@ export function uiTextProblems(ftl: string, locale: string): string[] {
   const bundle = new FluentBundle(locale, { useIsolating: false });
   bundle.addResource(new FluentResource(ftl));
   const problems: string[] = [];
-  for (const [id, vars] of Object.entries({ ...UI_KEYS, ...VN_UI_KEYS, ...QUIET_UI_KEYS })) {
+  for (const [id, vars] of Object.entries({ ...UI_KEYS, ...QUIET_UI_KEYS })) {
     const msg = bundle.getMessage(id);
     if (!msg?.value) {
       problems.push(`learner text: missing "${id}"`);

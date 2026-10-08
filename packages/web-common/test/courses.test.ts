@@ -11,8 +11,8 @@ const doc = (metas: Record<string, string>): MetaSource => ({
 
 describe("page metas", () => {
   it("reads a meta's content, empty when it is missing", () => {
-    expect(metaContent(doc({ "st-vn": "../" }), "st-vn")).toBe("../");
-    expect(metaContent(doc({}), "st-vn")).toBe("");
+    expect(metaContent(doc({ "st-course": "../" }), "st-course")).toBe("../");
+    expect(metaContent(doc({}), "st-course")).toBe("");
   });
 
   it("finds the courses next to the page unless a meta says where", () => {

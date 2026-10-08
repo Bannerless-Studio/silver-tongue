@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { makeText, uiTextProblems, VN_UI_KEYS } from "../src/index";
+import { makeText, QUIET_UI_KEYS, uiTextProblems } from "../src/index";
 
 describe("text", () => {
   const t = makeText("hello = Hello, { $name }!\n", "en");
@@ -19,10 +19,9 @@ describe("text", () => {
     expect(uiTextProblems(en, "en")).toEqual([]);
   });
 
-  it("the English UI file has every visual novel message too", () => {
+  it("the English UI file has the quiet page's messages, the visual novel's old ids among them", () => {
     const en = readFileSync(new URL("../../../content/learner/en/ui.ftl", import.meta.url), "utf8");
-    expect(Object.keys(VN_UI_KEYS)).toContain("vn-continue");
-    expect(uiTextProblems(en, "en")).toEqual([]);
+    expect(Object.keys(QUIET_UI_KEYS)).toContain("vn-continue");
     const withoutVn = en.split("\n").filter((l) => !l.startsWith("vn-")).join("\n");
     expect(uiTextProblems(withoutVn, "en")).toContain('learner text: missing "vn-continue"');
   });

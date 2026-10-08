@@ -229,8 +229,6 @@ export function Menu({ q, page, onClose, onGames }: { q: Quiet; page: Page; onCl
         page.setSpeed(next);
       }}>{q.t("vn-speed", { speed: q.t(`vn-speed-${speed}`) })}</button>}
       {screen === "main" && <button type="button" class="row" onClick={onGames}>{q.t("vn-games")}</button>}
-      {screen === "main" && page.vnUrl && <a class="row" href={page.vnUrl}>{q.t("vn-play-visual")}</a>}
-      {screen === "main" && page.textUrl && <a class="row" href={page.textUrl}>{q.t("vn-play-text")}</a>}
     </Overlay>
   );
 }

@@ -31,8 +31,6 @@ export interface Page {
     exportLine(): Promise<string>;
     importLine(line: string): Promise<string | null>;
   };
-  textUrl: string;
-  vnUrl: string;
 }
 
 type Open = Overlay | "games" | null;
