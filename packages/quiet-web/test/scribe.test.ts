@@ -1,14 +1,20 @@
-import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { buildCourse } from "../../../tools/src/build-course";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { createCore, mulberry32, newGame, PLAYER_MARK, type Course, type GameEvent, type RenderedLine } from "@silver-tongue/core";
+import { createCore, mulberry32, newGame, personalize, PLAYER_MARK, type Course, type GameEvent, type RenderedLine } from "@silver-tongue/core";
 import { fixtureWithText } from "@silver-tongue/view/testing";
-import { bestMeaning, freshOnReply, freshOnTheirLine, meaningMatches, SCRIBE_SCENES, scribeAccepts, scribeCountKey, type CourseExtra } from "@silver-tongue/view";
-import { scribeOn, scribeRound, updateRound, writeCount } from "../src/scribe";
+import { bestMeaning, makeText, normalizeMeaning, scribeRules, freshOnReply, freshOnTheirLine, meaningMatches, scribeScenes, scribeAccepts, scribeReplyId, scribeCountKey, type CourseExtra } from "@silver-tongue/view";
+import { emptyOpeningChoices, type OpeningChoices } from "../src/door-choices";
+import { resolveScribeReply, openingStore, scribeOn, scribeRound, updateRound, writeCount } from "../src/scribe";
+
+const realCourse = buildCourse(fileURLToPath(new URL("../../../content", import.meta.url)), "ko-seoul").course!;
+const SCRIBE_SCENES = scribeScenes(realCourse);
 
 /** A course with or without the desk (papers to read by romanising). */
 const course = (desk: boolean) => {
   const c = fixtureWithText();
   (c as unknown as CourseExtra).language.book = true;
+  (c as unknown as CourseExtra).labOpening = (realCourse as CourseExtra).labOpening;
   (c as unknown as CourseExtra).papers = desk ? [{ id: "card", kind: "card", lines: [{ id: "name", text: "x" }] }] : [];
   return c;
 };
@@ -43,6 +49,17 @@ describe("rounds", () => {
   });
   afterEach(() => void delete (globalThis as { localStorage?: Storage }).localStorage);
 
+  it("persists opening choices either way across recreated stores, isolated by saved game", () => {
+    for (const why of ["reply", "silence"] as const) {
+      const choices: OpeningChoices = { options: { "room-wake:message": "alt1", "room-minjun:why": why }, cardAt: 0, cardRead: false };
+      openingStore(realCourse, "a").save(choices);
+      expect(openingStore(realCourse, "a").load()).toEqual(choices);
+      expect(openingStore(realCourse, "b").load()).toEqual(emptyOpeningChoices());
+    }
+    openingStore(realCourse, "a").save(emptyOpeningChoices());
+    expect(openingStore(realCourse, "a").load()).toEqual(emptyOpeningChoices());
+  });
+
   const quiet = () => ({}) as object; // a Quiet is only an owner key here
   it("count the exchanges a course has begun, once each, and keep that between visits", () => {
     const q = quiet();
@@ -53,6 +70,17 @@ describe("rounds", () => {
     expect(scribeRound(quiet(), "ko-seoul", 9).index).toBe(2); // a new visit
     expect(scribeRound(q, "other", 1).index).toBe(0);
   });
+  it("asks for the tied slips rather than saying the first, scoped to this exchange", () => {
+    const slips = [{ meaning: "Goodbye.", intent: "Leave" }, { meaning: "Goodbye.", intent: "Stay" }, { meaning: "Hello." }];
+    const match = resolveScribeReply("bye", slips);
+    expect(match).toEqual({ kind: "choose", indices: [0, 1] });
+    const q = quiet();
+    if (match.kind === "choose") updateRound(q, "ko-seoul", 1, { ties: match.indices });
+    expect(scribeRound(q, "ko-seoul", 1).ties.map((i) => slips[i].intent)).toEqual(["Leave", "Stay"]);
+    expect(scribeRound(q, "ko-seoul", 2).ties).toEqual([]);
+    expect(resolveScribeReply("hello", slips)).toEqual({ kind: "say", index: 2 });
+  });
+
   it("change by patch and keep the rest", () => {
     const q = quiet();
     scribeRound(q, "ko-seoul", 1);
@@ -79,9 +107,10 @@ describe("rounds", () => {
 });
 
 describe("the real scribe scenes (ko-seoul build)", () => {
-  const built = JSON.parse(readFileSync(new URL("../../../dist/courses/ko-seoul/en.json", import.meta.url), "utf8")) as { scenes: { id: string; exchanges: { id: string; variants: Record<string, { npc: RenderedLine; reply: RenderedLine; alts?: RenderedLine[] }> }[] }[] };
+  const built = buildCourse(fileURLToPath(new URL("../../../content", import.meta.url)), "ko-seoul").course!;
   const name = (s?: string) => s?.split(PLAYER_MARK).join("Alex") ?? "";
-  const scenes = SCRIBE_SCENES.map((id) => built.scenes.find((s) => s.id === id)!);
+  const SCRIBE_ACCEPTS = scribeRules(built);
+  const scenes = scribeScenes(built).map((id) => built.scenes.find((s) => s.id === id)!);
 
   it("have a meaning on every line the player reads or types", () => {
     for (const s of scenes) for (const ex of s.exchanges) for (const v of Object.values(ex.variants)) for (const l of [v.npc, v.reply, ...(v.alts ?? [])]) expect(name(l.meaning), `${s.id}/${ex.id}`).not.toBe("");
@@ -95,22 +124,46 @@ describe("the real scribe scenes (ko-seoul build)", () => {
           const sibling = Object.entries(ex.variants).filter(([k]) => k !== key).map(([, o]) => o.reply).slice(0, 2);
           const slips = [v.reply, ...(v.alts ?? []), ...sibling];
           const typed = name(v.reply.meaning);
-          const at = bestMeaning(typed, slips.map((l) => ({ meaning: name(l.meaning), accepts: scribeAccepts(l.meaning ?? "") })));
+          const at = bestMeaning(typed, slips.map((l) => ({ meaning: name(l.meaning), accepts: scribeAccepts(built, s.id, scribeReplyId(built, s.id, ex.id, personalize(l, "Alex"), "Alex"), "Alex") })));
           expect(slips[at]?.text, `${s.id}/${ex.id}[${key}] typing "${typed}"`).toBe(v.reply.text);
         }
       }
     }
   });
 
-  it("accept their line's own meaning", () => {
-    for (const s of scenes) for (const ex of s.exchanges) for (const v of Object.values(ex.variants)) {
-      expect(meaningMatches(name(v.npc.meaning), name(v.npc.meaning), scribeAccepts(v.npc.meaning ?? ""))).toBe(true);
+  it("think at the landlady's door; confused at Min-jun's first line; understood from the moment he speaks English", () => {
+    const profile = (built as CourseExtra).labOpening!;
+    expect(Object.keys(profile.deduce ?? {})).toEqual(["room-wake:call", "room-wake:message", "room-wake:bye"]);
+    expect(profile.confused).toEqual(["room-minjun:who"]);
+    const lines = scenes.flatMap((s) => s.exchanges.map((ex) => `${s.id}:${ex.id}`));
+    const from = lines.indexOf("room-minjun:english");
+    expect(from).toBe(lines.indexOf("room-minjun:who") + 1);
+    expect(profile.understood).toEqual(lines.slice(from));
+  });
+
+  it("work out the thinking lines from cards: 2 to 4 known cards, one right, a thought; every slip maps back to its line", () => {
+    const profile = (built as CourseExtra).labOpening!;
+    const t = makeText(built.learnerFtl, built.learner);
+    for (const s of scenes) for (const ex of s.exchanges) {
+      const key = `${s.id}:${ex.id}`;
+      const d = profile.deduce?.[key];
+      if (!d) continue;
+      expect(d!.cards.length, key).toBeGreaterThanOrEqual(2);
+      expect(d!.cards.length, key).toBeLessThanOrEqual(4);
+      expect(d!.cards.filter((c) => c === d!.right), key).toHaveLength(1);
+      for (const c of d!.cards) expect(t.has(profile.cards![c].label), `${key}: ${c}`).toBe(true);
+      expect(t.has(d!.thought), key).toBe(true);
+      for (const v of Object.values(ex.variants)) for (const [i, l] of [v.reply, ...(v.alts ?? [])].entries()) {
+        expect(scribeReplyId(built, s.id, ex.id, personalize(l, "Alex"), "Alex"), key).toBe(i ? `${ex.id}-alt${i}` : `${ex.id}-reply`);
+      }
     }
+    // Typing is for later: nothing in the opening is accepted from a typed meaning.
+    expect(Object.keys(SCRIBE_ACCEPTS).filter((k) => scenes.some((s) => k.startsWith(`${s.id}:`)))).toEqual([]);
   });
 });
 
 describe("first-time glosses (real ko-seoul room-wake)", () => {
-  const c = JSON.parse(readFileSync(new URL("../../../dist/courses/ko-seoul/en.json", import.meta.url), "utf8")) as Course;
+  const c = buildCourse(fileURLToPath(new URL("../../../content", import.meta.url)), "ko-seoul").course!;
   const play = () => {
     let clock = 0;
     const core = createCore(c, newGame(c), { now: () => clock, rng: mulberry32(1) });

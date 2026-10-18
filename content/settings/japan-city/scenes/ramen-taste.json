@@ -1,0 +1,74 @@
+{
+ "id": "ramen-taste",
+ "place": "ramen",
+ "npc": "ramen_owner",
+ "stage": 1,
+ "after": [
+  "tanaka-rain"
+ ],
+ "requires": {},
+ "repeatable": false,
+ "trustGain": 1,
+ "exchanges": [
+  {
+   "id": "want",
+   "slots": {},
+   "expect": {
+    "action": "want"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "taste",
+   "slots": {},
+   "expect": {
+    "action": "taste"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "price",
+   "slots": {},
+   "expect": {
+    "action": "price"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "expensive",
+   "slots": {},
+   "expect": {
+    "action": "expensive"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "cheap",
+   "slots": {},
+   "expect": {
+    "action": "cheap"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "drink",
+   "slots": {},
+   "expect": {
+    "action": "drink"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  }
+ ]
+}

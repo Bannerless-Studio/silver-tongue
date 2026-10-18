@@ -26,7 +26,7 @@
     "street"
    ],
    "after": [
-    "shop-count"
+    "street-hungry"
    ]
   },
   "shop": {
@@ -60,11 +60,17 @@
   "landlady": {
    "place": "room"
   },
+  "minjun": {
+   "place": "room",
+   "introducedAfter": "room-minjun"
+  },
   "oldman": {
-   "place": "street"
+   "place": "street",
+   "introducedAfter": "street-introductions"
   },
   "jiwoo": {
-   "place": "stall"
+   "place": "stall",
+   "introducedAfter": "stall-intro"
   },
   "clerk": {
    "place": "shop"
@@ -81,6 +87,6 @@
  },
  "mentor": {
   "npc": "oldman",
-  "after": "street-hello"
+  "after": "street-introductions"
  }
 }

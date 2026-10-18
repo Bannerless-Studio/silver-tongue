@@ -1,7 +1,7 @@
 # Reading aloud, and someone talking at the back.
 
-read = 都看书！读这本书，十分钟。
-read-reply = 好，我读。
+read = 都看书！读这本书。
+read-reply = 好，我读十分钟。
 read-alt1 = 我没有书。
 read-alt2 = 九月二十六日。
 
@@ -34,3 +34,9 @@ bye = 好，回家！
 bye-reply = 再见，老师！
 bye-alt1 = 我同学在说话！
 bye-alt2 = 没关系！
+
+chat = { -topic }
+chat-reply = { -topic(form: "reply") }
+
+chat-2 = { -topic }
+chat-2-reply = { -topic(form: "reply") }

@@ -6,17 +6,17 @@ hungry-alt1-intent = Say your name
 hungry-alt2 = Goodbye!
 hungry-alt2-intent = Say goodbye
 
-noodles = Want some noodles?
-noodles-reply = Yes, please!
-noodles-reply-intent = Accept
+noodles = Very hungry?
+noodles-reply = Very! Let's have noodles!
+noodles-reply-intent = Say you want noodles
 noodles-alt1 = My name is { $player }.
 noodles-alt1-intent = Say your name
 noodles-alt2 = Goodbye!
 noodles-alt2-intent = Say goodbye
 
-like = Do you like noodles?
-like-reply = I do! I like noodles.
-like-reply-intent = Say you like them
+like = Noodles all right with you?
+like-reply = Very good! I like noodles.
+like-reply-intent = Say you like noodles
 like-alt1 = My name is { $player }.
 like-alt1-intent = Say your name
 like-alt2 = Goodbye, Old Wang!

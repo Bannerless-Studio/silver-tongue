@@ -14,23 +14,23 @@ names-alt1-intent = Say you're Old Wang
 names-alt2 = I like noodles.
 names-alt2-intent = Say you like noodles
 
-six-seven = One, two, three, four, five, six, seven.
-six-seven-reply = Six, seven.
+six-seven = One, two, three, four, five…
+six-seven-reply = Six, seven!
 six-seven-reply-intent = Count on
 six-seven-alt1 = One, two.
 six-seven-alt1-intent = Count on
 six-seven-alt2 = Very well!
 six-seven-alt2-intent = Say you're well
 
-eight-nine = Six, seven, eight, nine.
-eight-nine-reply = Eight, nine.
+eight-nine = Six, seven…
+eight-nine-reply = Eight, nine!
 eight-nine-reply-intent = Count on
 eight-nine-alt1 = Six, seven.
 eight-nine-alt1-intent = Count on
 eight-nine-alt2 = Goodbye!
 eight-nine-alt2-intent = Say goodbye
 
-ten = Eight, nine, ten!
+ten = Eight, nine…
 ten-reply = Ten!
 ten-reply-intent = Say ten
 ten-alt1 = Five!
@@ -38,9 +38,17 @@ ten-alt1-intent = Say five
 ten-alt2 = I'm hungry.
 ten-alt2-intent = Say you're hungry
 
+things = What's in here?
+things-reply = Tables, and chairs.
+things-reply-intent = Say what's there
+things-alt1 = Ten!
+things-alt1-intent = Say ten
+things-alt2 = My name is { $player }.
+things-alt2-intent = Say your name
+
 job = Very good! Do you want to work?
-job-reply = I do!
-job-reply-intent = Say yes
+job-reply = I do! I want to work.
+job-reply-intent = Say you want the job
 job-alt1 = My name is { $player }.
 job-alt1-intent = Say your name
 job-alt2 = I like noodles.

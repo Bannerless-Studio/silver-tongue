@@ -1,14 +1,21 @@
 # The story. intro-1, intro-2, … open a new game ($currency, $wallet, $rent are available).
-intro-1 = You fell asleep over a Korean textbook. You wake on a bed that isn't yours, in a room you have never seen, and the noise from the street is nothing like home.
-intro-2 = On the desk: someone's ID card, a stack of unopened bills, a wallet with { $currency }{ $wallet } in it. Your own things are gone. Your pockets are empty. The textbook is still in your hand.
+intro-1 = You fell asleep over a textbook. You wake on a bed that isn't yours, in a room you have never seen, and the noise from the street is nothing like home.
+intro-2 = On the desk: someone's ID card, a newspaper, a note about money. The textbook is still in your hand. It isn't yours.
 intro-3 = Voices pass under the window. You can't understand a word.
 
 # After the last paper on the desk is read (the quiet page's desk).
 desk-done = Someone is knocking.
 # What each paper lets the player tell once it is read (the quiet page's desk): `paper-<id>-learned`.
-paper-idcard-learned = A name: gim min-jun, which he'd spell Kim Min-jun. Not yours. This must be his room.
+paper-book-learned = Interesting… a book for learning English: Korean phrases, the English beside them. And a name inside the cover: 김민준.
+# A line's own meaning, shown beside it once read (a phrasebook): `paper-<paper>-<line>`.
+paper-book-title = English
+paper-book-yes = yes
+paper-book-no = no
+paper-book-bye-stay = goodbye (I'm off)
+paper-book-bye-go = goodbye (you go)
+paper-idcard-learned = The same name as inside the book: 김민준, and in English letters, KIM MIN-JUN. Not yours.
 paper-newspaper-learned = A newspaper from Seoul. The date on it: the year 2000.
-paper-bill-learned = A bill. 50,000 won, unpaid.
+paper-bill-learned = A note: 방세, 50,000 won. Someone owes it.
 
 # Where and when, on the top bar.
 setting-where = Seoul, 2000
@@ -47,27 +54,24 @@ npc-creditor = A man in a suit
 
 # Scene names for the menu; scene-<id>-start and scene-<id>-end are optional narration.
 scene-room-wake = Answer the door
-scene-room-wake-start = You open the door. A woman in slippers, keys in hand, looks past you into the room.
-scene-room-wake-end = She glances at the unpaid bill on the desk, looks you up and down, and goes back downstairs without another word. Below the window, an old man on a bench is looking up at you.
+scene-room-wake-start = A knock. An old woman in slippers, glasses pushed up on her head, peers up at you.
+scene-room-wake-end = She shuffles off downstairs. Her words go round and round in your head: 방세 내세요.
 
-scene-street-hello = Say hello to the old man
-scene-street-hello-start = The old man on the bench looks up as you come out, and says something to you.
-scene-street-hello-end = Grandpa Park nods, satisfied. You stand to go, and he asks you something, fast.
 scene-street-again = Catch what he said
-scene-street-again-start = He says it again, just as fast. You catch nothing.
-scene-street-again-end = He laughs, pulls you back down onto the bench, and nods at the textbook in your hand.
+scene-street-again-start = Grandpa Park says something to you, too fast to catch.
+scene-street-again-end = He laughs, and nods at the textbook in your hand.
 scene-street-what = Show him your textbook
 scene-street-what-start = Grandpa Park taps the book's cover.
 scene-street-what-end = He folds his newspaper and nods across the alley at the shop.
 scene-street-hungry = Find something to eat
-scene-street-hungry-start = Last night's food didn't go far. Your stomach growls, and Grandpa Park hears it and laughs.
-scene-street-hungry-end = He points across the alley at the shop, then down it, at a tent with steam rising from it.
+scene-street-hungry-start = Your stomach growls. You haven't eaten since you woke up in Min-jun's room. Grandpa Park hears it and laughs.
+scene-street-hungry-end = He points across the alley at the shop, then down it, at the food stall's steaming tent.
 
 scene-shop-prices = Buy some bread
 scene-shop-prices-start = A bell over the door. A young clerk looks up from a comic book. Bread and milk sit by the till.
 scene-shop-prices-end = He took your five-thousand-won note and dropped one note back in your palm. He's already reading again.
 scene-street-numbers = Show Grandpa Park your change
-scene-street-numbers-start = Grandpa Park saw it all through the shop window. He's waiting outside the door, and holds out his hand for your change.
+scene-street-numbers-start = Grandpa Park saw your shopping through the shop window. He holds out his hand for your change.
 scene-street-numbers-end = He holds up your one note, then three fingers, and glares across the alley at the shop.
 scene-shop-count = Ask for the rest of your change
 scene-shop-count-start = The same clerk, the same comic. You hold up the one note he gave you.
@@ -86,8 +90,8 @@ scene-stall-family = Take a break with Ji-woo
 scene-stall-family-start = Between customers, Ji-woo takes a photo out of her apron pocket.
 scene-stall-family-end = She puts the photo away and doesn't take it out again. The face in it looked familiar.
 
-scene-room-rent = See what the landlady wants
-scene-room-rent-start = The landlady is waiting outside your door with a ledger.
+scene-room-rent = The landlady is back
+scene-room-rent-start = The landlady is back, as she said she would be, with a ledger.
 scene-room-rent-end = The landlady writes 50,000 on a slip of paper and tapes it to your door.
 
 scene-room-letter = Take the letter
@@ -100,7 +104,7 @@ scene-room-creditor = Answer the knock
 scene-room-creditor-start = Three hard knocks. A man in a suit fills the doorway, looking past you into the room.
 scene-room-creditor-end = He writes something in a little notebook and goes down the stairs slowly, as if he has all the time in the world.
 scene-copy-intro = Look in at the copy shop
-scene-copy-intro-start = The man at the copiers waves you in over the noise.
+scene-copy-intro-start = The man at the copiers is buried in orders. He waves you in over the noise.
 scene-copy-intro-end = He hands you a stack of paper still warm from the machine. You start tomorrow.
 scene-copy-shift = Work at the copy shop
 scene-copy-shift-start = Students come in with books, letters and photos: copy what they ask for, as many as they ask.
@@ -118,9 +122,12 @@ asked-buy = The clerk asked about { $item }.
 # Conversations: what was asked, shown after a wrong reply. These are shared by every scene that
 # uses the action, so they say "they" unless only one person ever uses it.
 asked-call = The landlady called for Min-jun.
-asked-friend = The landlady asked if you're Min-jun's friend.
+asked-friend = { $npc } asked if you're Min-jun's friend.
 asked-missing = The landlady asked where Min-jun is.
-asked-who = The landlady asked who you are.
+asked-who = { $npc } asked who you are.
+asked-rent = The landlady wanted the rent.
+asked-mistaken = The landlady took you for Min-jun.
+asked-name = The landlady didn't catch your name.
 asked-bye = { $npc } said goodbye.
 asked-hello = { $npc } said hello.
 asked-park = Grandpa Park told you his name.
@@ -139,7 +146,9 @@ asked-shop = Grandpa Park told you there's bread at the shop.
 asked-stall = Grandpa Park pointed out the shop and the snack stall.
 asked-go = Grandpa Park sent you on your way.
 asked-welcome = { $npc } welcomed you in.
+asked-bread = The clerk said there's bread.
 asked-milk = The clerk said there's milk too.
+asked-total = The clerk put the bread and milk on the counter.
 asked-price = The clerk told you the prices.
 asked-again = The clerk said the prices again, louder.
 asked-slowly = The clerk said the prices slowly.
@@ -158,6 +167,7 @@ asked-fed = Ji-woo set a plate in front of you.
 asked-jiwoo = Ji-woo told you her name and asked yours.
 asked-eat = Ji-woo told you to eat.
 asked-tasty = Ji-woo asked if it's good.
+asked-gimbap = Ji-woo offered you gimbap.
 asked-work = Ji-woo asked if you'll work with her.
 asked-photo = Ji-woo showed you something.
 asked-brother = Ji-woo told you about her brother.
@@ -198,3 +208,86 @@ notebook-topic-numbers_2_5 = Numbers
 notebook-topic-counts = Numbers
 notebook-topic-goods = Things
 notebook-topic-papers = Things
+
+# Min-jun opening (lab). Script: docs/superpowers/specs/2026-10-07-minjun-opening-script.md
+npc-minjun = Min-jun
+npc-minjun-unmet = A young man
+scene-room-minjun = Keys in the door
+scene-room-minjun-start = Keys in the door. A young man with a shopping bag stops dead in the doorway. He has the face from the ID.
+scene-room-minjun-end = He grabs his keys, and the two of you head down the stairs.
+scene-street-introductions = Meet Grandpa Park
+scene-street-introductions-start = Min-jun walks you down to the old man on the bench.
+scene-street-introductions-end = Min-jun checks his phone. "Class," he says in English, and points at you: "See you at home." Then he's gone up the alley. Grandpa Park pats the bench beside him: from now on, he's your teacher.
+
+# Min-jun's English, said before his Korean line.
+door-room-minjun-who-direction = He says something, sharp and quick. You don't understand a word of it. You point at yourself.
+door-room-minjun-minjun-direction = "Min-jun," he says in English, tapping his chest.
+door-room-minjun-english-direction = He sees his book in your hand. "My book," he says. In English! He speaks English.
+door-room-minjun-why-direction = He waits for you to explain. The landlady's words are still going round in your head.
+door-room-minjun-together-direction = He taps the book, then you. "You teach English," he says, in English. "I teach Korean."
+door-room-minjun-leave-direction = "Grandpa Park," he says in English, pointing down at the street. "He helps."
+
+asked-message = The landlady gave you a message for Min-jun.
+asked-minjun = Min-jun told you his name.
+asked-english = Min-jun asked if you know English.
+asked-why = Min-jun asked what's going on.
+asked-together = Min-jun offered you a deal.
+asked-leave = Min-jun wants you to come with him.
+
+# Each option's reaction, shown at once.
+door-room-wake-call-reply-reaction = She pulls her glasses down and looks properly. Not him.
+door-room-wake-call-silence-reaction = She pulls her glasses down, looks properly, and laughs at herself.
+door-room-wake-message-reply-reaction = She nods, satisfied. You've promised something.
+door-room-wake-message-alt1-reaction = She says it again, slower, and taps your chest. You're telling him whether you like it or not.
+door-room-wake-message-silence-reaction = She says it once more, slowly. You catch yourself repeating it.
+door-room-wake-bye-reply-reaction = She smiles at the right goodbye.
+door-room-wake-bye-alt1-reaction = She laughs and goes anyway.
+door-room-wake-bye-silence-reaction = She doesn't wait for an answer.
+door-room-minjun-who-reply-reaction = He repeats your name, more confused than before.
+door-room-minjun-who-alt1-reaction = He blinks. Whatever he asked, that wasn't the answer.
+door-room-minjun-who-silence-reaction = He looks at you, at the open door, and back at you.
+door-room-minjun-minjun-reply-reaction = He shakes your hand, still baffled.
+door-room-minjun-minjun-alt1-reaction = He laughs. You've only just met.
+door-room-minjun-minjun-silence-reaction = He points at himself again, "Min-jun", and waits.
+door-room-minjun-english-reply-reaction = His face lights up: a real English speaker.
+door-room-minjun-english-alt1-reaction = He taps the English in the margins and grins. You were reading it. You're English.
+door-room-minjun-english-silence-reaction = He points at the book, then at your mouth: English? You nod.
+door-room-minjun-why-reply-reaction = He bursts out laughing: you sound exactly like her, finger and all. Then it lands. "방세," he groans, and rubs his fingers together: money, for the room. "Rent." So that's what she said. Pay the rent!
+door-room-minjun-why-alt1-reaction = He blinks. You're sending him out of his own room? He laughs.
+door-room-minjun-why-silence-reaction = He spots the note on the desk and groans: 방세. Whatever she said, he knows what it was about.
+door-room-minjun-together-reply-reaction = You shake on it.
+door-room-minjun-together-alt1-reaction = "You need me," he says in English, and points at the note on the desk. He's right, and you both know it.
+door-room-minjun-together-silence-reaction = He takes your hand and shakes it for you.
+door-room-minjun-leave-reply-reaction = He grins and holds the door open for you.
+door-room-minjun-leave-alt1-reaction = He pulls you up anyway. You're not staying in his room alone.
+door-room-minjun-leave-silence-reaction = He takes that as a yes.
+door-street-introductions-park-reply-reaction = He beams at hearing his name. Min-jun gives you a thumbs-up.
+door-street-introductions-park-alt1-reaction = He nods and taps his chest: Park.
+door-street-introductions-park-silence-reaction = Min-jun nudges you. Park laughs and taps his chest: Park.
+door-street-introductions-friend-reply-reaction = Min-jun grins. "Friend," he says, in English.
+door-street-introductions-friend-alt1-reaction = Min-jun clutches his heart. Park laughs at both of you.
+door-street-introductions-friend-silence-reaction = Min-jun answers for you: "네!"
+door-street-introductions-sit-reply-reaction = You sit.
+door-street-introductions-sit-alt1-reaction = He shrugs. The seat stays free.
+door-street-introductions-sit-silence-reaction = He pats the bench until you sit.
+door-street-introductions-understand-reply-reaction = He nods. An honest answer.
+door-street-introductions-understand-alt1-reaction = He tries a fast sentence. You catch none of it. Min-jun snorts.
+door-street-introductions-understand-silence-reaction = He points at the book in your hand and nods.
+
+# Clues and memories: what floats up when you try to work out a line.
+card-id = The ID card: 김민준
+card-bill = The note on the desk: 방세 50,000원
+card-book = The book's cover: 영어
+card-glasses = Her glasses, pushed up on her head
+card-phrase-bye = The book's page: 안녕히 계세요, goodbye (I'm off)
+card-message = Her words: 방세 내세요
+card-message-learned = Her words: 방세 내세요. Pay the rent!
+
+# What you work out when the right one fits.
+thought-room-wake-call = 민준… 김민준, the name on the ID. She's asking if I'm him.
+thought-room-wake-message = 방세: the word on the note. Something about the note, for Min-jun.
+thought-room-wake-bye = 안녕히 계세요: it's on the book's page. Goodbye. She's the one leaving.
+
+# What room-rent remembers of Min-jun's first question: how the landlady has your name.
+door-room-minjun-who-named-later = Your name is in her ledger now. Min-jun must have told her.
+door-room-minjun-who-unnamed-later = Your name is in her ledger now. You never told Min-jun. Ji-woo must have.

@@ -1,6 +1,6 @@
 # The dog on the stairs, the daughter's cat, and an apple.
 
-dog = 你看！我们的狗！三岁！
+dog = 我们的狗！三岁！
 dog-reply = 狗！很漂亮！
 dog-alt1 = 她的衣服很漂亮。
 dog-alt2 = 六个人！
@@ -10,12 +10,12 @@ sorry-reply = 没关系！
 sorry-alt1 = 她爱猫！
 sorry-alt2 = 你好，林太太！
 
-love = 我儿子和他爸爸很爱狗。
-love-reply = 狗很好！
+love = 我儿子很爱狗。
+love-reply = 你儿子和狗很好！
 love-alt1 = 她十岁。
 love-alt2 = 很漂亮！
 
-seen = 你看见我女儿的猫了吗？
+seen = 我女儿的猫呢？
 seen-reply = 没看见。
 seen-alt1 = 没关系！
 seen-alt2 = 六个人！

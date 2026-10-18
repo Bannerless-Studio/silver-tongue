@@ -75,7 +75,7 @@
   { "id": "only-bakke", "lv": "A2", "label": "밖에 + negative", "en": "nothing but", "pattern": "밖에" },
   { "id": "state", "lv": "A2", "label": "-아/어 있다", "en": "be in a state (sitting, open)", "pattern": "(아|어|여) 있" },
   { "id": "compare", "lv": "A2", "label": "더, 가장, 제일", "en": "more, most", "pattern": "(^|\\s)(더|가장|제일) [가-힣]" },
-  { "id": "honorific", "lv": "A2", "label": "-(으)시-", "en": "honorific (for the subject)", "pattern": "[가-힣](시|셨)(어요|요|고|면|다|는|습니다|겠)" },
+  { "id": "honorific", "lv": "A2", "label": "-(으)시-", "en": "honorific (for the subject)", "pattern": "(?!{ㅂ}시다)[가-힣](시|셨)(어요|고|면|다|는|습니다|겠)" },
   { "id": "adnominal", "lv": "A2", "label": "-(으)ㄴ/는/(으)ㄹ + noun", "en": "that, which (describing a noun)" },
   { "id": "know-how", "lv": "A2", "label": "-(으)ㄹ 줄 알다/모르다", "en": "know how to", "pattern": "{ㄹ} 줄 (알|몰)" },
   { "id": "how-about", "lv": "A2", "label": "-는 게 좋다, -는 게 어때요?", "en": "it's best to; how about", "pattern": "게 (좋|어때|어떨)" },

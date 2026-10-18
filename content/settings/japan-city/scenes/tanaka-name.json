@@ -21,6 +21,16 @@
    "missCost": 0
   },
   {
+   "id": "confirm",
+   "slots": {},
+   "expect": {
+    "action": "confirm"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
    "id": "nice",
    "slots": {},
    "expect": {
@@ -35,6 +45,16 @@
    "slots": {},
    "expect": {
     "action": "understand"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "encourage",
+   "slots": {},
+   "expect": {
+    "action": "encourage"
    },
    "hinges": [],
    "pay": 0,

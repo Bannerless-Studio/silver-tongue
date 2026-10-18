@@ -196,3 +196,12 @@ Readings stay in the page mono; meanings and narration in the page font.
 **Motion.** ≤300 ms, transform and opacity only: the line rises in, the said line slides up from the slips, a repeat pulses once. None under `prefers-reduced-motion`.
 
 Also in this pass: the rent row stays off the anchor until the scene that raises rent (`rent: true` on the scene, room-rent) is done; the room-rent title says what is seen ("See what the landlady wants"); the Papers tab shows a clue line whole in Hangul with its reading row under it.
+
+
+## 13. Landlady door experiment (2026-10-07)
+
+The current opening supersedes the older desk and stage-1 opening tables above: only `idcard.name` is required; the Book keeps unfinished documents. The door has three exchanges, with support throughout. Claiming friendship gives a photograph; honesty still gives the name and destination. Park repeats the name after a greeting, then the player can follow it directly to `stall-lead`. The later `stall-family` dialogue still reveals the sibling relationship.
+
+Current chain: room-wake → street-hello → stall-lead → street-introductions → street-again → street-what → street-hungry → shop-prices → street-numbers → shop-count → stall-intro → stall-shift → stall-family → room-rent. Park's fuller introduction and the displaced vocabulary belong to the return visit. His displayed name, and Ji-woo's, wait for those introductions. The friendship question is no longer a pinned delayed revelation.
+
+See [the experiment](2026-10-07-landlady-door-lab.md) for the beats, reward loop, seven-item door budget and five-beginner success test; [the audit](2026-10-07-landlady-door-audit.md) lists every changed Korean line and validation limits.

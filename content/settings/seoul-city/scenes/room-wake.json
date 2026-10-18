@@ -19,41 +19,20 @@
    "missCost": 0
   },
   {
-   "id": "friend",
+   "id": "message",
    "slots": {},
    "expect": {
-    "action": "friend"
+    "action": "message"
    },
    "hinges": [],
    "pay": 0,
    "missCost": 0,
-   "pin": true,
    "alts": {
     "1": {
      "accept": true,
      "pay": 0,
      "loss": 0
     }
-   }
-  },
-  {
-   "id": "who",
-   "slots": {},
-   "expect": {
-    "action": "who"
-   },
-   "hinges": [],
-   "pay": 0,
-   "missCost": 0
-  },
-  {
-   "id": "missing",
-   "slots": {},
-   "hinges": [],
-   "pay": 0,
-   "missCost": 0,
-   "expect": {
-    "action": "missing"
    }
   },
   {
@@ -64,7 +43,14 @@
    },
    "hinges": [],
    "pay": 0,
-   "missCost": 0
+   "missCost": 0,
+   "alts": {
+    "1": {
+     "accept": true,
+     "pay": 0,
+     "loss": 0
+    }
+   }
   }
  ]
 }

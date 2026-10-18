@@ -1,15 +1,19 @@
+import { fileURLToPath } from "node:url";
+import { buildCourse } from "../../../tools/src/build-course";
 import type { RenderedLine } from "@silver-tongue/core";
 import { describe, expect, it } from "vitest";
-import { isScribeScene, romanLine, romanSegments, SCRIBE_SCENES, scribeAccepts, scribeHelpAfter, scribeShowsExample } from "../src/scribe";
+import { isScribeScene, romanLine, romanSegments, scribeScenes, scribeAccepts, scribeHelpAfter, scribeShowsExample } from "../src/scribe";
+
+const course = buildCourse(fileURLToPath(new URL("../../../content", import.meta.url)), "ko-seoul").course!;
 
 const line = (text: string, spans: [number, number][]): RenderedLine => ({ text, tokens: spans.map(([start, end], i) => ({ start, end, word: `w${i}` })) });
 
 describe("scribe scenes", () => {
-  it("are the first two", () => {
-    expect(SCRIBE_SCENES).toEqual(["room-wake", "street-hello"]);
-    expect(isScribeScene("room-wake")).toBe(true);
-    expect(isScribeScene("street-again")).toBe(false);
-    expect(isScribeScene(undefined)).toBe(false);
+  it("are the opening: the door, Min-jun, and Grandpa Park", () => {
+    expect(scribeScenes(course)).toEqual(["room-wake", "room-minjun", "street-introductions"]);
+    expect(isScribeScene(course, "room-wake")).toBe(true);
+    expect(isScribeScene(course, "street-again")).toBe(false);
+    expect(isScribeScene(course, undefined)).toBe(false);
   });
 });
 
@@ -23,10 +27,9 @@ describe("the fading", () => {
 });
 
 describe("accepts", () => {
-  it("are found by meaning, however it is spelled", () => {
-    expect(scribeAccepts("Who is it?")).toContain("who is there");
-    expect(scribeAccepts("who is it")).toContain("who is there");
-    expect(scribeAccepts("Something else.")).toEqual([]);
+  it("are none in the opening, where lines are worked out from cards and replies are picked", () => {
+    expect(scribeAccepts(course, "room-wake", "call")).toEqual([]);
+    expect(scribeAccepts(course, "unknown", "who")).toEqual([]);
   });
 });
 

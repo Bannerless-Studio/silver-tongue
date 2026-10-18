@@ -31,6 +31,36 @@
    "cost": 150
   },
   {
+   "id": "chat",
+   "slots": {
+    "topic": "chat_till"
+   },
+   "expect": {
+    "action": "chat",
+    "topic": "$topic"
+   },
+   "hinges": [
+    "$topic"
+   ],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "chat-b",
+   "slots": {
+    "topic": "chat_till"
+   },
+   "expect": {
+    "action": "chat",
+    "topic": "$topic"
+   },
+   "hinges": [
+    "$topic"
+   ],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
    "id": "thanks",
    "slots": {},
    "expect": {

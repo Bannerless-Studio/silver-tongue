@@ -118,3 +118,9 @@ export function replyOrder(options: readonly RenderedLine[], missed: readonly Be
   const idx = options.map((_, i) => i);
   return [...idx.filter((i) => !tried.has(options[i].text)), ...idx.filter((i) => tried.has(options[i].text))];
 }
+
+/** An advancing lab response shares the next request’s direction row with context such as showing the ID.
+ * Keep the response visible; otherwise the generic last-direction rule silently hides it.
+ */
+export const stageDirections = (ex: Exchange): Beat[] =>
+  ex.direction.some((beat) => beat.openingReaction) ? ex.direction : ex.direction.slice(-1);

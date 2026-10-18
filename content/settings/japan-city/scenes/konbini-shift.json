@@ -1,0 +1,112 @@
+{
+ "id": "konbini-shift",
+ "place": "konbini",
+ "npc": "clerk",
+ "stage": 1,
+ "after": [
+  "tanaka-walk"
+ ],
+ "requires": {},
+ "repeatable": true,
+ "trustGain": 1,
+ "exchanges": [
+  {
+   "id": "greet",
+   "slots": {},
+   "expect": {
+    "action": "greet"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "where",
+   "slots": {
+    "item": "shelf"
+   },
+   "expect": {
+    "action": "show",
+    "item": "$item"
+   },
+   "hinges": [
+    "$item"
+   ],
+   "pay": 300,
+   "missCost": 100
+  },
+  {
+   "id": "chat-a",
+   "slots": {
+    "topic": "chat_konbini"
+   },
+   "expect": {
+    "action": "chat",
+    "topic": "$topic"
+   },
+   "hinges": [
+    "$topic"
+   ],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "chat-b",
+   "slots": {
+    "topic": "chat_konbini"
+   },
+   "expect": {
+    "action": "chat",
+    "topic": "$topic"
+   },
+   "hinges": [
+    "$topic"
+   ],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "order",
+   "slots": {
+    "item": "goods",
+    "count": "numbers_2_5"
+   },
+   "expect": {
+    "action": "hand",
+    "item": "$item",
+    "count": "$count"
+   },
+   "hinges": [
+    "$item",
+    "$count"
+   ],
+   "pay": 700,
+   "missCost": 200
+  },
+  {
+   "id": "chat-c",
+   "slots": {
+    "topic": "chat_konbini"
+   },
+   "expect": {
+    "action": "chat",
+    "topic": "$topic"
+   },
+   "hinges": [
+    "$topic"
+   ],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "night",
+   "slots": {},
+   "expect": {
+    "action": "walkhome"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  }
+ ]
+}

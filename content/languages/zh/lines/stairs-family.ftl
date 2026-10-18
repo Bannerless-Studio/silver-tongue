@@ -1,16 +1,16 @@
 # A family photo on the landing.
 
-photo = 我们住这里。这是我们家。
-photo-reply = 你儿子在这里！
+photo = 这是我家。
+photo-reply = 你家有几个人？
 photo-alt1 = 我在饭馆工作。
 photo-alt2 = 他八岁。
 
-people = 我家里有六个人。
-people-reply = 六个人！
+people = 六个人！
+people-reply = 六个人！很好！
 people-alt1 = 五块！
 people-alt2 = 你儿子很好！
 
-parents = 这是我爸爸和我妈妈。
+parents = 这是我爸爸，这是我妈妈。
 parents-reply = 你爸爸妈妈很好！
 parents-alt1 = 六个人！
 parents-alt2 = 十年！
@@ -25,8 +25,8 @@ daughter-reply = 你女儿很大了！
 daughter-alt1 = 你爸爸妈妈很好！
 daughter-alt2 = 六个人！
 
-pretty = 她十岁。她漂亮吗？
-pretty-reply = 很漂亮！
+pretty = 她十岁。
+pretty-reply = 她很漂亮！
 pretty-alt1 = 十块！
 pretty-alt2 = 医生！很好！
 

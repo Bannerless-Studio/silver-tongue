@@ -17,5 +17,8 @@ chat-b-reply = { -topic(form: "reply") }
 chat-c = { -topic }
 chat-c-reply = { -topic(form: "reply") }
 
+chat-d = { -topic }
+chat-d-reply = { -topic(form: "reply") }
+
 thanks = 감사합니다!
-thanks-reply = 감사합니다! 또 오세요!
+thanks-reply = 감사합니다! 내일 또 오세요!

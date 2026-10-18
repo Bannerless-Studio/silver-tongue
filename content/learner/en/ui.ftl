@@ -391,6 +391,15 @@ quiet-st-no-parcel = No parcel
 quiet-no-save = no save found
 # Scribe mode (lab): the first conversations, read in Latin letters and answered by typing meanings.
 quiet-scribe-hear = What did they say?
+quiet-scribe-hear-door = What does she mean?
 quiet-scribe-say = Say it: type the meaning of the reply you want
 quiet-scribe-example = “{ $line }” means “{ $meaning }”. Type what they said.
 quiet-scribe-full = It means: { $meaning }
+
+quiet-scribe-choose = Which reply do you mean? Choose one.
+# Working a line out from clues and memories (lab opening).
+quiet-deduce-prompt = What could it mean? Something comes back to you…
+quiet-deduce-miss = Hmm… no. That doesn't sound right.
+quiet-deduce-again = Think again
+quiet-deduce-conclude = That's it
+quiet-hint-meaning = Meaning: { $meaning }

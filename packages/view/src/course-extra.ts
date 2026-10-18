@@ -59,11 +59,57 @@ export type ExchangeExtra = Exchange & { pin?: boolean };
 /** `rent`: the scene where rent is first raised; a course with the Book keeps rent off the anchor row until it is done. */
 export type SceneExtra = Omit<Scene, "exchanges"> & { exchanges: ExchangeExtra[]; rent?: boolean };
 
+export type OpeningOption = "reply" | "alt1" | "alt2" | "silence";
+export interface OpeningEffect {
+  reaction: string;
+  /** Optional later line, said as scene `at` opens: only where the choice changes something the player meets later. */
+  consequence?: string;
+  at?: string;
+  /** Resolved from content-declared word references by the builder. */
+  audio?: string[];
+}
+export interface OpeningArrival {
+  text: string;
+  decodedText?: string;
+  menu: string;
+  audio?: string[];
+}
+export interface OpeningSceneStyle { glosses?: boolean; select?: boolean; prompt?: string }
+/**
+ * A clue or a memory that floats up when the player tries to work out a line. `learned`: the label it takes once
+ * the player has made that choice (a sentence heard but not understood, understood later).
+ */
+export interface OpeningCard { label: string; learned?: { choice: string; option: OpeningOption; label: string } }
+/** Working out a line: the cards that float up, the one that explains it, and the thought it gives. */
+export interface OpeningDeduction { cards: string[]; right: string; thought: string }
+/** Optional experiment data: settings supply story references; learner content supplies acceptance rules. */
+export interface OpeningProfile {
+  scenes: Record<string, OpeningSceneStyle>;
+  choices: Record<string, Partial<Record<OpeningOption, OpeningEffect>>>;
+  /** A paper earned by one choice, read later at a place. */
+  reward?: { choice: string; option: OpeningOption; paper: string; place: string; decoded: string };
+  /** A scene whose arrival line and menu label depend on one choice. */
+  arrival?: { scene: string; choice: string; branches: Partial<Record<OpeningOption, OpeningArrival>>; fallback: OpeningArrival };
+  directions: Record<string, string>;
+  cards?: Record<string, OpeningCard>;
+  /** Keyed `scene:exchange`, like `choices`: the lines the player works out from cards. */
+  deduce?: Record<string, OpeningDeduction>;
+  /** Lines understood outright (Min-jun says it in English too): their meaning is shown, nothing to work out. */
+  understood?: string[];
+  /** Lines the player can't understand yet and isn't meant to: no cards, no meaning, just answer as best you can. */
+  confused?: string[];
+}
+export type ScribeAccepts = Record<string, { meaning: string; fragments: string[] }>;
+
 export type CourseExtra = Omit<Course, "words" | "language" | "scenes"> & {
+  /** Early encounters may precede a person giving their name. */
+  world: Course["world"] & { npcs: Record<string, Course["world"]["npcs"][string] & { introducedAfter?: string }> };
   words: Record<WordId, WordExtra>;
   language: LanguageExtra;
   scenes: SceneExtra[];
   letters?: LetterChart;
+  labOpening?: OpeningProfile;
+  scribeAccepts?: ScribeAccepts;
   /** content/settings/<setting>/papers.json: the papers on the desk when the story opens (book courses) */
   papers?: DeskPaper[];
 };

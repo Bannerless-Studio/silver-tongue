@@ -1,3 +1,4 @@
+import { compileOpening, openingWordIds, scribeProblems, type OpeningSource } from "./opening-profile";
 import { artProblems } from "./art";
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
@@ -17,7 +18,7 @@ import {
   type World,
 } from "@silver-tongue/core";
 import { heuristicGloss, narrationProblems, uiTextProblems } from "@silver-tongue/tui";
-import type { CourseExtra, DeskPaper, LetterChart, WordExtra } from "@silver-tongue/view";
+import type { CourseExtra, DeskPaper, LetterChart, WordExtra, ScribeAccepts } from "@silver-tongue/view";
 import { checkCourse, usedWords } from "./check";
 import { bindSlots, duplicateIds, messageIds, parseFtl, Renderer, termNames, type FtlSource } from "./fluent";
 import type { PackMeta, PackWord } from "./pack";
@@ -438,7 +439,16 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
   const voices = existsSync(voicesPath) ? attempt("voices.json", () => readJson<Voices>(voicesPath)) : undefined;
   if (!existsSync(voicesPath) && cfg.checks.audio) errors.push("voices.json: missing (checks.audio is on)");
   if (voices) errors.push(...voiceProblems(voices, world, scenes));
+  const openingPath = join(settingDir, "opening.json");
+  const opening = existsSync(openingPath) ? attempt("opening.json", () => readJson<OpeningSource>(openingPath)) : undefined;
+  const acceptsPath = join(learnerDir, `scribe-${cfg.language}.json`);
+  const accepts = existsSync(acceptsPath) ? attempt("scribe accepts", () => readJson<ScribeAccepts>(acceptsPath)) : undefined;
+  if (accepts) {
+    errors.push(...scribeProblems(accepts, course));
+    course.scribeAccepts = accepts;
+  }
   const used = usedWords(course);
+  if (opening) for (const id of openingWordIds(opening)) if (course.words[id]) used.add(id);
   const says = Object.fromEntries(packWords.flatMap((w) => (w.say ? [[w.id, w.say]] : [])));
   const clips = voices ? assignAudio(course, voices, used, says) : [];
   if (voices && course.letters) {
@@ -456,6 +466,10 @@ export function buildCourse(root: string, courseId: string, learnerCode?: string
     existsSync(audioDir) ? readdirSync(audioDir).filter((f) => f.endsWith(".mp3")).map((f) => f.slice(0, -".mp3".length)) : [],
   );
   const learnerIds = attempt("learner text", () => new Set(messageIds(learnerFtl, "learner files"))) ?? new Set<string>();
+  if (opening) {
+    const compiled = attempt("opening.json", () => compileOpening(opening, course, learnerIds));
+    if (compiled) { errors.push(...compiled.errors); course.labOpening = compiled.profile; }
+  }
   for (const id of ["learner-name", `language-${cfg.language}`, ...(course.letters ? letterMessageIds(course.letters) : []), ...(course.papers ? paperMessageIds(course.papers) : [])]) {
     if (!learnerIds.has(id)) errors.push(`learner/${learner}/${id.startsWith("letters-guide-") ? `letters-${cfg.language}` : "ui"}.ftl: missing "${id}"`);
   }

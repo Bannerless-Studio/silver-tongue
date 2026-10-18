@@ -8,14 +8,16 @@
   "repeatable": false,
   "trustGain": 1,
   "exchanges": [
-    { "id": "who", "slots": {}, "expect": { "action": "knowhim" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "china", "slots": {}, "expect": { "action": "newcomer" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "when", "slots": {}, "expect": { "action": "arrived" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "pm", "slots": {}, "expect": { "action": "afternoon" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "daughter", "slots": {}, "expect": { "action": "visit" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "year", "slots": {}, "expect": { "action": "daughteryear" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "date", "slots": {}, "expect": { "action": "schoolday" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "how", "slots": {}, "expect": { "action": "howgo" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "bye", "slots": {}, "expect": { "action": "seeoff" }, "hinges": [], "pay": 0, "missCost": 0 }
+    { "id": "who", "slots": { }, "expect": { "action": "knowhim" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "china", "slots": { }, "expect": { "action": "newcomer" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "when", "slots": { }, "expect": { "action": "arrived" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "pm", "slots": { }, "expect": { "action": "afternoon" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "daughter", "slots": { }, "expect": { "action": "visit" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "year", "slots": { }, "expect": { "action": "daughteryear" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "date", "slots": { }, "expect": { "action": "schoolday" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "chat", "slots": { "topic": "chat_class" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
+    { "id": "chat-2", "slots": { "topic": "chat_class" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
+    { "id": "how", "slots": { }, "expect": { "action": "howgo" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "bye", "slots": { }, "expect": { "action": "seeoff" }, "hinges": [], "pay": 0, "missCost": 0 }
   ]
 }

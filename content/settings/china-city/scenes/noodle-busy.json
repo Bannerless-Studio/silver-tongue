@@ -1,0 +1,21 @@
+{
+  "id": "noodle-busy",
+  "place": "noodle_shop",
+  "npc": "cook",
+  "stage": 2,
+  "after": ["hospital-checkup", "taxi-visitor", "room-phone", "tea-tv"],
+  "requires": {},
+  "repeatable": false,
+  "trustGain": 1,
+  "exchanges": [
+    { "id": "busy", "slots": {}, "expect": { "action": "rush" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "help", "slots": {}, "expect": { "action": "offerhelp" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "cups", "slots": {}, "expect": { "action": "washup" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "work", "slots": {}, "expect": { "action": "together" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "rice", "slots": {}, "expect": { "action": "serverice" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "hungry", "slots": {}, "expect": { "action": "hungrytoo" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "tired", "slots": {}, "expect": { "action": "tired" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "rest", "slots": {}, "expect": { "action": "takebreak" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "bye", "slots": {}, "expect": { "action": "comeagain" }, "hinges": [], "pay": 0, "missCost": 0 }
+  ]
+}

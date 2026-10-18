@@ -3,53 +3,16 @@
   "place": "school",
   "npc": "teacher",
   "stage": 1,
-  "after": [
-    "delivery-pickup"
-  ],
+  "after": ["delivery-pickup"],
   "requires": {},
   "repeatable": true,
   "trustGain": 1,
+  "endsErrand": true,
   "exchanges": [
-    {
-      "id": "who",
-      "slots": {},
-      "expect": {
-        "action": "who"
-      },
-      "hinges": [],
-      "pay": 3,
-      "missCost": 0
-    },
-    {
-      "id": "teacher",
-      "slots": {},
-      "expect": {
-        "action": "teacher"
-      },
-      "hinges": [],
-      "pay": 3,
-      "missCost": 0
-    },
-    {
-      "id": "books",
-      "slots": {},
-      "expect": {
-        "action": "books"
-      },
-      "hinges": [],
-      "pay": 3,
-      "missCost": 0
-    },
-    {
-      "id": "bye",
-      "slots": {},
-      "expect": {
-        "action": "bye"
-      },
-      "hinges": [],
-      "pay": 11,
-      "missCost": 0
-    }
-  ],
-  "endsErrand": true
+    { "id": "who", "slots": { }, "expect": { "action": "who" }, "hinges": [], "pay": 3, "missCost": 0 },
+    { "id": "chat", "slots": { "topic": "chat_errand" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
+    { "id": "teacher", "slots": { }, "expect": { "action": "teacher" }, "hinges": [], "pay": 3, "missCost": 0 },
+    { "id": "books", "slots": { }, "expect": { "action": "books" }, "hinges": [], "pay": 3, "missCost": 0 },
+    { "id": "bye", "slots": { }, "expect": { "action": "bye" }, "hinges": [], "pay": 11, "missCost": 0 }
+  ]
 }

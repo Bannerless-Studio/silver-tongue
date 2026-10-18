@@ -5,7 +5,7 @@
  "stage": 1,
  "after": [
   "ramen-intro",
-  "tanaka-numbers"
+  "konbini-prices"
  ],
  "requires": {
   "trust": {
@@ -15,6 +15,16 @@
  "repeatable": true,
  "trustGain": 1,
  "exchanges": [
+  {
+   "id": "welcome",
+   "slots": {},
+   "expect": {
+    "action": "welcome"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
   {
    "id": "drink",
    "slots": {
@@ -29,6 +39,21 @@
    ],
    "pay": 200,
    "missCost": 100
+  },
+  {
+   "id": "chat-a",
+   "slots": {
+    "topic": "chat_ramen"
+   },
+   "expect": {
+    "action": "chat",
+    "topic": "$topic"
+   },
+   "hinges": [
+    "$topic"
+   ],
+   "pay": 0,
+   "missCost": 0
   },
   {
    "id": "order",
@@ -47,6 +72,51 @@
    ],
    "pay": 800,
    "missCost": 200
+  },
+  {
+   "id": "chat-b",
+   "slots": {
+    "topic": "chat_ramen"
+   },
+   "expect": {
+    "action": "chat",
+    "topic": "$topic"
+   },
+   "hinges": [
+    "$topic"
+   ],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "chat-c",
+   "slots": {
+    "topic": "chat_ramen"
+   },
+   "expect": {
+    "action": "chat",
+    "topic": "$topic"
+   },
+   "hinges": [
+    "$topic"
+   ],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "chat-d",
+   "slots": {
+    "topic": "chat_ramen"
+   },
+   "expect": {
+    "action": "chat",
+    "topic": "$topic"
+   },
+   "hinges": [
+    "$topic"
+   ],
+   "pay": 0,
+   "missCost": 0
   }
  ]
 }

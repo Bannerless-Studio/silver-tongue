@@ -3,18 +3,20 @@
   "place": "noodle_shop",
   "npc": "cook",
   "stage": 1,
-  "after": ["noodle-kitchen", "room-rent"],
+  "after": ["noodle-kitchen", "room-rent", "stairs-pets"],
   "requires": {},
   "repeatable": false,
   "trustGain": 1,
   "exchanges": [
-    { "id": "open", "slots": {}, "expect": { "action": "open" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "many", "slots": {}, "expect": { "action": "crowd" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "rice", "slots": {}, "expect": { "action": "rice" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "see", "slots": {}, "expect": { "action": "spot" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "these", "slots": {}, "expect": { "action": "these" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "price", "slots": {}, "expect": { "action": "bill" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "eat", "slots": {}, "expect": { "action": "lunch" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "taste", "slots": {}, "expect": { "action": "taste" }, "hinges": [], "pay": 0, "missCost": 0 }
+    { "id": "open", "slots": { }, "expect": { "action": "open" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "many", "slots": { }, "expect": { "action": "crowd" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "rice", "slots": { }, "expect": { "action": "rice" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "see", "slots": { }, "expect": { "action": "spot" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "these", "slots": { }, "expect": { "action": "these" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "price", "slots": { }, "expect": { "action": "bill" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "eat", "slots": { }, "expect": { "action": "lunch" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "chat", "slots": { "topic": "chat_town" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
+    { "id": "chat-2", "slots": { "topic": "chat_town" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
+    { "id": "taste", "slots": { }, "expect": { "action": "taste" }, "hinges": [], "pay": 0, "missCost": 0 }
   ]
 }

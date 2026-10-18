@@ -1,5 +1,8 @@
 import { fromLocalStorage, type KeyValue } from "@silver-tongue/web-common";
 
+/** Experiment-only namespace: reordered dialogue and paper positions must not load older lab saves. */
+export const DOOR_LAB_PREFIX = "silver-tongue-lab-door:";
+
 let installed: KeyValue | undefined;
 
 /** main.tsx installs the page's key-value store (lab prefix included) once; every direct read/write goes through it. */

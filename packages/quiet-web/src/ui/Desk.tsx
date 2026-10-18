@@ -1,6 +1,7 @@
 import { Fragment } from "preact";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "preact/hooks";
-import { canOpenPaper, firstUnread, letterChart, lineRead, paperSyllables, readsSyllable, romanize, sumTiles, type DeskPaper, type SumTile } from "@silver-tongue/view";
+import { canOpenPaper, deskReady, firstUnread, paperDone, letterChart, lineRead, paperSyllables, readsSyllable, romanize, sumTiles, type DeskPaper, type SumTile } from "@silver-tongue/view";
+import { doorExperimentOn } from "../door-choices";
 import type { Quiet } from "../quiet";
 import { DeskArt } from "./desk-art";
 
@@ -24,14 +25,17 @@ export function Desk({ q, papers, covered, onBook, onSettings }: { q: Quiet; pap
   const t = q.t;
   const read = q.readPapers();
   const [paper, setPaper] = useState<string | null>(null);
+  // The lab opening: a paper is seen, not typed. Its words, sounds and meaning show at once, and the thought it gives.
+  const glance = doorExperimentOn(q.course);
+  const openPaper = (id: string) => (glance && q.glancePaper(id), setPaper(id));
   const [leaving, setLeaving] = useState<"fade" | "knock" | null>(null);
-  const allRead = papers.every((p) => read.has(p.id));
+  const allRead = deskReady(papers, read);
   const still = matches("(prefers-reduced-motion: reduce)");
   const touch = matches("(pointer: coarse)");
 
   // Back on the desk with every paper read: the desk fades, then the one line.
   useEffect(() => {
-    if (paper || !allRead || leaving) return;
+    if (paper || !allRead) return;
     setLeaving("fade");
     const id = setTimeout(() => setLeaving("knock"), still ? 0 : FADE_MS);
     return () => clearTimeout(id);
@@ -45,7 +49,7 @@ export function Desk({ q, papers, covered, onBook, onSettings }: { q: Quiet; pap
       // On the desk, Enter reads the bright card, unless a focused button takes it.
       const next = firstUnread(papers, read);
       if (!paper && !leaving && next && e.key === "Enter" && !(document.activeElement instanceof HTMLButtonElement))
-        return void (e.preventDefault(), setPaper(next));
+        return void (e.preventDefault(), openPaper(next));
     };
     addEventListener("keydown", onKey);
     return () => removeEventListener("keydown", onKey);
@@ -60,7 +64,7 @@ export function Desk({ q, papers, covered, onBook, onSettings }: { q: Quiet; pap
     );
   }
   const open = paper ? papers.find((p) => p.id === paper) : undefined;
-  if (open) return <PaperView q={q} paper={open} done={read.has(open.id)} covered={covered} onBook={onBook} onBack={() => setPaper(null)} />;
+  if (open) return <PaperView opening q={q} paper={open} done={read.has(open.id)} covered={covered} onBook={onBook} onBack={() => setPaper(null)} />;
   // One card is bright: the next to read, labelled. The rest are dimmed; a read one says so and stays tappable; later ones wait their turn.
   const next = firstUnread(papers, read);
   return (
@@ -68,7 +72,8 @@ export function Desk({ q, papers, covered, onBook, onSettings }: { q: Quiet; pap
       <p class="desk-title">{t("quiet-desk-why")}</p>
       <div class="desk">
         {papers.map((p) => {
-          const done = read.has(p.id);
+          // "Read" only when it was: an optional paper is no step of the desk, but nobody has read it yet.
+          const done = read.has(p.id) || (!!p.required?.length && paperDone(p, read));
           const cls = `desk-card ${done ? "read" : p.id === next ? "next" : "later"}`;
           const art = (
             <>
@@ -77,7 +82,7 @@ export function Desk({ q, papers, covered, onBook, onSettings }: { q: Quiet; pap
             </>
           );
           return canOpenPaper(papers, read, p.id) ? (
-            <button key={p.id} type="button" class={cls} aria-label={p.lines[0]?.text} onClick={() => setPaper(p.id)}>{art}</button>
+            <button key={p.id} type="button" class={cls} aria-label={p.lines[0]?.text} onClick={() => openPaper(p.id)}>{art}</button>
           ) : (
             <div key={p.id} class={cls} role="img" aria-label={p.lines[0]?.text} aria-disabled="true">{art}</div>
           );
@@ -106,7 +111,7 @@ function Tile({ q, tile, shown, onShow }: { q: Quiet; tile: SumTile; shown: bool
 
 /** One paper, laid out like the document, read one syllable at a time: the syllable being read is taken out of the card
  * and shown large, over the letters it is made of; its reading is typed under it. */
-function PaperView({ q, paper, done, covered, onBook, onBack }: { q: Quiet; paper: DeskPaper; done: boolean; covered: boolean; onBook: () => void; onBack: () => void }) {
+export function PaperView({ q, paper, done, covered, onBook, onBack, opening = false }: { q: Quiet; paper: DeskPaper; done: boolean; covered: boolean; onBook: () => void; onBack: () => void; opening?: boolean }) {
   const t = q.t;
   const chart = useMemo(() => letterChart(q.course), [q.course]);
   const syls = useMemo(() => paperSyllables(paper), [paper]);
@@ -122,8 +127,9 @@ function PaperView({ q, paper, done, covered, onBook, onBack }: { q: Quiet; pape
   const stage = useRef<HTMLDivElement>(null);
   const card = useRef<HTMLDivElement>(null);
   const big = useRef<HTMLDivElement>(null);
-  const finished = at >= syls.length;
-  const cur = syls[at];
+  const requiredRead = !!paper.required?.length && paper.required.every((id) => lineRead(syls, paper.lines.findIndex((l) => l.id === id), at));
+  const finished = at >= syls.length || (opening && requiredRead);
+  const cur = finished ? undefined : syls[at];
   const key = `${paper.id}:${at}`;
   // The letters met before this syllable, taken once as it comes up (it then meets its own).
   const snap = useRef<{ key: string; before: ReadonlySet<string> }>();
@@ -171,7 +177,8 @@ function PaperView({ q, paper, done, covered, onBook, onBack }: { q: Quiet; pape
   useEffect(() => {
     if (!finished) return;
     doneAt.current = Date.now();
-    if (!done) q.readPaper(paper.id);
+    if (at >= syls.length && !done) q.readPaper(paper.id);
+    else if (requiredRead) for (const id of paper.required ?? []) q.readPaperLine(paper.id, id);
   }, [finished]);
   useEffect(() => {
     if (!finished || covered) return;
@@ -246,6 +253,8 @@ function PaperView({ q, paper, done, covered, onBook, onBack }: { q: Quiet; pape
               <div key={l.id} class={`pl pl-${l.id}${lineDone ? " said" : ""}`}>
                 {lineDone ? <button type="button" class="pl-text" onClick={() => q.play(l.audio ?? [])}>{chars}</button> : <div class="pl-text">{chars}</div>}
                 {hasSyls && <span class="pl-rr" lang={`${q.course.language.code}-Latn`}>{lineDone ? romanize(l.text) : " "}</span>}
+                {/* A phrasebook line gives its meaning once read. */}
+                {lineDone && t.has(`paper-${paper.id}-${l.id}`) && <span class="pl-gloss">{t(`paper-${paper.id}-${l.id}`)}</span>}
               </div>
             );
           })}

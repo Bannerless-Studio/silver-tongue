@@ -22,9 +22,9 @@ meet-alt1-intent = Say you want work
 meet-alt2 = In front of the hospital.
 meet-alt2-intent = Say it's in front of the hospital
 
-tea = Will you drink some tea?
-tea-reply = Yes! Thank you.
-tea-reply-intent = Accept, with thanks
+tea = Tea?
+tea-reply = Yes! I'll have tea.
+tea-reply-intent = Accept the tea
 tea-alt1 = I like noodles.
 tea-alt1-intent = Say you like noodles
 tea-alt2 = Goodbye!
@@ -53,3 +53,11 @@ come-alt1 = I'm glad!
 come-alt1-intent = Say you're glad
 come-alt2 = My name is Big Liu.
 come-alt2-intent = Say you're Big Liu
+
+chat = { -topic }
+chat-reply = { -topic(form: "reply") }
+chat-reply-intent = Answer Old Chen
+
+chat-2 = { -topic }
+chat-2-reply = { -topic(form: "reply") }
+chat-2-reply-intent = Answer Old Chen

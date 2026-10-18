@@ -1,5 +1,6 @@
+import { doorSnapshot, reportJourney, embeddedJourney } from '../../journey/src/bridge';
 // Forked from packages/vn-web/src/main.tsx: the same loading and saves, drawn as a quiet terminal.
-import { installPageStorage } from "./storage";
+import { DOOR_LAB_PREFIX, installPageStorage } from "./storage";
 import { render } from "preact";
 import { createCore, mulberry32, newGame, type CatalogEntry, type Course, type GameState } from "@silver-tongue/core";
 import { courseLabels, decodeSave, DEFAULT_RUBY, DEFAULT_SPEED, encodeSave, learnerFor, deskKey, emptyProgress, lookupHintKey, makeText, papersKey, parseProgress, playbackRate, sessionLines, type RubySetting, type SpeechSpeed, type Text } from "@silver-tongue/view";
@@ -10,9 +11,10 @@ import {
 import { App, type Page } from "./ui/App";
 import { DevBadge } from "./ui/DevBadge";
 import { DEV_GAME, devClock, driveTo, lastScreen, maxScreen, setSkipCrawl } from "./dev";
-import { writeCount } from "./scribe";
+import { doorExperimentOn, openingStore, writeCount } from "./scribe";
 import { Title } from "./ui/Title";
 import { createQuiet, type PaperStore, type Quiet } from "./quiet";
+import { prepareDoorCourse } from "./door-choices";
 import { opensOnStory } from "./opening";
 
 /** The game's version (packages/tui-node/package.json), put in by the build. */
@@ -38,7 +40,9 @@ try {
 }
 // Lab page only: all storage under its own prefix (the page shares an origin with the real game).
 const lab = labMode();
-if (lab) kv = labKeyValue(kv);
+/** Embedded in the story room (`?journey=1`): a lab page only; the public page ignores the parameter. */
+const journey = lab && embeddedJourney();
+if (lab) kv = labKeyValue(kv, journey ? 'silver-tongue-journey-door:' : DOOR_LAB_PREFIX);
 installPageStorage(kv);
 
 interface Loaded { course: Course; t: Text; sessions: WebSessions; audio: ReturnType<typeof createWebAudio> }
@@ -52,7 +56,7 @@ let ruby: RubySetting = DEFAULT_RUBY;
 
 /** Fetches a course file and its sound, and moves its old games. */
 async function load(entry: CatalogEntry, learner: string): Promise<Loaded> {
-  const course = await fetchJson<Course>(`${base}${entry.id}/${learner}.json`);
+  const course = prepareDoorCourse(await fetchJson<Course>(`${base}${entry.id}/${learner}.json`), lab);
   migrateWebAliases(kv, course);
   return {
     course,
@@ -143,11 +147,17 @@ function play(opened: Opened, prepare?: (q: Quiet) => void) {
     course: l.course, core, now: lab ? devClock.now : Date.now, audio: l.audio, notice: opened.notice,
     save: opened.readOnly ? undefined : (s) => store.save(opened.id, s),
     papers: paperStore(kv, l.course.id),
+    lab,
+    openingChoice: doorExperimentOn(l.course, lab) ? openingStore(l.course, opened.id) : undefined,
   });
   prepare?.(quiet);
+  if (journey) {
+    quiet.subscribe(() => reportJourney(doorSnapshot(quiet, opened.id)));
+    reportJourney(doorSnapshot(quiet, opened.id));
+  }
   current = { id: opened.id, readOnly: opened.readOnly, state: () => core.state };
   const page: Page = {
-    catalog,
+    catalog: journey ? catalog.filter(entry => entry.id === l.course.id) : catalog,
     audioAvailable: l.audio.available,
     get speed() { return speed; },
     setSpeed: (s) => {
@@ -183,7 +193,7 @@ function play(opened: Opened, prepare?: (q: Quiet) => void) {
   };
   render(<App key={`${l.course.id}/${l.course.learner}/${opened.id}/${jumpNonce}`} q={quiet} page={page} />, root);
   setSkipCrawl(false); // taken (or not wanted) by now
-  if (lab) {
+  if (lab && !journey) {
     devRoot ??= document.body.appendChild(document.createElement("div"));
     render(<DevBadge key={opened.id} q={quiet} jump={jumpTo} />, devRoot);
   }
@@ -232,6 +242,7 @@ function title(courses?: { label: string; pick: () => void }[], error?: string) 
   // Lab page: ?screen=N lands on that screen, whatever was saved.
   const asked = lab && l && !courses && !error ? Number.parseInt(new URLSearchParams(location.search).get("screen") ?? "", 10) : NaN;
   if (asked >= 1) return jumpTo(asked);
+  if (journey && l && !courses && !error && l.sessions.list().length > 0) return play(l.sessions.continueLast());
   // A book course's first game starts on its story as the page loads: "New game" would be the only choice.
   if (l && !courses && !error && opensOnStory(l.course, l.sessions.list().length > 0)) return play(l.sessions.startNew());
   const t = l?.t ?? Object.assign((id: string) => id, { has: () => false });

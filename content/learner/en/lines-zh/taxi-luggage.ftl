@@ -16,10 +16,26 @@ phone-alt1-intent = Say it's too dear
 phone-alt2 = How much?
 phone-alt2-intent = Ask the price
 
-pay = A good afternoon today! Here's the money.
-pay-reply = Thank you, Old Ma!
+pay = Here's the money.
+pay-reply = Thank you, Old Ma! A good day today!
 pay-reply-intent = Thank Old Ma
 pay-alt1 = You take the call, I'll work!
 pay-alt1-intent = Tell him to answer it
 pay-alt2 = How much?
 pay-alt2-intent = Ask the price
+
+chat-a = { -topic }
+chat-a-reply = { -topic(form: "reply") }
+chat-a-reply-intent = Answer Old Ma
+
+chat-b = { -topic }
+chat-b-reply = { -topic(form: "reply") }
+chat-b-reply-intent = Answer Old Ma
+
+chat-c = { -topic }
+chat-c-reply = { -topic(form: "reply") }
+chat-c-reply-intent = Answer Old Ma
+
+chat-d = { -topic }
+chat-d-reply = { -topic(form: "reply") }
+chat-d-reply-intent = Answer Old Ma

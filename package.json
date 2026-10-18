@@ -6,7 +6,7 @@
   "workspaces": ["packages/*", "tools"],
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsc && tsc -p packages/web-common && tsc -p packages/quiet-web",
+    "typecheck": "tsc && tsc -p packages/web-common && tsc -p packages/quiet-web && tsc -p packages/journey/tsconfig.bridge.json",
     "import:zh": "tsx tools/src/import-vocab-pack.ts vendor/vocab-engine/packs/zh content/languages/zh content/learner/en/glosses-zh.ftl",
     "build:course": "tsx tools/src/build-course.ts",
     "bots": "tsx tools/src/bots.ts",
@@ -16,6 +16,12 @@
     "playtest": "tsx tools/src/playtest.ts",
     "audio": "tsx tools/src/audio.ts",
     "build:quiet": "npm run build -w @silver-tongue/quiet-web",
+    "build:merchant": "node packages/market-web/build.mjs",
+    "audio:merchant": "tsx tools/src/merchant-audio.ts",
+    "typecheck:merchant": "tsx tools/src/experiment-tsc.ts packages/market-web",
+    "typecheck:journey": "tsx tools/src/experiment-tsc.ts packages/journey",
+    "typecheck:experiment": "npm run typecheck && npm run typecheck:merchant && npm run typecheck:journey",
+    "build:experiment": "npm run build:quiet && npm run build:merchant && tsx tools/src/site.ts --lab --merchant",
     "build:site": "npm run build:quiet && tsx tools/src/site.ts",
     "play": "tsx packages/tui-node/src/main.ts"
   },

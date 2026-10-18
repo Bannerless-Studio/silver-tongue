@@ -1,0 +1,237 @@
+{
+ "scenes": {
+  "room-wake": {
+   "select": true
+  },
+  "room-minjun": {
+   "select": true
+  },
+  "street-introductions": {
+   "select": true
+  }
+ },
+ "choices": {
+  "room-wake:call": {
+   "reply": {
+    "reaction": "door-room-wake-call-reply-reaction"
+   },
+   "silence": {
+    "reaction": "door-room-wake-call-silence-reaction"
+   }
+  },
+  "room-wake:message": {
+   "reply": {
+    "reaction": "door-room-wake-message-reply-reaction"
+   },
+   "alt1": {
+    "reaction": "door-room-wake-message-alt1-reaction"
+   },
+   "silence": {
+    "reaction": "door-room-wake-message-silence-reaction"
+   }
+  },
+  "room-wake:bye": {
+   "reply": {
+    "reaction": "door-room-wake-bye-reply-reaction"
+   },
+   "alt1": {
+    "reaction": "door-room-wake-bye-alt1-reaction"
+   },
+   "silence": {
+    "reaction": "door-room-wake-bye-silence-reaction"
+   }
+  },
+  "room-minjun:who": {
+   "reply": {
+    "reaction": "door-room-minjun-who-reply-reaction",
+    "consequence": "door-room-minjun-who-named-later",
+    "at": "room-rent"
+   },
+   "alt1": {
+    "reaction": "door-room-minjun-who-alt1-reaction",
+    "consequence": "door-room-minjun-who-unnamed-later",
+    "at": "room-rent"
+   },
+   "silence": {
+    "reaction": "door-room-minjun-who-silence-reaction",
+    "consequence": "door-room-minjun-who-unnamed-later",
+    "at": "room-rent"
+   }
+  },
+  "room-minjun:minjun": {
+   "reply": {
+    "reaction": "door-room-minjun-minjun-reply-reaction"
+   },
+   "alt1": {
+    "reaction": "door-room-minjun-minjun-alt1-reaction"
+   },
+   "silence": {
+    "reaction": "door-room-minjun-minjun-silence-reaction"
+   }
+  },
+  "room-minjun:english": {
+   "reply": {
+    "reaction": "door-room-minjun-english-reply-reaction"
+   },
+   "alt1": {
+    "reaction": "door-room-minjun-english-alt1-reaction"
+   },
+   "silence": {
+    "reaction": "door-room-minjun-english-silence-reaction"
+   }
+  },
+  "room-minjun:why": {
+   "reply": {
+    "reaction": "door-room-minjun-why-reply-reaction"
+   },
+   "alt1": {
+    "reaction": "door-room-minjun-why-alt1-reaction"
+   },
+   "silence": {
+    "reaction": "door-room-minjun-why-silence-reaction"
+   }
+  },
+  "room-minjun:together": {
+   "reply": {
+    "reaction": "door-room-minjun-together-reply-reaction"
+   },
+   "alt1": {
+    "reaction": "door-room-minjun-together-alt1-reaction"
+   },
+   "silence": {
+    "reaction": "door-room-minjun-together-silence-reaction"
+   }
+  },
+  "room-minjun:leave": {
+   "reply": {
+    "reaction": "door-room-minjun-leave-reply-reaction"
+   },
+   "alt1": {
+    "reaction": "door-room-minjun-leave-alt1-reaction"
+   },
+   "silence": {
+    "reaction": "door-room-minjun-leave-silence-reaction"
+   }
+  },
+  "street-introductions:park": {
+   "reply": {
+    "reaction": "door-street-introductions-park-reply-reaction"
+   },
+   "alt1": {
+    "reaction": "door-street-introductions-park-alt1-reaction"
+   },
+   "silence": {
+    "reaction": "door-street-introductions-park-silence-reaction"
+   }
+  },
+  "street-introductions:friend": {
+   "reply": {
+    "reaction": "door-street-introductions-friend-reply-reaction"
+   },
+   "alt1": {
+    "reaction": "door-street-introductions-friend-alt1-reaction"
+   },
+   "silence": {
+    "reaction": "door-street-introductions-friend-silence-reaction"
+   }
+  },
+  "street-introductions:sit": {
+   "reply": {
+    "reaction": "door-street-introductions-sit-reply-reaction"
+   },
+   "alt1": {
+    "reaction": "door-street-introductions-sit-alt1-reaction"
+   },
+   "silence": {
+    "reaction": "door-street-introductions-sit-silence-reaction"
+   }
+  },
+  "street-introductions:understand": {
+   "reply": {
+    "reaction": "door-street-introductions-understand-reply-reaction"
+   },
+   "alt1": {
+    "reaction": "door-street-introductions-understand-alt1-reaction"
+   },
+   "silence": {
+    "reaction": "door-street-introductions-understand-silence-reaction"
+   }
+  }
+ },
+ "directions": {
+  "room-minjun:who": "door-room-minjun-who-direction",
+  "room-minjun:english": "door-room-minjun-english-direction",
+  "room-minjun:minjun": "door-room-minjun-minjun-direction",
+  "room-minjun:why": "door-room-minjun-why-direction",
+  "room-minjun:together": "door-room-minjun-together-direction",
+  "room-minjun:leave": "door-room-minjun-leave-direction"
+ },
+ "cards": {
+  "id": {
+   "label": "card-id"
+  },
+  "bill": {
+   "label": "card-bill"
+  },
+  "book": {
+   "label": "card-book"
+  },
+  "glasses": {
+   "label": "card-glasses"
+  },
+  "message": {
+   "label": "card-message",
+   "learned": {
+    "choice": "room-minjun:why",
+    "option": "reply",
+    "label": "card-message-learned"
+   }
+  },
+  "phrase-bye": {
+   "label": "card-phrase-bye"
+  }
+ },
+ "deduce": {
+  "room-wake:call": {
+   "cards": [
+    "id",
+    "bill",
+    "book"
+   ],
+   "right": "id",
+   "thought": "thought-room-wake-call"
+  },
+  "room-wake:message": {
+   "cards": [
+    "bill",
+    "id",
+    "glasses"
+   ],
+   "right": "bill",
+   "thought": "thought-room-wake-message"
+  },
+  "room-wake:bye": {
+   "cards": [
+    "phrase-bye",
+    "message",
+    "bill"
+   ],
+   "right": "phrase-bye",
+   "thought": "thought-room-wake-bye"
+  }
+ },
+ "understood": [
+  "room-minjun:english",
+  "room-minjun:minjun",
+  "room-minjun:why",
+  "room-minjun:together",
+  "room-minjun:leave",
+  "street-introductions:park",
+  "street-introductions:friend",
+  "street-introductions:sit",
+  "street-introductions:understand"
+ ],
+ "confused": [
+  "room-minjun:who"
+ ]
+}

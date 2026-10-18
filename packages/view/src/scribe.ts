@@ -1,13 +1,14 @@
 // Scribe mode (lab): in the first conversations the player reads their line in Latin letters and types what it means,
 // then says a reply by typing its meaning. Pure rules and wording here; the page draws it (quiet-web/src/ui/Scribe.tsx).
-import type { RenderedLine, WordId } from "@silver-tongue/core";
+import { personalize, type RenderedLine, type WordId } from "@silver-tongue/core";
 import { romanize } from "./desk";
-import { normalizeMeaning } from "./meaning";
+import { extra } from "./course-extra";
 
-/** The scenes played in scribe mode; every later scene keeps the normal flow. */
-export const SCRIBE_SCENES: readonly string[] = ["room-wake", "street-hello"];
 
-export const isScribeScene = (scene: string | undefined): boolean => !!scene && SCRIBE_SCENES.includes(scene);
+/** Scribe scenes and their presentation are declared by the course’s experiment profile. */
+export const scribeScenes = (course: import("@silver-tongue/core").Course): string[] => Object.keys(extra(course).labOpening?.scenes ?? {});
+export const scribeScene = (course: import("@silver-tongue/core").Course, scene?: string) => scene ? extra(course).labOpening?.scenes[scene] : undefined;
+export const isScribeScene = (course: import("@silver-tongue/core").Course, scene: string | undefined): boolean => !!scribeScene(course, scene);
 
 /** The hands-off arc, in one place: the first exchanges light the help button at the first miss, the later ones after SCRIBE_HELP_LATE. */
 export const SCRIBE_EARLY_EXCHANGES = 2;
@@ -20,30 +21,23 @@ export const scribeShowsExample = (index: number): boolean => index === 0;
 /** Where the page keeps how many scribe exchanges a course has begun (the worked example is the first's alone). */
 export const scribeCountKey = (course: string): string => `silver-tongue:scribe-count:${course}`;
 
-/**
- * Other ways to say a meaning, for the lines of the scribe scenes (matched whole, after the same tidying as the meaning).
- * Keyed by the meaning as written in content/learner/en/lines-ko. Spellings like "thanks" and "bye" are already
- * handled by the matcher. Core's rendered lines carry no such field, so the list lives here, not in the .ftl files.
- */
-export const SCRIBE_ACCEPTS: Record<string, string[]> = {
-  "Who is it?": ["who is there", "who is that", "who is this"],
-  "I don't know.": ["no idea", "dunno", "i have no idea"],
-  "Yes, I do.": ["yes", "i do", "yes i know korean"],
-  "Yes, thank you.": ["yes thank you very much"],
-  "Thank you.": ["thank you very much", "thanks a lot"],
-  "Hello.": ["good morning", "good day"],
-  "Goodbye.": ["see you", "farewell"],
-  "Well… goodbye.": ["well goodbye"],
-  "Sit here.": ["sit down", "sit down here", "have a seat", "have a seat here", "take a seat", "take a seat here", "please sit", "sit", "sit down please"],
-  "Do you know Korean?": ["do you speak korean", "can you speak korean", "you know korean", "you speak korean", "know korean", "speak korean", "do you understand korean", "can you understand korean"],
-  "I'm Grandpa Park.": ["grandfather park", "i am grandfather park", "he is park", "he is grandpa park", "he is grandfather park", "my name is park", "i am park"],
-  "Hello, Grandpa Park.": ["hello", "hello grandfather park", "hello grandpa", "hello park", "hello grandfather"],
-  "What's your name?": ["your name", "what are you called", "may i ask your name"],
-  "No, I don't.": ["no", "i do not", "no i do not know korean", "i do not know korean", "i do not speak korean", "no i do not speak korean"],
-};
-const ACCEPTS = new Map(Object.entries(SCRIBE_ACCEPTS).map(([k, v]) => [normalizeMeaning(k), v]));
-/** The other accepted ways to say a line's meaning. */
-export const scribeAccepts = (meaning: string): string[] => ACCEPTS.get(normalizeMeaning(meaning)) ?? [];
+/** Authored visible-word fragments and essential distinctions come from learner content. */
+export const scribeRules = (course: import("@silver-tongue/core").Course) => extra(course).scribeAccepts ?? {};
+export function scribeAccepts(course: import("@silver-tongue/core").Course, scene: string, line: string, player = "?"): string[] {
+  return (scribeRules(course)[`${scene}:${line}`]?.fragments ?? []).map((s) => s.replaceAll("{player}", player));
+}
+
+/** Map a rendered reply back to its source ID, independent of shuffled slip order. */
+export function scribeReplyId(course: import("@silver-tongue/core").Course, scene: string, exchange: string, line: RenderedLine, player = "?"): string {
+  const ex = course.scenes.find((s) => s.id === scene)?.exchanges.find((e) => e.id === exchange);
+  for (const v of Object.values(ex?.variants ?? {})) {
+    // Player names may have been personalised by core; the other lines are fixed.
+    if (personalize(v.reply, player).text === line.text && v.reply.intent === line.intent) return `${exchange}-reply`;
+    const i = v.alts?.findIndex((l) => personalize(l, player).text === line.text && l.intent === line.intent) ?? -1;
+    if (i >= 0) return `${exchange}-alt${i + 1}`;
+  }
+  return `${exchange}-reply`;
+}
 
 /** A piece of a line in Latin letters: a word (with its id, so a tap can look it up) or what lies between words. */
 export interface RomanSeg {
@@ -51,6 +45,8 @@ export interface RomanSeg {
   word?: WordId;
   /** the word as written in Hangul, for its look-up card */
   surface?: string;
+  /** Index into the original tokens, shared with soundedTokens. */
+  token?: number;
 }
 
 const isHangul = (ch: string | undefined): boolean => !!ch && /[\uac00-\ud7a3]/.test(ch);
@@ -71,6 +67,7 @@ export function romanSegments(line: RenderedLine): RomanSeg[] {
   for (const tk of [...line.tokens].sort((a, b) => a.start - b.start)) {
     if (tk.start > at) push(at, tk.start);
     push(tk.start, tk.end, tk.word);
+    out[out.length - 1].token = line.tokens.indexOf(tk);
     at = tk.end;
   }
   if (at < text.length) push(at, text.length);

@@ -31,3 +31,18 @@ next-b = { $number ->
    *[5] 一，二，三，四……
 }
 next-b-reply = { -number }！
+
+praise = 很好！很好！
+praise-reply = 谢谢，老王！
+praise-alt1 = 一，二。
+praise-alt2 = 再见！
+
+welcome = 不客气！
+welcome-reply = 对不起，我饿了！
+welcome-alt1 = 很好！
+welcome-alt2 = 一，二，三，四，五！
+
+forgive = 没关系！那里有饭馆！
+forgive-reply = 好！谢谢！再见！
+forgive-alt1 = 你好吗？
+forgive-alt2 = 一，二。

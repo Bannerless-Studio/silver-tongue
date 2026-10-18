@@ -13,6 +13,7 @@
     { "id": "six-seven", "slots": {}, "expect": { "action": "numbers" }, "hinges": [], "pay": 0, "missCost": 0 },
     { "id": "eight-nine", "slots": {}, "expect": { "action": "numbers" }, "hinges": [], "pay": 0, "missCost": 0 },
     { "id": "ten", "slots": {}, "expect": { "action": "numbers" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "things", "slots": {}, "expect": { "action": "things" }, "hinges": [], "pay": 0, "missCost": 0 },
     { "id": "job", "slots": {}, "expect": { "action": "job" }, "hinges": [], "pay": 0, "missCost": 0 },
     { "id": "bye", "slots": {}, "expect": { "action": "bye" }, "hinges": [], "pay": 0, "missCost": 0 }
   ]

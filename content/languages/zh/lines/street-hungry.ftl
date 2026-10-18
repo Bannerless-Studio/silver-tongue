@@ -6,13 +6,13 @@ hungry-reply = 我饿了。
 hungry-alt1 = 我叫{ $player }。
 hungry-alt2 = 再见！
 
-noodles = 吃面条吗？
-noodles-reply = 好！
+noodles = 很饿吗？
+noodles-reply = 很饿！吃面条！
 noodles-alt1 = 我叫{ $player }。
 noodles-alt2 = 再见！
 
-like = 你喜欢面条吗？
-like-reply = 喜欢！我喜欢面条。
+like = 面条好吗？
+like-reply = 很好！我喜欢面条。
 like-alt1 = 我叫{ $player }。
 like-alt2 = 再见，老王！
 

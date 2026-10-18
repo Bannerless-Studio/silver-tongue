@@ -6,7 +6,7 @@ greet-alt1-intent = Say goodbye
 greet-alt2 = Yes, see you.
 greet-alt2-intent = Agree and say see you
 
-room = This is your room, { $player }.
+room = It's your room, { $player }.
 room-reply = Thank you.
 room-reply-intent = Thank her
 room-alt1 = No, I don't understand.

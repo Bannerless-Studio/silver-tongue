@@ -10,6 +10,18 @@ change-alt1-intent = Count the notes
 change-alt2 = Three thousand won?
 change-alt2-intent = Check the amount
 
+chat-a = { -topic }
+chat-a-reply = { -topic(form: "reply") }
+chat-a-reply-intent = Answer him
+
+chat-b = { -topic }
+chat-b-reply = { -topic(form: "reply") }
+chat-b-reply-intent = Answer him
+
+chat-c = { -topic }
+chat-c-reply = { -topic(form: "reply") }
+chat-c-reply-intent = Answer him
+
 bye = Goodbye.
 bye-reply = Goodbye.
 bye-reply-intent = Take your leave

@@ -10,3 +10,7 @@ bye-alt1 = That's too much!
 bye-alt1-intent = Say it's too dear
 bye-alt2 = I'm just looking.
 bye-alt2-intent = Say you're only looking
+
+chat = { -topic }
+chat-reply = { -topic(form: "reply") }
+chat-reply-intent = Answer the shopkeeper

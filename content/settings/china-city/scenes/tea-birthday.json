@@ -1,0 +1,22 @@
+{
+  "id": "tea-birthday",
+  "place": "tea_house",
+  "npc": "teaboss",
+  "stage": 2,
+  "after": ["noodle-busy", "tea-tv"],
+  "requires": {},
+  "repeatable": false,
+  "trustGain": 1,
+  "exchanges": [
+    { "id": "birthday", "slots": {}, "expect": { "action": "birthday" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "age", "slots": {}, "expect": { "action": "younger" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "young", "slots": {}, "expect": { "action": "healthy" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "tea", "slots": {}, "expect": { "action": "everyday" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "why", "slots": {}, "expect": { "action": "teareason" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "sing", "slots": {}, "expect": { "action": "singsong" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "well", "slots": {}, "expect": { "action": "singwell" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "chinese", "slots": {}, "expect": { "action": "modest" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "like", "slots": {}, "expect": { "action": "favourite" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "bye", "slots": {}, "expect": { "action": "visitagain" }, "hinges": [], "pay": 0, "missCost": 0 }
+  ]
+}

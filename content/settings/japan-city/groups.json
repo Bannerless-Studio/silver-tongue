@@ -13,6 +13,68 @@
   "goods": [
    "rice_ball",
    "bread"
+  ],
+  "shelf": [
+   "rice_ball",
+   "bread",
+   "umbrella",
+   "tea"
+  ],
+  "chat_ramen": [
+   "rt-nihongo",
+   "rt-namae",
+   "rt-ooya",
+   "rt-heya",
+   "rt-kagi",
+   "rt-kore",
+   "rt-yachin",
+   "rt-sen",
+   "rt-okane",
+   "rt-ramen",
+   "rt-ashita",
+   "rt-sore",
+   "rt-sayonara",
+   "rt-yo",
+   "rt-oyasumi",
+   "rt-yoroshiku"
+  ],
+  "chat_konbini": [
+   "kt-ame",
+   "kt-furu",
+   "kt-kasa",
+   "kt-kara",
+   "kt-mizu",
+   "kt-made",
+   "kt-mainichi",
+   "kt-oishii",
+   "kt-takai",
+   "kt-yasui",
+   "kt-nomu",
+   "kt-doko",
+   "kt-asu",
+   "kt-nanji",
+   "kt-issho",
+   "kt-kau",
+   "kt-ja",
+   "kt-tabetai",
+   "kt-konbini",
+   "kt-kimasu"
+  ],
+  "chat_till": [
+   "rt-nihongo",
+   "rt-namae",
+   "rt-ooya",
+   "rt-heya",
+   "rt-kagi",
+   "rt-kore",
+   "rt-yachin",
+   "rt-sen",
+   "rt-okane",
+   "rt-ramen",
+   "rt-sore",
+   "rt-sayonara",
+   "rt-yo",
+   "rt-oyasumi"
   ]
  },
  "numbers": {

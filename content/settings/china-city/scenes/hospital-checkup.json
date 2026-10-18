@@ -8,14 +8,16 @@
   "repeatable": false,
   "trustGain": 1,
   "exchanges": [
-    { "id": "sit", "slots": {}, "expect": { "action": "sit" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "sick", "slots": {}, "expect": { "action": "sick" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "clothes", "slots": {}, "expect": { "action": "dressed" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "when", "slots": {}, "expect": { "action": "since" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "sleep", "slots": {}, "expect": { "action": "rest" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "water", "slots": {}, "expect": { "action": "water" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "food", "slots": {}, "expect": { "action": "food" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "screen", "slots": {}, "expect": { "action": "screen" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "bye", "slots": {}, "expect": { "action": "bye" }, "hinges": [], "pay": 0, "missCost": 0 }
+    { "id": "sit", "slots": { }, "expect": { "action": "sit" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "sick", "slots": { }, "expect": { "action": "sick" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "clothes", "slots": { }, "expect": { "action": "dressed" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "when", "slots": { }, "expect": { "action": "since" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "sleep", "slots": { }, "expect": { "action": "rest" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "chat", "slots": { "topic": "chat_class" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
+    { "id": "chat-2", "slots": { "topic": "chat_class" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
+    { "id": "water", "slots": { }, "expect": { "action": "water" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "food", "slots": { }, "expect": { "action": "food" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "screen", "slots": { }, "expect": { "action": "screen" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "bye", "slots": { }, "expect": { "action": "bye" }, "hinges": [], "pay": 0, "missCost": 0 }
   ]
 }

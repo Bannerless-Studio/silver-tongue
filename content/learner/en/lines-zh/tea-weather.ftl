@@ -1,14 +1,14 @@
-cold = It's cold today!
-cold-reply = Very cold!
-cold-reply-intent = Say it's very cold
-cold-alt1 = Very good!
-cold-alt1-intent = Say very good
+cold = How is it today?
+cold-reply = It's cold today!
+cold-reply-intent = Say it's cold today
+cold-alt1 = I'm going to Beijing!
+cold-alt1-intent = Say you're going to Beijing
 cold-alt2 = I'm hungry.
 cold-alt2-intent = Say you're hungry
 
-weather = What's the weather like?
-weather-reply = The weather's cold.
-weather-reply-intent = Talk about the cold
+weather = Yes! Very cold!
+weather-reply = The weather's bad!
+weather-reply-intent = Say the weather's bad
 weather-alt1 = I'm glad!
 weather-alt1-intent = Say you're glad
 weather-alt2 = Thank you!
@@ -53,3 +53,11 @@ minutes-alt1 = At noon.
 minutes-alt1-intent = Say at noon
 minutes-alt2 = The weather's cold.
 minutes-alt2-intent = Talk about the cold
+
+chat = { -topic }
+chat-reply = { -topic(form: "reply") }
+chat-reply-intent = Answer Old Chen
+
+chat-2 = { -topic }
+chat-2-reply = { -topic(form: "reply") }
+chat-2-reply-intent = Answer Old Chen

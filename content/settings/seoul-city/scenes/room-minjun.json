@@ -1,0 +1,116 @@
+{
+ "id": "room-minjun",
+ "place": "room",
+ "npc": "minjun",
+ "stage": 1,
+ "after": [
+  "room-wake"
+ ],
+ "requires": {},
+ "repeatable": false,
+ "trustGain": 1,
+ "exchanges": [
+  {
+   "id": "who",
+   "slots": {},
+   "expect": {
+    "action": "who"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0,
+   "alts": {
+    "1": {
+     "accept": true,
+     "pay": 0,
+     "loss": 0
+    }
+   }
+  },
+  {
+   "id": "english",
+   "slots": {},
+   "expect": {
+    "action": "english"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0,
+   "alts": {
+    "1": {
+     "accept": true,
+     "pay": 0,
+     "loss": 0
+    }
+   }
+  },
+  {
+   "id": "minjun",
+   "slots": {},
+   "expect": {
+    "action": "minjun"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0,
+   "alts": {
+    "1": {
+     "accept": true,
+     "pay": 0,
+     "loss": 0
+    }
+   }
+  },
+  {
+   "id": "why",
+   "slots": {},
+   "expect": {
+    "action": "why"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0,
+   "alts": {
+    "1": {
+     "accept": true,
+     "pay": 0,
+     "loss": 0
+    }
+   }
+  },
+  {
+   "id": "together",
+   "slots": {},
+   "expect": {
+    "action": "together"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0,
+   "alts": {
+    "1": {
+     "accept": true,
+     "pay": 0,
+     "loss": 0
+    }
+   }
+  },
+  {
+   "id": "leave",
+   "slots": {},
+   "expect": {
+    "action": "leave"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0,
+   "alts": {
+    "1": {
+     "accept": true,
+     "pay": 0,
+     "loss": 0
+    }
+   }
+  }
+ ]
+}

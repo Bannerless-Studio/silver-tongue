@@ -8,12 +8,14 @@
   "repeatable": false,
   "trustGain": 1,
   "exchanges": [
-    { "id": "cold", "slots": {}, "expect": { "action": "cold" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "weather", "slots": {}, "expect": { "action": "weather" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "rain", "slots": {}, "expect": { "action": "rain" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "hot", "slots": {}, "expect": { "action": "hot" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "clock", "slots": {}, "expect": { "action": "clock" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "when", "slots": {}, "expect": { "action": "when" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "minutes", "slots": {}, "expect": { "action": "minutes" }, "hinges": [], "pay": 0, "missCost": 0 }
+    { "id": "cold", "slots": { }, "expect": { "action": "cold" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "weather", "slots": { }, "expect": { "action": "weather" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "rain", "slots": { }, "expect": { "action": "rain" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "hot", "slots": { }, "expect": { "action": "hot" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "clock", "slots": { }, "expect": { "action": "clock" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "when", "slots": { }, "expect": { "action": "when" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "chat", "slots": { "topic": "chat_class" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
+    { "id": "chat-2", "slots": { "topic": "chat_class" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
+    { "id": "minutes", "slots": { }, "expect": { "action": "minutes" }, "hinges": [], "pay": 0, "missCost": 0 }
   ]
 }

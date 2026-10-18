@@ -26,3 +26,7 @@ bye-alt1 = Who are you?
 bye-alt1-intent = Ask who he is
 bye-alt2 = I'm hungry.
 bye-alt2-intent = Say you're hungry
+
+chat = { -topic }
+chat-reply = { -topic(form: "reply") }
+chat-reply-intent = Answer the traveller

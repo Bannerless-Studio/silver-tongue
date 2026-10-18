@@ -3,17 +3,19 @@
   "place": "tea_house",
   "npc": "teaboss",
   "stage": 1,
-  "after": ["delivery-intro"],
+  "after": ["delivery-intro", "class-read", "taxi-way"],
   "requires": {},
   "repeatable": false,
   "trustGain": 1,
   "exchanges": [
-    { "id": "greet", "slots": {}, "expect": { "action": "greet" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "names", "slots": {}, "expect": { "action": "names" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "meet", "slots": {}, "expect": { "action": "meet" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "tea", "slots": {}, "expect": { "action": "tea" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "china", "slots": {}, "expect": { "action": "china" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "job", "slots": {}, "expect": { "action": "work" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "come", "slots": {}, "expect": { "action": "come" }, "hinges": [], "pay": 0, "missCost": 0 }
+    { "id": "greet", "slots": { }, "expect": { "action": "greet" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "names", "slots": { }, "expect": { "action": "names" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "meet", "slots": { }, "expect": { "action": "meet" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "tea", "slots": { }, "expect": { "action": "tea" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "china", "slots": { }, "expect": { "action": "china" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "job", "slots": { }, "expect": { "action": "work" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "chat", "slots": { "topic": "chat_class" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
+    { "id": "chat-2", "slots": { "topic": "chat_class" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
+    { "id": "come", "slots": { }, "expect": { "action": "come" }, "hinges": [], "pay": 0, "missCost": 0 }
   ]
 }

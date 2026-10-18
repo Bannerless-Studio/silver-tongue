@@ -6,7 +6,7 @@ greet-alt1-intent = Say goodbye
 greet-alt2 = I'm hungry.
 greet-alt2-intent = Say you're hungry
 
-names = Call me Mr Li. And you?
+names = Call me Mr Li. What's your name?
 names-reply = My name is { $player }.
 names-reply-intent = Say your name
 names-alt1 = My name is Old Wang.
@@ -15,7 +15,7 @@ names-alt2 = I like noodles.
 names-alt2-intent = Say you like noodles
 
 how = How are you?
-how-reply = Very well! How are you?
+how-reply = Very well! And you?
 how-reply-intent = Say you're well, and ask back
 how-alt1 = My name is { $player }.
 how-alt1-intent = Say your name
@@ -30,9 +30,9 @@ live-alt1-intent = Say you're hungry
 live-alt2 = Xiao Zhang is my friend.
 live-alt2-intent = Mention Xiao Zhang
 
-bye = Goodbye, { $player }!
-bye-reply = Thank you! Goodbye, Mr Li!
-bye-reply-intent = Thank Mr Li and leave
+bye = You're welcome! Goodbye, { $player }!
+bye-reply = Goodbye, Mr Li!
+bye-reply-intent = Say goodbye to Mr Li
 bye-alt1 = Hello, Mr Li!
 bye-alt1-intent = Greet Mr Li
 bye-alt2 = My name is { $player }.

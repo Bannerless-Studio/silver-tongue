@@ -8,7 +8,7 @@ fast-alt1 = 안녕하세요.
 fast-alt2 = 감사합니다.
 
 again = 어디 가요? 어디?
-again-reply = 다시 말해 주세요.
+again-reply = 네? 다시요.
 again-alt1 = 아니요.
 again-alt2 = 네, 알아요.
 

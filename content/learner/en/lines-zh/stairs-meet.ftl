@@ -30,7 +30,7 @@ years-alt1-intent = Say ten kuai
 years-alt2 = My flat is two-oh-eight.
 years-alt2-intent = Give your flat number
 
-son = My son and I are just getting home.
+son = This is my son.
 son-reply = Your son's lovely!
 son-reply-intent = Praise her son
 son-alt1 = I live here.
@@ -46,7 +46,7 @@ age-alt1-intent = Say eight kuai
 age-alt2 = Ten years!
 age-alt2-intent = Say ten years
 
-work = What work do you do?
+work = Where do you work?
 work-reply = I work in a restaurant.
 work-reply-intent = Say where you work
 work-alt1 = He's eight.
@@ -54,9 +54,9 @@ work-alt1-intent = Say his age
 work-alt2 = Ten years!
 work-alt2-intent = Say ten years
 
-bye = Glad to meet you! Goodbye!
-bye-reply = Goodbye, Mrs Lin!
-bye-reply-intent = Say goodbye to Mrs Lin
+bye = Right, goodbye!
+bye-reply = Glad to meet you!
+bye-reply-intent = Say you're glad to meet her
 bye-alt1 = Hello, Mrs Lin!
 bye-alt1-intent = Greet Mrs Lin
 bye-alt2 = He's eight.

@@ -33,7 +33,7 @@
     },
     {
       "id": "count",
-      "slots": { "number": "numbers_2_5" },
+      "slots": { "number": "numbers_3_5" },
       "expect": {
         "action": "count",
         "number": "$number"

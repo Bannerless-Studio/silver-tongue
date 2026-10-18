@@ -21,16 +21,6 @@
    "missCost": 0
   },
   {
-   "id": "food",
-   "slots": {},
-   "expect": {
-    "action": "food"
-   },
-   "hinges": [],
-   "pay": 0,
-   "missCost": 0
-  },
-  {
    "id": "money",
    "slots": {},
    "hinges": [],
@@ -39,6 +29,16 @@
    "expect": {
     "action": "money"
    }
+  },
+  {
+   "id": "food",
+   "slots": {},
+   "expect": {
+    "action": "food"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
   },
   {
    "id": "shop",

@@ -1,0 +1,74 @@
+{
+ "id": "konbini-lunch",
+ "place": "konbini",
+ "npc": "clerk",
+ "stage": 1,
+ "after": [
+  "apartment-morning"
+ ],
+ "requires": {},
+ "repeatable": false,
+ "trustGain": 1,
+ "exchanges": [
+  {
+   "id": "welcome",
+   "slots": {},
+   "expect": {
+    "action": "welcome"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "what",
+   "slots": {},
+   "expect": {
+    "action": "what"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "and",
+   "slots": {},
+   "expect": {
+    "action": "and"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "not",
+   "slots": {},
+   "expect": {
+    "action": "not"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "total",
+   "slots": {},
+   "expect": {
+    "action": "total"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "again",
+   "slots": {},
+   "expect": {
+    "action": "again"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  }
+ ]
+}

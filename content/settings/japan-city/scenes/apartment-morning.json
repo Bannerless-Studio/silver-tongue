@@ -1,0 +1,84 @@
+{
+ "id": "apartment-morning",
+ "place": "apartment",
+ "npc": "ooya",
+ "stage": 1,
+ "after": [
+  "ramen-taste"
+ ],
+ "requires": {},
+ "repeatable": false,
+ "trustGain": 1,
+ "exchanges": [
+  {
+   "id": "morning",
+   "slots": {},
+   "expect": {
+    "action": "morning"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "job",
+   "slots": {},
+   "expect": {
+    "action": "job"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "from",
+   "slots": {},
+   "expect": {
+    "action": "from"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "until",
+   "slots": {},
+   "expect": {
+    "action": "until"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "daily",
+   "slots": {},
+   "expect": {
+    "action": "daily"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "key",
+   "slots": {},
+   "expect": {
+    "action": "key"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "money",
+   "slots": {},
+   "expect": {
+    "action": "money"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  }
+ ]
+}

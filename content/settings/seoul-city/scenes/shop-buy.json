@@ -41,6 +41,51 @@
    "missCost": 0
   },
   {
+   "id": "chat-a",
+   "slots": {
+    "topic": "chat_shop"
+   },
+   "expect": {
+    "action": "chat",
+    "topic": "$topic"
+   },
+   "hinges": [
+    "$topic"
+   ],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "chat-b",
+   "slots": {
+    "topic": "chat_shop"
+   },
+   "expect": {
+    "action": "chat",
+    "topic": "$topic"
+   },
+   "hinges": [
+    "$topic"
+   ],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "chat-c",
+   "slots": {
+    "topic": "chat_shop"
+   },
+   "expect": {
+    "action": "chat",
+    "topic": "$topic"
+   },
+   "hinges": [
+    "$topic"
+   ],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
    "id": "bye",
    "slots": {},
    "expect": {

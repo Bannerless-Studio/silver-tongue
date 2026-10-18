@@ -4,7 +4,7 @@
  "npc": "clerk",
  "stage": 1,
  "after": [
-  "tanaka-numbers"
+  "apartment-rent"
  ],
  "requires": {},
  "repeatable": false,
@@ -31,6 +31,16 @@
    "missCost": 0
   },
   {
+   "id": "price",
+   "slots": {},
+   "expect": {
+    "action": "price"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
    "id": "bread",
    "slots": {},
    "expect": {
@@ -45,6 +55,16 @@
    "slots": {},
    "expect": {
     "action": "which"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "take",
+   "slots": {},
+   "expect": {
+    "action": "take"
    },
    "hinges": [],
    "pay": 0,

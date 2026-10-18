@@ -52,16 +52,6 @@
       "missCost": 0
     },
     {
-      "id": "where",
-      "slots": {},
-      "expect": {
-        "action": "where"
-      },
-      "hinges": [],
-      "pay": 0,
-      "missCost": 0
-    },
-    {
       "id": "job",
       "slots": {},
       "expect": {

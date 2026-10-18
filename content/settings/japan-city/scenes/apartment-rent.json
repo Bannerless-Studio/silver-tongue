@@ -5,7 +5,8 @@
  "stage": 1,
  "after": [
   "apartment-hello",
-  "tanaka-numbers"
+  "tanaka-numbers",
+  "ramen-intro"
  ],
  "requires": {},
  "repeatable": false,
@@ -26,6 +27,16 @@
    "slots": {},
    "expect": {
     "action": "amount"
+   },
+   "hinges": [],
+   "pay": 0,
+   "missCost": 0
+  },
+  {
+   "id": "weekly",
+   "slots": {},
+   "expect": {
+    "action": "weekly"
    },
    "hinges": [],
    "pay": 0,

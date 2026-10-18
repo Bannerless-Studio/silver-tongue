@@ -9,8 +9,10 @@ export interface DeskPaperLine {
   id: string;
   /** Hangul, digits and punctuation only */
   text: string;
-  /** what text-to-speech reads instead of `text` (a number read digit by digit) */
+  /** what text-to-speech reads instead of `text` (a number read digit by digit, a Latin name in Hangul) */
   say?: string;
+  /** a name printed in Latin letters beside the Hangul, as on an ID card: shown, never sounded out */
+  latin?: boolean;
   /** its clip ids, in the words voice (added by the build) */
   audio?: string[];
 }
@@ -19,24 +21,42 @@ export interface DeskPaper {
   kind: DeskPaperKind;
   /** a place whose name becomes `place-<place>-known` once this paper is read */
   names?: string;
+  /** Lab reward source; omitted papers are on the opening desk. */
+  reward?: string;
+  /** Lines required before the knock; omitted means the whole paper, [] means optional. */
+  required?: string[];
   lines: DeskPaperLine[];
 }
 
-export const deskPapers = (course: Course): DeskPaper[] => (bookOn(course) ? (extra(course).papers ?? []) : []);
+export const deskPapers = (course: Course): DeskPaper[] => (bookOn(course) ? (extra(course).papers ?? []).filter((p) => !p.reward) : []);
 
 /** Whether the desk comes up for this game: a book course with papers, no scene done yet, some paper unread. */
 export function deskOn(course: Course, state: GameState, read: ReadonlySet<string>): boolean {
   const ps = deskPapers(course);
   if (!ps.length) return false;
   if (Object.values(state.scenesDone).some((n) => n > 0)) return false;
-  return ps.some((p) => !read.has(p.id));
+  return !deskReady(ps, read);
 }
 
-/** The paper to read next on the desk: the first one not read yet. */
-export const firstUnread = (papers: DeskPaper[], read: ReadonlySet<string>): string | undefined => papers.find((p) => !read.has(p.id))?.id;
+/**
+ * A paper is done when it is read in full, or when the lines it requires are read ([] requires none: an optional
+ * paper is done from the start). One rule for the knock and for the order papers are read in, so a paper whose
+ * required lines are read never holds up the next one.
+ */
+export const paperDone = (p: DeskPaper, read: ReadonlySet<string>): boolean =>
+  read.has(p.id) || (p.required !== undefined && p.required.every((id) => read.has(`${p.id}.${id}`)));
 
-/** A paper can be opened when it is read already or is the next unread one; later papers wait their turn. */
-export const canOpenPaper = (papers: DeskPaper[], read: ReadonlySet<string>, id: string): boolean => read.has(id) || firstUnread(papers, read) === id;
+/** Required discovery is complete; optional documents remain available in the Book. */
+export const deskReady = (papers: DeskPaper[], read: ReadonlySet<string>): boolean => papers.every((p) => paperDone(p, read));
+
+/** The paper to read next on the desk: the first one not done yet. */
+export const firstUnread = (papers: DeskPaper[], read: ReadonlySet<string>): string | undefined => papers.find((p) => !paperDone(p, read))?.id;
+
+/** A paper can be opened when it is done (or optional) or is the next one; later papers wait their turn. */
+export const canOpenPaper = (papers: DeskPaper[], read: ReadonlySet<string>, id: string): boolean => {
+  const p = papers.find((x) => x.id === id);
+  return (!!p && paperDone(p, read)) || firstUnread(papers, read) === id;
+};
 
 /** Where the read set is kept in the browser. */
 export const papersKey = (course: string): string => `silver-tongue:papers:${course}`;
@@ -52,7 +72,7 @@ const SOUNDED_MIN = 2;
  * inside a line of a paper they have read (the name on the ID card). Indexes into `line.tokens`.
  */
 export function soundedTokens(course: Course, read: ReadonlySet<string>, line: RenderedLine): Set<number> {
-  const seen = deskPapers(course).filter((p) => read.has(p.id)).flatMap((p) => p.lines.map((l) => l.text));
+  const seen = deskPapers(course).flatMap((p) => p.lines.filter((l) => read.has(p.id) || read.has(`${p.id}.${l.id}`)).map((l) => l.text));
   const out = new Set<number>();
   line.tokens.forEach((tk, i) => {
     const text = line.text.slice(tk.start, tk.end);
@@ -63,7 +83,7 @@ export function soundedTokens(course: Course, read: ReadonlySet<string>, line: R
 
 /** A place's name for the quiet page: once a paper that names it is read, `place-<id>-known`. */
 export function placeName(course: Course, state: GameState | { place: string }, read: ReadonlySet<string>, t: Text, place = state.place): string {
-  const known = deskPapers(course).some((p) => p.names === place && read.has(p.id));
+  const known = deskPapers(course).some((p) => p.names === place && (read.has(p.id) || p.required?.some((id) => read.has(`${p.id}.${id}`))));
   return t(known ? `place-${place}-known` : `place-${place}`);
 }
 

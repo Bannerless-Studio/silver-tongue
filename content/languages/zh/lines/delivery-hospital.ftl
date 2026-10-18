@@ -12,3 +12,6 @@ bye = 这是八块钱。再见！
 bye-reply = 谢谢，医生！再见！
 bye-alt1 = 你是谁？
 bye-alt2 = 我现在去！
+
+chat = { -topic }
+chat-reply = { -topic(form: "reply") }

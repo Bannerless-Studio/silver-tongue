@@ -3,16 +3,18 @@
   "place": "school",
   "npc": "classmate",
   "stage": 1,
-  "after": ["class-first"],
+  "after": ["class-first", "noodle-lunch", "shop-intro"],
   "requires": {},
   "repeatable": false,
   "trustGain": 1,
   "exchanges": [
-    { "id": "greet", "slots": {}, "expect": { "action": "greet" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "year", "slots": {}, "expect": { "action": "writeyear" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "day", "slots": {}, "expect": { "action": "day" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "book", "slots": {}, "expect": { "action": "book" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "name", "slots": {}, "expect": { "action": "writename" }, "hinges": [], "pay": 0, "missCost": 0 },
-    { "id": "quiet", "slots": {}, "expect": { "action": "hush" }, "hinges": [], "pay": 0, "missCost": 0 }
+    { "id": "greet", "slots": { }, "expect": { "action": "greet" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "year", "slots": { }, "expect": { "action": "writeyear" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "day", "slots": { }, "expect": { "action": "day" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "book", "slots": { }, "expect": { "action": "book" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "chat", "slots": { "topic": "chat_school" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
+    { "id": "chat-2", "slots": { "topic": "chat_school" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
+    { "id": "name", "slots": { }, "expect": { "action": "writename" }, "hinges": [], "pay": 0, "missCost": 0 },
+    { "id": "quiet", "slots": { }, "expect": { "action": "hush" }, "hinges": [], "pay": 0, "missCost": 0 }
   ]
 }

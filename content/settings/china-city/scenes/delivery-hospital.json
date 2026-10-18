@@ -3,43 +3,15 @@
   "place": "hospital",
   "npc": "doctor",
   "stage": 1,
-  "after": [
-    "delivery-pickup"
-  ],
+  "after": ["delivery-pickup"],
   "requires": {},
   "repeatable": true,
   "trustGain": 1,
+  "endsErrand": true,
   "exchanges": [
-    {
-      "id": "who",
-      "slots": {},
-      "expect": {
-        "action": "who"
-      },
-      "hinges": [],
-      "pay": 3,
-      "missCost": 0
-    },
-    {
-      "id": "doctor",
-      "slots": {},
-      "expect": {
-        "action": "doctor"
-      },
-      "hinges": [],
-      "pay": 3,
-      "missCost": 0
-    },
-    {
-      "id": "bye",
-      "slots": {},
-      "expect": {
-        "action": "bye"
-      },
-      "hinges": [],
-      "pay": 14,
-      "missCost": 0
-    }
-  ],
-  "endsErrand": true
+    { "id": "who", "slots": { }, "expect": { "action": "who" }, "hinges": [], "pay": 3, "missCost": 0 },
+    { "id": "chat", "slots": { "topic": "chat_errand" }, "expect": { "action": "chat", "topic": "$topic" }, "hinges": ["$topic"], "pay": 0, "missCost": 0 },
+    { "id": "doctor", "slots": { }, "expect": { "action": "doctor" }, "hinges": [], "pay": 3, "missCost": 0 },
+    { "id": "bye", "slots": { }, "expect": { "action": "bye" }, "hinges": [], "pay": 14, "missCost": 0 }
+  ]
 }

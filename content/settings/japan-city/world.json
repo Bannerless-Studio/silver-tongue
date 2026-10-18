@@ -28,7 +28,7 @@
     "shotengai"
    ],
    "after": [
-    "tanaka-name"
+    "apartment-hello"
    ]
   },
   "konbini": {
@@ -36,7 +36,7 @@
     "shotengai"
    ],
    "after": [
-    "tanaka-numbers"
+    "apartment-rent"
    ]
   }
  },
